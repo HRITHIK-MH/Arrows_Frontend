@@ -1,0 +1,253 @@
+.login-container {
+  display: flex;
+  height: 100vh;
+  font-family: Arial, sans-serif;
+}
+
+.login-left {
+  flex: 1;
+  background-color: #035297;
+  display: flex;
+  flex-direction: column;
+  padding: 2rem;
+  position: relative;
+  color: #fff;
+  background-image: url("/src/assets/login/left-bg.jpg");
+
+}
+
+.login-left h1 {
+  font-family: Poppins;
+  font-weight: 400;
+  font-style: normal;
+  font-size: 39px;
+  line-height: 46.8px;
+  letter-spacing: 0%;
+  margin-bottom: 1rem;
+  color: #fff;
+  margin-top: 6rem;
+}
+
+.sign-in {
+  font-family: Poppins;
+  font-weight: 700;
+  font-style: normal;
+  font-size: 39px;
+  line-height: 46.8px;
+  letter-spacing: 0%;
+}
+
+.para-text1 {
+  font-family: Poppins;
+  font-weight: 400;
+  font-style: normal;
+  font-size: 20px;
+  line-height: 100%;
+  margin-bottom:1.5rem !important;
+}
+
+.para-text2 {
+  font-family: Poppins;
+  font-weight: 400;
+  font-style: normal;
+  font-size: 18px;
+  line-height: 28px;
+}
+
+.login-logo {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 400px;
+  height: auto;
+  max-width: none;
+}
+
+.login-circle {
+  position: absolute;
+    bottom: 48%;
+    right: 20%;
+    transform: translate(50%, 50%);
+    width: 65px;
+    height: auto;
+    max-width: none;
+}
+
+.login-circle2 {
+  position: absolute;
+    bottom: 3%;
+    left: 44%;
+    width: 56px;
+    height: auto;
+    max-width: none;
+}
+
+.arrow-logo {
+  display: block;
+  width: auto;
+  height: 80px;
+  margin: 0 auto 2rem auto;
+}
+
+.login-left p {
+  margin-bottom: 0.5rem;
+}
+
+.login-right {
+  flex: 1;
+  padding: 2rem;
+  background-color: #fff;
+}
+
+.login-form {
+  width: 100%;
+  max-width: 400px;
+  padding: 2rem;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  margin: 0 auto;
+}
+
+.login-form h2 {
+  margin-bottom: 1.5rem;
+  color: #333;
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: #333;
+  font-weight: 500;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 1rem;
+  background: var(--Colors-Grayscale-50, #EFF1F4);
+}
+
+.email-group .input-wrapper {
+  position: relative;
+}
+
+.email-group .input-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #007bff;
+  background: white;
+  border-radius: 50%;
+  padding: 2px;
+  pointer-events: none;
+}
+
+.email-group input {
+  padding-left: 40px;
+}
+
+.password-group .input-wrapper {
+  position: relative;
+}
+
+.password-group .input-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #007bff;
+  background: white;
+  border-radius: 50%;
+  padding: 2px;
+  pointer-events: none;
+}
+
+.password-group input {
+  padding-left: 40px;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #007bff;
+}
+
+.form-options {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.remember-me {
+  display: flex;
+  align-items: center;
+  font-size: 0.9rem;
+  color: #555;
+}
+
+.remember-me input {
+  margin-right: 0.5rem;
+  background: var(--Colors-Grayscale-50, #EFF1F4);
+}
+
+.forgot-password {
+  font-size: 0.9rem;
+  color: #007bff;
+  text-decoration: none;
+}
+
+.forgot-password:hover {
+  text-decoration: underline;
+}
+
+.login-btn {
+  width: 100%;
+  padding: 0.75rem;
+  background-color: #007bff;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.login-btn:hover {
+  background-color: #0056b3;
+}
+
+.error-message {
+  color: #dc3545;
+  font-size: 0.9rem;
+  margin: 0.5rem 0;
+  text-align: center;
+}
+
+@media (max-width: 768px) {
+  .login-container {
+    flex-direction: column;
+  }
+}
+
+
+.logo-wrapper {
+  margin-bottom: 20px;
+  width: 100%;
+}
+
+.arrow-logo {
+  width: 120px;
+  height: auto;
+}
+
+.login-form {
+  width: 100%;
+}
