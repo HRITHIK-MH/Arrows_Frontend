@@ -1,0 +1,140 @@
+
+
+.topbar {
+  background: var(--header-bg);
+  border-bottom: 1px solid var(--divider);
+}
+
+
+.inner {
+  height: var(--header-height);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 0 var(--space-5);
+}
+
+
+.title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+
+.right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+
+
+
+.topActions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+
+
+
+/* Container: input + button aligned, icon on the right */
+.search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff;
+  border: 1px solid var(--divider);
+  border-radius: 10px;
+  padding: 6px 10px;
+}
+
+
+/* Input stretches; remove default styles */
+.searchInput {
+  flex: 1 1 auto;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 13px;
+  min-width: 0; /* prevent overflow in flex */
+}
+
+
+/* Icon button on the right */
+.searchBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+}
+
+
+/* SVG size & color */
+.searchIcon {
+  width: 18px;
+  height: 18px;
+  color: var(--sidebar-icon); /* uses currentColor if SVG supports it */
+}
+
+
+/* Mobile tweak */
+@media (max-width: 768px) {
+  .searchInput { width: 140px; }
+}
+
+
+
+
+.profileBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff;
+  border: 1px solid var(--divider);
+  border-radius: 999px;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+.profileAvatar {
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  background: var(--primary);
+}
+.profileMenu {
+  position: absolute;
+  right: 0; top: calc(100% + 8px);
+  min-width: 180px;
+  background: #fff;
+  border: 1px solid var(--divider);
+  border-radius: 12px;
+  box-shadow: 0 6px 24px rgba(0,0,0,0.08);
+  padding: 8px;
+  margin: 0;
+  list-style: none;
+  z-index: 1001;
+}
+.profileMenu li {
+  padding: 4px 10px;
+  font-size: .5rem;
+  border-radius: 8px;
+  cursor: pointer;
+ 
+}
+.profileMenu li:last-child { color: #c0392b; }
+
+
+
+
+
+
+

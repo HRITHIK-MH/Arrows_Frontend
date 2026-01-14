@@ -1,0 +1,125 @@
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import './Login.css';
+import { MdOutlineEmail } from "react-icons/md";
+import { TbLockPassword } from "react-icons/tb";
+
+const Login = () => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [emailError, setEmailError] = useState('');
+  const navigate = useNavigate();
+
+  const validateEmail = async () => {
+    if (!email) return;
+    setEmailError('Validating email...');
+    // Simulate AJAX validation for email format
+    try {
+      await new Promise((resolve, reject) => {
+        setTimeout(() => {
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          if (emailRegex.test(email)) {
+            resolve();
+          } else {
+            reject(new Error('Invalid email format'));
+          }
+        }, 500);
+      });
+      setEmailError('');
+    } catch (err) {
+      setEmailError(err.message);
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+
+    // Simulate AJAX validation
+    try {
+      const response = await new Promise((resolve, reject) => {
+        setTimeout(() => {
+          if (email === 'admin@example.com' && password === 'admin') {
+            resolve({ ok: true });
+          } else {
+            reject(new Error('Invalid credentials'));
+          }
+        }, 1000); // Simulate network delay
+      });
+
+      if (response.ok) {
+        navigate('/dashboard');
+      }
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="login-container">
+      <div className="login-left">
+        <h1>Welcome Back <span className="sign-in">Sign In</span></h1>
+        <p className="para-text1">Access Your Account</p>
+        <p className="para-text2">Please enter your email and password to continue.<br></br>
+If you've forgotten your password, use the "Forgot Password" option<br></br> to reset it. Make sure your login details are secure and up to date.</p>
+        <img src="/mask_group.png" alt="Logo" className="login-logo" />
+        <img src="/src/assets/login/login_circle.png" alt="Login Circle" className="login-circle" />
+        <img src="/login_circle2.png" alt="Login Circle 2" className="login-circle2" />
+      </div>
+      <div className="login-right">
+        <div className="logo-wrapper">
+        <img src="/src/assets/login/arrow_logo.png" alt="Arrow Logo" className="arrow-logo" />
+        </div>
+        <form onSubmit={handleSubmit} className="login-form">
+          <div className="form-group email-group">
+            <label htmlFor="email">Email Address</label>
+            <div className="input-wrapper">
+              <MdOutlineEmail className="input-icon" size="20" />
+              <input
+                type="email"
+                id="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                onBlur={validateEmail}
+                placeholder="Enter your email address"
+                required
+              />
+            </div>
+          </div>
+          {emailError && <p className="error-message">{emailError}</p>}
+          <div className="form-group password-group">
+            <label htmlFor="password">Password</label>
+            <div className="input-wrapper">
+              <TbLockPassword className="input-icon" />
+              <input
+                type="password"
+                id="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter your password"
+                required
+              />
+            </div>
+          </div>
+          <div className="form-options">
+            <label className="remember-me">
+              <input type="checkbox" /> Remember me
+            </label>
+            <a href="#" className="forgot-password">Forgot password?</a>
+          </div>
+          {error && <p className="error-message">{error}</p>}
+          <button type="submit" className="login-btn" disabled={loading}>
+            {loading ? 'Signing In...' : 'Sign In'}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+export default Login;

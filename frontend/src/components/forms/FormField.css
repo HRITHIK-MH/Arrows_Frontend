@@ -1,0 +1,42 @@
+.form-field {
+  margin-bottom: 15px;
+}
+
+.form-field label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: bold;
+}
+
+.form-field input,
+.form-field select,
+.form-field textarea {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+.form-field select[multiple] {
+  min-height: 120px;
+  padding: 8px;
+}
+
+.form-field input.error {
+  border-color: #dc3545;
+}
+
+.error-message {
+  color: #dc3545;
+  font-size: 14px;
+  margin-top: 5px;
+  display: block;
+}
+
+.validation-loading {
+  color: #007bff;
+  font-size: 14px;
+  margin-top: 5px;
+  display: block;
+}
