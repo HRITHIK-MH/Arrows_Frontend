@@ -11,39 +11,43 @@ const FormField = ({
   options, 
   validate,
   error,
-  onValidation,
-  multiple // New prop for multiselect
+  onValidation
 }) => {
   const [isValidating, setIsValidating] = useState(false);
 
-  const handleChange = async (e) => {
-    let newValue;
-    
-    if (type === 'multiselect') {
-      // Handle multiselect
-      const selectedOptions = Array.from(e.target.selectedOptions, option => option.value);
-      newValue = selectedOptions;
-    } else {
-      newValue = e.target.value;
-    }
-    
+  const handleChange = (e) => {
+    const newValue = e.target.value;
     onChange(name, newValue);
     
-    // Trigger validation on change for immediate feedback
+    // Trigger validation
     if (validate) {
       setIsValidating(true);
-      try {
-        const validationResult = await validate(newValue, name);
-        handleValidationResult(validationResult);
-      } catch (err) {
-        handleValidationResult(err);
-      } finally {
-        setIsValidating(false);
-      }
+      validate(newValue, name).then(handleValidationResult).catch(handleValidationResult).finally(() => setIsValidating(false));
     } else if (error) {
-      // Clear error when user starts typing valid input
       onValidation(name, { isValid: true });
     }
+  };
+
+  const handleMultiSelectChange = (selectedValues) => {
+    onChange(name, selectedValues);
+    
+    // Trigger validation
+    if (validate) {
+      setIsValidating(true);
+      validate(selectedValues, name).then(handleValidationResult).catch(handleValidationResult).finally(() => setIsValidating(false));
+    } else if (error) {
+      onValidation(name, { isValid: true });
+    }
+  };
+
+  const removeMultiSelectItem = (itemToRemove) => {
+    const newValue = value.filter(item => item !== itemToRemove);
+    handleMultiSelectChange(newValue);
+  };
+
+  const addMultiSelectItem = (optionValue) => {
+    const newValue = [...(value || []), optionValue];
+    handleMultiSelectChange(newValue);
   };
 
   const handleValidationResult = (result) => {
@@ -55,8 +59,8 @@ const FormField = ({
   };
 
   const handleBlur = async () => {
-    // Only validate on blur if we haven't validated on change and there's a value
-    if (validate && value && !isValidating) {
+    // Validate on blur if we have a validation function and haven't already started validating
+    if (validate && !isValidating) {
       setIsValidating(true);
       try {
         const validationResult = await validate(value, name);
@@ -71,23 +75,74 @@ const FormField = ({
 
   return (
     <div className="form-field">
-      <label htmlFor={name}>{label}</label>
-      {type === 'select' || type === 'multiselect' ? (
+      <label htmlFor={name}>
+        {label.includes('*') ? (
+          <>
+            {label.replace('*', '')}
+            <span className="required-star">*</span>
+          </>
+        ) : (
+          label
+        )}
+      </label>
+      {type === 'multiselect' ? (
+        <div className="multiselect-container">
+          {/* Selected items display */}
+          {value && value.length > 0 && (
+            <div className="selected-items">
+              {value.map((selectedValue) => {
+                const option = options.find(opt => opt.value === selectedValue);
+                return (
+                  <span key={selectedValue} className="selected-item">
+                    {option?.label || selectedValue}
+                    <button 
+                      type="button" 
+                      className="remove-item"
+                      onClick={() => removeMultiSelectItem(selectedValue)}
+                      aria-label={`Remove ${option?.label || selectedValue}`}
+                    >
+                      ×
+                    </button>
+                  </span>
+                );
+              })}
+            </div>
+          )}
+          
+          {/* Dropdown for selecting new items */}
+          <select 
+            id={name} 
+            name={name} 
+            value="" 
+            onChange={(e) => {
+              if (e.target.value && (!value || !value.includes(e.target.value))) {
+                addMultiSelectItem(e.target.value);
+              }
+              e.target.value = ""; // Reset select
+            }}
+            className="multiselect-dropdown"
+          >
+            <option value="">Add skill...</option>
+            {options
+              .filter(option => !value || !value.includes(option.value))
+              .map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+          </select>
+        </div>
+      ) : type === 'select' ? (
         <select 
           id={name} 
           name={name} 
-          value={type === 'multiselect' ? undefined : value} 
+          value={value} 
           onChange={handleChange} 
           required={required}
-          multiple={type === 'multiselect'}
         >
-          {type !== 'multiselect' && <option value="">Select...</option>}
+          <option value="">Select...</option>
           {options.map((option) => (
-            <option 
-              key={option.value} 
-              value={option.value}
-              selected={type === 'multiselect' ? (value && value.includes(option.value)) : undefined}
-            >
+            <option key={option.value} value={option.value}>
               {option.label}
             </option>
           ))}

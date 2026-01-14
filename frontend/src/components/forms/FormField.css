@@ -8,6 +8,12 @@
   font-weight: bold;
 }
 
+.required-star {
+  color: #dc3545;
+  font-weight: bold;
+  margin-left: 2px;
+}
+
 .form-field input,
 .form-field select,
 .form-field textarea {
@@ -39,4 +45,63 @@
   font-size: 14px;
   margin-top: 5px;
   display: block;
+}
+
+/* Multi-select styles */
+.multiselect-container {
+  position: relative;
+}
+
+.selected-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+  min-height: 32px;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background-color: #f8f9fa;
+}
+
+.selected-item {
+  display: inline-flex;
+  align-items: center;
+  background-color: #007bff;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 16px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.remove-item {
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  font-size: 18px;
+  font-weight: bold;
+  margin-left: 6px;
+  padding: 0;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background-color 0.2s;
+}
+
+.remove-item:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.multiselect-dropdown {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+  background-color: white;
 }

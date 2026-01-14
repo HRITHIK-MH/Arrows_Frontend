@@ -1,10 +1,6 @@
 .multi-step-form {
-  max-width: 600px;
   margin: 0 auto;
   padding: 20px;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  background-color: #f9f9f9;
 }
 
 .step-indicator {

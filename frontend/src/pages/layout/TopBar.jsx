@@ -24,7 +24,7 @@ function buildLabelMap() {
 /** Create crumbs from pathname and ALWAYS start with Dashboard */
 function useDashboardFirstCrumbs() {
   const location = useLocation();
-  const labelMap = useMemo(buildLabelMap, []);
+  const labelMap = useMemo(() => buildLabelMap(), []);
 
 
   return useMemo(() => {

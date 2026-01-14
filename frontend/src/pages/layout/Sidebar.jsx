@@ -26,22 +26,15 @@ export default function Sidebar({ isOpen = false }) {
 
 
       <nav className={styles.nav}>
-        {LINKS.map(({ to, label, icons }) => (
+        {LINKS.map(({ to, label, icon }) => (
           <NavLink
             key={to}
             to={to}
             className={({ isActive }) => `${styles.item} ${isActive ? styles.active : ""}`}
             aria-label={label}
           >
-            {({ isActive }) => {
-              const IconComp = isActive ? icons.active : icons.normal;
-              return (
-                <>
-                  <span className={styles.icon}><IconComp aria-hidden /></span>
-                  <span className={styles.text}>{label}</span>
-                </>
-              );
-            }}
+            <span className={styles.icon}>{React.createElement(icon, { 'aria-hidden': true })}</span>
+            <span className={styles.text}>{label}</span>
           </NavLink>
         ))}
       </nav>

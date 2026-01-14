@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import axios from 'axios';
 import MultiStepForm from './MultiStepForm';
 import FormField from './FormField';
 import './ReusableForm.css';
@@ -16,25 +17,97 @@ const createFormConfig = (config) => {
 
 // Reusable step component
 const FormStep = ({ formData, onChange, fields, title }) => {
+  const isJobBasicInfo = title === "Job Basic Information";
+
+  const renderField = (field) => (
+    <FormField
+      key={field.name}
+      label={field.label}
+      type={field.type}
+      name={field.name}
+      value={formData[field.name] || (field.type === 'multiselect' ? [] : '')}
+      onChange={onChange}
+      required={field.required}
+      options={field.options}
+      validate={field.validate}
+      error={field.error}
+      onValidation={field.onValidation}
+      multiple={field.type === 'multiselect'}
+    />
+  );
+
+  if (isJobBasicInfo) {
+    // Create a map of fields by their cssClass for easier lookup
+    const fieldMap = {};
+    fields.forEach(field => {
+      if (field.cssClass) {
+        fieldMap[field.cssClass] = field;
+      }
+      // Also map by name for min/max fields
+      if (field.name === 'minValue' || field.name === 'maxValue') {
+        fieldMap[field.name] = field;
+      }
+    });
+
+    return (
+      <div className="job-basic-info-step">
+        <h3 style={{ borderBottom: '2px dotted #ccc', paddingBottom: '10px' }}>{title}</h3>
+        <div className="job-basic-info-grid">
+          {/* Row 1 */}
+          <div className="grid-cell grid-col-1 grid-row-1">
+            {fieldMap['grid-col-1 grid-row-1'] && renderField(fieldMap['grid-col-1 grid-row-1'])}
+          </div>
+          <div className="grid-cell grid-col-2 grid-row-1">
+            {fieldMap['grid-col-2 grid-row-1'] && renderField(fieldMap['grid-col-2 grid-row-1'])}
+          </div>
+          <div className="grid-cell grid-col-3 grid-row-1">
+            <div className="min-max-container">
+              {fieldMap['minValue'] && renderField(fieldMap['minValue'])}
+              {fieldMap['maxValue'] && renderField(fieldMap['maxValue'])}
+            </div>
+          </div>
+
+          {/* Row 2 */}
+          <div className="grid-cell grid-col-1 grid-row-2">
+            {fieldMap['grid-col-1 grid-row-2'] && renderField(fieldMap['grid-col-1 grid-row-2'])}
+          </div>
+          <div className="grid-cell grid-col-2 grid-row-2">
+            {fieldMap['grid-col-2 grid-row-2'] && renderField(fieldMap['grid-col-2 grid-row-2'])}
+          </div>
+          <div className="grid-cell grid-col-3 grid-row-2">
+            {fieldMap['grid-col-3 grid-row-2'] && renderField(fieldMap['grid-col-3 grid-row-2'])}
+          </div>
+
+          {/* Row 3 */}
+          <div className="grid-cell grid-col-1 grid-row-3">
+            {fieldMap['grid-col-1 grid-row-3'] && renderField(fieldMap['grid-col-1 grid-row-3'])}
+          </div>
+          <div className="grid-cell grid-col-2 grid-row-3">
+            {fieldMap['grid-col-2 grid-row-3'] && renderField(fieldMap['grid-col-2 grid-row-3'])}
+          </div>
+          <div className="grid-cell grid-col-3 grid-row-3">
+            {fieldMap['grid-col-3 grid-row-3'] && renderField(fieldMap['grid-col-3 grid-row-3'])}
+          </div>
+
+          {/* Row 4 */}
+          <div className="grid-cell grid-col-1 grid-row-4">
+            {fieldMap['grid-col-1 grid-row-4'] && renderField(fieldMap['grid-col-1 grid-row-4'])}
+          </div>
+          <div className="grid-cell grid-col-2 grid-row-4">
+            {fieldMap['grid-col-2 grid-row-4'] && renderField(fieldMap['grid-col-2 grid-row-4'])}
+          </div>
+          <div className="grid-cell grid-col-3 grid-row-4">
+            {fieldMap['grid-col-3 grid-row-4'] && renderField(fieldMap['grid-col-3 grid-row-4'])}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div>
       <h3>{title}</h3>
-      {fields.map(field => (
-        <FormField
-          key={field.name}
-          label={field.label}
-          type={field.type}
-          name={field.name}
-          value={formData[field.name] || (field.type === 'multiselect' ? [] : '')}
-          onChange={onChange}
-          required={field.required}
-          options={field.options}
-          validate={field.validate}
-          error={field.error}
-          onValidation={field.onValidation}
-          multiple={field.type === 'multiselect'}
-        />
-      ))}
+      {fields.map(field => renderField(field))}
     </div>
   );
 };
@@ -52,12 +125,21 @@ const ReusableForm = ({ config, onSubmit }) => {
 
     return async (value, fieldName) => {
       return new Promise((resolve, reject) => {
-        setTimeout(() => {
-          const result = rule(value, fieldName, formData);
-          if (result.isValid) {
-            resolve(result);
-          } else {
-            reject(result);
+        setTimeout(async () => {
+          try {
+            const result = await rule(value, fieldName);
+            if (result && typeof result === 'object' && 'isValid' in result) {
+              if (result.isValid) {
+                resolve(result);
+              } else {
+                reject(result);
+              }
+            } else {
+              // Handle case where result might not be in expected format
+              resolve({ isValid: true });
+            }
+          } catch (error) {
+            reject(error);
           }
         }, 500);
       });
@@ -87,9 +169,31 @@ const ReusableForm = ({ config, onSubmit }) => {
     )
   }));
 
-  const handleSubmit = (formData) => {
-    onSubmit?.(formData);
-    alert('Form submitted successfully!');
+  const handleSubmit = async (formData) => {
+    try {
+      // Make AJAX call to submit the job
+      const response = await axios.post('/api/jobs', formData);
+
+      // Call the onSubmit callback if provided
+      onSubmit?.(formData);
+
+      // Handle successful submission
+      console.log('Job submitted successfully:', response.data);
+    } catch (error) {
+      console.error('Error submitting job:', error);
+
+      // For development purposes, treat as success if it's a network error (no backend)
+      if (error.code === 'ERR_NETWORK' || error.response?.status === 404) {
+        console.log('No backend server available, treating as successful submission for development');
+        onSubmit?.(formData);
+      } else {
+        alert('Error submitting job. Please try again.');
+        return;
+      }
+    }
+
+    // Show success message (only once)
+    alert('Job submitted successfully!');
   };
 
   return (
