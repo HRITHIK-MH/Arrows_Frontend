@@ -73,7 +73,7 @@ export const jobApplicationConfig = {
     }
   ],
   validationRules: {
-    experience: (value, fieldName, formData) => {
+    experience: (value) => {
       if (!value && value !== 0) {
         return { isValid: false, message: 'This field is required' };
       }
@@ -91,17 +91,6 @@ export const jobApplicationConfig = {
         return { isValid: false, message: 'Experience cannot exceed 50 years' };
       }
 
-      // Cross-field validation
-      const currentFormData = { ...formData, [fieldName]: value };
-      const minExp = parseFloat(currentFormData.minExperience || 0);
-      const maxExp = parseFloat(currentFormData.maxExperience || 0);
-
-      if (currentFormData.minExperience !== undefined &&
-          currentFormData.maxExperience !== undefined &&
-          minExp > maxExp) {
-        return { isValid: false, message: 'Min experience cannot be greater than max experience' };
-      }
-
       return { isValid: true };
     },
     phone: (value) => {
@@ -109,8 +98,8 @@ export const jobApplicationConfig = {
         return { isValid: false, message: 'Phone number is required' };
       }
 
-      const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/;
-      if (!phoneRegex.test(value.replace(/[\s\-\(\)]/g, ''))) {
+      const phoneRegex = /^[+]?[1-9][\d]{0,15}$/;
+      if (!phoneRegex.test(value.replace(/[ -()]/g, ''))) {
         return { isValid: false, message: 'Please enter a valid phone number' };
       }
 
@@ -199,36 +188,59 @@ export const jobOpeningConfig = {
       title: "Job Basic Information",
       fields: [
         {
-          name: "jobTitle",
-          label: "Job Title",
+          name: "jobPositionId",
+          label: "Job Position ID *",
           type: "text",
-          required: true
+          required: true,
+          cssClass: "grid-col-1 grid-row-1",
+          validationRule: "requiredField"
         },
         {
-          name: "department",
-          label: "Department",
-          type: "select",
+          name: "positionName",
+          label: "Position Name *",
+          type: "text",
           required: true,
-          options: [
-            { value: "engineering", label: "Engineering" },
-            { value: "marketing", label: "Marketing" },
-            { value: "sales", label: "Sales" },
-            { value: "hr", label: "Human Resources" },
-            { value: "finance", label: "Finance" },
-            { value: "operations", label: "Operations" }
-          ]
+          cssClass: "grid-col-2 grid-row-1",
+          validationRule: "requiredField"
         },
         {
-          name: "employmentType",
-          label: "Employment Type",
+          name: "minValue",
+          label: "Min *",
+          type: "number",
+          required: true,
+          cssClass: "min-max-field",
+          validationRule: "requiredField"
+        },
+        {
+          name: "maxValue",
+          label: "Max *",
+          type: "number",
+          required: true,
+          cssClass: "min-max-field",
+          validationRule: "requiredField"
+        },
+        {
+          name: "jobDescriptionLink",
+          label: "Job Description Link",
+          type: "text",
+          required: true,
+          cssClass: "grid-col-1 grid-row-2"
+        },
+        {
+          name: "positionLevel",
+          label: "Position Level",
           type: "select",
           required: true,
+          cssClass: "grid-col-2 grid-row-2",
           options: [
-            { value: "full-time", label: "Full Time" },
-            { value: "part-time", label: "Part Time" },
-            { value: "contract", label: "Contract" },
-            { value: "internship", label: "Internship" },
-            { value: "freelance", label: "Freelance" }
+            { value: "entry", label: "Entry Level" },
+            { value: "junior", label: "Junior" },
+            { value: "mid", label: "Mid Level" },
+            { value: "senior", label: "Senior" },
+            { value: "lead", label: "Lead" },
+            { value: "manager", label: "Manager" },
+            { value: "director", label: "Director" },
+            { value: "executive", label: "Executive" }
           ]
         },
         {
@@ -236,6 +248,132 @@ export const jobOpeningConfig = {
           label: "Location",
           type: "select",
           required: true,
+          cssClass: "grid-col-3 grid-row-2",
+          options: [
+            { value: "remote", label: "Remote" },
+            { value: "onsite", label: "On-site" },
+            { value: "hybrid", label: "Hybrid" },
+            { value: "new-york", label: "New York, NY" },
+            { value: "san-francisco", label: "San Francisco, CA" },
+            { value: "austin", label: "Austin, TX" },
+            { value: "seattle", label: "Seattle, WA" },
+            { value: "boston", label: "Boston, MA" },
+            { value: "chicago", label: "Chicago, IL" },
+            { value: "los-angeles", label: "Los Angeles, CA" },
+            { value: "miami", label: "Miami, FL" },
+            { value: "denver", label: "Denver, CO" }
+          ]
+        },
+        {
+          name: "noOfPositions",
+          label: "No of Positions",
+          type: "number",
+          required: true,
+          cssClass: "grid-col-1 grid-row-3"
+        },
+        {
+          name: "jobReceivedDate",
+          label: "Job Received Date",
+          type: "date",
+          required: true,
+          cssClass: "grid-col-2 grid-row-3"
+        },
+        {
+          name: "hiringType",
+          label: "Hiring Type",
+          type: "select",
+          required: true,
+          cssClass: "grid-col-3 grid-row-3",
+          options: [
+            { value: "direct", label: "Direct Hire" },
+            { value: "contract", label: "Contract" },
+            { value: "temp", label: "Temporary" },
+            { value: "contract-to-hire", label: "Contract to Hire" },
+            { value: "internship", label: "Internship" },
+            { value: "freelance", label: "Freelance" }
+          ]
+        },
+        {
+          name: "technicalSkills",
+          label: "Technical Skills",
+          type: "multiselect",
+          required: true,
+          cssClass: "grid-col-1 grid-row-4",
+          options: [
+            { value: "javascript", label: "JavaScript" },
+            { value: "react", label: "React" },
+            { value: "node", label: "Node.js" },
+            { value: "python", label: "Python" },
+            { value: "java", label: "Java" },
+            { value: "csharp", label: "C#" },
+            { value: "php", label: "PHP" },
+            { value: "ruby", label: "Ruby" },
+            { value: "sql", label: "SQL" },
+            { value: "mongodb", label: "MongoDB" },
+            { value: "aws", label: "AWS" },
+            { value: "docker", label: "Docker" },
+            { value: "kubernetes", label: "Kubernetes" },
+            { value: "git", label: "Git" },
+            { value: "html", label: "HTML" },
+            { value: "css", label: "CSS" },
+            { value: "typescript", label: "TypeScript" },
+            { value: "vue", label: "Vue.js" },
+            { value: "angular", label: "Angular" },
+            { value: "dotnet", label: ".NET" }
+          ]
+        },
+        {
+          name: "softSkills",
+          label: "Soft Skills",
+          type: "multiselect",
+          required: true,
+          cssClass: "grid-col-2 grid-row-4",
+          options: [
+            { value: "communication", label: "Communication" },
+            { value: "leadership", label: "Leadership" },
+            { value: "teamwork", label: "Teamwork" },
+            { value: "problem-solving", label: "Problem Solving" },
+            { value: "time-management", label: "Time Management" },
+            { value: "adaptability", label: "Adaptability" },
+            { value: "creativity", label: "Creativity" },
+            { value: "critical-thinking", label: "Critical Thinking" },
+            { value: "emotional-intelligence", label: "Emotional Intelligence" },
+            { value: "conflict-resolution", label: "Conflict Resolution" },
+            { value: "negotiation", label: "Negotiation" },
+            { value: "decision-making", label: "Decision Making" },
+            { value: "mentoring", label: "Mentoring" },
+            { value: "presentation", label: "Presentation Skills" },
+            { value: "networking", label: "Networking" },
+            { value: "cultural-awareness", label: "Cultural Awareness" }
+          ]
+        },
+        {
+          name: "additionalSkills",
+          label: "Additional Skills",
+          type: "textarea",
+          required: false,
+          cssClass: "grid-col-3 grid-row-4"
+        },
+        {
+          name: "noofpositions",
+          label: "Number of Positions",
+          type: "text",
+          required: true,
+          cssClass: "grid-col-1 grid-row-3"
+        },
+        {
+          name: "jobreceiveddate",
+          label: "Job Received Date",
+          type: "text",
+          required: true,
+          cssClass: "grid-col-2 grid-row-3"
+        },
+        {
+          name: "hiringtype",
+          label: "Hiring Type",
+          type: "select",
+          required: true,
+          cssClass: "grid-col-3 grid-row-3",
           options: [
             { value: "remote", label: "Remote" },
             { value: "onsite", label: "On-site" },
@@ -430,24 +568,82 @@ export const jobOpeningConfig = {
 
       return { isValid: true };
     },
-    benefits: (value) => {
+    benefits: () => {
       // Benefits is optional, so no validation required
       return { isValid: true };
     },
-    description: (value) => {
+    requiredField: async (value, fieldName) => {
+      if (!value || (typeof value === 'string' && value.trim() === '')) {
+        const fieldLabels = {
+          jobPositionId: 'Job Position ID',
+          positionName: 'Position Name',
+          minValue: 'Min',
+          maxValue: 'Max'
+        };
+        const fieldLabel = fieldLabels[fieldName] || fieldName;
+        return { isValid: false, message: `Please enter the ${fieldLabel}` };
+      }
+
+      try {
+        // Make AJAX call to validate required field
+        const response = await fetch('/api/validate-required-field', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ fieldName, value })
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          return { isValid: false, message: result.message || `${fieldName} validation failed` };
+        }
+
+        return result;
+      } catch (error) {
+        console.error(`Error validating ${fieldName}:`, error);
+
+        // Fallback to basic validation if server is unavailable
+        return { isValid: true };
+      }
+    },
+    description: async (value) => {
       if (!value) {
         return { isValid: false, message: 'This field is required' };
       }
 
-      if (value.length < 50) {
-        return { isValid: false, message: 'Description must be at least 50 characters' };
-      }
+      try {
+        // Make AJAX call to validate description
+        const response = await fetch('/api/validate-description', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ description: value })
+        });
 
-      if (value.length > 5000) {
-        return { isValid: false, message: 'Description cannot exceed 5000 characters' };
-      }
+        const result = await response.json();
 
-      return { isValid: true };
+        if (!response.ok) {
+          return { isValid: false, message: result.message || 'Description validation failed' };
+        }
+
+        return result;
+      } catch (error) {
+        console.error('Error validating description:', error);
+
+        // Fallback to basic client-side validation if server is unavailable
+        if (value.length < 50) {
+          return { isValid: false, message: 'Description must be at least 50 characters' };
+        }
+
+        if (value.length > 5000) {
+          return { isValid: false, message: 'Description cannot exceed 5000 characters' };
+        }
+
+        return { isValid: true };
+      }
     }
   },
   columns: [

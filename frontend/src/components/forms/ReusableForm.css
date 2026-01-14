@@ -10,3 +10,61 @@
 .reusable-form-page h2 {
   margin-top: 40px;
 }
+
+/* Job Basic Information Grid Layout */
+.job-basic-info-step {
+  margin-bottom: 20px;
+}
+
+.job-basic-info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-rows: auto auto auto auto;
+  gap: 20px;
+  margin-top: 20px;
+}
+
+/* Grid cell positioning */
+.grid-cell.grid-col-1 { grid-column: 1; }
+.grid-cell.grid-col-2 { grid-column: 2; }
+.grid-cell.grid-col-3 { grid-column: 3; }
+.grid-cell.grid-row-1 { grid-row: 1; }
+.grid-cell.grid-row-2 { grid-row: 2; }
+.grid-cell.grid-row-3 { grid-row: 3; }
+
+/* Min-Max container for side-by-side layout */
+.min-max-container {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.min-max-container > * {
+  flex: 1;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .job-basic-info-grid {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto auto auto auto;
+    gap: 15px;
+  }
+
+  .grid-cell.grid-col-1,
+  .grid-cell.grid-col-2,
+  .grid-cell.grid-col-3 {
+    grid-column: 1;
+  }
+
+  .grid-cell.grid-row-1,
+  .grid-cell.grid-row-2,
+  .grid-cell.grid-row-3 {
+    grid-row: auto;
+  }
+
+  .min-max-container {
+    flex-direction: column;
+    gap: 15px;
+  }
+}

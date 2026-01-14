@@ -39,7 +39,13 @@
   transition: background-color 160ms ease, color 160ms ease;
 
 
-  &:hover { background: var(--bgiconactive); }
+  &:hover { 
+    background: var(--bgiconactive);
+    color: var(--primary);
+  }
+  &:hover .icon {
+    color: var(--primary);
+  }
 
 
   @media (max-width: 1024px) { min-height: 68px; }
