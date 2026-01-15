@@ -353,41 +353,6 @@ export const jobOpeningConfig = {
           type: "textarea",
           required: false,
           cssClass: "grid-col-3 grid-row-4"
-        },
-        {
-          name: "noofpositions",
-          label: "Number of Positions",
-          type: "text",
-          required: true,
-          cssClass: "grid-col-1 grid-row-3"
-        },
-        {
-          name: "jobreceiveddate",
-          label: "Job Received Date",
-          type: "text",
-          required: true,
-          cssClass: "grid-col-2 grid-row-3"
-        },
-        {
-          name: "hiringtype",
-          label: "Hiring Type",
-          type: "select",
-          required: true,
-          cssClass: "grid-col-3 grid-row-3",
-          options: [
-            { value: "remote", label: "Remote" },
-            { value: "onsite", label: "On-site" },
-            { value: "hybrid", label: "Hybrid" },
-            { value: "new-york", label: "New York, NY" },
-            { value: "san-francisco", label: "San Francisco, CA" },
-            { value: "austin", label: "Austin, TX" },
-            { value: "seattle", label: "Seattle, WA" },
-            { value: "boston", label: "Boston, MA" },
-            { value: "chicago", label: "Chicago, IL" },
-            { value: "los-angeles", label: "Los Angeles, CA" },
-            { value: "miami", label: "Miami, FL" },
-            { value: "denver", label: "Denver, CO" }
-          ]
         }
       ]
     },
@@ -573,6 +538,7 @@ export const jobOpeningConfig = {
       return { isValid: true };
     },
     requiredField: async (value, fieldName) => {
+      // Check if value is empty
       if (!value || (typeof value === 'string' && value.trim() === '')) {
         const fieldLabels = {
           jobPositionId: 'Job Position ID',
@@ -581,32 +547,45 @@ export const jobOpeningConfig = {
           maxValue: 'Max'
         };
         const fieldLabel = fieldLabels[fieldName] || fieldName;
-        return { isValid: false, message: `Please enter the ${fieldLabel}` };
+        return { isValid: false, message: `${fieldLabel} is required` };
       }
 
-      try {
-        // Make AJAX call to validate required field
-        const response = await fetch('/api/validate-required-field', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ fieldName, value })
-        });
-
-        const result = await response.json();
-
-        if (!response.ok) {
-          return { isValid: false, message: result.message || `${fieldName} validation failed` };
+      // Additional validation for specific fields
+      if (fieldName === 'jobPositionId') {
+        // Validate Job Position ID format
+        if (!/^[A-Z0-9\-_]{1,20}$/.test(value)) {
+          return { 
+            isValid: false, 
+            message: 'Job Position ID must be 1-20 characters (alphanumeric, hyphens, underscores only)' 
+          };
         }
 
-        return result;
-      } catch (error) {
-        console.error(`Error validating ${fieldName}:`, error);
+        try {
+          // Try to validate against backend if available
+          const response = await fetch('/api/validate-job-position-id', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ jobPositionId: value })
+          });
 
-        // Fallback to basic validation if server is unavailable
-        return { isValid: true };
+          if (response.ok) {
+            const result = await response.json();
+            return result;
+          } else {
+            // Backend validation failed
+            const error = await response.json();
+            return { isValid: false, message: error.message || 'This Job Position ID is not valid' };
+          }
+        } catch (error) {
+          console.warn(`Backend validation unavailable for ${fieldName}, using client-side validation only`, error);
+          // Return success for client-side validation only
+          return { isValid: true };
+        }
       }
+
+      return { isValid: true };
     },
     description: async (value) => {
       if (!value) {

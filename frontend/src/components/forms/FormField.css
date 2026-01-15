@@ -22,6 +22,42 @@
   border: 1px solid #ccc;
   border-radius: 4px;
   box-sizing: border-box;
+  font-size: 14px;
+}
+
+.form-field input[type="date"],
+.form-field input[type="time"],
+.form-field input[type="datetime-local"] {
+  min-height: 40px;
+  cursor: pointer;
+  padding-right: 40px;
+  position: relative;
+}
+
+.form-field input[type="date"]::-webkit-outer-spin-button,
+.form-field input[type="date"]::-webkit-inner-spin-button {
+  display: none;
+}
+
+.form-field input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  border-radius: 4px;
+  margin-right: 8px;
+  opacity: 1;
+  filter: invert(0.8);
+  width: 20px;
+  height: 20px;
+}
+
+.form-field input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  background-color: #f0f0f0;
+}
+
+/* Firefox date input styling */
+@supports (-moz-appearance:none) {
+  .form-field input[type="date"] {
+    padding-right: 10px;
+  }
 }
 
 .form-field select[multiple] {
