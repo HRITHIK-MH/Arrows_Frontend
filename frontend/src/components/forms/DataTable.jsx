@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
 import './DataTable.css';
 
-const DataTable = ({ data, columns }) => {
+const DataTable = ({ data, columns, onView, onEdit, onDelete }) => {
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
 
   const handleSort = (columnKey) => {
+    // Don't sort the actions column
+    if (columnKey === 'actions') return;
+    
     let newDirection = 'asc';
     if (sortConfig.key === columnKey && sortConfig.direction === 'asc') {
       newDirection = 'desc';
@@ -62,14 +65,21 @@ const DataTable = ({ data, columns }) => {
               <th 
                 key={col.key}
                 onClick={() => handleSort(col.key)}
-                style={{ cursor: 'pointer', userSelect: 'none', position: 'relative' }}
+                style={{ 
+                  cursor: col.key === 'actions' ? 'default' : 'pointer', 
+                  userSelect: 'none', 
+                  position: 'relative' 
+                }}
               >
                 {col.label}
-                <span style={{ marginLeft: '8px', float: 'right' }}>
-                  {getSortArrow(col.key)}
-                </span>
+                {col.key !== 'actions' && (
+                  <span style={{ marginLeft: '8px', float: 'right' }}>
+                    {getSortArrow(col.key)}
+                  </span>
+                )}
               </th>
             ))}
+            <th key="actions-col" style={{ textAlign: 'center' }}>Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -82,6 +92,34 @@ const DataTable = ({ data, columns }) => {
                     : row[col.key]}
                 </td>
               ))}
+              <td key={`actions-${index}`} style={{ textAlign: 'center' }}>
+                <div className="action-icons">
+                  <button 
+                    className="action-btn view-btn"
+                    onClick={() => onView?.(row, index)}
+                    title="View"
+                    aria-label="View row"
+                  >
+                    👁️
+                  </button>
+                  <button 
+                    className="action-btn edit-btn"
+                    onClick={() => onEdit?.(row, index)}
+                    title="Edit"
+                    aria-label="Edit row"
+                  >
+                    ✏️
+                  </button>
+                  <button 
+                    className="action-btn delete-btn"
+                    onClick={() => onDelete?.(row, index)}
+                    title="Delete"
+                    aria-label="Delete row"
+                  >
+                    🗑️
+                  </button>
+                </div>
+              </td>
             </tr>
           ))}
         </tbody>

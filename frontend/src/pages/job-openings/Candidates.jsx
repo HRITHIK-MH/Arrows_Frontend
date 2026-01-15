@@ -42,6 +42,23 @@ export default function Candidates() {
     setShowDataTable(false);
   };
 
+  const handleViewCandidate = (row, index) => {
+    console.log('View candidate:', row);
+    alert('View candidate: ' + JSON.stringify(row, null, 2));
+  };
+
+  const handleEditCandidate = (row, index) => {
+    console.log('Edit candidate:', row);
+    alert('Edit functionality coming soon!');
+  };
+
+  const handleDeleteCandidate = (row, index) => {
+    console.log('Delete candidate:', row);
+    if (window.confirm('Are you sure you want to delete this candidate?')) {
+      setSubmittedData(prev => prev.filter((_, i) => i !== index));
+    }
+  };
+
   const handleCandidateSubmit = (data) => {
     console.log('Candidate added:', data);
     setSubmittedData(prev => [...prev, data]);
@@ -71,16 +88,16 @@ export default function Candidates() {
           </div>
         )}
         <div className="row">
-            <div className="col-8">
+            <div className="col-8" style={{ marginBottom: '16px' }}>
                 {!showCandidateForm && (
-                    <p className={styles.p}>
+                    <p className={styles.p} style={{ wordWrap: 'break-word' }}>
                         View and manage all candidates with key details like experience, education, and current company Track their progress through stages such as New, Shortlisted, Interview, Rejected, and Hired.
                     </p>
                 )}
              </div>
-            <div className="col-4" style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+            <div className="col-4" style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
                 {!showCandidateForm && (
-                  <button className="button" data-icon="add-circle" onClick={handleAddCandidate}>
+                  <button className="button" data-icon="add-circle" onClick={handleAddCandidate} style={{ whiteSpace: 'nowrap' }}>
                     Add Candidate
                   </button>
                 )}
@@ -103,7 +120,8 @@ export default function Candidates() {
               gap: '12px',
               marginBottom: '20px',
               alignItems: 'center',
-              flexWrap: 'wrap'
+              flexWrap: 'wrap',
+              justifyContent: 'space-between'
             }}>
               {/* Search Bar */}
               <input
@@ -115,8 +133,10 @@ export default function Candidates() {
                   padding: '8px 12px',
                   borderRadius: '4px',
                   border: '1px solid #ddd',
-                  minWidth: '200px',
-                  fontSize: '14px'
+                  minWidth: '150px',
+                  flex: '1 1 150px',
+                  fontSize: '14px',
+                  maxWidth: '100%'
                 }}
               />
 
@@ -130,7 +150,9 @@ export default function Candidates() {
                   border: '1px solid #ddd',
                   fontSize: '14px',
                   backgroundColor: '#fff',
-                  cursor: 'pointer'
+                  cursor: 'pointer',
+                  flex: '1 1 140px',
+                  minWidth: '140px'
                 }}
               >
                 <option value="">Applied Position</option>
@@ -149,7 +171,9 @@ export default function Candidates() {
                   border: '1px solid #ddd',
                   fontSize: '14px',
                   backgroundColor: '#fff',
-                  cursor: 'pointer'
+                  cursor: 'pointer',
+                  flex: '1 1 140px',
+                  minWidth: '140px'
                 }}
               >
                 <option value="">Candidate Status</option>
@@ -168,7 +192,9 @@ export default function Candidates() {
                   border: '1px solid #ddd',
                   fontSize: '14px',
                   backgroundColor: '#fff',
-                  cursor: 'pointer'
+                  cursor: 'pointer',
+                  flex: '1 1 140px',
+                  minWidth: '140px'
                 }}
               >
                 <option value="">Candidate Location</option>
@@ -186,14 +212,21 @@ export default function Candidates() {
                 cursor: 'pointer',
                 fontSize: '18px',
                 display: 'flex',
-                alignItems: 'center'
+                alignItems: 'center',
+                flexShrink: 0
               }}>
                 ⋯
               </button>
             </div>
 
             <h2>Candidates Data</h2>
-            <DataTable data={filteredData} columns={candidateConfig.columns} />
+            <DataTable 
+              data={filteredData} 
+              columns={candidateConfig.columns}
+              onView={handleViewCandidate}
+              onEdit={handleEditCandidate}
+              onDelete={handleDeleteCandidate}
+            />
           </div>
         )}
     </div>

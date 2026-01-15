@@ -42,6 +42,23 @@ export default function Clients() {
     setShowDataTable(false);
   };
 
+  const handleViewClient = (row, index) => {
+    console.log('View client:', row);
+    alert('View client: ' + JSON.stringify(row, null, 2));
+  };
+
+  const handleEditClient = (row, index) => {
+    console.log('Edit client:', row);
+    alert('Edit functionality coming soon!');
+  };
+
+  const handleDeleteClient = (row, index) => {
+    console.log('Delete client:', row);
+    if (window.confirm('Are you sure you want to delete this client?')) {
+      setSubmittedData(prev => prev.filter((_, i) => i !== index));
+    }
+  };
+
   const handleClientSubmit = (data) => {
     console.log('Client added:', data);
     setSubmittedData(prev => [...prev, data]);
@@ -71,16 +88,16 @@ export default function Clients() {
           </div>
         )}
         <div className="row">
-            <div className="col-8">
+            <div className="col-8" style={{ marginBottom: '16px' }}>
                 {!showClientForm && (
-                    <p className={styles.p}>
+                    <p className={styles.p} style={{ wordWrap: 'break-word' }}>
                         View and manage all clients with key details like company information, location, budget, and industry Track their status as Active, Inactive, Prospect, or Archived.
                     </p>
                 )}
              </div>
-            <div className="col-4" style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+            <div className="col-4" style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
                 {!showClientForm && (
-                  <button className="button" data-icon="add-circle" onClick={handleAddClient}>
+                  <button className="button" data-icon="add-circle" onClick={handleAddClient} style={{ whiteSpace: 'nowrap' }}>
                     Add Client
                   </button>
                 )}
@@ -103,7 +120,8 @@ export default function Clients() {
               gap: '12px',
               marginBottom: '20px',
               alignItems: 'center',
-              flexWrap: 'wrap'
+              flexWrap: 'wrap',
+              justifyContent: 'space-between'
             }}>
               {/* Search Bar */}
               <input
@@ -115,8 +133,10 @@ export default function Clients() {
                   padding: '8px 12px',
                   borderRadius: '4px',
                   border: '1px solid #ddd',
-                  minWidth: '200px',
-                  fontSize: '14px'
+                  minWidth: '150px',
+                  flex: '1 1 150px',
+                  fontSize: '14px',
+                  maxWidth: '100%'
                 }}
               />
 
@@ -130,7 +150,9 @@ export default function Clients() {
                   border: '1px solid #ddd',
                   fontSize: '14px',
                   backgroundColor: '#fff',
-                  cursor: 'pointer'
+                  cursor: 'pointer',
+                  flex: '1 1 140px',
+                  minWidth: '140px'
                 }}
               >
                 <option value="">Industry</option>
@@ -149,7 +171,9 @@ export default function Clients() {
                   border: '1px solid #ddd',
                   fontSize: '14px',
                   backgroundColor: '#fff',
-                  cursor: 'pointer'
+                  cursor: 'pointer',
+                  flex: '1 1 140px',
+                  minWidth: '140px'
                 }}
               >
                 <option value="">Client Status</option>
@@ -168,7 +192,9 @@ export default function Clients() {
                   border: '1px solid #ddd',
                   fontSize: '14px',
                   backgroundColor: '#fff',
-                  cursor: 'pointer'
+                  cursor: 'pointer',
+                  flex: '1 1 140px',
+                  minWidth: '140px'
                 }}
               >
                 <option value="">Location</option>
@@ -186,14 +212,21 @@ export default function Clients() {
                 cursor: 'pointer',
                 fontSize: '18px',
                 display: 'flex',
-                alignItems: 'center'
+                alignItems: 'center',
+                flexShrink: 0
               }}>
                 ⋯
               </button>
             </div>
 
             <h2>Clients Data</h2>
-            <DataTable data={filteredData} columns={clientConfig.columns} />
+            <DataTable 
+              data={filteredData} 
+              columns={clientConfig.columns}
+              onView={handleViewClient}
+              onEdit={handleEditClient}
+              onDelete={handleDeleteClient}
+            />
           </div>
         )}
     </div>
