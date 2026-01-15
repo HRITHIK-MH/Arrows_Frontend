@@ -9,8 +9,9 @@ import { jobOpeningConfig } from "../../components/forms/formConfigs";
 
 export default function JobOpenings() {
   const [showJobOpeningForm, setShowJobOpeningForm] = React.useState(false);
-  const [showDataTable, setShowDataTable] = React.useState(false);
+  const [showDataTable, setShowDataTable] = React.useState(true);
   const [submittedData, setSubmittedData] = React.useState([]);
+  const [showSuccessMessage, setShowSuccessMessage] = React.useState(false);
 
   const handleCreateJobOpening = () => {
     setShowJobOpeningForm(true);
@@ -27,12 +28,29 @@ export default function JobOpenings() {
     setSubmittedData(prev => [...prev, data]);
     setShowJobOpeningForm(false);
     setShowDataTable(true);
+    setShowSuccessMessage(true);
+    // Auto-hide success message after 3 seconds
+    setTimeout(() => {
+      setShowSuccessMessage(false);
+    }, 3000);
     // Here you would typically send the data to your backend API
-    alert('Job opening created successfully!');
   };
 
   return (
     <div className={styles.card}>
+        {showSuccessMessage && (
+          <div style={{
+            padding: '12px 16px',
+            marginBottom: '20px',
+            backgroundColor: '#d4edda',
+            color: '#155724',
+            border: '1px solid #c3e6cb',
+            borderRadius: '4px',
+            fontSize: '14px'
+          }}>
+            ✓ Job opening created successfully
+          </div>
+        )}
         <div className="row">
             <div className="col-8">
                 {!showJobOpeningForm && (
@@ -47,11 +65,6 @@ export default function JobOpenings() {
                     Create Job Opening
                   </button>
                 )}
-                {submittedData.length > 0 && (
-                  <button className="button" data-icon="view" onClick={handleViewData}>
-                    View Job Openings
-                  </button>
-                )}
             </div>
         </div>
 
@@ -64,7 +77,7 @@ export default function JobOpenings() {
           </div>
         )}
 
-        {showDataTable && submittedData.length > 0 && (
+        {showDataTable && (
           <div style={{ marginTop: '30px' }}>
             <h2>Job Openings Data</h2>
             <DataTable data={submittedData} columns={jobOpeningConfig.columns} />

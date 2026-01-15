@@ -214,9 +214,6 @@ const ReusableForm = ({ config, onSubmit }) => {
         return;
       }
     }
-
-    // Show success message (only once)
-    alert('Job submitted successfully!');
   };
 
   return (
