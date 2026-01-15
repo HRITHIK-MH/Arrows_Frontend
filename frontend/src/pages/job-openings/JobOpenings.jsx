@@ -42,6 +42,23 @@ export default function JobOpenings() {
     setShowDataTable(false);
   };
 
+  const handleViewJobOpening = (row, index) => {
+    console.log('View job opening:', row);
+    alert('View job opening: ' + JSON.stringify(row, null, 2));
+  };
+
+  const handleEditJobOpening = (row, index) => {
+    console.log('Edit job opening:', row);
+    alert('Edit functionality coming soon!');
+  };
+
+  const handleDeleteJobOpening = (row, index) => {
+    console.log('Delete job opening:', row);
+    if (window.confirm('Are you sure you want to delete this job opening?')) {
+      setSubmittedData(prev => prev.filter((_, i) => i !== index));
+    }
+  };
+
   const handleJobOpeningSubmit = (data) => {
     console.log('Job opening created:', data);
     setSubmittedData(prev => [...prev, data]);
@@ -71,16 +88,16 @@ export default function JobOpenings() {
           </div>
         )}
         <div className="row">
-            <div className="col-8">
+            <div className="col-8" style={{ marginBottom: '16px' }}>
                 {!showJobOpeningForm && (
-                    <p className={styles.p}>
+                    <p className={styles.p} style={{ wordWrap: 'break-word' }}>
                         View and manage all applicants with key details like experience, education, and current company Track their progress through stages such as Added, Sourced, Pre-screening, and Assessment.
                     </p>
                 )}
              </div>
-            <div className="col-4" style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+            <div className="col-4" style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
                 {!showJobOpeningForm && (
-                  <button className="button" data-icon="add-circle" onClick={handleCreateJobOpening}>
+                  <button className="button" data-icon="add-circle" onClick={handleCreateJobOpening} style={{ whiteSpace: 'nowrap' }}>
                     Create Job Opening
                   </button>
                 )}
@@ -103,7 +120,8 @@ export default function JobOpenings() {
               gap: '12px',
               marginBottom: '20px',
               alignItems: 'center',
-              flexWrap: 'wrap'
+              flexWrap: 'wrap',
+              justifyContent: 'space-between'
             }}>
               {/* Search Bar */}
               <input
@@ -115,8 +133,10 @@ export default function JobOpenings() {
                   padding: '8px 12px',
                   borderRadius: '4px',
                   border: '1px solid #ddd',
-                  minWidth: '200px',
-                  fontSize: '14px'
+                  minWidth: '150px',
+                  flex: '1 1 150px',
+                  fontSize: '14px',
+                  maxWidth: '100%'
                 }}
               />
 
@@ -130,7 +150,9 @@ export default function JobOpenings() {
                   border: '1px solid #ddd',
                   fontSize: '14px',
                   backgroundColor: '#fff',
-                  cursor: 'pointer'
+                  cursor: 'pointer',
+                  flex: '1 1 140px',
+                  minWidth: '140px'
                 }}
               >
                 <option value="">Posting Title</option>
@@ -149,7 +171,9 @@ export default function JobOpenings() {
                   border: '1px solid #ddd',
                   fontSize: '14px',
                   backgroundColor: '#fff',
-                  cursor: 'pointer'
+                  cursor: 'pointer',
+                  flex: '1 1 140px',
+                  minWidth: '140px'
                 }}
               >
                 <option value="">Job Status</option>
@@ -168,7 +192,9 @@ export default function JobOpenings() {
                   border: '1px solid #ddd',
                   fontSize: '14px',
                   backgroundColor: '#fff',
-                  cursor: 'pointer'
+                  cursor: 'pointer',
+                  flex: '1 1 140px',
+                  minWidth: '140px'
                 }}
               >
                 <option value="">Hiring Manager</option>
@@ -186,14 +212,21 @@ export default function JobOpenings() {
                 cursor: 'pointer',
                 fontSize: '18px',
                 display: 'flex',
-                alignItems: 'center'
+                alignItems: 'center',
+                flexShrink: 0
               }}>
                 ⋯
               </button>
             </div>
 
             <h2>Job Openings Data</h2>
-            <DataTable data={filteredData} columns={jobOpeningConfig.columns} />
+            <DataTable 
+              data={filteredData} 
+              columns={jobOpeningConfig.columns}
+              onView={handleViewJobOpening}
+              onEdit={handleEditJobOpening}
+              onDelete={handleDeleteJobOpening}
+            />
           </div>
         )}
     </div>
