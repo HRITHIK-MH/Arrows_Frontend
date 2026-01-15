@@ -7,6 +7,8 @@ import TopBar from "./pages/layout/TopBar.jsx";
 import Sidebar from "./pages/layout/Sidebar.jsx";
 import Dashboard from "./pages/dashboard/Dashboard.jsx";
 import JobOpenings from "./pages/job-openings/JobOpenings.jsx";
+import Candidates from "./pages/job-openings/Candidates.jsx";
+import Clients from "./pages/job-openings/Clients.jsx";
 import Login from "./pages/login/Login.jsx";
 import ApplicationForm from "./pages/application/ApplicationForm.jsx";
 import ExampleFormsPage from "./pages/example-forms/ExampleFormsPage.jsx";
@@ -93,8 +95,9 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/job-openings" element={<JobOpenings/>} />
+          <Route path="/candidates" element={<Candidates />} />
+          <Route path="/clients" element={<Clients />} />
           <Route path="/application" element={<ApplicationForm />} />
-          <Route path="/candidates" element={<ApplicationForm />} />
           <Route path="/example-forms" element={<ExampleFormsPage />} />
 
           {/* Example page (Users) — add the rest similarly */}

@@ -637,3 +637,370 @@ export const jobOpeningConfig = {
     { key: 'requiredSkills', label: 'Required Skills' }
   ]
 };
+
+// Candidate Configuration
+export const candidateConfig = {
+  title: "Add Candidate",
+  itemName: "Candidates",
+  steps: [
+    {
+      title: "Candidate Basic Information",
+      fields: [
+        {
+          name: "candidateId",
+          label: "Candidate ID *",
+          type: "text",
+          required: true,
+          cssClass: "grid-col-1 grid-row-1",
+          validationRule: "requiredField"
+        },
+        {
+          name: "candidateName",
+          label: "Full Name *",
+          type: "text",
+          required: true,
+          cssClass: "grid-col-2 grid-row-1",
+          validationRule: "requiredField"
+        },
+        {
+          name: "candidateEmail",
+          label: "Email *",
+          type: "email",
+          required: true,
+          cssClass: "grid-col-1 grid-row-2"
+        },
+        {
+          name: "candidatePhone",
+          label: "Phone",
+          type: "tel",
+          required: true,
+          cssClass: "grid-col-2 grid-row-2"
+        },
+        {
+          name: "candidateLocation",
+          label: "Location",
+          type: "select",
+          required: true,
+          cssClass: "grid-col-3 grid-row-2",
+          options: [
+            { value: "remote", label: "Remote" },
+            { value: "onsite", label: "On-site" },
+            { value: "hybrid", label: "Hybrid" },
+            { value: "new-york", label: "New York, NY" },
+            { value: "san-francisco", label: "San Francisco, CA" },
+            { value: "austin", label: "Austin, TX" },
+            { value: "seattle", label: "Seattle, WA" },
+            { value: "boston", label: "Boston, MA" },
+            { value: "chicago", label: "Chicago, IL" },
+            { value: "los-angeles", label: "Los Angeles, CA" },
+            { value: "miami", label: "Miami, FL" },
+            { value: "denver", label: "Denver, CO" }
+          ]
+        },
+        {
+          name: "candidateExperience",
+          label: "Years of Experience *",
+          type: "number",
+          required: true,
+          cssClass: "grid-col-1 grid-row-3",
+          validationRule: "requiredField"
+        },
+        {
+          name: "candidatePosition",
+          label: "Applied Position",
+          type: "text",
+          required: true,
+          cssClass: "grid-col-2 grid-row-3"
+        },
+        {
+          name: "candidateStatus",
+          label: "Status",
+          type: "select",
+          required: true,
+          cssClass: "grid-col-3 grid-row-3",
+          options: [
+            { value: "new", label: "New" },
+            { value: "shortlisted", label: "Shortlisted" },
+            { value: "interview", label: "Interview" },
+            { value: "rejected", label: "Rejected" },
+            { value: "hired", label: "Hired" }
+          ]
+        },
+        {
+          name: "candidateSkills",
+          label: "Technical Skills",
+          type: "multiselect",
+          required: true,
+          cssClass: "grid-col-1 grid-row-4",
+          options: [
+            { value: "javascript", label: "JavaScript" },
+            { value: "react", label: "React" },
+            { value: "node", label: "Node.js" },
+            { value: "python", label: "Python" },
+            { value: "java", label: "Java" },
+            { value: "csharp", label: "C#" },
+            { value: "php", label: "PHP" },
+            { value: "ruby", label: "Ruby" },
+            { value: "sql", label: "SQL" },
+            { value: "mongodb", label: "MongoDB" },
+            { value: "aws", label: "AWS" },
+            { value: "docker", label: "Docker" },
+            { value: "kubernetes", label: "Kubernetes" },
+            { value: "git", label: "Git" },
+            { value: "html", label: "HTML" },
+            { value: "css", label: "CSS" },
+            { value: "typescript", label: "TypeScript" },
+            { value: "vue", label: "Vue.js" },
+            { value: "angular", label: "Angular" },
+            { value: "dotnet", label: ".NET" }
+          ]
+        },
+        {
+          name: "candidateSoftSkills",
+          label: "Soft Skills",
+          type: "multiselect",
+          required: true,
+          cssClass: "grid-col-2 grid-row-4",
+          options: [
+            { value: "communication", label: "Communication" },
+            { value: "leadership", label: "Leadership" },
+            { value: "teamwork", label: "Teamwork" },
+            { value: "problem-solving", label: "Problem Solving" },
+            { value: "time-management", label: "Time Management" },
+            { value: "adaptability", label: "Adaptability" },
+            { value: "creativity", label: "Creativity" },
+            { value: "critical-thinking", label: "Critical Thinking" },
+            { value: "emotional-intelligence", label: "Emotional Intelligence" },
+            { value: "conflict-resolution", label: "Conflict Resolution" },
+            { value: "negotiation", label: "Negotiation" },
+            { value: "decision-making", label: "Decision Making" },
+            { value: "mentoring", label: "Mentoring" },
+            { value: "presentation", label: "Presentation Skills" },
+            { value: "networking", label: "Networking" },
+            { value: "cultural-awareness", label: "Cultural Awareness" }
+          ]
+        },
+        {
+          name: "candidateAdditionalInfo",
+          label: "Additional Information",
+          type: "textarea",
+          required: false,
+          cssClass: "grid-col-3 grid-row-4"
+        }
+      ]
+    },
+    {
+      title: "Candidate Details",
+      fields: [
+        {
+          name: "candidateEducation",
+          label: "Education",
+          type: "text",
+          required: true
+        },
+        {
+          name: "candidateResume",
+          label: "Resume Link",
+          type: "text",
+          required: false
+        },
+        {
+          name: "candidateNotes",
+          label: "Interview Notes",
+          type: "textarea",
+          required: false
+        }
+      ]
+    }
+  ],
+  validationRules: {
+    requiredField: async (value, fieldName) => {
+      if (!value || (typeof value === 'string' && value.trim() === '')) {
+        const fieldLabels = {
+          candidateId: 'Candidate ID',
+          candidateName: 'Full Name',
+          candidateExperience: 'Years of Experience'
+        };
+        const fieldLabel = fieldLabels[fieldName] || fieldName;
+        return { isValid: false, message: `${fieldLabel} is required` };
+      }
+      return { isValid: true };
+    }
+  },
+  columns: [
+    { key: 'candidateName', label: 'Candidate Name' },
+    { key: 'candidateEmail', label: 'Email' },
+    { key: 'candidatePhone', label: 'Phone' },
+    { key: 'candidatePosition', label: 'Applied Position' },
+    { key: 'candidateExperience', label: 'Experience' },
+    { key: 'candidateStatus', label: 'Status' },
+    { key: 'candidateLocation', label: 'Location' },
+    { key: 'candidateSkills', label: 'Skills' }
+  ]
+};
+
+// Client Configuration
+export const clientConfig = {
+  title: "Add Client",
+  itemName: "Clients",
+  steps: [
+    {
+      title: "Client Basic Information",
+      fields: [
+        {
+          name: "clientId",
+          label: "Client ID *",
+          type: "text",
+          required: true,
+          cssClass: "grid-col-1 grid-row-1",
+          validationRule: "requiredField"
+        },
+        {
+          name: "clientName",
+          label: "Client Name *",
+          type: "text",
+          required: true,
+          cssClass: "grid-col-2 grid-row-1",
+          validationRule: "requiredField"
+        },
+        {
+          name: "clientEmail",
+          label: "Email *",
+          type: "email",
+          required: true,
+          cssClass: "grid-col-1 grid-row-2"
+        },
+        {
+          name: "clientPhone",
+          label: "Phone",
+          type: "tel",
+          required: true,
+          cssClass: "grid-col-2 grid-row-2"
+        },
+        {
+          name: "clientLocation",
+          label: "Location",
+          type: "select",
+          required: true,
+          cssClass: "grid-col-3 grid-row-2",
+          options: [
+            { value: "remote", label: "Remote" },
+            { value: "onsite", label: "On-site" },
+            { value: "hybrid", label: "Hybrid" },
+            { value: "new-york", label: "New York, NY" },
+            { value: "san-francisco", label: "San Francisco, CA" },
+            { value: "austin", label: "Austin, TX" },
+            { value: "seattle", label: "Seattle, WA" },
+            { value: "boston", label: "Boston, MA" },
+            { value: "chicago", label: "Chicago, IL" },
+            { value: "los-angeles", label: "Los Angeles, CA" },
+            { value: "miami", label: "Miami, FL" },
+            { value: "denver", label: "Denver, CO" }
+          ]
+        },
+        {
+          name: "clientCompany",
+          label: "Company Name *",
+          type: "text",
+          required: true,
+          cssClass: "grid-col-1 grid-row-3",
+          validationRule: "requiredField"
+        },
+        {
+          name: "clientIndustry",
+          label: "Industry",
+          type: "text",
+          required: true,
+          cssClass: "grid-col-2 grid-row-3"
+        },
+        {
+          name: "clientStatus",
+          label: "Status",
+          type: "select",
+          required: true,
+          cssClass: "grid-col-3 grid-row-3",
+          options: [
+            { value: "active", label: "Active" },
+            { value: "inactive", label: "Inactive" },
+            { value: "prospect", label: "Prospect" },
+            { value: "archived", label: "Archived" }
+          ]
+        },
+        {
+          name: "clientBudget",
+          label: "Budget (Min) *",
+          type: "number",
+          required: true,
+          cssClass: "grid-col-1 grid-row-4"
+        },
+        {
+          name: "clientBudgetMax",
+          label: "Budget (Max)",
+          type: "number",
+          required: true,
+          cssClass: "grid-col-2 grid-row-4"
+        },
+        {
+          name: "clientBillingType",
+          label: "Billing Type",
+          type: "select",
+          required: true,
+          cssClass: "grid-col-3 grid-row-4",
+          options: [
+            { value: "hourly", label: "Hourly" },
+            { value: "fixed", label: "Fixed Price" },
+            { value: "retainer", label: "Retainer" },
+            { value: "project", label: "Project Based" }
+          ]
+        }
+      ]
+    },
+    {
+      title: "Client Details",
+      fields: [
+        {
+          name: "clientWebsite",
+          label: "Website",
+          type: "text",
+          required: false
+        },
+        {
+          name: "clientDescription",
+          label: "Client Description",
+          type: "textarea",
+          required: false
+        },
+        {
+          name: "clientNotes",
+          label: "Notes",
+          type: "textarea",
+          required: false
+        }
+      ]
+    }
+  ],
+  validationRules: {
+    requiredField: async (value, fieldName) => {
+      if (!value || (typeof value === 'string' && value.trim() === '')) {
+        const fieldLabels = {
+          clientId: 'Client ID',
+          clientName: 'Client Name',
+          clientCompany: 'Company Name'
+        };
+        const fieldLabel = fieldLabels[fieldName] || fieldName;
+        return { isValid: false, message: `${fieldLabel} is required` };
+      }
+      return { isValid: true };
+    }
+  },
+  columns: [
+    { key: 'clientName', label: 'Client Name' },
+    { key: 'clientCompany', label: 'Company' },
+    { key: 'clientEmail', label: 'Email' },
+    { key: 'clientPhone', label: 'Phone' },
+    { key: 'clientIndustry', label: 'Industry' },
+    { key: 'clientLocation', label: 'Location' },
+    { key: 'clientBudget', label: 'Budget' },
+    { key: 'clientStatus', label: 'Status' }
+  ]
+};
