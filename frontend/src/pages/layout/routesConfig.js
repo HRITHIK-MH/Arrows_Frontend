@@ -17,8 +17,6 @@ import CalendarIcon       from "../../assets/icons/calendar.svg?react";
 export const LINKS = [
   { to: "/dashboard",  label: "Dashboard",    icon: HomeIcon },
   { to: "/job-openings",      label: "Job Openings", icon: UsersIcon },
-  { to: "/application", label: "Application", icon: CandidatesIcon },
-  { to: "/example-forms", label: "Example Forms", icon: CandidatesIcon },
   { to: "/candidates", label: "Candidates",   icon: CandidatesIcon },
   { to: "/interviews", label: "Interviews",   icon: InterviewsIcon },
   { to: "/clients",    label: "Client",       icon: ClientIcon },

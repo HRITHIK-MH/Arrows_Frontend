@@ -4,23 +4,23 @@ import * as React from "react";
 import styles from "./JobOpenings.module.scss";
 import ReusableForm from "../../components/forms/ReusableForm";
 import DataTable from "../../components/forms/DataTable";
-import { jobOpeningConfig } from "../../components/forms/formConfigs";
+import { candidateConfig } from "../../components/forms/formConfigs";
 
 
-export default function JobOpenings() {
-  const [showJobOpeningForm, setShowJobOpeningForm] = React.useState(false);
+export default function Candidates() {
+  const [showCandidateForm, setShowCandidateForm] = React.useState(false);
   const [showDataTable, setShowDataTable] = React.useState(true);
   const [submittedData, setSubmittedData] = React.useState([]);
   const [showSuccessMessage, setShowSuccessMessage] = React.useState(false);
   const [searchTerm, setSearchTerm] = React.useState('');
-  const [filterPostingTitle, setFilterPostingTitle] = React.useState('');
-  const [filterJobStatus, setFilterJobStatus] = React.useState('');
-  const [filterHiringManager, setFilterHiringManager] = React.useState('');
+  const [filterCandidatePosition, setFilterCandidatePosition] = React.useState('');
+  const [filterCandidateStatus, setFilterCandidateStatus] = React.useState('');
+  const [filterCandidateLocation, setFilterCandidateLocation] = React.useState('');
 
   // Get unique values for filter dropdowns
-  const uniquePostingTitles = [...new Set(submittedData.map(item => item.postingTitle).filter(Boolean))];
-  const uniqueJobStatuses = [...new Set(submittedData.map(item => item.jobStatus).filter(Boolean))];
-  const uniqueHiringManagers = [...new Set(submittedData.map(item => item.hiringManager).filter(Boolean))];
+  const uniqueCandidatePositions = [...new Set(submittedData.map(item => item.candidatePosition).filter(Boolean))];
+  const uniqueCandidateStatuses = [...new Set(submittedData.map(item => item.candidateStatus).filter(Boolean))];
+  const uniqueCandidateLocations = [...new Set(submittedData.map(item => item.candidateLocation).filter(Boolean))];
 
   // Filter data based on search and filter criteria
   const filteredData = submittedData.filter(item => {
@@ -30,22 +30,22 @@ export default function JobOpenings() {
         String(value).toLowerCase().includes(searchTerm.toLowerCase())
       );
     
-    const matchesPostingTitle = !filterPostingTitle || item.postingTitle === filterPostingTitle;
-    const matchesJobStatus = !filterJobStatus || item.jobStatus === filterJobStatus;
-    const matchesHiringManager = !filterHiringManager || item.hiringManager === filterHiringManager;
+    const matchesCandidatePosition = !filterCandidatePosition || item.candidatePosition === filterCandidatePosition;
+    const matchesCandidateStatus = !filterCandidateStatus || item.candidateStatus === filterCandidateStatus;
+    const matchesCandidateLocation = !filterCandidateLocation || item.candidateLocation === filterCandidateLocation;
 
-    return matchesSearch && matchesPostingTitle && matchesJobStatus && matchesHiringManager;
+    return matchesSearch && matchesCandidatePosition && matchesCandidateStatus && matchesCandidateLocation;
   });
 
-  const handleCreateJobOpening = () => {
-    setShowJobOpeningForm(true);
+  const handleAddCandidate = () => {
+    setShowCandidateForm(true);
     setShowDataTable(false);
   };
 
-  const handleJobOpeningSubmit = (data) => {
-    console.log('Job opening created:', data);
+  const handleCandidateSubmit = (data) => {
+    console.log('Candidate added:', data);
     setSubmittedData(prev => [...prev, data]);
-    setShowJobOpeningForm(false);
+    setShowCandidateForm(false);
     setShowDataTable(true);
     setShowSuccessMessage(true);
     // Auto-hide success message after 3 seconds
@@ -67,31 +67,31 @@ export default function JobOpenings() {
             borderRadius: '4px',
             fontSize: '14px'
           }}>
-            ✓ Job opening created successfully
+            ✓ Candidate added successfully
           </div>
         )}
         <div className="row">
             <div className="col-8">
-                {!showJobOpeningForm && (
+                {!showCandidateForm && (
                     <p className={styles.p}>
-                        View and manage all applicants with key details like experience, education, and current company Track their progress through stages such as Added, Sourced, Pre-screening, and Assessment.
+                        View and manage all candidates with key details like experience, education, and current company Track their progress through stages such as New, Shortlisted, Interview, Rejected, and Hired.
                     </p>
                 )}
              </div>
             <div className="col-4" style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-                {!showJobOpeningForm && (
-                  <button className="button" data-icon="add-circle" onClick={handleCreateJobOpening}>
-                    Create Job Opening
+                {!showCandidateForm && (
+                  <button className="button" data-icon="add-circle" onClick={handleAddCandidate}>
+                    Add Candidate
                   </button>
                 )}
             </div>
         </div>
 
-        {showJobOpeningForm && (
+        {showCandidateForm && (
           <div style={{ marginTop: '30px' }}>
             <ReusableForm
-              config={jobOpeningConfig}
-              onSubmit={handleJobOpeningSubmit}
+              config={candidateConfig}
+              onSubmit={handleCandidateSubmit}
             />
           </div>
         )}
@@ -120,10 +120,10 @@ export default function JobOpenings() {
                 }}
               />
 
-              {/* Posting Title Filter */}
+              {/* Applied Position Filter */}
               <select
-                value={filterPostingTitle}
-                onChange={(e) => setFilterPostingTitle(e.target.value)}
+                value={filterCandidatePosition}
+                onChange={(e) => setFilterCandidatePosition(e.target.value)}
                 style={{
                   padding: '8px 12px',
                   borderRadius: '4px',
@@ -133,16 +133,16 @@ export default function JobOpenings() {
                   cursor: 'pointer'
                 }}
               >
-                <option value="">Posting Title</option>
-                {uniquePostingTitles.map(title => (
-                  <option key={title} value={title}>{title}</option>
+                <option value="">Applied Position</option>
+                {uniqueCandidatePositions.map(position => (
+                  <option key={position} value={position}>{position}</option>
                 ))}
               </select>
 
-              {/* Job Status Filter */}
+              {/* Candidate Status Filter */}
               <select
-                value={filterJobStatus}
-                onChange={(e) => setFilterJobStatus(e.target.value)}
+                value={filterCandidateStatus}
+                onChange={(e) => setFilterCandidateStatus(e.target.value)}
                 style={{
                   padding: '8px 12px',
                   borderRadius: '4px',
@@ -152,16 +152,16 @@ export default function JobOpenings() {
                   cursor: 'pointer'
                 }}
               >
-                <option value="">Job Status</option>
-                {uniqueJobStatuses.map(status => (
+                <option value="">Candidate Status</option>
+                {uniqueCandidateStatuses.map(status => (
                   <option key={status} value={status}>{status}</option>
                 ))}
               </select>
 
-              {/* Hiring Manager Filter */}
+              {/* Candidate Location Filter */}
               <select
-                value={filterHiringManager}
-                onChange={(e) => setFilterHiringManager(e.target.value)}
+                value={filterCandidateLocation}
+                onChange={(e) => setFilterCandidateLocation(e.target.value)}
                 style={{
                   padding: '8px 12px',
                   borderRadius: '4px',
@@ -171,9 +171,9 @@ export default function JobOpenings() {
                   cursor: 'pointer'
                 }}
               >
-                <option value="">Hiring Manager</option>
-                {uniqueHiringManagers.map(manager => (
-                  <option key={manager} value={manager}>{manager}</option>
+                <option value="">Candidate Location</option>
+                {uniqueCandidateLocations.map(location => (
+                  <option key={location} value={location}>{location}</option>
                 ))}
               </select>
 
@@ -192,12 +192,10 @@ export default function JobOpenings() {
               </button>
             </div>
 
-            <h2>Job Openings Data</h2>
-            <DataTable data={filteredData} columns={jobOpeningConfig.columns} />
+            <h2>Candidates Data</h2>
+            <DataTable data={filteredData} columns={candidateConfig.columns} />
           </div>
         )}
     </div>
   );
 }
- 
-
