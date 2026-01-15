@@ -6,43 +6,105 @@
 .step-indicator {
   display: flex;
   justify-content: center;
-  margin-bottom: 20px;
-  gap: 10px;
+  align-items: flex-start;
+  margin-bottom: 40px;
+  gap: 20px;
+  position: relative;
+}
+
+/* Connection line between steps */
+.step-indicator::before {
+  content: '';
+  position: absolute;
+  top: 20px;
+  left: 10%;
+  right: 10%;
+  height: 2px;
+  background-color: #ddd;
+  z-index: 0;
+  transition: background-color 0.3s ease;
 }
 
 .step {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 10px 15px;
-  border-radius: 8px;
-  background-color: #ddd;
-  color: #666;
-  font-weight: bold;
-  min-width: 80px;
-  transition: all 0.3s ease;
-}
-
-.step.active {
-  background-color: #007bff;
-  color: white;
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  min-width: 100px;
 }
 
 .step-number {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  border: 3px solid #ddd;
+  background-color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-size: 18px;
   font-weight: bold;
-  margin-bottom: 2px;
+  color: #999;
+  margin-bottom: 12px;
+  transition: all 0.4s ease;
+  position: relative;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Animation for outer circle */
+@keyframes scaleCircle {
+  0% {
+    box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
+  }
+  50% {
+    box-shadow: 0 2px 16px rgba(0, 123, 255, 0.5);
+  }
+  100% {
+    box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
+  }
+}
+
+/* Inner circle for step number */
+.step-number::after {
+  content: '';
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background-color: #e8e8e8;
+  transition: all 0.4s ease;
+}
+
+.step.active .step-number {
+  border-color: #007bff;
+  background-color: white;
+  border-width: 3px;
+  animation: scaleCircle 2s infinite;
+}
+
+.step.active .step-number {
+  color: #007bff;
+}
+
+.step.active .step-number::after {
+  background-color: #007bff;
+  box-shadow: 0 0 8px rgba(0, 123, 255, 0.6);
 }
 
 .step-label {
-  font-size: 12px;
-  font-weight: normal;
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
   text-align: center;
-  line-height: 1.2;
+  line-height: 1.4;
+  transition: all 0.3s ease;
 }
 
-.step.active {
-  background-color: #007bff;
+.step.active .step-label {
+  color: #007bff;
+  font-weight: 600;
 }
 
 .form-buttons {
@@ -58,8 +120,20 @@
   background-color: #007bff;
   color: white;
   cursor: pointer;
+  transition: all 0.3s ease;
 }
 
 .form-buttons button:hover {
   background-color: #0056b3;
+}
+
+.form-buttons button:disabled {
+  background-color: #cccccc;
+  color: #666666;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.form-buttons button:disabled:hover {
+  background-color: #cccccc;
 }

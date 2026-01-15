@@ -8,6 +8,7 @@ import './ReusableForm.css';
 const createFormConfig = (config) => {
   return {
     steps: config.steps.map(step => ({
+      title: step.title,
       component: (props) => <FormStep {...props} fields={step.fields} title={step.title} />
     })),
     validationRules: config.validationRules || {},
@@ -16,8 +17,26 @@ const createFormConfig = (config) => {
 };
 
 // Reusable step component
-const FormStep = ({ formData, onChange, fields, title }) => {
+const FormStep = ({ formData, onChange, fields, title, onSetStepFields, validationErrors = {} }) => {
   const isJobBasicInfo = title === "Job Basic Information";
+
+  // Notify parent about fields in this step
+  React.useEffect(() => {
+    if (onSetStepFields) {
+      if (isJobBasicInfo) {
+        // For Job Basic Info, only track fields that are actually displayed in the grid
+        const displayedFields = fields.filter(field => 
+          field.cssClass || field.name === 'minValue' || field.name === 'maxValue'
+        );
+        const fieldNames = displayedFields.map(f => f.name);
+        onSetStepFields(fieldNames);
+      } else {
+        // For other steps, track all fields
+        const fieldNames = fields.map(f => f.name);
+        onSetStepFields(fieldNames);
+      }
+    }
+  }, [fields, onSetStepFields, isJobBasicInfo]);
 
   const renderField = (field) => (
     <FormField
@@ -30,7 +49,7 @@ const FormStep = ({ formData, onChange, fields, title }) => {
       required={field.required}
       options={field.options}
       validate={field.validate}
-      error={field.error}
+      error={validationErrors[field.name]}
       onValidation={field.onValidation}
       multiple={field.type === 'multiselect'}
     />
@@ -155,19 +174,23 @@ const ReusableForm = ({ config, onSubmit }) => {
   };
 
   // Enhanced steps with validation
-  const enhancedSteps = formConfig.steps.map((step, index) => ({
-    component: (props) => (
-      <step.component
-        {...props}
-        fields={config.steps[index].fields.map(field => ({
-          ...field,
-          validate: field.validationRule ? createValidationFunction(field.validationRule) : null,
-          error: validationErrors[field.name],
-          onValidation: handleValidation
-        }))}
-      />
-    )
-  }));
+  const enhancedSteps = formConfig.steps.map((step, index) => {
+    const StepComponent = step.component;
+    return {
+      component: (props) => (
+        <StepComponent
+          {...props}
+          fields={config.steps[index].fields.map(field => ({
+            ...field,
+            validate: field.validationRule ? createValidationFunction(field.validationRule) : null,
+            onValidation: handleValidation
+          }))}
+          onSetStepFields={props.onSetStepFields}
+          validationErrors={validationErrors}
+        />
+      )
+    };
+  });
 
   const handleSubmit = async (formData) => {
     try {
@@ -199,7 +222,7 @@ const ReusableForm = ({ config, onSubmit }) => {
   return (
     <div className="reusable-form-page">
       <h1>{config.title}</h1>
-      <MultiStepForm steps={enhancedSteps} onSubmit={handleSubmit} />
+      <MultiStepForm steps={enhancedSteps} onSubmit={handleSubmit} validationErrors={validationErrors} />
     </div>
   );
 };
