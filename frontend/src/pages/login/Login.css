@@ -1,7 +1,7 @@
 .login-container {
   display: flex;
   height: 100vh;
-  font-family: Arial, sans-serif;
+  font-family: "Poppins", sans-serif;
 }
 
 .login-left {
@@ -84,9 +84,9 @@
 
 .arrow-logo {
   display: block;
-  width: auto;
-  height: 80px;
-  margin: 0 auto 2rem auto;
+  width: 120px;
+  height: auto;
+  margin: 0 auto;
 }
 
 .login-left p {
@@ -97,6 +97,9 @@
   flex: 1;
   padding: 2rem;
   background-color: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .login-form {
@@ -172,6 +175,28 @@
 
 .password-group input {
   padding-left: 40px;
+  padding-right: 40px;
+}
+
+.toggle-password {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: #007bff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.toggle-password:focus-visible {
+  outline: 2px solid #007bff;
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 
 .form-group input:focus {
@@ -239,15 +264,12 @@
 
 
 .logo-wrapper {
-  margin-bottom: 20px;
+  margin: 4.5rem 0 2rem;
   width: 100%;
-}
-
-.arrow-logo {
-  width: 120px;
-  height: auto;
+  display: flex;
+  justify-content: center;
 }
 
 .login-form {
-  width: 100%;
+  margin-top: 1.5rem;
 }
