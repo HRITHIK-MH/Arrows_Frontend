@@ -3,6 +3,7 @@ import axios from 'axios';
 import MultiStepForm from './MultiStepForm';
 import FormField from './FormField';
 import './ReusableForm.css';
+import { validateMandatoryField } from '../../utils/formValidation';
 
 // Reusable form configuration
 const createFormConfig = (config) => {
@@ -18,6 +19,7 @@ const createFormConfig = (config) => {
 
 // Reusable step component
 const FormStep = ({ formData, onChange, fields, title, onSetStepFields, validationErrors = {} }) => {
+  console.log(`[FormStep] Rendering step: ${title}, validationErrors:`, validationErrors);
   const isJobBasicInfo = title === "Job Basic Information" || title === "Job Information";
   const fieldMetaSignatureRef = React.useRef('');
 
@@ -39,26 +41,29 @@ const FormStep = ({ formData, onChange, fields, title, onSetStepFields, validati
     }
   }, [fields, onSetStepFields, isJobBasicInfo]);
 
-  const renderField = (field) => (
-    <FormField
-      key={field.name}
-      label={field.label}
-      type={field.type}
-      name={field.name}
-      value={formData[field.name] || (field.type === 'multiselect' ? [] : '')}
-      onChange={onChange}
-      required={field.required}
-      options={field.options}
-      validate={field.validate}
-      error={validationErrors[field.name]}
-      onValidation={field.onValidation}
-      placeholder={field.placeholder}
-      hideLabel={field.hideLabel}
-      accept={field.accept}
-      multiple={field.multiple}
-      prefix={field.prefix}
-    />
-  );
+  const renderField = (field) => {
+    console.log(`[FormStep.renderField] Rendering field ${field.name}, error: ${validationErrors[field.name]}`);
+    return (
+      <FormField
+        key={field.name}
+        label={field.label}
+        type={field.type}
+        name={field.name}
+        value={formData[field.name] || (field.type === 'multiselect' ? [] : '')}
+        onChange={onChange}
+        required={field.required}
+        options={field.options}
+        validate={field.validate}
+        error={validationErrors[field.name]}
+        onValidation={field.onValidation}
+        placeholder={field.placeholder}
+        hideLabel={field.hideLabel}
+        accept={field.accept}
+        multiple={field.multiple}
+        prefix={field.prefix}
+      />
+    );
+  };
 
   if (isJobBasicInfo) {
     // Create a map of fields by name (and cssClass where helpful)
@@ -213,12 +218,27 @@ const ReusableForm = ({ config, onSubmit }) => {
     };
   };
 
-  // Handle validation
+  // Handle validation - persist errors until field value is valid
   const handleValidation = (fieldName, result) => {
-    setValidationErrors(prev => ({
-      ...prev,
-      [fieldName]: result.isValid ? null : result.message
-    }));
+    console.log(`[ReusableForm.handleValidation] Called for ${fieldName}:`, result);
+    console.log(`[ReusableForm.handleValidation] Current errors before update:`, validationErrors);
+    
+    setValidationErrors(prev => {
+      const updatedErrors = { ...prev };
+      
+      if (result.isValid) {
+        // Only clear error if field is actually valid
+        delete updatedErrors[fieldName];
+        console.log(`[ReusableForm.handleValidation] ✅ Clearing error for ${fieldName}`);
+      } else {
+        // Set error message and keep it
+        updatedErrors[fieldName] = result.message;
+        console.log(`[ReusableForm.handleValidation] ❌ Setting error for ${fieldName}: ${result.message}`);
+      }
+      
+      console.log(`[ReusableForm.handleValidation] Updated errors:`, updatedErrors);
+      return updatedErrors;
+    });
   };
 
   // Enhanced steps with validation
@@ -241,8 +261,50 @@ const ReusableForm = ({ config, onSubmit }) => {
     };
   });
 
+  // Validate all mandatory fields at once
+  const validateAllMandatoryFields = async (data, fields) => {
+    const validationPromises = fields
+      .filter(field => field.required)
+      .map(field => 
+        validateMandatoryField(data[field.name], field.name, field.label)
+      );
+
+    const results = await Promise.all(validationPromises);
+    
+    const errors = {};
+    const isValid = results.every(result => {
+      if (!result.isValid) {
+        errors[result.fieldName] = result.message;
+      }
+      return result.isValid;
+    });
+
+    return { isValid, errors };
+  };
+
   const handleSubmit = async (formData) => {
     try {
+      // Validate all mandatory fields before submission
+      const allFields = config.steps.flatMap(step => step.fields);
+      const { isValid: isMandatoryValid, errors: mandatoryErrors } = await validateAllMandatoryFields(
+        formData,
+        allFields
+      );
+
+      // Update validation errors state
+      if (!isMandatoryValid) {
+        setValidationErrors(prev => ({
+          ...prev,
+          ...mandatoryErrors
+        }));
+        const missingFields = Object.values(mandatoryErrors).join('\n');
+        alert(`Please fill in all required fields:\n\n${missingFields}`);
+        return;
+      }
+
+      // Clear validation errors on successful validation
+      setValidationErrors({});
+
       // Make AJAX call to submit the job
       const response = await axios.post('/api/jobs', formData);
 
@@ -265,10 +327,47 @@ const ReusableForm = ({ config, onSubmit }) => {
     }
   };
 
+  // Validate fields on a specific step and update error state to show errors
+  const validateStepFields = async (stepIndex, data) => {
+    console.log(`[ReusableForm] validateStepFields called for step ${stepIndex}`);
+    const stepFields = config.steps[stepIndex]?.fields || [];
+    const updatedErrors = { ...validationErrors };
+    
+    // Validate all required fields on this step
+    for (const field of stepFields) {
+      if (field.required) {
+        const value = data[field.name];
+        const fieldLabel = field.label ? field.label.replace('*', '').trim() : field.name;
+        const result = await validateMandatoryField(value, field.name, fieldLabel);
+        
+        if (!result.isValid) {
+          // Field is invalid - set error
+          updatedErrors[field.name] = result.message;
+          console.log(`[validateStepFields] Setting error for ${field.name}: ${result.message}`);
+        } else {
+          // Field is valid - clear error if it exists
+          if (updatedErrors[field.name]) {
+            delete updatedErrors[field.name];
+            console.log(`[validateStepFields] Clearing error for ${field.name}`);
+          }
+        }
+      }
+    }
+    
+    // Update validation errors state all at once
+    setValidationErrors(updatedErrors);
+    console.log(`[validateStepFields] Final validation errors:`, updatedErrors);
+  };
+
   return (
     <div className={`reusable-form-page${config.formClassName ? ` ${config.formClassName}` : ''}`}>
       {!config.hideTitle && <h1>{config.title}</h1>}
-      <MultiStepForm steps={enhancedSteps} onSubmit={handleSubmit} validationErrors={validationErrors} />
+      <MultiStepForm 
+        steps={enhancedSteps} 
+        onSubmit={handleSubmit} 
+        validationErrors={validationErrors}
+        onValidateStep={validateStepFields}
+      />
     </div>
   );
 };

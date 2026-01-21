@@ -1,17 +1,30 @@
 // src/App.jsx
 import * as React from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
-import { useEffect } from "react";
+import { useEffect, Suspense, lazy } from "react";
 
 import TopBar from "./pages/layout/TopBar.jsx";
 import Sidebar from "./pages/layout/Sidebar.jsx";
-import Dashboard from "./pages/dashboard/Dashboard.jsx";
-import JobOpenings from "./pages/job-openings/JobOpenings.jsx";
-import Candidates from "./pages/job-openings/Candidates.jsx";
-import Clients from "./pages/job-openings/Clients.jsx";
 import Login from "./pages/login/Login.jsx";
-import ApplicationForm from "./pages/application/ApplicationForm.jsx";
-import ExampleFormsPage from "./pages/example-forms/ExampleFormsPage.jsx";
+
+// Lazy load page components for code splitting
+const Dashboard = lazy(() => import("./pages/dashboard/Dashboard.jsx"));
+const JobOpenings = lazy(() => import("./pages/job-openings/JobOpenings.jsx"));
+const Candidates = lazy(() => import("./pages/job-openings/Candidates.jsx"));
+const Clients = lazy(() => import("./pages/job-openings/Clients.jsx"));
+const ApplicationForm = lazy(() => import("./pages/application/ApplicationForm.jsx"));
+const ExampleFormsPage = lazy(() => import("./pages/example-forms/ExampleFormsPage.jsx"));
+
+// Loading fallback component
+const LoadingFallback = () => (
+  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+    <div style={{ textAlign: 'center' }}>
+      <div style={{ fontSize: '18px', color: '#666', marginBottom: '10px' }}>Loading...</div>
+      <div style={{ width: '40px', height: '40px', border: '4px solid #f3f3f3', borderTop: '4px solid #3498db', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto' }} />
+      <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+    </div>
+  </div>
+);
 
 export default function App() {
   const [isSidebarOpen, setSidebarOpen] = React.useState(false);
@@ -90,32 +103,34 @@ export default function App() {
       {location.pathname !== '/login' && <TopBar isSidebarOpen={isSidebarOpen} setSidebarOpen={setSidebarOpen} />}
 
       <main className="main">
-        <Routes>
-          <Route path="/" element={<Navigate to="/login" replace />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/job-openings" element={<JobOpenings/>} />
-          <Route path="/candidates" element={<Candidates />} />
-          <Route path="/clients" element={<Clients />} />
-          <Route path="/application" element={<ApplicationForm />} />
-          <Route path="/example-forms" element={<ExampleFormsPage />} />
+        <Suspense fallback={<LoadingFallback />}>
+          <Routes>
+            <Route path="/" element={<Navigate to="/login" replace />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/job-openings" element={<JobOpenings/>} />
+            <Route path="/candidates" element={<Candidates />} />
+            <Route path="/clients" element={<Clients />} />
+            <Route path="/application" element={<ApplicationForm />} />
+            <Route path="/example-forms" element={<ExampleFormsPage />} />
 
-          {/* Example page (Users) — add the rest similarly */}
-          <Route
-            path="/users"
-            element={
-              <div className="container">
-                <div style={{ background: "#fff", padding: 16, borderRadius: 12 }}>
-                  <h2 style={{ margin: 0 }}>User Roles</h2>
-                  <p style={{ marginTop: 8 }}>Replace with your user roles page.</p>
+            {/* Example page (Users) — add the rest similarly */}
+            <Route
+              path="/users"
+              element={
+                <div className="container">
+                  <div style={{ background: "#fff", padding: 16, borderRadius: 12 }}>
+                    <h2 style={{ margin: 0 }}>User Roles</h2>
+                    <p style={{ marginTop: 8 }}>Replace with your user roles page.</p>
+                  </div>
                 </div>
-              </div>
             }
           />
 
-          {/* TODO: add /candidates, /interviews, /clients, /reports, /chat, /calendar routes */}
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
-        </Routes>
+            {/* TODO: add /candidates, /interviews, /clients, /reports, /chat, /calendar routes */}
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          </Routes>
+        </Suspense>
       </main>
     </div>
   );

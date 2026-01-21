@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import './MultiStepForm.css';
 
-const MultiStepForm = ({ steps, onSubmit, validationErrors = {} }) => {
+const MultiStepForm = ({ steps, onSubmit, validationErrors = {}, onValidateStep }) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState({});
   const [stepFields, setStepFields] = useState({});
@@ -63,10 +63,24 @@ const MultiStepForm = ({ steps, onSubmit, validationErrors = {} }) => {
     window.alert(lines.join('\n'));
   };
 
+  const validateCurrentStep = (stepIndex) => {
+    const { missing, invalid } = getStepIssues(stepIndex);
+    return missing.length === 0 && invalid.length === 0;
+  };
+
   const handleNext = () => {
     if (currentStep < steps.length - 1) {
-      showStepWarning(currentStep);
-      setCurrentStep(currentStep + 1);
+      // Trigger validation for the current step fields
+      if (onValidateStep) {
+        onValidateStep(currentStep, formData);
+      }
+      
+      // Check if current step is valid before proceeding
+      if (validateCurrentStep(currentStep)) {
+        setCurrentStep(currentStep + 1);
+      } else {
+        showStepWarning(currentStep);
+      }
     }
   };
 
@@ -89,8 +103,12 @@ const MultiStepForm = ({ steps, onSubmit, validationErrors = {} }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    showStepWarning(currentStep);
-    onSubmit(formData);
+    // Check if current step is valid before submitting
+    if (validateCurrentStep(currentStep)) {
+      onSubmit(formData);
+    } else {
+      showStepWarning(currentStep);
+    }
   };
 
   // Check if current step is valid

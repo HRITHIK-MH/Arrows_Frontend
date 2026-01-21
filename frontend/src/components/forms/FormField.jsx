@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import './FormField.css';
+import { validateMandatoryField } from '../../utils/formValidation';
 
 const FormField = ({ 
   label, 
@@ -23,32 +24,63 @@ const FormField = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [customOption, setCustomOption] = useState('');
   const [customOptions, setCustomOptions] = useState([]);
+  const [localError, setLocalError] = useState('');
   const dropdownRef = useRef(null);
 
   const handleChange = (e) => {
     const newValue = type === 'file'
       ? (e.target.multiple ? Array.from(e.target.files) : e.target.files[0])
       : e.target.value;
+    console.log(`[FormField.handleChange] ${name}: value="${newValue}", required=${required}, onValidation=${!!onValidation}`);
     onChange(name, newValue);
     
-    // Trigger validation
     if (validate) {
+      console.log(`[FormField.handleChange] Using custom validate for ${name}`);
       setIsValidating(true);
-      validate(newValue, name).then(handleValidationResult).catch(handleValidationResult).finally(() => setIsValidating(false));
-    } else if (error) {
-      onValidation(name, { isValid: true });
+      validate(newValue, name).then(result => {
+        console.log(`[FormField.handleChange] Custom validation done for ${name}:`, result);
+        handleValidationResult(result);
+      }).catch(err => {
+        console.log(`[FormField.handleChange] Custom validation error for ${name}:`, err);
+        handleValidationResult(err);
+      }).finally(() => setIsValidating(false));
+    } else if (required) {
+      console.log(`[FormField.handleChange] Running mandatory validation for ${name}`);
+      setIsValidating(true);
+      const fieldLabel = label ? label.replace('*', '').trim() : name;
+      validateMandatoryField(newValue, name, fieldLabel)
+        .then(result => {
+          console.log(`[FormField.handleChange] ✅ Mandatory validation result for ${name}:`, result);
+          handleValidationResult(result);
+        })
+        .catch(err => {
+          console.log(`[FormField.handleChange] ❌ Mandatory validation error for ${name}:`, err);
+          handleValidationResult(err);
+        })
+        .finally(() => setIsValidating(false));
     }
   };
 
   const handleMultiSelectChange = (selectedValues) => {
     onChange(name, selectedValues);
     
-    // Trigger validation
+    // Always trigger validation on change
+    console.log(`[FormField multiselect onChange] Field: ${name}, Count: ${selectedValues?.length || 0}, Required: ${required}, HasError: ${!!error}`);
+    
     if (validate) {
+      // Custom validation function
+      console.log(`[FormField] Using custom validate function for multiselect`);
       setIsValidating(true);
       validate(selectedValues, name).then(handleValidationResult).catch(handleValidationResult).finally(() => setIsValidating(false));
-    } else if (error) {
-      onValidation(name, { isValid: true });
+    } else if (required) {
+      // For required fields, always validate on change to clear/show errors
+      console.log(`[FormField] Validating required multiselect on change`);
+      setIsValidating(true);
+      const fieldLabel = label ? label.replace('*', '').trim() : name;
+      validateMandatoryField(selectedValues, name, fieldLabel)
+        .then(handleValidationResult)
+        .catch(handleValidationResult)
+        .finally(() => setIsValidating(false));
     }
   };
 
@@ -92,24 +124,54 @@ const FormField = ({
 
   const handleValidationResult = (result) => {
     if (result && typeof result === 'object') {
-      onValidation(name, result);
+      console.log(`[Validation] Field: ${name}, Valid: ${result.isValid}, Message: ${result.message}, onValidation exists: ${!!onValidation}`);
+      
+      // Update local error state immediately for instant UI feedback
+      if (result.isValid) {
+        setLocalError('');
+        console.log(`[Validation] ✅ Local error cleared for ${name}`);
+      } else {
+        setLocalError(result.message);
+        console.log(`[Validation] ❌ Local error set for ${name}: ${result.message}`);
+      }
+      
+      // Also call parent callback for state management
+      if (onValidation) {
+        console.log(`[Validation] Calling onValidation callback for ${name}`);
+        onValidation(name, result);
+      } else {
+        console.log(`[Validation] WARNING: onValidation is not defined for field ${name}`);
+      }
     } else {
-      onValidation(name, { isValid: false, message: 'Validation failed' });
+      console.log(`[Validation] Field: ${name}, Error: Invalid result format, onValidation exists: ${!!onValidation}`);
+      setLocalError('Validation failed');
+      if (onValidation) {
+        onValidation(name, { isValid: false, message: 'Validation failed' });
+      }
     }
   };
 
   const handleBlur = async () => {
-    // Validate on blur if we have a validation function and haven't already started validating
-    if (validate && !isValidating) {
-      setIsValidating(true);
-      try {
+    if (isValidating) return;
+
+    setIsValidating(true);
+    try {
+      // If custom validation function is provided, use it
+      if (validate) {
         const validationResult = await validate(value, name);
         handleValidationResult(validationResult);
-      } catch (err) {
-        handleValidationResult(err);
-      } finally {
-        setIsValidating(false);
+      } 
+      // For required fields without custom validation, validate that field has value
+      else if (required) {
+        // Extract label from prop (removing asterisk if present)
+        const fieldLabel = label ? label.replace('*', '').trim() : name;
+        const validationResult = await validateMandatoryField(value, name, fieldLabel);
+        handleValidationResult(validationResult);
       }
+    } catch (err) {
+      handleValidationResult(err);
+    } finally {
+      setIsValidating(false);
     }
   };
 
@@ -304,7 +366,12 @@ const FormField = ({
         )
       )}
       {isValidating && <span className="validation-loading">Validating...</span>}
-      {error && <span className="error-message">{error}</span>}
+      {(localError || error) && (
+        <>
+          {console.log(`[FormField] Rendering error for ${name}: localError="${localError}", propError="${error}"`)}
+          <span className="error-message">{localError || error}</span>
+        </>
+      )}
     </div>
   );
 };
