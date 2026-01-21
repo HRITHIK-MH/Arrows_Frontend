@@ -18,23 +18,24 @@ const createFormConfig = (config) => {
 
 // Reusable step component
 const FormStep = ({ formData, onChange, fields, title, onSetStepFields, validationErrors = {} }) => {
-  const isJobBasicInfo = title === "Job Basic Information";
+  const isJobBasicInfo = title === "Job Basic Information" || title === "Job Information";
+  const fieldMetaSignatureRef = React.useRef('');
 
   // Notify parent about fields in this step
   React.useEffect(() => {
     if (onSetStepFields) {
-      if (isJobBasicInfo) {
-        // For Job Basic Info, only track fields that are actually displayed in the grid
-        const displayedFields = fields.filter(field => 
-          field.cssClass || field.name === 'minValue' || field.name === 'maxValue'
-        );
-        const fieldNames = displayedFields.map(f => f.name);
-        onSetStepFields(fieldNames);
-      } else {
-        // For other steps, track all fields
-        const fieldNames = fields.map(f => f.name);
-        onSetStepFields(fieldNames);
+      const fieldMeta = fields.map(field => ({
+        name: field.name,
+        label: field.label,
+        required: Boolean(field.required)
+      }));
+
+      const nextSignature = JSON.stringify(fieldMeta);
+      if (fieldMetaSignatureRef.current === nextSignature) {
+        return;
       }
+      fieldMetaSignatureRef.current = nextSignature;
+      onSetStepFields(fieldMeta);
     }
   }, [fields, onSetStepFields, isJobBasicInfo]);
 
@@ -51,72 +52,119 @@ const FormStep = ({ formData, onChange, fields, title, onSetStepFields, validati
       validate={field.validate}
       error={validationErrors[field.name]}
       onValidation={field.onValidation}
-      multiple={field.type === 'multiselect'}
+      placeholder={field.placeholder}
+      hideLabel={field.hideLabel}
+      accept={field.accept}
+      multiple={field.multiple}
+      prefix={field.prefix}
     />
   );
 
   if (isJobBasicInfo) {
-    // Create a map of fields by their cssClass for easier lookup
+    // Create a map of fields by name (and cssClass where helpful)
     const fieldMap = {};
     fields.forEach(field => {
       if (field.cssClass) {
         fieldMap[field.cssClass] = field;
       }
-      // Also map by name for min/max fields
-      if (field.name === 'minValue' || field.name === 'maxValue') {
-        fieldMap[field.name] = field;
-      }
+      fieldMap[field.name] = field;
     });
+
+    const getField = (name) => (fieldMap[name] ? renderField(fieldMap[name]) : null);
+
+    const renderGroup = (label, required, minKey, maxKey) => (
+      <div className="field-group">
+        <div className="field-group-label">
+          {label}
+          {required && <span className="required-star">*</span>}
+        </div>
+        <div className="min-max-container">
+          {getField(minKey)}
+          {getField(maxKey)}
+        </div>
+      </div>
+    );
 
     return (
       <div className="job-basic-info-step">
-        <h3 style={{ borderBottom: '2px dotted #ccc', paddingBottom: '10px' }}>{title}</h3>
-        <div className="job-basic-info-grid">
-          {/* Row 1 */}
-          <div className="grid-cell grid-col-1 grid-row-1">
-            {fieldMap['grid-col-1 grid-row-1'] && renderField(fieldMap['grid-col-1 grid-row-1'])}
+        <div className="job-section">
+          <div className="job-section-header">
+            <h3 className="job-section-title">Job Details</h3>
+            <div className="job-section-divider" />
           </div>
-          <div className="grid-cell grid-col-2 grid-row-1">
-            {fieldMap['grid-col-2 grid-row-1'] && renderField(fieldMap['grid-col-2 grid-row-1'])}
-          </div>
-          <div className="grid-cell grid-col-3 grid-row-1">
-            <div className="min-max-container">
-              {fieldMap['minValue'] && renderField(fieldMap['minValue'])}
-              {fieldMap['maxValue'] && renderField(fieldMap['maxValue'])}
+
+          <div className="job-basic-info-grid">
+            <div className="grid-cell grid-col-1 grid-row-1">
+              {getField('jobPositionId')}
+            </div>
+            <div className="grid-cell grid-col-2 grid-row-1">
+              {getField('positionName')}
+            </div>
+            <div className="grid-cell grid-col-3 grid-row-1">
+              {renderGroup('Experience', true, 'minExperience', 'maxExperience')}
+            </div>
+
+            <div className="grid-cell grid-col-1 grid-row-2">
+              {getField('jobDescriptionLink')}
+            </div>
+            <div className="grid-cell grid-col-2 grid-row-2">
+              {getField('positionLevel')}
+            </div>
+            <div className="grid-cell grid-col-3 grid-row-2">
+              {getField('location')}
+            </div>
+
+            <div className="grid-cell grid-col-1 grid-row-3">
+              {getField('noOfPositions')}
+            </div>
+            <div className="grid-cell grid-col-2 grid-row-3">
+              {getField('jobReceivedDate')}
+            </div>
+            <div className="grid-cell grid-col-3 grid-row-3">
+              {getField('hiringType')}
+            </div>
+
+            <div className="grid-cell grid-col-1 grid-row-4">
+              {renderGroup('Salary In CTC', true, 'minSalary', 'maxSalary')}
+            </div>
+            <div className="grid-cell grid-col-2 grid-row-4">
+              {getField('jobType')}
+            </div>
+            <div className="grid-cell grid-col-3 grid-row-4">
+              {getField('jdAttachment')}
+            </div>
+
+            <div className="grid-cell grid-col-1 grid-row-5">
+              {getField('technicalSkills')}
+            </div>
+            <div className="grid-cell grid-col-2 grid-row-5">
+              {getField('softSkills')}
+            </div>
+            <div className="grid-cell grid-col-3 grid-row-5">
+              {getField('additionalSkills')}
             </div>
           </div>
+        </div>
 
-          {/* Row 2 */}
-          <div className="grid-cell grid-col-1 grid-row-2">
-            {fieldMap['grid-col-1 grid-row-2'] && renderField(fieldMap['grid-col-1 grid-row-2'])}
-          </div>
-          <div className="grid-cell grid-col-2 grid-row-2">
-            {fieldMap['grid-col-2 grid-row-2'] && renderField(fieldMap['grid-col-2 grid-row-2'])}
-          </div>
-          <div className="grid-cell grid-col-3 grid-row-2">
-            {fieldMap['grid-col-3 grid-row-2'] && renderField(fieldMap['grid-col-3 grid-row-2'])}
+        <div className="job-section">
+          <div className="job-section-header">
+            <h3 className="job-section-title">Client Details</h3>
+            <div className="job-section-divider" />
           </div>
 
-          {/* Row 3 */}
-          <div className="grid-cell grid-col-1 grid-row-3">
-            {fieldMap['grid-col-1 grid-row-3'] && renderField(fieldMap['grid-col-1 grid-row-3'])}
-          </div>
-          <div className="grid-cell grid-col-2 grid-row-3">
-            {fieldMap['grid-col-2 grid-row-3'] && renderField(fieldMap['grid-col-2 grid-row-3'])}
-          </div>
-          <div className="grid-cell grid-col-3 grid-row-3">
-            {fieldMap['grid-col-3 grid-row-3'] && renderField(fieldMap['grid-col-3 grid-row-3'])}
-          </div>
-
-          {/* Row 4 */}
-          <div className="grid-cell grid-col-1 grid-row-4">
-            {fieldMap['grid-col-1 grid-row-4'] && renderField(fieldMap['grid-col-1 grid-row-4'])}
-          </div>
-          <div className="grid-cell grid-col-2 grid-row-4">
-            {fieldMap['grid-col-2 grid-row-4'] && renderField(fieldMap['grid-col-2 grid-row-4'])}
-          </div>
-          <div className="grid-cell grid-col-3 grid-row-4">
-            {fieldMap['grid-col-3 grid-row-4'] && renderField(fieldMap['grid-col-3 grid-row-4'])}
+          <div className="job-basic-info-grid job-basic-info-grid--client">
+            <div className="grid-cell grid-col-1 grid-row-1">
+              {getField('clientId')}
+            </div>
+            <div className="grid-cell grid-col-2 grid-row-1">
+              {getField('clientName')}
+            </div>
+            <div className="grid-cell grid-col-3 grid-row-1">
+              {getField('contactPersonName')}
+            </div>
+            <div className="grid-cell grid-col-1 grid-row-2">
+              {getField('contactPersonEmail')}
+            </div>
           </div>
         </div>
       </div>
@@ -177,6 +225,7 @@ const ReusableForm = ({ config, onSubmit }) => {
   const enhancedSteps = formConfig.steps.map((step, index) => {
     const StepComponent = step.component;
     return {
+      title: step.title,
       component: (props) => (
         <StepComponent
           {...props}
@@ -217,8 +266,8 @@ const ReusableForm = ({ config, onSubmit }) => {
   };
 
   return (
-    <div className="reusable-form-page">
-      <h1>{config.title}</h1>
+    <div className={`reusable-form-page${config.formClassName ? ` ${config.formClassName}` : ''}`}>
+      {!config.hideTitle && <h1>{config.title}</h1>}
       <MultiStepForm steps={enhancedSteps} onSubmit={handleSubmit} validationErrors={validationErrors} />
     </div>
   );

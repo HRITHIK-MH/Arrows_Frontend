@@ -1,6 +1,7 @@
 
 
 import * as React from "react";
+import { FiFilter, FiMoreHorizontal, FiPlus, FiSearch } from "react-icons/fi";
 import styles from "./JobOpenings.module.scss";
 import ReusableForm from "../../components/forms/ReusableForm";
 import DataTable from "../../components/forms/DataTable";
@@ -14,16 +15,31 @@ export default function JobOpenings() {
   const [showSuccessMessage, setShowSuccessMessage] = React.useState(false);
   const [searchTerm, setSearchTerm] = React.useState('');
   const [filterPostingTitle, setFilterPostingTitle] = React.useState('');
+  const [filterTargetDate, setFilterTargetDate] = React.useState('');
   const [filterJobStatus, setFilterJobStatus] = React.useState('');
   const [filterHiringManager, setFilterHiringManager] = React.useState('');
 
-  // Get unique values for filter dropdowns
-  const uniquePostingTitles = [...new Set(submittedData.map(item => item.postingTitle).filter(Boolean))];
-  const uniqueJobStatuses = [...new Set(submittedData.map(item => item.jobStatus).filter(Boolean))];
-  const uniqueHiringManagers = [...new Set(submittedData.map(item => item.hiringManager).filter(Boolean))];
+  const normalizedData = React.useMemo(() => (
+    submittedData.map((item) => ({
+      ...item,
+      openingJobId: item.openingJobId ?? item.jobPositionId ?? item.jobId ?? "",
+      postingTitle: item.postingTitle ?? item.positionName ?? item.jobTitle ?? "",
+      clientId: item.clientId ?? item.clientID ?? "",
+      assignedRecruiters: item.assignedRecruiters ?? item.assignedRecruiter ?? item.recruiters ?? "",
+      targetDate: item.targetDate ?? item.jobReceivedDate ?? "",
+      jobOpeningStatus: item.jobOpeningStatus ?? item.jobStatus ?? "",
+      city: item.city ?? item.location ?? "",
+      hiringManager: item.hiringManager ?? "",
+    }))
+  ), [submittedData]);
 
-  // Filter data based on search and filter criteria
-  const filteredData = submittedData.filter(item => {
+  // Get unique values for filter dropdowns
+  const uniquePostingTitles = [...new Set(normalizedData.map(item => item.postingTitle).filter(Boolean))];
+  const uniqueTargetDates = [...new Set(normalizedData.map(item => item.targetDate).filter(Boolean))];
+  const uniqueJobStatuses = [...new Set(normalizedData.map(item => item.jobOpeningStatus).filter(Boolean))];
+  const uniqueHiringManagers = [...new Set(normalizedData.map(item => item.hiringManager).filter(Boolean))];
+
+  const filteredData = normalizedData.filter(item => {
     const matchesSearch = 
       !searchTerm || 
       Object.values(item).some(value => 
@@ -31,11 +47,59 @@ export default function JobOpenings() {
       );
     
     const matchesPostingTitle = !filterPostingTitle || item.postingTitle === filterPostingTitle;
-    const matchesJobStatus = !filterJobStatus || item.jobStatus === filterJobStatus;
+    const matchesTargetDate = !filterTargetDate || item.targetDate === filterTargetDate;
+    const matchesJobStatus = !filterJobStatus || item.jobOpeningStatus === filterJobStatus;
     const matchesHiringManager = !filterHiringManager || item.hiringManager === filterHiringManager;
 
-    return matchesSearch && matchesPostingTitle && matchesJobStatus && matchesHiringManager;
+    return (
+      matchesSearch &&
+      matchesPostingTitle &&
+      matchesTargetDate &&
+      matchesJobStatus &&
+      matchesHiringManager
+    );
   });
+
+  const hasFilters = Boolean(
+    searchTerm ||
+    filterPostingTitle ||
+    filterTargetDate ||
+    filterJobStatus ||
+    filterHiringManager
+  );
+
+  const clearFilters = () => {
+    setSearchTerm('');
+    setFilterPostingTitle('');
+    setFilterTargetDate('');
+    setFilterJobStatus('');
+    setFilterHiringManager('');
+  };
+
+  const getStatusClass = (status) => {
+    const normalized = String(status || '').toLowerCase();
+    if (normalized === 'active') return styles.statusActive;
+    if (normalized === 'closed') return styles.statusClosed;
+    if (normalized === 'draft') return styles.statusDraft;
+    return styles.statusNeutral;
+  };
+
+  const tableColumns = [
+    { key: 'openingJobId', label: 'Opening Job Id' },
+    { key: 'postingTitle', label: 'Posting Title' },
+    { key: 'clientId', label: 'Client Id' },
+    { key: 'assignedRecruiters', label: 'Assigned Recruiter(s)' },
+    { key: 'targetDate', label: 'Target Date' },
+    {
+      key: 'jobOpeningStatus',
+      label: 'Job Opening Status',
+      render: (value) => (
+        value ? <span className={`${styles.statusPill} ${getStatusClass(value)}`}>{value}</span> : "-"
+      )
+    },
+    { key: 'city', label: 'City' },
+    { key: 'hiringManager', label: 'Hiring Manager' }
+  ];
 
   const handleCreateJobOpening = () => {
     setShowJobOpeningForm(true);
@@ -60,8 +124,12 @@ export default function JobOpenings() {
   };
 
   const handleJobOpeningSubmit = (data) => {
-    console.log('Job opening created:', data);
-    setSubmittedData(prev => [...prev, data]);
+    const normalized = {
+      ...data,
+      jobOpeningStatus: data.jobOpeningStatus || data.jobStatus || 'Active'
+    };
+    console.log('Job opening created:', normalized);
+    setSubmittedData(prev => [...prev, normalized]);
     setShowJobOpeningForm(false);
     setShowDataTable(true);
     setShowSuccessMessage(true);
@@ -73,39 +141,30 @@ export default function JobOpenings() {
   };
 
   return (
-    <div className={styles.card}>
-        {showSuccessMessage && (
-          <div style={{
-            padding: '12px 16px',
-            marginBottom: '20px',
-            backgroundColor: '#d4edda',
-            color: '#155724',
-            border: '1px solid #c3e6cb',
-            borderRadius: '4px',
-            fontSize: '14px'
-          }}>
-            ✓ Job opening created successfully
+    <div className={styles.page}>
+      {showSuccessMessage && (
+        <div className={styles.successMessage}>
+          Job opening created successfully
+        </div>
+      )}
+
+      <div className={styles.jobCard}>
+        {!showJobOpeningForm && (
+          <div className={styles.infoRow}>
+            <p className={styles.description}>
+              View all current job openings along with essential information like job title, department,
+              location, required experience, and application status. Quickly track how many candidates
+              have applied and manage each opening efficiently.
+            </p>
+            <button className={styles.createButton} onClick={handleCreateJobOpening}>
+              <FiPlus size={16} />
+              Create Job Opening
+            </button>
           </div>
         )}
-        <div className="row">
-            <div className="col-8" style={{ marginBottom: '16px' }}>
-                {!showJobOpeningForm && (
-                    <p className={styles.p} style={{ wordWrap: 'break-word' }}>
-                        View and manage all applicants with key details like experience, education, and current company Track their progress through stages such as Added, Sourced, Pre-screening, and Assessment.
-                    </p>
-                )}
-             </div>
-            <div className="col-4" style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
-                {!showJobOpeningForm && (
-                  <button className="button" data-icon="add-circle" onClick={handleCreateJobOpening} style={{ whiteSpace: 'nowrap' }}>
-                    Create Job Opening
-                  </button>
-                )}
-            </div>
-        </div>
 
         {showJobOpeningForm && (
-          <div style={{ marginTop: '30px' }}>
+          <div className={styles.formWrap}>
             <ReusableForm
               config={jobOpeningConfig}
               onSubmit={handleJobOpeningSubmit}
@@ -114,123 +173,108 @@ export default function JobOpenings() {
         )}
 
         {showDataTable && (
-          <div style={{ marginTop: '30px' }}>
-            <div style={{
-              display: 'flex',
-              gap: '12px',
-              marginBottom: '20px',
-              alignItems: 'center',
-              flexWrap: 'wrap',
-              justifyContent: 'space-between'
-            }}>
-              {/* Search Bar */}
-              <input
-                type="text"
-                placeholder="Search"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                style={{
-                  padding: '8px 12px',
-                  borderRadius: '4px',
-                  border: '1px solid #ddd',
-                  minWidth: '150px',
-                  flex: '1 1 150px',
-                  fontSize: '14px',
-                  maxWidth: '100%'
-                }}
-              />
+          <div className={styles.tableSection}>
+            <div className={styles.filtersBar}>
+              <div className={styles.filtersLeft}>
+                <FiFilter className={styles.filterIcon} aria-hidden="true" />
+                <div className={styles.searchField}>
+                  <FiSearch className={styles.searchIcon} aria-hidden="true" />
+                  <input
+                    type="text"
+                    placeholder="Search here..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className={styles.searchInput}
+                  />
+                </div>
 
-              {/* Posting Title Filter */}
-              <select
-                value={filterPostingTitle}
-                onChange={(e) => setFilterPostingTitle(e.target.value)}
-                style={{
-                  padding: '8px 12px',
-                  borderRadius: '4px',
-                  border: '1px solid #ddd',
-                  fontSize: '14px',
-                  backgroundColor: '#fff',
-                  cursor: 'pointer',
-                  flex: '1 1 140px',
-                  minWidth: '140px'
-                }}
-              >
-                <option value="">Posting Title</option>
-                {uniquePostingTitles.map(title => (
-                  <option key={title} value={title}>{title}</option>
-                ))}
-              </select>
+                <select
+                  value={filterPostingTitle}
+                  onChange={(e) => setFilterPostingTitle(e.target.value)}
+                  className={styles.selectField}
+                >
+                  <option value="">Posting Title</option>
+                  {uniquePostingTitles.map(title => (
+                    <option key={title} value={title}>{title}</option>
+                  ))}
+                </select>
 
-              {/* Job Status Filter */}
-              <select
-                value={filterJobStatus}
-                onChange={(e) => setFilterJobStatus(e.target.value)}
-                style={{
-                  padding: '8px 12px',
-                  borderRadius: '4px',
-                  border: '1px solid #ddd',
-                  fontSize: '14px',
-                  backgroundColor: '#fff',
-                  cursor: 'pointer',
-                  flex: '1 1 140px',
-                  minWidth: '140px'
-                }}
-              >
-                <option value="">Job Status</option>
-                {uniqueJobStatuses.map(status => (
-                  <option key={status} value={status}>{status}</option>
-                ))}
-              </select>
+                <select
+                  value={filterTargetDate}
+                  onChange={(e) => setFilterTargetDate(e.target.value)}
+                  className={styles.selectField}
+                >
+                  <option value="">Target Date</option>
+                  {uniqueTargetDates.map(date => (
+                    <option key={date} value={date}>{date}</option>
+                  ))}
+                </select>
 
-              {/* Hiring Manager Filter */}
-              <select
-                value={filterHiringManager}
-                onChange={(e) => setFilterHiringManager(e.target.value)}
-                style={{
-                  padding: '8px 12px',
-                  borderRadius: '4px',
-                  border: '1px solid #ddd',
-                  fontSize: '14px',
-                  backgroundColor: '#fff',
-                  cursor: 'pointer',
-                  flex: '1 1 140px',
-                  minWidth: '140px'
-                }}
-              >
-                <option value="">Hiring Manager</option>
-                {uniqueHiringManagers.map(manager => (
-                  <option key={manager} value={manager}>{manager}</option>
-                ))}
-              </select>
+                <select
+                  value={filterJobStatus}
+                  onChange={(e) => setFilterJobStatus(e.target.value)}
+                  className={styles.selectField}
+                >
+                  <option value="">Job Status</option>
+                  {uniqueJobStatuses.map(status => (
+                    <option key={status} value={status}>{status}</option>
+                  ))}
+                </select>
 
-              {/* More Options Button */}
-              <button style={{
-                padding: '8px 12px',
-                borderRadius: '4px',
-                border: '1px solid #ddd',
-                backgroundColor: '#fff',
-                cursor: 'pointer',
-                fontSize: '18px',
-                display: 'flex',
-                alignItems: 'center',
-                flexShrink: 0
-              }}>
-                ⋯
-              </button>
+                <select
+                  value={filterHiringManager}
+                  onChange={(e) => setFilterHiringManager(e.target.value)}
+                  className={styles.selectField}
+                >
+                  <option value="">Hiring Manager</option>
+                  {uniqueHiringManagers.map(manager => (
+                    <option key={manager} value={manager}>{manager}</option>
+                  ))}
+                </select>
+
+                <button className={styles.moreButton} type="button" aria-label="More filters">
+                  <FiMoreHorizontal size={16} />
+                </button>
+              </div>
+
+              <div className={styles.filtersRight}>
+                <button className={styles.applyButton} type="button" disabled={!hasFilters}>
+                  Apply
+                </button>
+                <button
+                  className={styles.clearButton}
+                  type="button"
+                  onClick={clearFilters}
+                  disabled={!hasFilters}
+                >
+                  Clear
+                </button>
+              </div>
             </div>
 
-            <h2>Job Openings Data</h2>
-            <DataTable 
-              data={filteredData} 
-              columns={jobOpeningConfig.columns}
-              onView={handleViewJobOpening}
-              onEdit={handleEditJobOpening}
-              onDelete={handleDeleteJobOpening}
-            />
+            <div className={styles.tableWrap}>
+              <DataTable 
+                data={filteredData} 
+                columns={tableColumns}
+                onView={handleViewJobOpening}
+                onEdit={handleEditJobOpening}
+                onDelete={handleDeleteJobOpening}
+              />
+            </div>
+
+            <div className={styles.tableFooter}>
+              <span>Show</span>
+              <select className={styles.entriesSelect} defaultValue="10">
+                <option value="10">10</option>
+                <option value="25">25</option>
+                <option value="50">50</option>
+              </select>
+              <span>entries</span>
+            </div>
           </div>
         )}
+      </div>
     </div>
   );
 }
  
-

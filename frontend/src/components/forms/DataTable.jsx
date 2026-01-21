@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { FiEdit2, FiEye, FiTrash2 } from "react-icons/fi";
 import './DataTable.css';
 
 const DataTable = ({ data, columns, onView, onEdit, onDelete }) => {
@@ -85,13 +86,18 @@ const DataTable = ({ data, columns, onView, onEdit, onDelete }) => {
         <tbody>
           {sortedData.map((row, index) => (
             <tr key={index}>
-              {columns.map((col) => (
-                <td key={col.key}>
-                  {Array.isArray(row[col.key]) 
-                    ? row[col.key].join(', ') 
-                    : row[col.key]}
-                </td>
-              ))}
+              {columns.map((col) => {
+                const value = row[col.key];
+                if (col.render) {
+                  return <td key={col.key}>{col.render(value, row, index)}</td>;
+                }
+
+                return (
+                  <td key={col.key}>
+                    {Array.isArray(value) ? value.join(', ') : value}
+                  </td>
+                );
+              })}
               <td key={`actions-${index}`} style={{ textAlign: 'center' }}>
                 <div className="action-icons">
                   <button 
@@ -100,7 +106,7 @@ const DataTable = ({ data, columns, onView, onEdit, onDelete }) => {
                     title="View"
                     aria-label="View row"
                   >
-                    👁️
+                    <FiEye size={16} />
                   </button>
                   <button 
                     className="action-btn edit-btn"
@@ -108,7 +114,7 @@ const DataTable = ({ data, columns, onView, onEdit, onDelete }) => {
                     title="Edit"
                     aria-label="Edit row"
                   >
-                    ✏️
+                    <FiEdit2 size={16} />
                   </button>
                   <button 
                     className="action-btn delete-btn"
@@ -116,7 +122,7 @@ const DataTable = ({ data, columns, onView, onEdit, onDelete }) => {
                     title="Delete"
                     aria-label="Delete row"
                   >
-                    🗑️
+                    <FiTrash2 size={16} />
                   </button>
                 </div>
               </td>
