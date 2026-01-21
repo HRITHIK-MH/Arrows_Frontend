@@ -183,17 +183,20 @@ export const contactFormConfig = {
 export const jobOpeningConfig = {
   title: "Create Job Opening",
   itemName: "Job Openings",
+  formClassName: "job-opening-form",
+  hideTitle: true,
   steps: [
     {
-      title: "Job Basic Information",
+      title: "Job Information",
       fields: [
         {
           name: "jobPositionId",
-          label: "Job Position ID *",
+          label: "Job Position Id *",
           type: "text",
           required: true,
           cssClass: "grid-col-1 grid-row-1",
-          validationRule: "requiredField"
+          validationRule: "requiredField",
+          placeholder: "Enter Job Position Id"
         },
         {
           name: "positionName",
@@ -201,37 +204,44 @@ export const jobOpeningConfig = {
           type: "text",
           required: true,
           cssClass: "grid-col-2 grid-row-1",
-          validationRule: "requiredField"
+          validationRule: "requiredField",
+          placeholder: "Enter Position Name"
         },
         {
-          name: "minValue",
-          label: "Min *",
+          name: "minExperience",
+          label: "Experience Min",
           type: "number",
           required: true,
-          cssClass: "min-max-field",
-          validationRule: "requiredField"
+          cssClass: "grid-col-3 grid-row-1",
+          validationRule: "experience",
+          hideLabel: true,
+          prefix: "Min"
         },
         {
-          name: "maxValue",
-          label: "Max *",
+          name: "maxExperience",
+          label: "Experience Max",
           type: "number",
           required: true,
-          cssClass: "min-max-field",
-          validationRule: "requiredField"
+          cssClass: "grid-col-3 grid-row-1",
+          validationRule: "experience",
+          hideLabel: true,
+          prefix: "Max"
         },
         {
           name: "jobDescriptionLink",
           label: "Job Description Link",
           type: "text",
-          required: true,
-          cssClass: "grid-col-1 grid-row-2"
+          required: false,
+          cssClass: "grid-col-1 grid-row-2",
+          placeholder: "JD link"
         },
         {
           name: "positionLevel",
-          label: "Position Level",
+          label: "Position Level *",
           type: "select",
           required: true,
           cssClass: "grid-col-2 grid-row-2",
+          placeholder: "Select",
           options: [
             { value: "entry", label: "Entry Level" },
             { value: "junior", label: "Junior" },
@@ -245,10 +255,11 @@ export const jobOpeningConfig = {
         },
         {
           name: "location",
-          label: "Location",
+          label: "Location *",
           type: "select",
           required: true,
           cssClass: "grid-col-3 grid-row-2",
+          placeholder: "Select",
           options: [
             { value: "remote", label: "Remote" },
             { value: "onsite", label: "On-site" },
@@ -266,24 +277,26 @@ export const jobOpeningConfig = {
         },
         {
           name: "noOfPositions",
-          label: "No of Positions",
+          label: "No of Positions *",
           type: "number",
           required: true,
-          cssClass: "grid-col-1 grid-row-3"
+          cssClass: "grid-col-1 grid-row-3",
+          placeholder: "No of positions"
         },
         {
           name: "jobReceivedDate",
-          label: "Job Received Date",
+          label: "Job Received Date *",
           type: "date",
           required: true,
           cssClass: "grid-col-2 grid-row-3"
         },
         {
           name: "hiringType",
-          label: "Hiring Type",
+          label: "Hiring Type *",
           type: "select",
           required: true,
           cssClass: "grid-col-3 grid-row-3",
+          placeholder: "Select",
           options: [
             { value: "direct", label: "Direct Hire" },
             { value: "contract", label: "Contract" },
@@ -294,11 +307,54 @@ export const jobOpeningConfig = {
           ]
         },
         {
-          name: "technicalSkills",
-          label: "Technical Skills",
-          type: "multiselect",
+          name: "minSalary",
+          label: "Salary Min",
+          type: "number",
           required: true,
           cssClass: "grid-col-1 grid-row-4",
+          validationRule: "salary",
+          hideLabel: true,
+          prefix: "Min"
+        },
+        {
+          name: "maxSalary",
+          label: "Salary Max",
+          type: "number",
+          required: true,
+          cssClass: "grid-col-1 grid-row-4",
+          validationRule: "salary",
+          hideLabel: true,
+          prefix: "Max"
+        },
+        {
+          name: "jobType",
+          label: "Job Type *",
+          type: "select",
+          required: true,
+          cssClass: "grid-col-2 grid-row-4",
+          placeholder: "Select",
+          options: [
+            { value: "full-time", label: "Full Time Employment" },
+            { value: "part-time", label: "Part Time" },
+            { value: "contract", label: "Contract" },
+            { value: "internship", label: "Internship" }
+          ]
+        },
+        {
+          name: "jdAttachment",
+          label: "JD Attachment *",
+          type: "file",
+          required: true,
+          cssClass: "grid-col-3 grid-row-4",
+          accept: ".pdf",
+          placeholder: "Attachment"
+        },
+        {
+          name: "technicalSkills",
+          label: "Technical Skill *",
+          type: "multiselect",
+          required: true,
+          cssClass: "grid-col-1 grid-row-5",
           options: [
             { value: "javascript", label: "JavaScript" },
             { value: "react", label: "React" },
@@ -324,10 +380,10 @@ export const jobOpeningConfig = {
         },
         {
           name: "softSkills",
-          label: "Soft Skills",
+          label: "Soft Skill *",
           type: "multiselect",
           required: true,
-          cssClass: "grid-col-2 grid-row-4",
+          cssClass: "grid-col-2 grid-row-5",
           options: [
             { value: "communication", label: "Communication" },
             { value: "leadership", label: "Leadership" },
@@ -349,44 +405,54 @@ export const jobOpeningConfig = {
         },
         {
           name: "additionalSkills",
-          label: "Additional Skills",
-          type: "textarea",
+          label: "Additional Skill",
+          type: "text",
           required: false,
-          cssClass: "grid-col-3 grid-row-4"
+          cssClass: "grid-col-3 grid-row-5",
+          placeholder: "Select Skill"
+        },
+        {
+          name: "clientId",
+          label: "Client Id *",
+          type: "select",
+          required: true,
+          cssClass: "grid-col-1 grid-row-1",
+          placeholder: "Select Client Id",
+          options: [
+            { value: "C1292938", label: "C1292938" },
+            { value: "C1292432", label: "C1292432" },
+            { value: "C1292921", label: "C1292921" }
+          ]
+        },
+        {
+          name: "clientName",
+          label: "Client Name",
+          type: "text",
+          required: false,
+          cssClass: "grid-col-2 grid-row-1",
+          placeholder: "Enter Client Name"
+        },
+        {
+          name: "contactPersonName",
+          label: "Contact Person Name",
+          type: "text",
+          required: false,
+          cssClass: "grid-col-3 grid-row-1",
+          placeholder: "Enter Contact Person Name"
+        },
+        {
+          name: "contactPersonEmail",
+          label: "Contact Person Email Id",
+          type: "email",
+          required: false,
+          cssClass: "grid-col-1 grid-row-2",
+          placeholder: "Enter Contact Person Email"
         }
       ]
     },
     {
       title: "Requirements & Compensation",
       fields: [
-        {
-          name: "minExperience",
-          label: "Minimum Experience (years)",
-          type: "number",
-          required: true,
-          validationRule: "experience"
-        },
-        {
-          name: "maxExperience",
-          label: "Maximum Experience (years)",
-          type: "number",
-          required: true,
-          validationRule: "experience"
-        },
-        {
-          name: "minSalary",
-          label: "Minimum Salary",
-          type: "number",
-          required: true,
-          validationRule: "salary"
-        },
-        {
-          name: "maxSalary",
-          label: "Maximum Salary",
-          type: "number",
-          required: true,
-          validationRule: "salary"
-        },
         {
           name: "requiredSkills",
           label: "Required Skills",
@@ -479,7 +545,7 @@ export const jobOpeningConfig = {
       }
 
       // Cross-field validation for experience
-      const currentFormData = { ...formData, [fieldName]: value };
+      const currentFormData = { ...(formData || {}), [fieldName]: value };
       const minExp = parseFloat(currentFormData.minExperience || 0);
       const maxExp = parseFloat(currentFormData.maxExperience || 0);
 
@@ -510,7 +576,7 @@ export const jobOpeningConfig = {
       }
 
       // Cross-field validation for salary
-      const currentFormData = { ...formData, [fieldName]: value };
+      const currentFormData = { ...(formData || {}), [fieldName]: value };
       const minSalary = parseFloat(currentFormData.minSalary || 0);
       const maxSalary = parseFloat(currentFormData.maxSalary || 0);
 
@@ -541,10 +607,8 @@ export const jobOpeningConfig = {
       // Check if value is empty
       if (!value || (typeof value === 'string' && value.trim() === '')) {
         const fieldLabels = {
-          jobPositionId: 'Job Position ID',
-          positionName: 'Position Name',
-          minValue: 'Min',
-          maxValue: 'Max'
+          jobPositionId: 'Job Position Id',
+          positionName: 'Position Name'
         };
         const fieldLabel = fieldLabels[fieldName] || fieldName;
         return { isValid: false, message: `${fieldLabel} is required` };

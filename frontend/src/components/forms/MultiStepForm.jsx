@@ -6,8 +6,66 @@ const MultiStepForm = ({ steps, onSubmit, validationErrors = {} }) => {
   const [formData, setFormData] = useState({});
   const [stepFields, setStepFields] = useState({});
 
+  const normalizeLabel = (label, fallback) => {
+    if (!label) return fallback;
+    return label.replace('*', '').trim() || fallback;
+  };
+
+  const getStepIssues = (stepIndex) => {
+    const currentStepFields = stepFields[stepIndex] || [];
+
+    if (currentStepFields.length === 0) {
+      return { missing: [], invalid: [] };
+    }
+
+    return currentStepFields.reduce(
+      (acc, field) => {
+        const fieldName = typeof field === 'string' ? field : field.name;
+        const fieldLabel = normalizeLabel(
+          typeof field === 'string' ? field : field.label,
+          fieldName
+        );
+        const isRequired = typeof field === 'string' ? true : field.required;
+        const value = formData[fieldName];
+        const hasError = validationErrors[fieldName];
+
+        const hasValue =
+          value !== undefined &&
+          value !== null &&
+          value !== '' &&
+          (Array.isArray(value) ? value.length > 0 : true);
+
+        if (isRequired && !hasValue) {
+          acc.missing.push(fieldLabel);
+        } else if (hasError) {
+          acc.invalid.push(fieldLabel);
+        }
+
+        return acc;
+      },
+      { missing: [], invalid: [] }
+    );
+  };
+
+  const showStepWarning = (stepIndex) => {
+    const { missing, invalid } = getStepIssues(stepIndex);
+    if (missing.length === 0 && invalid.length === 0) {
+      return;
+    }
+
+    const lines = [];
+    if (missing.length) {
+      lines.push(`Missing: ${missing.join(', ')}`);
+    }
+    if (invalid.length) {
+      lines.push(`Invalid: ${invalid.join(', ')}`);
+    }
+    window.alert(lines.join('\n'));
+  };
+
   const handleNext = () => {
     if (currentStep < steps.length - 1) {
+      showStepWarning(currentStep);
       setCurrentStep(currentStep + 1);
     }
   };
@@ -31,31 +89,14 @@ const MultiStepForm = ({ steps, onSubmit, validationErrors = {} }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    showStepWarning(currentStep);
     onSubmit(formData);
   };
 
   // Check if current step is valid
   const isCurrentStepValid = () => {
-    const currentStepFieldNames = stepFields[currentStep] || [];
-    
-    if (currentStepFieldNames.length === 0) {
-      return true; // No fields to validate
-    }
-
-    // Check if all required fields have values and no validation errors
-    return currentStepFieldNames.every(fieldName => {
-      const value = formData[fieldName];
-      const hasError = validationErrors[fieldName];
-      
-      // Field must have a non-empty value and no validation error
-      const hasValue = 
-        value !== undefined && 
-        value !== null && 
-        value !== '' &&
-        (Array.isArray(value) ? value.length > 0 : true);
-      
-      return hasValue && !hasError;
-    });
+    const { missing, invalid } = getStepIssues(currentStep);
+    return missing.length === 0 && invalid.length === 0;
   };
 
   const CurrentStepComponent = steps[currentStep].component;
@@ -83,14 +124,12 @@ const MultiStepForm = ({ steps, onSubmit, validationErrors = {} }) => {
             <button 
               type="button" 
               onClick={handleNext}
-              disabled={!isCurrentStepValid()}
             >
               Next
             </button>
           ) : (
             <button 
               type="submit"
-              disabled={!isCurrentStepValid()}
             >
               Submit
             </button>

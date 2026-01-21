@@ -106,8 +106,8 @@ export default function App() {
             element={
               <div className="container">
                 <div style={{ background: "#fff", padding: 16, borderRadius: 12 }}>
-                  <h2 style={{ margin: 0 }}>Users</h2>
-                  <p style={{ marginTop: 8 }}>Replace with your users page.</p>
+                  <h2 style={{ margin: 0 }}>User Roles</h2>
+                  <p style={{ marginTop: 8 }}>Replace with your user roles page.</p>
                 </div>
               </div>
             }

@@ -178,6 +178,12 @@
   padding-right: 40px;
 }
 
+/* Hide Edge/IE built-in password reveal icon to avoid double icons */
+.password-group input[type="password"]::-ms-reveal,
+.password-group input[type="password"]::-ms-clear {
+  display: none;
+}
+
 .toggle-password {
   position: absolute;
   right: 12px;
