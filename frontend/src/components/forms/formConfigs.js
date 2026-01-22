@@ -527,20 +527,26 @@ export const jobOpeningConfig = {
   ],
   validationRules: {
     experience: (value, fieldName, formData) => {
+      console.log(`[Validation.experience] Called - fieldName: ${fieldName}, value: ${value}, formData:`, formData);
+      
       if (!value && value !== 0) {
+        console.log(`[Validation.experience] Field is required`);
         return { isValid: false, message: 'This field is required' };
       }
 
       const numValue = parseFloat(value);
       if (isNaN(numValue)) {
+        console.log(`[Validation.experience] Invalid number`);
         return { isValid: false, message: 'Please enter a valid number' };
       }
 
       if (numValue < 0) {
+        console.log(`[Validation.experience] Negative value`);
         return { isValid: false, message: 'Experience cannot be negative' };
       }
 
       if (numValue > 50) {
+        console.log(`[Validation.experience] Too high`);
         return { isValid: false, message: 'Experience cannot exceed 50 years' };
       }
 
@@ -549,29 +555,41 @@ export const jobOpeningConfig = {
       const minExp = parseFloat(currentFormData.minExperience || 0);
       const maxExp = parseFloat(currentFormData.maxExperience || 0);
 
-      if (currentFormData.minExperience !== undefined &&
-          currentFormData.maxExperience !== undefined &&
-          minExp > maxExp) {
+      // Check if both min and max are defined (have actual values, not empty strings)
+      const minDefined = currentFormData.minExperience !== undefined && currentFormData.minExperience !== '' && currentFormData.minExperience !== null;
+      const maxDefined = currentFormData.maxExperience !== undefined && currentFormData.maxExperience !== '' && currentFormData.maxExperience !== null;
+
+      console.log(`[Validation.experience] Cross-field check - minExp: ${minExp}, maxExp: ${maxExp}, minDefined: ${minDefined}, maxDefined: ${maxDefined}`);
+
+      if (minDefined && maxDefined && minExp > maxExp) {
+        console.log(`[Validation.experience] ❌ Min > Max - throwing error`);
         return { isValid: false, message: 'Min experience cannot be greater than max experience' };
       }
 
+      console.log(`[Validation.experience] ✅ Valid`);
       return { isValid: true };
     },
     salary: (value, fieldName, formData) => {
+      console.log(`[Validation.salary] Called - fieldName: ${fieldName}, value: ${value}, formData:`, formData);
+      
       if (!value && value !== 0) {
+        console.log(`[Validation.salary] Field is required`);
         return { isValid: false, message: 'This field is required' };
       }
 
       const numValue = parseFloat(value);
       if (isNaN(numValue)) {
+        console.log(`[Validation.salary] Invalid number`);
         return { isValid: false, message: 'Please enter a valid salary amount' };
       }
 
       if (numValue < 0) {
+        console.log(`[Validation.salary] Negative value`);
         return { isValid: false, message: 'Salary cannot be negative' };
       }
 
       if (numValue > 10000000) {
+        console.log(`[Validation.salary] Too high`);
         return { isValid: false, message: 'Salary seems too high' };
       }
 
@@ -580,12 +598,18 @@ export const jobOpeningConfig = {
       const minSalary = parseFloat(currentFormData.minSalary || 0);
       const maxSalary = parseFloat(currentFormData.maxSalary || 0);
 
-      if (currentFormData.minSalary !== undefined &&
-          currentFormData.maxSalary !== undefined &&
-          minSalary > maxSalary) {
+      // Check if both min and max are defined (have actual values, not empty strings)
+      const minDefined = currentFormData.minSalary !== undefined && currentFormData.minSalary !== '' && currentFormData.minSalary !== null;
+      const maxDefined = currentFormData.maxSalary !== undefined && currentFormData.maxSalary !== '' && currentFormData.maxSalary !== null;
+
+      console.log(`[Validation.salary] Cross-field check - minSalary: ${minSalary}, maxSalary: ${maxSalary}, minDefined: ${minDefined}, maxDefined: ${maxDefined}`);
+
+      if (minDefined && maxDefined && minSalary > maxSalary) {
+        console.log(`[Validation.salary] ❌ Min > Max - throwing error`);
         return { isValid: false, message: 'Min salary cannot be greater than max salary' };
       }
 
+      console.log(`[Validation.salary] ✅ Valid`);
       return { isValid: true };
     },
     skills: (value) => {
