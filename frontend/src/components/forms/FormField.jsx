@@ -27,6 +27,7 @@ const FormField = ({
   const [customOptions, setCustomOptions] = useState([]);
   const [localError, setLocalError] = useState('');
   const dropdownRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   // Sync prop error with local error when prop changes
   // This ensures errors from parent (Next button click) are displayed
@@ -48,7 +49,7 @@ const FormField = ({
     const newValue = type === 'file'
       ? (e.target.multiple ? Array.from(e.target.files) : e.target.files[0])
       : e.target.value;
-    console.log(`[FormField.handleChange] ${name}: value="${newValue}", required=${required}, hasError=${!!error}, onValidation=${!!onValidation}, formData:`, formData);
+    console.log(`[FormField.handleChange] ${name}: value=`, newValue, ` (type=${type}), required=${required}, hasError=${!!error}, onValidation=${!!onValidation}, formData:`, formData);
     onChange(name, newValue);
     
     // Validate if:
@@ -253,6 +254,7 @@ const FormField = ({
 
   return (
     <div className={`form-field${name ? ` field-${name}` : ''}`}>
+      {type === 'file' && console.log(`[FormField.render] ${name} render, prop value=`, value, 'typeof=', typeof value, 'isArray=', Array.isArray(value))}
       <label htmlFor={name} className={hideLabel ? 'label-hidden' : undefined}>
         {label.includes('*') ? (
           <>
@@ -370,6 +372,49 @@ const FormField = ({
           />
         ) : (
           (() => {
+            // Custom rendering for file inputs to show the selected filename in a read-only text box
+            if (type === 'file') {
+              const fileName = Array.isArray(value)
+                ? value.map((f) => (f && f.name) || String(f)).join(', ')
+                : (value && value.name) || (typeof value === 'string' ? value : '');
+
+              return (
+                <div className={`file-field${error ? ' error' : ''}`}>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    id={name}
+                    name={name}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    required={required}
+                    className="file-input-hidden"
+                    style={{ display: 'none' }}
+                    accept={accept}
+                    multiple={multiple}
+                    aria-label={label}
+                  />
+                  <div className="file-input-display">
+                    <input
+                      type="text"
+                      readOnly
+                      value={fileName || ''}
+                      placeholder={placeholder}
+                      className={error ? 'error' : ''}
+                      onClick={() => fileInputRef.current && fileInputRef.current.click()}
+                    />
+                    <button
+                      type="button"
+                      className="file-input-button"
+                      onClick={() => fileInputRef.current && fileInputRef.current.click()}
+                    >
+                      Choose File
+                    </button>
+                  </div>
+                </div>
+              );
+            }
+
             const inputElement = (
               <input
                 type={type}
@@ -388,13 +433,44 @@ const FormField = ({
             );
 
             if (!prefix) {
-              return inputElement;
+              return (
+                <>
+                  {inputElement}
+                  {type === 'file' && value && (
+                    Array.isArray(value) ? (
+                      <div className="selected-files">
+                        {value.map((f, idx) => (
+                          <div key={idx} className="selected-file">{(f && f.name) || String(f)}</div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="selected-files">
+                        <div className="selected-file">{(value && value.name) || String(value)}</div>
+                      </div>
+                    )
+                  )}
+                </>
+              );
             }
 
             return (
               <div className={`field-control has-prefix${error ? ' error' : ''}`}>
                 <span className="field-prefix">{prefix}</span>
                 {inputElement}
+                {/* Display selected file name(s) for file inputs */}
+                {type === 'file' && value && (
+                  Array.isArray(value) ? (
+                    <div className="selected-files">
+                      {value.map((f, idx) => (
+                        <div key={idx} className="selected-file">{(f && f.name) || String(f)}</div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="selected-files">
+                      <div className="selected-file">{(value && value.name) || String(value)}</div>
+                    </div>
+                  )
+                )}
               </div>
             );
           })()
