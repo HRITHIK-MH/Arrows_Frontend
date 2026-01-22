@@ -1,7 +1,17 @@
 import React, { useState } from 'react';
+import { FiCheck } from 'react-icons/fi';
 import './MultiStepForm.css';
 
-const MultiStepForm = ({ steps, onSubmit, validationErrors = {}, onValidateStep }) => {
+const MultiStepForm = ({
+  steps,
+  onSubmit,
+  validationErrors = {},
+  onValidateStep,
+  showDraftAction = false,
+  draftLabel = "Save as Draft",
+  onSaveDraft,
+  submitLabel = "Submit"
+}) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState({});
   const [stepFields, setStepFields] = useState({});
@@ -48,6 +58,9 @@ const MultiStepForm = ({ steps, onSubmit, validationErrors = {}, onValidateStep 
   };
 
   const showStepWarning = (stepIndex) => {
+    if (steps[stepIndex]?.skipValidation) {
+      return;
+    }
     const { missing, invalid } = getStepIssues(stepIndex);
     if (missing.length === 0 && invalid.length === 0) {
       return;
@@ -64,6 +77,9 @@ const MultiStepForm = ({ steps, onSubmit, validationErrors = {}, onValidateStep 
   };
 
   const validateCurrentStep = (stepIndex) => {
+    if (steps[stepIndex]?.skipValidation) {
+      return true;
+    }
     const { missing, invalid } = getStepIssues(stepIndex);
     return missing.length === 0 && invalid.length === 0;
   };
@@ -71,7 +87,7 @@ const MultiStepForm = ({ steps, onSubmit, validationErrors = {}, onValidateStep 
   const handleNext = () => {
     if (currentStep < steps.length - 1) {
       // Trigger validation for the current step fields
-      if (onValidateStep) {
+      if (onValidateStep && !steps[currentStep]?.skipValidation) {
         onValidateStep(currentStep, formData);
       }
       
@@ -102,7 +118,13 @@ const MultiStepForm = ({ steps, onSubmit, validationErrors = {}, onValidateStep 
   };
 
   const handleSubmit = (e) => {
-    e.preventDefault();
+    if (e) {
+      e.preventDefault();
+    }
+    if (currentStep < steps.length - 1) {
+      handleNext();
+      return;
+    }
     // Check if current step is valid before submitting
     if (validateCurrentStep(currentStep)) {
       onSubmit(formData);
@@ -113,23 +135,47 @@ const MultiStepForm = ({ steps, onSubmit, validationErrors = {}, onValidateStep 
 
   // Check if current step is valid
   const isCurrentStepValid = () => {
-    const { missing, invalid } = getStepIssues(currentStep);
-    return missing.length === 0 && invalid.length === 0;
+    return validateCurrentStep(currentStep);
   };
 
   const CurrentStepComponent = steps[currentStep].component;
 
+  const getStepState = (index) => {
+    if (index < currentStep) return 'complete';
+    if (index === currentStep) return 'active';
+    return 'upcoming';
+  };
+
+  const handleSaveDraft = () => {
+    if (onSaveDraft) {
+      onSaveDraft(formData);
+    }
+  };
+
   return (
     <div className="multi-step-form">
       <div className="step-indicator">
-        {steps.map((step, index) => (
-          <div key={index} className={`step ${index <= currentStep ? 'active' : ''}`}>
-            <span className="step-number">{index + 1}</span>
-            <span className="step-label">{step.title || `Step ${index + 1}`}</span>
-          </div>
-        ))}
+        {steps.map((step, index) => {
+          const state = getStepState(index);
+          return (
+            <div
+              key={index}
+              className={`step ${state}`}
+              aria-current={state === 'active' ? 'step' : undefined}
+            >
+              <span className="step-circle" aria-hidden="true">
+                {state === 'complete' ? (
+                  <FiCheck className="step-check" aria-hidden="true" />
+                ) : (
+                  <span className="step-dot" />
+                )}
+              </span>
+              <span className="step-label">{step.title || `Step ${index + 1}`}</span>
+            </div>
+          );
+        })}
       </div>
-      <form onSubmit={handleSubmit}>
+      <div className="multi-step-form-body">
         <CurrentStepComponent 
           formData={formData} 
           onChange={handleChange} 
@@ -137,23 +183,45 @@ const MultiStepForm = ({ steps, onSubmit, validationErrors = {}, onValidateStep 
           validationErrors={validationErrors}
         />
         <div className="form-buttons">
-          {currentStep > 0 && <button type="button" onClick={handlePrev}>Previous</button>}
-          {currentStep < steps.length - 1 ? (
-            <button 
-              type="button" 
-              onClick={handleNext}
+          {showDraftAction && (
+            <button
+              type="button"
+              className="form-btn secondary"
+              onClick={handleSaveDraft}
             >
-              Next
-            </button>
-          ) : (
-            <button 
-              type="submit"
-            >
-              Submit
+              {draftLabel}
             </button>
           )}
+          <div className="form-buttons-right">
+            {currentStep > 0 && (
+              <button
+                type="button"
+                className="form-btn secondary"
+                onClick={handlePrev}
+              >
+                Previous
+              </button>
+            )}
+            {currentStep < steps.length - 1 ? (
+              <button
+                type="button"
+                className="form-btn primary"
+                onClick={handleNext}
+              >
+                Next
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="form-btn primary"
+                onClick={handleSubmit}
+              >
+                {submitLabel}
+              </button>
+            )}
+          </div>
         </div>
-      </form>
+      </div>
     </div>
   );
 };

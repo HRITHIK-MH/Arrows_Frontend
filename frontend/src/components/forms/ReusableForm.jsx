@@ -10,7 +10,16 @@ const createFormConfig = (config) => {
   return {
     steps: config.steps.map(step => ({
       title: step.title,
-      component: (props) => <FormStep {...props} fields={step.fields} title={step.title} />
+      skipValidation: Boolean(step.skipValidation),
+      component: step.component
+        ? step.component
+        : (props) => (
+          <FormStep
+            {...props}
+            fields={step.fields || []}
+            title={step.title}
+          />
+        )
     })),
     validationRules: config.validationRules || {},
     columns: config.columns || []
@@ -244,12 +253,31 @@ const ReusableForm = ({ config, onSubmit }) => {
   // Enhanced steps with validation
   const enhancedSteps = formConfig.steps.map((step, index) => {
     const StepComponent = step.component;
+    const configStep = config.steps[index];
+    const stepFields = configStep?.fields || [];
+
+    if (configStep?.component) {
+      return {
+        title: step.title,
+        skipValidation: Boolean(configStep?.skipValidation),
+        component: (props) => (
+          <StepComponent
+            {...props}
+            fields={stepFields}
+            onSetStepFields={props.onSetStepFields}
+            validationErrors={validationErrors}
+          />
+        )
+      };
+    }
+
     return {
       title: step.title,
+      skipValidation: Boolean(configStep?.skipValidation),
       component: (props) => (
         <StepComponent
           {...props}
-          fields={config.steps[index].fields.map(field => ({
+          fields={stepFields.map(field => ({
             ...field,
             validate: field.validationRule ? createValidationFunction(field.validationRule) : null,
             onValidation: handleValidation
@@ -285,7 +313,7 @@ const ReusableForm = ({ config, onSubmit }) => {
   const handleSubmit = async (formData) => {
     try {
       // Validate all mandatory fields before submission
-      const allFields = config.steps.flatMap(step => step.fields);
+      const allFields = config.steps.flatMap(step => step.fields || []);
       const { isValid: isMandatoryValid, errors: mandatoryErrors } = await validateAllMandatoryFields(
         formData,
         allFields
@@ -367,6 +395,10 @@ const ReusableForm = ({ config, onSubmit }) => {
         onSubmit={handleSubmit} 
         validationErrors={validationErrors}
         onValidateStep={validateStepFields}
+        showDraftAction={config.showDraftAction}
+        draftLabel={config.draftLabel}
+        onSaveDraft={config.onSaveDraft}
+        submitLabel={config.submitLabel}
       />
     </div>
   );
