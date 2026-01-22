@@ -394,22 +394,16 @@ const FormField = ({
                     multiple={multiple}
                     aria-label={label}
                   />
-                  <div className="file-input-display">
+                  <div className="file-input-display no-button">
+                    <span className="file-icon upload-icon" aria-hidden="true">⬆</span>
                     <input
                       type="text"
                       readOnly
                       value={fileName || ''}
-                      placeholder={placeholder}
-                      className={error ? 'error' : ''}
+                      placeholder={placeholder || 'No file chosen'}
+                      className={`file-visual-input${error ? ' error' : ''}`}
                       onClick={() => fileInputRef.current && fileInputRef.current.click()}
                     />
-                    <button
-                      type="button"
-                      className="file-input-button"
-                      onClick={() => fileInputRef.current && fileInputRef.current.click()}
-                    >
-                      Choose File
-                    </button>
                   </div>
                 </div>
               );
