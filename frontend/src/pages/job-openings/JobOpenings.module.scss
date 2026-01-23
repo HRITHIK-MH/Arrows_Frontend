@@ -324,7 +324,73 @@
   font-size: 14px;
 }
 
-@media (max-width: 1024px) {
+/* Extra small devices (phones, 600px and down) */
+@media only screen and (max-width: 600px) {
+  .page {
+    height: auto;
+    overflow: visible;
+  }
+
+  .jobCard {
+    padding: 14px;
+  }
+
+  .infoRow {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .description {
+    font-size: 12px;
+  }
+
+  .createButton {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .filtersBar {
+    align-items: stretch;
+    padding: 8px;
+  }
+
+  .filtersLeft {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filtersRight {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .searchField,
+  .selectField {
+    min-width: 100%;
+    width: 100%;
+  }
+
+  .applyButton,
+  .clearButton {
+    flex: 1 1 auto;
+  }
+
+  .tableWrap :global(.data-table) {
+    min-width: 640px;
+  }
+
+  .tableFooter {
+    flex-wrap: wrap;
+  }
+}
+
+/* Small devices (portrait tablets and large phones, 600px and up) */
+@media only screen and (min-width: 600px) {
+  .jobCard {
+    padding: 16px;
+  }
+
   .infoRow {
     flex-direction: column;
     align-items: flex-start;
@@ -337,20 +403,65 @@
   .filtersBar {
     align-items: flex-start;
   }
-}
 
-@media (max-width: 768px) {
-  .jobCard {
-    padding: 16px;
+  .searchField {
+    min-width: 220px;
   }
 
-  .filtersRight {
-    width: 100%;
-    justify-content: flex-start;
+  .selectField {
+    min-width: 140px;
   }
 
   .tableWrap :global(.data-table) {
-    min-width: 760px;
+    min-width: 720px;
+  }
+}
+
+/* Medium devices (landscape tablets, 768px and up) */
+@media only screen and (min-width: 768px) {
+  .jobCard {
+    padding: 18px;
+  }
+
+  .filtersRight {
+    width: auto;
+    justify-content: flex-start;
+  }
+}
+
+/* Large devices (laptops/desktops, 992px and up) */
+@media only screen and (min-width: 992px) {
+  .infoRow {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .filtersBar {
+    flex-wrap: nowrap;
+  }
+
+  .filtersLeft {
+    flex-wrap: nowrap;
+  }
+
+  .filtersRight {
+    width: auto;
+    justify-content: flex-end;
+  }
+
+  .tableWrap :global(.data-table) {
+    min-width: 940px;
+  }
+}
+
+/* Extra large devices (large laptops and desktops, 1200px and up) */
+@media only screen and (min-width: 1200px) {
+  .jobCard {
+    padding: 22px;
+  }
+
+  .tableWrap :global(.data-table) {
+    min-width: 1040px;
   }
 }
 
