@@ -1,5 +1,7 @@
-// Example configurations for different forms
+import TeamMembersStep from "./TeamMembersStep";
+import PermissionStep from "./PermissionStep";
 
+// Example configurations for different forms
 // Job Application Form Configuration
 export const jobApplicationConfig = {
   title: "Job Application Form",
@@ -185,6 +187,9 @@ export const jobOpeningConfig = {
   itemName: "Job Openings",
   formClassName: "job-opening-form",
   hideTitle: true,
+  showDraftAction: true,
+  draftLabel: "Save as Draft",
+  submitLabel: "Create JD",
   steps: [
     {
       title: "Job Information",
@@ -451,76 +456,33 @@ export const jobOpeningConfig = {
       ]
     },
     {
-      title: "Requirements & Compensation",
+      title: "Team Members",
+      component: TeamMembersStep,
+      skipValidation: true,
       fields: [
         {
-          name: "requiredSkills",
-          label: "Required Skills",
-          type: "multiselect",
-          required: true,
-          validationRule: "skills",
-          options: [
-            { value: "javascript", label: "JavaScript" },
-            { value: "react", label: "React" },
-            { value: "node", label: "Node.js" },
-            { value: "python", label: "Python" },
-            { value: "java", label: "Java" },
-            { value: "csharp", label: "C#" },
-            { value: "php", label: "PHP" },
-            { value: "ruby", label: "Ruby" },
-            { value: "sql", label: "SQL" },
-            { value: "mongodb", label: "MongoDB" },
-            { value: "aws", label: "AWS" },
-            { value: "docker", label: "Docker" },
-            { value: "kubernetes", label: "Kubernetes" },
-            { value: "git", label: "Git" },
-            { value: "agile", label: "Agile/Scrum" },
-            { value: "leadership", label: "Leadership" }
-          ]
+          name: "teamMembers",
+          label: "Team Members",
+          type: "custom",
+          required: false
         }
       ]
     },
     {
-      title: "Job Description",
+      title: "Submission",
+      component: PermissionStep,
       fields: [
         {
-          name: "jobDescription",
-          label: "Job Description",
-          type: "textarea",
-          required: true,
-          validationRule: "description"
+          name: "permissionVisibility",
+          label: "Visibility",
+          type: "custom",
+          required: false
         },
         {
-          name: "responsibilities",
-          label: "Key Responsibilities",
-          type: "textarea",
-          required: true,
-          validationRule: "description"
-        },
-        {
-          name: "benefits",
-          label: "Benefits & Perks",
-          type: "multiselect",
-          required: false,
-          validationRule: "benefits",
-          options: [
-            { value: "health-insurance", label: "Health Insurance" },
-            { value: "dental-insurance", label: "Dental Insurance" },
-            { value: "vision-insurance", label: "Vision Insurance" },
-            { value: "401k", label: "401(k) Matching" },
-            { value: "paid-time-off", label: "Paid Time Off" },
-            { value: "remote-work", label: "Remote Work Options" },
-            { value: "flexible-hours", label: "Flexible Hours" },
-            { value: "professional-development", label: "Professional Development" },
-            { value: "gym-membership", label: "Gym Membership" },
-            { value: "meal-allowance", label: "Meal Allowance" },
-            { value: "stock-options", label: "Stock Options" },
-            { value: "bonus", label: "Performance Bonus" },
-            { value: "parental-leave", label: "Parental Leave" },
-            { value: "mental-health", label: "Mental Health Support" },
-            { value: "learning-budget", label: "Learning Budget" },
-            { value: "company-retreats", label: "Company Retreats" }
-          ]
+          name: "permissionAccess",
+          label: "Access",
+          type: "custom",
+          required: false
         }
       ]
     }

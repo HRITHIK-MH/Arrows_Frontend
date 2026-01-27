@@ -239,17 +239,17 @@
 }
 
 .reusable-form-page.job-opening-form .step-indicator {
-  --step-width: 140px;
+  --step-width: 150px;
   display: flex;
   justify-content: center;
   width: 100%;
-  max-width: calc(var(--step-width) * 3 + 56px);
-  margin: 8px auto 28px;
-  gap: 28px;
+  max-width: calc(var(--step-width) * 3 + 64px);
+  margin: 6px auto 24px;
+  gap: 32px;
 }
 
 .reusable-form-page.job-opening-form .step-indicator::before {
-  top: 16px;
+  top: 15px;
   left: calc(var(--step-width) / 2);
   right: calc(var(--step-width) / 2);
   height: 1px;
@@ -261,19 +261,16 @@
   min-width: var(--step-width);
 }
 
-.reusable-form-page.job-opening-form .step-number {
-  width: 32px;
-  height: 32px;
+.reusable-form-page.job-opening-form .step-circle {
+  width: 28px;
+  height: 28px;
   border-width: 2px;
-  font-size: 0;
-  color: transparent;
-  margin-bottom: 8px;
   box-shadow: none;
 }
 
-.reusable-form-page.job-opening-form .step-number::after {
-  width: 12px;
-  height: 12px;
+.reusable-form-page.job-opening-form .step-dot {
+  width: 8px;
+  height: 8px;
 }
 
 .reusable-form-page.job-opening-form .step-label {
@@ -288,14 +285,314 @@
   }
 }
 
-.reusable-form-page.job-opening-form .step.active .step-number {
-  animation: none;
+.reusable-form-page.job-opening-form .form-buttons {
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 28px;
+  padding-top: 16px;
+  border-top: 1px solid #e2e8f0;
 }
 
-.reusable-form-page.job-opening-form .form-buttons {
+.reusable-form-page.job-opening-form .form-buttons-right {
+  margin-left: auto;
+}
+
+.reusable-form-page.job-opening-form .form-btn {
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 12px;
+}
+
+.reusable-form-page.job-opening-form .form-btn.primary {
+  box-shadow: 0 8px 14px rgba(63, 144, 246, 0.18);
+}
+
+.reusable-form-page.job-opening-form .team-members-step {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.reusable-form-page.job-opening-form .team-members-toolbar {
+  display: flex;
   justify-content: flex-end;
+}
+
+.reusable-form-page.job-opening-form .assign-button {
+  background: #3f90f6;
+  color: #fff;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  box-shadow: 0 8px 16px rgba(63, 144, 246, 0.2);
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.reusable-form-page.job-opening-form .assign-button:hover {
+  background: #2f7be0;
+  box-shadow: 0 10px 18px rgba(63, 144, 246, 0.28);
+}
+
+.reusable-form-page.job-opening-form .team-members-table {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  background: #fff;
+}
+
+.reusable-form-page.job-opening-form .team-members-table table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 12px;
+  min-width: 720px;
+}
+
+.reusable-form-page.job-opening-form .team-members-table th {
+  background-color: #eef2f6;
+  font-weight: 600;
+  font-size: 12px;
+  color: #64748b;
+  text-align: left;
+  padding: 10px 12px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.reusable-form-page.job-opening-form .team-members-table td {
+  font-size: 12px;
+  color: #0f172a;
+  padding: 10px 12px;
+  border-bottom: 1px dashed #e2e8f0;
+}
+
+.reusable-form-page.job-opening-form .team-members-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.reusable-form-page.job-opening-form .team-members-table .select-col {
+  width: 36px;
+}
+
+.reusable-form-page.job-opening-form .team-members-table input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #3f90f6;
+}
+
+.reusable-form-page.job-opening-form .team-members-error {
+  color: #dc2626;
+  font-size: 12px;
+}
+
+.reusable-form-page.job-opening-form .team-members-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+.reusable-form-page.job-opening-form .team-members-modal {
+  width: min(360px, 90vw);
+  background: #fff;
+  border-radius: 22px;
+  padding: 20px;
+  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.18);
+}
+
+.reusable-form-page.job-opening-form .modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.reusable-form-page.job-opening-form .modal-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.reusable-form-page.job-opening-form .modal-close {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #f1f5f9;
+  color: #64748b;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+}
+
+.reusable-form-page.job-opening-form .modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.reusable-form-page.job-opening-form .modal-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.reusable-form-page.job-opening-form .modal-label {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.reusable-form-page.job-opening-form .modal-input {
+  width: 100%;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 12px;
+  color: #0f172a;
+}
+
+.reusable-form-page.job-opening-form .modal-input:focus {
+  outline: none;
+  border-color: #93c5fd;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+}
+
+.reusable-form-page.job-opening-form .modal-actions {
+  display: flex;
+  align-items: center;
   gap: 10px;
-  margin-top: 24px;
+  margin-top: 6px;
+}
+
+.reusable-form-page.job-opening-form .modal-btn {
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.reusable-form-page.job-opening-form .modal-btn.primary {
+  background: #3f90f6;
+  color: #fff;
+  box-shadow: 0 8px 16px rgba(63, 144, 246, 0.2);
+}
+
+.reusable-form-page.job-opening-form .modal-btn.secondary {
+  background: #fff;
+  border-color: #cbd5ff;
+  color: #2563eb;
+}
+
+.reusable-form-page.job-opening-form .modal-btn.primary:hover {
+  background: #2f7be0;
+}
+
+.reusable-form-page.job-opening-form .modal-btn.secondary:hover {
+  background: #eff6ff;
+}
+
+.reusable-form-page.job-opening-form .permission-step {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.reusable-form-page.job-opening-form .permission-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.reusable-form-page.job-opening-form .permission-panel {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 160px;
+}
+
+.reusable-form-page.job-opening-form .permission-header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.reusable-form-page.job-opening-form .permission-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #0f172a;
+  margin: 0;
+}
+
+.reusable-form-page.job-opening-form .permission-subtitle {
+  font-size: 11px;
+  color: #64748b;
+  margin: 0;
+}
+
+.reusable-form-page.job-opening-form .permission-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+
+.reusable-form-page.job-opening-form .permission-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: #0f172a;
+}
+
+.reusable-form-page.job-opening-form .permission-option input {
+  width: 14px;
+  height: 14px;
+  accent-color: #3f90f6;
+}
+
+.reusable-form-page.job-opening-form .permission-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.reusable-form-page.job-opening-form .permission-input {
+  width: 100%;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 12px;
+  color: #0f172a;
+}
+
+.reusable-form-page.job-opening-form .permission-input:disabled {
+  background: #eef2f6;
+  color: #94a3b8;
+}
+
+@media (max-width: 1100px) {
+  .reusable-form-page.job-opening-form .permission-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .reusable-form-page.job-opening-form .permission-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* Responsive adjustments */
