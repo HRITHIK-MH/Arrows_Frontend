@@ -1,0 +1,259 @@
+// Progress Bar Demo Page Styles
+
+.demoPage {
+  padding: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+  background: #f8fafc;
+  min-height: 100vh;
+}
+
+.header {
+  margin-bottom: 40px;
+  
+  h1 {
+    font-size: 32px;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0 0 8px 0;
+  }
+  
+  p {
+    font-size: 16px;
+    color: #64748b;
+    margin: 0;
+  }
+}
+
+.section {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  
+  h2 {
+    font-size: 20px;
+    font-weight: 600;
+    color: #0f172a;
+    margin: 0 0 20px 0;
+    padding-bottom: 12px;
+    border-bottom: 2px solid #e2e8f0;
+  }
+  
+  h3 {
+    font-size: 18px;
+    font-weight: 600;
+    color: #1e293b;
+    margin: 0 0 12px 0;
+  }
+}
+
+.demoGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.demoItem {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  
+  label {
+    font-size: 14px;
+    font-weight: 500;
+    color: #475569;
+  }
+}
+
+.slider {
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: #e2e8f0;
+  outline: none;
+  margin-top: 8px;
+  cursor: pointer;
+  
+  &::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #2563eb;
+    cursor: pointer;
+    transition: all 0.2s;
+    
+    &:hover {
+      background: #1d4ed8;
+      transform: scale(1.1);
+    }
+  }
+  
+  &::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #2563eb;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+    
+    &:hover {
+      background: #1d4ed8;
+      transform: scale(1.1);
+    }
+  }
+}
+
+.stepDemo {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 20px;
+  background: #f8fafc;
+  border-radius: 8px;
+}
+
+.stepControls {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  
+  button {
+    padding: 10px 20px;
+    background: #2563eb;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    
+    &:hover:not(:disabled) {
+      background: #1d4ed8;
+      transform: translateY(-1px);
+    }
+    
+    &:disabled {
+      background: #cbd5e1;
+      cursor: not-allowed;
+    }
+  }
+}
+
+.verticalDemo {
+  display: flex;
+  gap: 40px;
+  padding: 20px;
+  background: #f8fafc;
+  border-radius: 8px;
+  min-height: 300px;
+}
+
+.verticalLeft {
+  flex: 0 0 200px;
+}
+
+.verticalRight {
+  flex: 1;
+  
+  h3 {
+    margin-top: 0;
+  }
+  
+  p {
+    color: #64748b;
+    line-height: 1.6;
+    margin-bottom: 16px;
+  }
+  
+  ul {
+    list-style: none;
+    padding: 0;
+    
+    li {
+      padding: 8px 0;
+      color: #475569;
+      font-size: 14px;
+    }
+  }
+}
+
+.exampleCard {
+  background: #f8fafc;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 16px;
+  
+  h3 {
+    margin-top: 0;
+  }
+}
+
+.exampleContent {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.exampleRow {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  
+  span {
+    font-size: 14px;
+    font-weight: 500;
+    color: #475569;
+  }
+}
+
+.codeBlock {
+  background: #1e293b;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 16px;
+  
+  h4 {
+    color: #e2e8f0;
+    font-size: 14px;
+    font-weight: 600;
+    margin: 0 0 12px 0;
+  }
+  
+  pre {
+    margin: 0;
+    padding: 0;
+    color: #cbd5e1;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    overflow-x: auto;
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+  .demoPage {
+    padding: 16px;
+  }
+  
+  .header h1 {
+    font-size: 24px;
+  }
+  
+  .section {
+    padding: 16px;
+  }
+  
+  .verticalDemo {
+    flex-direction: column;
+  }
+  
+  .verticalLeft {
+    flex: 1;
+  }
+}

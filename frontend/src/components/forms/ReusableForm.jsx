@@ -10,6 +10,7 @@ const createFormConfig = (config) => {
   return {
     steps: config.steps.map(step => ({
       title: step.title,
+<<<<<<< HEAD
       skipValidation: Boolean(step.skipValidation),
       component: step.component
         ? step.component
@@ -20,6 +21,9 @@ const createFormConfig = (config) => {
             title={step.title}
           />
         )
+=======
+      component: (props) => <FormStep {...props} fields={props.fields || step.fields} title={step.title} />
+>>>>>>> origin/main
     })),
     validationRules: config.validationRules || {},
     columns: config.columns || []
@@ -29,6 +33,7 @@ const createFormConfig = (config) => {
 // Reusable step component
 const FormStep = ({ formData, onChange, fields, title, onSetStepFields, validationErrors = {} }) => {
   console.log(`[FormStep] Rendering step: ${title}, validationErrors:`, validationErrors);
+  console.log(`[FormStep] Received fields:`, fields.map(f => ({ name: f.name, hasOnValidation: !!f.onValidation, hasValidate: !!f.validate })));
   const isJobBasicInfo = title === "Job Basic Information" || title === "Job Information";
   const fieldMetaSignatureRef = React.useRef('');
 
@@ -52,6 +57,7 @@ const FormStep = ({ formData, onChange, fields, title, onSetStepFields, validati
 
   const renderField = (field) => {
     console.log(`[FormStep.renderField] Rendering field ${field.name}, error: ${validationErrors[field.name]}`);
+      console.log(`[FormStep.renderField] Field ${field.name} has onValidation:`, !!field.onValidation);
     return (
       <FormField
         key={field.name}
@@ -70,6 +76,7 @@ const FormStep = ({ formData, onChange, fields, title, onSetStepFields, validati
         accept={field.accept}
         multiple={field.multiple}
         prefix={field.prefix}
+        formData={formData}
       />
     );
   };
@@ -82,6 +89,9 @@ const FormStep = ({ formData, onChange, fields, title, onSetStepFields, validati
         fieldMap[field.cssClass] = field;
       }
       fieldMap[field.name] = field;
+        if (field.name === 'jobPositionId' || field.name === 'positionName' || field.name === 'minExperience') {
+          console.log(`[isJobBasicInfo] Field ${field.name} has onValidation:`, !!field.onValidation, ', validate:', !!field.validate);
+        }
     });
 
     const getField = (name) => (fieldMap[name] ? renderField(fieldMap[name]) : null);
@@ -204,11 +214,12 @@ const ReusableForm = ({ config, onSubmit }) => {
     const rule = config.validationRules?.[ruleName];
     if (!rule) return null;
 
-    return async (value, fieldName) => {
+    return async (value, fieldName, formData) => {
       return new Promise((resolve, reject) => {
         setTimeout(async () => {
           try {
-            const result = await rule(value, fieldName);
+            // formData is now passed from FormField with current values
+            const result = await rule(value, fieldName, formData);
             if (result && typeof result === 'object' && 'isValid' in result) {
               if (result.isValid) {
                 resolve(result);

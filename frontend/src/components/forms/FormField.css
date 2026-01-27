@@ -1,3 +1,41 @@
+.file-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.file-input-display.no-button {
+  position: relative;
+  width: 100%;
+}
+
+.file-input-display.no-button .file-icon {
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  font-size: 16px;
+  z-index: 1;
+  color: #666;
+}
+
+.file-visual-input {
+  width: 100%;
+  padding-left: 35px !important;
+  padding-right: 8px;
+  height: 38px;
+  box-sizing: border-box;
+  cursor: pointer;
+}
+
+.file-field.error .file-visual-input {
+  border-color: #d9534f;
+}
+
+.file-input-hidden {
+  display: none;
+}
 .form-field {
   margin-bottom: 15px;
 }

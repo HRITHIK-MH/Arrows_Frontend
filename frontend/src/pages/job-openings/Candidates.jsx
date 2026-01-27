@@ -1,7 +1,8 @@
 
 
 import * as React from "react";
-import styles from "./JobOpenings.module.scss";
+import { FiFilter, FiMoreHorizontal, FiPlus, FiSearch } from "react-icons/fi";
+import styles from "./Candidates.module.scss";
 import ReusableForm from "../../components/forms/ReusableForm";
 import DataTable from "../../components/forms/DataTable";
 import { candidateConfig } from "../../components/forms/formConfigs";
@@ -20,110 +21,75 @@ const CandidateFilterBar = React.memo(({
   onFilterCandidateLocationChange,
   uniqueCandidatePositions,
   uniqueCandidateStatuses,
-  uniqueCandidateLocations
+  uniqueCandidateLocations,
+  hasFilters,
+  onClearFilters
 }) => (
-  <div style={{
-    display: 'flex',
-    gap: '12px',
-    marginBottom: '20px',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between'
-  }}>
-    {/* Search Bar */}
-    <input
-      type="text"
-      placeholder="Search"
-      value={searchTerm}
-      onChange={onSearchChange}
-      style={{
-        padding: '8px 12px',
-        borderRadius: '4px',
-        border: '1px solid #ddd',
-        minWidth: '150px',
-        flex: '1 1 150px',
-        fontSize: '14px',
-        maxWidth: '100%'
-      }}
-    />
+  <div className={styles.filtersBar}>
+    <div className={styles.filtersLeft}>
+      <FiFilter className={styles.filterIcon} aria-hidden="true" />
+      <div className={styles.searchField}>
+        <FiSearch className={styles.searchIcon} aria-hidden="true" />
+        <input
+          type="text"
+          placeholder="Search here..."
+          value={searchTerm}
+          onChange={onSearchChange}
+          className={styles.searchInput}
+        />
+      </div>
 
-    {/* Applied Position Filter */}
-    <select
-      value={filterCandidatePosition}
-      onChange={onFilterCandidatePositionChange}
-      style={{
-        padding: '8px 12px',
-        borderRadius: '4px',
-        border: '1px solid #ddd',
-        fontSize: '14px',
-        backgroundColor: '#fff',
-        cursor: 'pointer',
-        flex: '1 1 140px',
-        minWidth: '140px'
-      }}
-    >
-      <option value="">Applied Position</option>
-      {uniqueCandidatePositions.map(position => (
-        <option key={position} value={position}>{position}</option>
-      ))}
-    </select>
+      <select
+        value={filterCandidatePosition}
+        onChange={onFilterCandidatePositionChange}
+        className={styles.selectField}
+      >
+        <option value="">Applied Position</option>
+        {uniqueCandidatePositions.map(position => (
+          <option key={position} value={position}>{position}</option>
+        ))}
+      </select>
 
-    {/* Candidate Status Filter */}
-    <select
-      value={filterCandidateStatus}
-      onChange={onFilterCandidateStatusChange}
-      style={{
-        padding: '8px 12px',
-        borderRadius: '4px',
-        border: '1px solid #ddd',
-        fontSize: '14px',
-        backgroundColor: '#fff',
-        cursor: 'pointer',
-        flex: '1 1 140px',
-        minWidth: '140px'
-      }}
-    >
-      <option value="">Candidate Status</option>
-      {uniqueCandidateStatuses.map(status => (
-        <option key={status} value={status}>{status}</option>
-      ))}
-    </select>
+      <select
+        value={filterCandidateStatus}
+        onChange={onFilterCandidateStatusChange}
+        className={styles.selectField}
+      >
+        <option value="">Candidate Status</option>
+        {uniqueCandidateStatuses.map(status => (
+          <option key={status} value={status}>{status}</option>
+        ))}
+      </select>
 
-    {/* Candidate Location Filter */}
-    <select
-      value={filterCandidateLocation}
-      onChange={onFilterCandidateLocationChange}
-      style={{
-        padding: '8px 12px',
-        borderRadius: '4px',
-        border: '1px solid #ddd',
-        fontSize: '14px',
-        backgroundColor: '#fff',
-        cursor: 'pointer',
-        flex: '1 1 140px',
-        minWidth: '140px'
-      }}
-    >
-      <option value="">Candidate Location</option>
-      {uniqueCandidateLocations.map(location => (
-        <option key={location} value={location}>{location}</option>
-      ))}
-    </select>
+      <select
+        value={filterCandidateLocation}
+        onChange={onFilterCandidateLocationChange}
+        className={styles.selectField}
+      >
+        <option value="">Candidate Location</option>
+        {uniqueCandidateLocations.map(location => (
+          <option key={location} value={location}>{location}</option>
+        ))}
+      </select>
 
-    {/* More Options Button */}
-    <button style={{
-      padding: '8px 12px',
-      borderRadius: '4px',
-      border: '1px solid #ddd',
-      backgroundColor: '#fff',
-      cursor: 'pointer',
-      fontSize: '18px',
-      display: 'flex',
-      alignItems: 'center',
-      flexShrink: 0
-    }}>
-      ⋯
-    </button>
+      <button className={styles.moreButton} type="button" aria-label="More filters">
+        <FiMoreHorizontal size={16} />
+      </button>
+    </div>
+
+    <div className={styles.filtersRight}>
+      <button className={styles.applyButton} type="button" disabled={!hasFilters}>
+        Apply
+      </button>
+      <button
+        className={styles.clearButton}
+        type="button"
+        onClick={onClearFilters}
+        disabled={!hasFilters}
+      >
+        Clear
+      </button>
+    </div>
   </div>
 ));
 
@@ -196,6 +162,47 @@ export default function Candidates() {
     [submittedData, searchTerm, filterCandidatePosition, filterCandidateStatus, filterCandidateLocation]
   );
 
+  const hasFilters = Boolean(
+    searchTerm ||
+    filterCandidatePosition ||
+    filterCandidateStatus ||
+    filterCandidateLocation
+  );
+
+  const clearFilters = React.useCallback(() => {
+    setSearchTerm('');
+    setFilterCandidatePosition('');
+    setFilterCandidateStatus('');
+    setFilterCandidateLocation('');
+  }, []);
+
+  const getStatusClass = React.useCallback((status) => {
+    const normalized = String(status || '').toLowerCase();
+    if (normalized === 'new') return styles.statusNew;
+    if (normalized === 'shortlisted') return styles.statusShortlisted;
+    if (normalized === 'interview') return styles.statusInterview;
+    if (normalized === 'rejected') return styles.statusRejected;
+    if (normalized === 'hired') return styles.statusHired;
+    return styles.statusNeutral;
+  }, []);
+
+  const tableColumns = React.useMemo(() => [
+    { key: 'candidateId', label: 'Candidate ID' },
+    { key: 'candidateName', label: 'Full Name' },
+    { key: 'candidateEmail', label: 'Email' },
+    { key: 'candidatePhone', label: 'Phone' },
+    { key: 'candidatePosition', label: 'Applied Position' },
+    { key: 'candidateExperience', label: 'Experience (Years)' },
+    {
+      key: 'candidateStatus',
+      label: 'Status',
+      render: (value) => (
+        value ? <span className={`${styles.statusPill} ${getStatusClass(value)}`}>{value}</span> : "-"
+      )
+    },
+    { key: 'candidateLocation', label: 'Location' }
+  ], [getStatusClass]);
+
   const handleAddCandidate = React.useCallback(() => {
     setShowCandidateForm(true);
     setShowDataTable(false);
@@ -232,39 +239,29 @@ export default function Candidates() {
   }, []);
 
   return (
-    <div className={styles.card}>
-        {showSuccessMessage && (
-          <div style={{
-            padding: '12px 16px',
-            marginBottom: '20px',
-            backgroundColor: '#d4edda',
-            color: '#155724',
-            border: '1px solid #c3e6cb',
-            borderRadius: '4px',
-            fontSize: '14px'
-          }}>
-            ✓ Candidate added successfully
+    <div className={styles.page}>
+      {showSuccessMessage && (
+        <div className={styles.successMessage}>
+          ✓ Candidate added successfully
+        </div>
+      )}
+
+      <div className={styles.card}>
+        {!showCandidateForm && (
+          <div className={styles.infoRow}>
+            <p className={styles.description}>
+              View and manage all candidates with key details like experience, education, and current company. 
+              Track their progress through stages such as New, Shortlisted, Interview, Rejected, and Hired.
+            </p>
+            <button className={styles.addButton} onClick={handleAddCandidate}>
+              <FiPlus size={16} />
+              Add Candidate
+            </button>
           </div>
         )}
-        <div className="row">
-            <div className="col-8" style={{ marginBottom: '16px' }}>
-                {!showCandidateForm && (
-                    <p className={styles.p} style={{ wordWrap: 'break-word' }}>
-                        View and manage all candidates with key details like experience, education, and current company Track their progress through stages such as New, Shortlisted, Interview, Rejected, and Hired.
-                    </p>
-                )}
-             </div>
-            <div className="col-4" style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
-                {!showCandidateForm && (
-                  <button className="button" data-icon="add-circle" onClick={handleAddCandidate} style={{ whiteSpace: 'nowrap' }}>
-                    Add Candidate
-                  </button>
-                )}
-            </div>
-        </div>
 
         {showCandidateForm && (
-          <div style={{ marginTop: '30px' }}>
+          <div className={styles.formWrap}>
             <ReusableForm
               config={candidateConfig}
               onSubmit={handleCandidateSubmit}
@@ -273,7 +270,7 @@ export default function Candidates() {
         )}
 
         {showDataTable && (
-          <div style={{ marginTop: '30px' }}>
+          <div className={styles.tableSection}>
             <CandidateFilterBar
               searchTerm={searchTerm}
               onSearchChange={handleSearchChange}
@@ -286,18 +283,32 @@ export default function Candidates() {
               uniqueCandidatePositions={uniqueCandidatePositions}
               uniqueCandidateStatuses={uniqueCandidateStatuses}
               uniqueCandidateLocations={uniqueCandidateLocations}
+              hasFilters={hasFilters}
+              onClearFilters={clearFilters}
             />
 
-            <h2>Candidates Data</h2>
-            <DataTable 
-              data={filteredData} 
-              columns={candidateConfig.columns}
-              onView={handleViewCandidate}
-              onEdit={handleEditCandidate}
-              onDelete={handleDeleteCandidate}
-            />
+            <div className={styles.tableWrap}>
+              <DataTable 
+                data={filteredData} 
+                columns={tableColumns}
+                onView={handleViewCandidate}
+                onEdit={handleEditCandidate}
+                onDelete={handleDeleteCandidate}
+              />
+            </div>
+
+            <div className={styles.tableFooter}>
+              <span>Show</span>
+              <select className={styles.entriesSelect} defaultValue="10">
+                <option value="10">10</option>
+                <option value="25">25</option>
+                <option value="50">50</option>
+              </select>
+              <span>entries</span>
+            </div>
           </div>
         )}
+      </div>
     </div>
   );
 }

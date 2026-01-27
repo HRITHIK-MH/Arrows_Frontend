@@ -6,7 +6,7 @@ const Step1 = ({ formData, onChange }) => {
   const [validationErrors, setValidationErrors] = useState({});
 
   // Simulate AJAX validation for experience fields
-  const validateExperience = async (value, fieldName) => {
+  const validateExperience = async (value, fieldName, formDataParam) => {
     return new Promise((resolve, reject) => {
       setTimeout(() => {
         // For empty required fields
@@ -32,16 +32,26 @@ const Step1 = ({ formData, onChange }) => {
           return;
         }
         
-        // Get current form data including the current field being validated
-        const currentFormData = { ...formData, [fieldName]: value };
+        // Get current form data - use formDataParam passed from FormField, fallback to component formData
+        const currentFormData = formDataParam || { ...formData, [fieldName]: value };
         const minExp = parseFloat(currentFormData.minExperience || 0);
         const maxExp = parseFloat(currentFormData.maxExperience || 0);
         
-        if (currentFormData.minExperience !== undefined && currentFormData.maxExperience !== undefined && minExp > maxExp) {
+        console.log(`[Step1.validateExperience] fieldName: ${fieldName}, value: ${value}, minExp: ${minExp}, maxExp: ${maxExp}, currentFormData:`, currentFormData);
+        
+        // Check if both min and max are defined (not empty)
+        const minDefined = currentFormData.minExperience !== undefined && currentFormData.minExperience !== '' && currentFormData.minExperience !== null;
+        const maxDefined = currentFormData.maxExperience !== undefined && currentFormData.maxExperience !== '' && currentFormData.maxExperience !== null;
+        
+        console.log(`[Step1.validateExperience] minDefined: ${minDefined}, maxDefined: ${maxDefined}`);
+        
+        if (minDefined && maxDefined && minExp > maxExp) {
+          console.log(`[Step1.validateExperience] ❌ Min > Max error`);
           reject({ isValid: false, message: 'Min experience cannot be greater than max experience' });
           return;
         }
         
+        console.log(`[Step1.validateExperience] ✅ Valid`);
         resolve({ isValid: true });
       }, 500); // Reduced delay for better UX
     });
@@ -52,6 +62,29 @@ const Step1 = ({ formData, onChange }) => {
       ...prev,
       [fieldName]: result.isValid ? null : result.message
     }));
+    
+    // When either min or max changes, also validate the other field to show cross-field errors
+    if (fieldName === 'minExperience' || fieldName === 'maxExperience') {
+      const otherField = fieldName === 'minExperience' ? 'maxExperience' : 'minExperience';
+      const otherValue = formData[otherField];
+      
+      // If other field has a value, validate it too to update cross-field error
+      if (otherValue !== undefined && otherValue !== '') {
+        validateExperience(otherValue, otherField)
+          .then(res => {
+            setValidationErrors(prev => ({
+              ...prev,
+              [otherField]: null
+            }));
+          })
+          .catch(err => {
+            setValidationErrors(prev => ({
+              ...prev,
+              [otherField]: err.message
+            }));
+          });
+      }
+    }
   };
 
   return (
@@ -92,6 +125,7 @@ const Step1 = ({ formData, onChange }) => {
           validate={validateExperience}
           error={validationErrors.minExperience}
           onValidation={handleValidation}
+          formData={formData}
         />
         <FormField
           label="Max Experience (years)"
@@ -103,6 +137,7 @@ const Step1 = ({ formData, onChange }) => {
           validate={validateExperience}
           error={validationErrors.maxExperience}
           onValidation={handleValidation}
+          formData={formData}
         />
       </div>
     </div>

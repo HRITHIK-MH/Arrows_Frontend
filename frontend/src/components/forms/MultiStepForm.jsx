@@ -107,7 +107,12 @@ const MultiStepForm = ({
   };
 
   const handleChange = (field, value) => {
-    setFormData({ ...formData, [field]: value });
+    console.log(`[MultiStepForm.handleChange] field=${field}, value=`, value, 'typeof=', typeof value, 'isArray=', Array.isArray(value));
+    setFormData(prev => {
+      const next = { ...prev, [field]: value };
+      console.log('[MultiStepForm.handleChange] next formData preview:', next);
+      return next;
+    });
   };
 
   const handleSetStepFields = (fields) => {
