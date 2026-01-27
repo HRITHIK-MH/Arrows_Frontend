@@ -14,6 +14,8 @@ const Candidates = lazy(() => import("./pages/job-openings/Candidates.jsx"));
 const Clients = lazy(() => import("./pages/job-openings/Clients.jsx"));
 const ApplicationForm = lazy(() => import("./pages/application/ApplicationForm.jsx"));
 const ExampleFormsPage = lazy(() => import("./pages/example-forms/ExampleFormsPage.jsx"));
+const ProgressBarDemo = lazy(() => import("./pages/example-forms/ProgressBarDemo.jsx"));
+const JobProgressExample = lazy(() => import("./pages/example-forms/JobProgressExample.jsx"));
 
 // Loading fallback component
 const LoadingFallback = () => (
@@ -113,6 +115,8 @@ export default function App() {
             <Route path="/clients" element={<Clients />} />
             <Route path="/application" element={<ApplicationForm />} />
             <Route path="/example-forms" element={<ExampleFormsPage />} />
+            <Route path="/progress-demo" element={<ProgressBarDemo />} />
+            <Route path="/job-progress-example" element={<JobProgressExample />} />
 
             {/* Example page (Users) — add the rest similarly */}
             <Route
