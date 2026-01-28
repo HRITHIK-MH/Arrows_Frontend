@@ -10,20 +10,9 @@ const createFormConfig = (config) => {
   return {
     steps: config.steps.map(step => ({
       title: step.title,
-<<<<<<< HEAD
-      skipValidation: Boolean(step.skipValidation),
-      component: step.component
-        ? step.component
-        : (props) => (
-          <FormStep
-            {...props}
-            fields={step.fields || []}
-            title={step.title}
-          />
-        )
-=======
-      component: (props) => <FormStep {...props} fields={props.fields || step.fields} title={step.title} />
->>>>>>> origin/main
+      component: step.component || ((props) => (
+        <FormStep {...props} fields={props.fields || step.fields} title={step.title} />
+      ))
     })),
     validationRules: config.validationRules || {},
     columns: config.columns || []
@@ -266,6 +255,11 @@ const ReusableForm = ({ config, onSubmit }) => {
     const StepComponent = step.component;
     const configStep = config.steps[index];
     const stepFields = configStep?.fields || [];
+    const stepFieldsWithValidation = stepFields.map(field => ({
+      ...field,
+      validate: field.validationRule ? createValidationFunction(field.validationRule) : field.validate || null,
+      onValidation: handleValidation
+    }));
 
     if (configStep?.component) {
       return {
@@ -274,7 +268,7 @@ const ReusableForm = ({ config, onSubmit }) => {
         component: (props) => (
           <StepComponent
             {...props}
-            fields={stepFields}
+            fields={stepFieldsWithValidation}
             onSetStepFields={props.onSetStepFields}
             validationErrors={validationErrors}
           />
@@ -288,11 +282,7 @@ const ReusableForm = ({ config, onSubmit }) => {
       component: (props) => (
         <StepComponent
           {...props}
-          fields={stepFields.map(field => ({
-            ...field,
-            validate: field.validationRule ? createValidationFunction(field.validationRule) : null,
-            onValidation: handleValidation
-          }))}
+          fields={stepFieldsWithValidation}
           onSetStepFields={props.onSetStepFields}
           validationErrors={validationErrors}
         />

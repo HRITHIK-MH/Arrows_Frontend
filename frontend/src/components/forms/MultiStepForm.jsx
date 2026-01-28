@@ -181,12 +181,14 @@ const MultiStepForm = ({
         })}
       </div>
       <div className="multi-step-form-body">
-        <CurrentStepComponent 
-          formData={formData} 
-          onChange={handleChange} 
-          onSetStepFields={handleSetStepFields}
-          validationErrors={validationErrors}
-        />
+        <div className="form-step-scroll">
+          <CurrentStepComponent 
+            formData={formData} 
+            onChange={handleChange} 
+            onSetStepFields={handleSetStepFields}
+            validationErrors={validationErrors}
+          />
+        </div>
         <div className="form-buttons">
           {showDraftAction && (
             <button
