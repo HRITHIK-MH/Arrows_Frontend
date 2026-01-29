@@ -84,14 +84,49 @@
   margin-bottom: 16px;
 }
 
+.infoContent {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1 1 auto;
+}
+
 .description {
   margin: 0;
   color: #4b5563;
   font-size: 13px;
   line-height: 1.5;
-  flex: 1 1 auto;
   word-wrap: break-word;
 }
+
+.legendRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 16px;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.legendItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legendDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #cbd5e1;
+}
+
+.dotAdded { background: #ec4899; }
+.dotSourced { background: #8b5cf6; }
+.dotScreening { background: #f97316; }
+.dotAssessment { background: #16a34a; }
+.dotInterview { background: #64748b; }
+.dotOffer { background: #2563eb; }
+.dotRejected { background: #dc2626; }
 
 .addButton {
   display: inline-flex;
@@ -118,6 +153,16 @@
   &:active {
     transform: translateY(0);
   }
+}
+
+.addIcon {
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.2);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .formWrap {
@@ -264,42 +309,61 @@
   background: #fff;
 }
 
-.tableWrap :global(.data-table-container) {
-  margin-top: 0;
-}
-
-.tableWrap :global(.data-table) {
-  box-shadow: none;
+.candidateTable {
+  width: 100%;
   border-collapse: separate;
   border-spacing: 0;
-  min-width: 940px;
+  min-width: 980px;
 }
 
-.tableWrap :global(.data-table th) {
+.candidateTable th {
   background-color: #eef2f6;
   font-weight: 600;
   font-size: 12px;
   color: #64748b;
   border-bottom: 1px solid #e2e8f0;
+  text-align: left;
+  padding: 10px 12px;
 }
 
-.tableWrap :global(.data-table td) {
+.candidateTable td {
   font-size: 12px;
   color: #0f172a;
   border-bottom: 1px dashed #e2e8f0;
+  padding: 12px;
 }
 
-.tableWrap :global(.data-table tr:hover) {
+.candidateTable tr:hover {
   background-color: #f8fafc;
 }
 
-.tableWrap :global(.action-btn) {
-  color: #475569;
+.actionsCol {
+  text-align: center;
+  width: 120px;
 }
 
-.tableWrap :global(.action-btn:hover) {
-  background-color: #eef2f6;
-  transform: none;
+.actionIcons {
+  display: inline-flex;
+  gap: 8px;
+}
+
+.actionBtn {
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  color: #475569;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.actionBtn:hover {
+  background: #eef2f6;
+  border-color: #cbd5e1;
+  color: #1f2937;
 }
 
 .tableHeader {
@@ -338,6 +402,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 6px;
   padding: 2px 10px;
   border-radius: 999px;
   font-size: 11px;
@@ -345,40 +410,52 @@
   line-height: 1.4;
 }
 
-.statusNew {
-  background: #e0f2fe;
-  color: #0369a1;
-  border: 1px solid #bae6fd;
+.statusDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
 }
 
-.statusShortlisted {
-  background: #fef3c7;
-  color: #92400e;
-  border: 1px solid #fde68a;
-}
-
-.statusInterview {
-  background: #e8f0ff;
-  color: #2563eb;
-  border: 1px solid #c7dbff;
-}
-
-.statusRejected {
-  background: #fee2e2;
-  color: #991b1b;
-  border: 1px solid #fecaca;
-}
-
-.statusHired {
-  background: #eaf8ea;
-  color: #166534;
-  border: 1px solid #b7e4bd;
-}
-
-.statusNeutral {
+.statusProgress {
   background: #f1f5f9;
-  color: #64748b;
+  color: #0f172a;
   border: 1px solid #e2e8f0;
+}
+
+.statusCompleted {
+  background: #ecfdf3;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+.stagePill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.stageAdded { background: #fde2f1; color: #be185d; border: 1px solid #f9a8d4; }
+.stageSourced { background: #ede9fe; color: #6d28d9; border: 1px solid #c4b5fd; }
+.stageScreening { background: #ffedd5; color: #c2410c; border: 1px solid #fdba74; }
+.stageAssessment { background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
+.stageInterview { background: #e2e8f0; color: #475569; border: 1px solid #cbd5e1; }
+.stageOffer { background: #dbeafe; color: #1d4ed8; border: 1px solid #93c5fd; }
+.stageRejected { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
+.stageNeutral { background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; }
+
+.rating {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ratingStar {
+  color: #f59e0b;
 }
 
 // Responsive Styles
@@ -395,6 +472,10 @@
   .filtersBar {
     align-items: flex-start;
   }
+
+  .candidateTable {
+    min-width: 880px;
+  }
 }
 
 @media (max-width: 768px) {
@@ -407,7 +488,7 @@
     justify-content: flex-start;
   }
 
-  .tableWrap :global(.data-table) {
+  .candidateTable {
     min-width: 760px;
   }
 
@@ -432,5 +513,9 @@
 
   .selectField {
     flex: 1 1 auto;
+  }
+
+  .candidateTable {
+    min-width: 680px;
   }
 }

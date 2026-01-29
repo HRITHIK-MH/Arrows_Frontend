@@ -635,23 +635,6 @@
   .filtersBar {
     align-items: flex-start;
   }
-<<<<<<< HEAD
-=======
-
-  .pipelineGrid {
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  }
-
-  .pipelineHeader {
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .togglePipelineBtn {
-    align-self: flex-start;
-  }
-}
->>>>>>> origin/main
 
   .searchField {
     min-width: 220px;
