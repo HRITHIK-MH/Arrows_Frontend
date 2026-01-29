@@ -270,16 +270,13 @@
 }
 
 .reusable-form-page.job-opening-form .step-indicator::before {
-  top: 15px;
-  left: calc(var(--step-width) / 2);
-  right: calc(var(--step-width) / 2);
-  height: 1px;
-  background-color: #d1d5db;
+  background-color: transparent;
 }
 
 .reusable-form-page.job-opening-form .step {
   width: var(--step-width);
   min-width: var(--step-width);
+  position: relative;
 }
 
 .reusable-form-page.job-opening-form .step-circle {
@@ -292,6 +289,66 @@
 .reusable-form-page.job-opening-form .step-dot {
   width: 8px;
   height: 8px;
+  background-color: #cbd5e1;
+}
+
+.reusable-form-page.job-opening-form .step-number {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.reusable-form-page.job-opening-form .step.pending .step-circle {
+  border-color: #e5e7eb;
+  background: #fff;
+  color: #94a3b8;
+}
+
+.reusable-form-page.job-opening-form .step.complete .step-circle {
+  border-color: #22c55e;
+  background: #22c55e;
+  color: #fff;
+}
+
+.reusable-form-page.job-opening-form .step.complete .step-label {
+  color: #22c55e;
+}
+
+.reusable-form-page.job-opening-form .step.active .step-circle {
+  border-color: #3b82f6;
+  background: #3b82f6;
+  color: #fff;
+  box-shadow: 0 8px 18px rgba(59, 130, 246, 0.35);
+}
+
+.reusable-form-page.job-opening-form .step.active .step-label {
+  color: #3b82f6;
+  font-weight: 600;
+}
+
+.reusable-form-page.job-opening-form .step.active .step-dot {
+  display: none;
+}
+
+.reusable-form-page.job-opening-form .step:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 14px;
+  left: calc(50% + 14px);
+  height: 2px;
+  width: calc(var(--step-width) + 4px);
+  background-color: #e5e7eb;
+  z-index: 0;
+}
+
+.reusable-form-page.job-opening-form .step.complete:not(:last-child)::after {
+  background-color: #22c55e;
+  box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.08);
+}
+
+@media (max-width: 768px) {
+  .reusable-form-page.job-opening-form .step:not(:last-child)::after {
+    width: calc(var(--step-width) - 10px);
+  }
 }
 
 .reusable-form-page.job-opening-form .step-label {
@@ -655,16 +712,13 @@
 }
 
 .reusable-form-page.candidate-form .step-indicator::before {
-  top: 15px;
-  left: calc(var(--step-width) / 2);
-  right: calc(var(--step-width) / 2);
-  height: 1px;
-  background-color: #d1d5db;
+  background-color: transparent;
 }
 
 .reusable-form-page.candidate-form .step {
   width: var(--step-width);
   min-width: var(--step-width);
+  position: relative;
 }
 
 .reusable-form-page.candidate-form .step-circle {
@@ -677,6 +731,60 @@
 .reusable-form-page.candidate-form .step-dot {
   width: 8px;
   height: 8px;
+  background-color: #cbd5e1;
+}
+
+.reusable-form-page.candidate-form .step-number {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.reusable-form-page.candidate-form .step.pending .step-circle {
+  border-color: #e5e7eb;
+  background: #fff;
+  color: #94a3b8;
+}
+
+.reusable-form-page.candidate-form .step.complete .step-circle {
+  border-color: #22c55e;
+  background: #22c55e;
+  color: #fff;
+}
+
+.reusable-form-page.candidate-form .step.complete .step-label {
+  color: #22c55e;
+}
+
+.reusable-form-page.candidate-form .step.active .step-circle {
+  border-color: #3b82f6;
+  background: #3b82f6;
+  color: #fff;
+  box-shadow: 0 8px 18px rgba(59, 130, 246, 0.35);
+}
+
+.reusable-form-page.candidate-form .step.active .step-label {
+  color: #3b82f6;
+  font-weight: 600;
+}
+
+.reusable-form-page.candidate-form .step.active .step-dot {
+  display: none;
+}
+
+.reusable-form-page.candidate-form .step:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 14px;
+  left: calc(50% + 14px);
+  height: 2px;
+  width: calc(var(--step-width) + 4px);
+  background-color: #e5e7eb;
+  z-index: 0;
+}
+
+.reusable-form-page.candidate-form .step.complete:not(:last-child)::after {
+  background-color: #22c55e;
+  box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.08);
 }
 
 .reusable-form-page.candidate-form .step-label {
