@@ -10,7 +10,6 @@ const createFormConfig = (config) => {
   return {
     steps: config.steps.map(step => ({
       title: step.title,
-<<<<<<< HEAD
       skipValidation: Boolean(step.skipValidation),
       component: step.component
         ? step.component
@@ -21,9 +20,6 @@ const createFormConfig = (config) => {
             title={step.title}
           />
         )
-=======
-      component: (props) => <FormStep {...props} fields={props.fields || step.fields} title={step.title} />
->>>>>>> origin/main
     })),
     validationRules: config.validationRules || {},
     columns: config.columns || []
