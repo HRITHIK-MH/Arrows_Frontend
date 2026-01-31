@@ -30,53 +30,41 @@
 }
 
 .stepCircle {
-  width: 48px;
-  height: 48px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 600;
-  font-size: 16px;
+  font-size: 15px;
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  border: 3px solid;
+  border: 2px solid;
   background: white;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.08);
 }
 
 // Step statuses
 .step.pending .stepCircle {
-  border-color: #e2e8f0;
+  border-color: #e5e7eb;
   color: #cbd5e1;
   background: white;
-  transform: scale(0.95);
 }
 
 .step.active .stepCircle {
-  border-color: #3f90f6;
-  color: white;
-  background: #3f90f6;
-  box-shadow: 0 0 0 6px rgba(63, 144, 246, 0.15);
-  animation: pulse 2s ease-in-out infinite;
-  transform: scale(1.05);
+  border-color: #3b82f6;
+  color: #fff;
+  background: #3b82f6;
+  box-shadow: 0 8px 18px rgba(59, 130, 246, 0.35);
+  transform: scale(1);
 }
 
 .step.complete .stepCircle {
-  border-color: #10b981;
-  background: #10b981;
+  border-color: #22c55e;
+  background: #22c55e;
   color: white;
   transform: scale(1);
   animation: checkmarkPop 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-// Enhanced pulse animation for active step
-@keyframes pulse {
-  0%, 100% {
-    box-shadow: 0 0 0 0 rgba(63, 144, 246, 0.4);
-  }
-  50% {
-    box-shadow: 0 0 0 10px rgba(63, 144, 246, 0);
-  }
 }
 
 // Pop animation for completed steps
@@ -103,9 +91,9 @@
 }
 
 .stepLabel {
-  font-size: 14px;
-  font-weight: 500;
-  color: #94a3b8;
+  font-size: 13px;
+  font-weight: 600;
+  color: #9ca3af;
   text-align: center;
   max-width: 140px;
   white-space: nowrap;
@@ -114,13 +102,12 @@
   transition: all 0.3s ease;
   
   .step.active & {
-    color: #3f90f6;
+    color: #3b82f6;
     font-weight: 600;
-    transform: translateY(-2px);
   }
   
   .step.complete & {
-    color: #10b981;
+    color: #22c55e;
     font-weight: 600;
   }
   
@@ -149,8 +136,8 @@
 
 .connectorLine {
   width: 100%;
-  height: 3px;
-  background: #e2e8f0;
+  height: 2px;
+  background: #e5e7eb;
   position: relative;
   transition: all 0.5s ease;
   
@@ -160,7 +147,7 @@
   }
   
   &[data-status="complete"] {
-    background: #10b981;
+    background: #22c55e;
     
     &::after {
       content: '';
@@ -169,7 +156,7 @@
       left: 0;
       height: 100%;
       width: 100%;
-      background: #10b981;
+      background: #22c55e;
       animation: fillLineHorizontal 0.6s cubic-bezier(0.4, 0, 0.2, 1);
       
       .vertical & {
@@ -208,8 +195,8 @@
   }
   
   .stepCircle {
-    width: 32px;
-    height: 32px;
+    width: 30px;
+    height: 30px;
     font-size: 14px;
   }
   

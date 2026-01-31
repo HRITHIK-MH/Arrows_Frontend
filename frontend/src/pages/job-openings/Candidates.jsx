@@ -1,10 +1,18 @@
 
 
 import * as React from "react";
-import { FiFilter, FiMoreHorizontal, FiPlus, FiSearch } from "react-icons/fi";
+import {
+  FiFilter,
+  FiMoreHorizontal,
+  FiPlus,
+  FiSearch,
+  FiStar,
+  FiEye,
+  FiEdit2,
+  FiTrash2
+} from "react-icons/fi";
 import styles from "./Candidates.module.scss";
 import ReusableForm from "../../components/forms/ReusableForm";
-import DataTable from "../../components/forms/DataTable";
 import { candidateConfig } from "../../components/forms/formConfigs";
 import { debounce } from "../../utils/debounce";
 
@@ -13,15 +21,18 @@ import { debounce } from "../../utils/debounce";
 const CandidateFilterBar = React.memo(({
   searchTerm,
   onSearchChange,
-  filterCandidatePosition,
-  onFilterCandidatePositionChange,
-  filterCandidateStatus,
-  onFilterCandidateStatusChange,
-  filterCandidateLocation,
-  onFilterCandidateLocationChange,
-  uniqueCandidatePositions,
-  uniqueCandidateStatuses,
-  uniqueCandidateLocations,
+  filterSource,
+  onFilterSourceChange,
+  filterRating,
+  onFilterRatingChange,
+  filterStage,
+  onFilterStageChange,
+  filterStatus,
+  onFilterStatusChange,
+  uniqueSources,
+  uniqueRatings,
+  uniqueStages,
+  uniqueStatuses,
   hasFilters,
   onClearFilters
 }) => (
@@ -39,36 +50,31 @@ const CandidateFilterBar = React.memo(({
         />
       </div>
 
-      <select
-        value={filterCandidatePosition}
-        onChange={onFilterCandidatePositionChange}
-        className={styles.selectField}
-      >
-        <option value="">Applied Position</option>
-        {uniqueCandidatePositions.map(position => (
-          <option key={position} value={position}>{position}</option>
+      <select value={filterSource} onChange={onFilterSourceChange} className={styles.selectField}>
+        <option value="">Select Source</option>
+        {uniqueSources.map(source => (
+          <option key={source} value={source}>{source}</option>
         ))}
       </select>
 
-      <select
-        value={filterCandidateStatus}
-        onChange={onFilterCandidateStatusChange}
-        className={styles.selectField}
-      >
-        <option value="">Candidate Status</option>
-        {uniqueCandidateStatuses.map(status => (
+      <select value={filterRating} onChange={onFilterRatingChange} className={styles.selectField}>
+        <option value="">Select Ratings</option>
+        {uniqueRatings.map(rating => (
+          <option key={rating} value={rating}>{rating}</option>
+        ))}
+      </select>
+
+      <select value={filterStage} onChange={onFilterStageChange} className={styles.selectField}>
+        <option value="">Select Stage</option>
+        {uniqueStages.map(stage => (
+          <option key={stage} value={stage}>{stage}</option>
+        ))}
+      </select>
+
+      <select value={filterStatus} onChange={onFilterStatusChange} className={styles.selectField}>
+        <option value="">Select Status</option>
+        {uniqueStatuses.map(status => (
           <option key={status} value={status}>{status}</option>
-        ))}
-      </select>
-
-      <select
-        value={filterCandidateLocation}
-        onChange={onFilterCandidateLocationChange}
-        className={styles.selectField}
-      >
-        <option value="">Candidate Location</option>
-        {uniqueCandidateLocations.map(location => (
-          <option key={location} value={location}>{location}</option>
         ))}
       </select>
 
@@ -98,12 +104,54 @@ CandidateFilterBar.displayName = 'CandidateFilterBar';
 export default function Candidates() {
   const [showCandidateForm, setShowCandidateForm] = React.useState(false);
   const [showDataTable, setShowDataTable] = React.useState(true);
-  const [submittedData, setSubmittedData] = React.useState([]);
+  const [submittedData, setSubmittedData] = React.useState([
+    {
+      candidateId: "C001",
+      candidateName: "Raghul Mehta",
+      candidateEmail: "raghul.mehta@email.com",
+      modifiedTime: "11/10/2025 05:30 PM",
+      source: "Resume Inbox",
+      rating: "3/5",
+      stage: "Sourced",
+      status: "In Progress"
+    },
+    {
+      candidateId: "C002",
+      candidateName: "Priya Sharma",
+      candidateEmail: "priya.sharma@email.com",
+      modifiedTime: "11/10/2025 05:30 PM",
+      source: "Added by User",
+      rating: "4/5",
+      stage: "Pre-Screening",
+      status: "In Progress"
+    },
+    {
+      candidateId: "C003",
+      candidateName: "Arjun Rao",
+      candidateEmail: "arjun.rao@email.com",
+      modifiedTime: "11/10/2025 05:30 PM",
+      source: "Seek",
+      rating: "4/5",
+      stage: "Assessment",
+      status: "Completed"
+    },
+    {
+      candidateId: "C004",
+      candidateName: "Sneha Nair",
+      candidateEmail: "sneha.nair@email.com",
+      modifiedTime: "11/10/2025 05:30 PM",
+      source: "Resume Inbox",
+      rating: "2/5",
+      stage: "Client Interview",
+      status: "In Progress"
+    }
+  ]);
   const [showSuccessMessage, setShowSuccessMessage] = React.useState(false);
   const [searchTerm, setSearchTerm] = React.useState('');
-  const [filterCandidatePosition, setFilterCandidatePosition] = React.useState('');
-  const [filterCandidateStatus, setFilterCandidateStatus] = React.useState('');
-  const [filterCandidateLocation, setFilterCandidateLocation] = React.useState('');
+  const [filterSource, setFilterSource] = React.useState('');
+  const [filterRating, setFilterRating] = React.useState('');
+  const [filterStage, setFilterStage] = React.useState('');
+  const [filterStatus, setFilterStatus] = React.useState('');
 
   // Debounced search handler - reduces filter recalculations by 99%
   const debouncedSearch = React.useMemo(
@@ -116,31 +164,40 @@ export default function Candidates() {
   }, [debouncedSearch]);
 
   // useCallback for filter handlers - prevents unnecessary re-renders
-  const handleFilterCandidatePositionChange = React.useCallback((e) => {
-    setFilterCandidatePosition(e.target.value);
+  const handleFilterSourceChange = React.useCallback((e) => {
+    setFilterSource(e.target.value);
   }, []);
 
-  const handleFilterCandidateStatusChange = React.useCallback((e) => {
-    setFilterCandidateStatus(e.target.value);
+  const handleFilterRatingChange = React.useCallback((e) => {
+    setFilterRating(e.target.value);
   }, []);
 
-  const handleFilterCandidateLocationChange = React.useCallback((e) => {
-    setFilterCandidateLocation(e.target.value);
+  const handleFilterStageChange = React.useCallback((e) => {
+    setFilterStage(e.target.value);
+  }, []);
+
+  const handleFilterStatusChange = React.useCallback((e) => {
+    setFilterStatus(e.target.value);
   }, []);
 
   // Get unique values for filter dropdowns - memoized to avoid recalculations
-  const uniqueCandidatePositions = React.useMemo(() =>
-    [...new Set(submittedData.map(item => item.candidatePosition).filter(Boolean))],
+  const uniqueSources = React.useMemo(() =>
+    [...new Set(submittedData.map(item => item.source).filter(Boolean))],
     [submittedData]
   );
 
-  const uniqueCandidateStatuses = React.useMemo(() =>
-    [...new Set(submittedData.map(item => item.candidateStatus).filter(Boolean))],
+  const uniqueRatings = React.useMemo(() =>
+    [...new Set(submittedData.map(item => item.rating).filter(Boolean))],
     [submittedData]
   );
 
-  const uniqueCandidateLocations = React.useMemo(() =>
-    [...new Set(submittedData.map(item => item.candidateLocation).filter(Boolean))],
+  const uniqueStages = React.useMemo(() =>
+    [...new Set(submittedData.map(item => item.stage).filter(Boolean))],
+    [submittedData]
+  );
+
+  const uniqueStatuses = React.useMemo(() =>
+    [...new Set(submittedData.map(item => item.status).filter(Boolean))],
     [submittedData]
   );
 
@@ -153,55 +210,61 @@ export default function Candidates() {
           String(value).toLowerCase().includes(searchTerm.toLowerCase())
         );
       
-      const matchesCandidatePosition = !filterCandidatePosition || item.candidatePosition === filterCandidatePosition;
-      const matchesCandidateStatus = !filterCandidateStatus || item.candidateStatus === filterCandidateStatus;
-      const matchesCandidateLocation = !filterCandidateLocation || item.candidateLocation === filterCandidateLocation;
+      const matchesSource = !filterSource || item.source === filterSource;
+      const matchesRating = !filterRating || item.rating === filterRating;
+      const matchesStage = !filterStage || item.stage === filterStage;
+      const matchesStatus = !filterStatus || item.status === filterStatus;
 
-      return matchesSearch && matchesCandidatePosition && matchesCandidateStatus && matchesCandidateLocation;
+      return matchesSearch && matchesSource && matchesRating && matchesStage && matchesStatus;
     }),
-    [submittedData, searchTerm, filterCandidatePosition, filterCandidateStatus, filterCandidateLocation]
+    [submittedData, searchTerm, filterSource, filterRating, filterStage, filterStatus]
   );
 
   const hasFilters = Boolean(
     searchTerm ||
-    filterCandidatePosition ||
-    filterCandidateStatus ||
-    filterCandidateLocation
+    filterSource ||
+    filterRating ||
+    filterStage ||
+    filterStatus
   );
 
   const clearFilters = React.useCallback(() => {
     setSearchTerm('');
-    setFilterCandidatePosition('');
-    setFilterCandidateStatus('');
-    setFilterCandidateLocation('');
+    setFilterSource('');
+    setFilterRating('');
+    setFilterStage('');
+    setFilterStatus('');
+  }, []);
+
+  const getStageClass = React.useCallback((stage) => {
+    const normalized = String(stage || '').toLowerCase();
+    if (normalized === 'added') return styles.stageAdded;
+    if (normalized === 'sourced') return styles.stageSourced;
+    if (normalized === 'pre-screening') return styles.stageScreening;
+    if (normalized === 'assessment') return styles.stageAssessment;
+    if (normalized === 'client interview') return styles.stageInterview;
+    if (normalized === 'offer') return styles.stageOffer;
+    if (normalized === 'rejected') return styles.stageRejected;
+    return styles.stageNeutral;
   }, []);
 
   const getStatusClass = React.useCallback((status) => {
     const normalized = String(status || '').toLowerCase();
-    if (normalized === 'new') return styles.statusNew;
-    if (normalized === 'shortlisted') return styles.statusShortlisted;
-    if (normalized === 'interview') return styles.statusInterview;
-    if (normalized === 'rejected') return styles.statusRejected;
-    if (normalized === 'hired') return styles.statusHired;
-    return styles.statusNeutral;
+    if (normalized === 'completed') return styles.statusCompleted;
+    return styles.statusProgress;
   }, []);
 
-  const tableColumns = React.useMemo(() => [
-    { key: 'candidateId', label: 'Candidate ID' },
-    { key: 'candidateName', label: 'Full Name' },
-    { key: 'candidateEmail', label: 'Email' },
-    { key: 'candidatePhone', label: 'Phone' },
-    { key: 'candidatePosition', label: 'Applied Position' },
-    { key: 'candidateExperience', label: 'Experience (Years)' },
-    {
-      key: 'candidateStatus',
-      label: 'Status',
-      render: (value) => (
-        value ? <span className={`${styles.statusPill} ${getStatusClass(value)}`}>{value}</span> : "-"
-      )
-    },
-    { key: 'candidateLocation', label: 'Location' }
-  ], [getStatusClass]);
+  const formatTimestamp = React.useCallback((date = new Date()) => {
+    const pad = (value) => String(value).padStart(2, "0");
+    const month = pad(date.getMonth() + 1);
+    const day = pad(date.getDate());
+    const year = date.getFullYear();
+    const minutes = pad(date.getMinutes());
+    let hours = date.getHours();
+    const period = hours >= 12 ? "PM" : "AM";
+    hours = hours % 12 || 12;
+    return `${month}/${day}/${year} ${pad(hours)}:${minutes} ${period}`;
+  }, []);
 
   const handleAddCandidate = React.useCallback(() => {
     setShowCandidateForm(true);
@@ -226,8 +289,22 @@ export default function Candidates() {
   }, []);
 
   const handleCandidateSubmit = React.useCallback((data) => {
-    console.log('Candidate added:', data);
-    setSubmittedData(prev => [...prev, data]);
+    const firstName = data.firstName || "";
+    const lastName = data.lastName || "";
+    const candidateName = data.candidateName || `${firstName} ${lastName}`.trim();
+    const normalized = {
+      ...data,
+      candidateId: data.candidateId || data.candidateCode || "",
+      candidateName,
+      candidateEmail: data.primaryEmail || data.candidateEmail || "",
+      modifiedTime: data.modifiedTime || formatTimestamp(new Date()),
+      source: data.sourceName || data.sourceId || data.source || "",
+      rating: data.rating || "3/5",
+      stage: data.stage || "Added",
+      status: data.status || "In Progress"
+    };
+    console.log('Candidate added:', normalized);
+    setSubmittedData(prev => [...prev, normalized]);
     setShowCandidateForm(false);
     setShowDataTable(true);
     setShowSuccessMessage(true);
@@ -236,7 +313,7 @@ export default function Candidates() {
       setShowSuccessMessage(false);
     }, 3000);
     // Here you would typically send the data to your backend API
-  }, []);
+  }, [formatTimestamp]);
 
   return (
     <div className={styles.page}>
@@ -249,12 +326,32 @@ export default function Candidates() {
       <div className={styles.card}>
         {!showCandidateForm && (
           <div className={styles.infoRow}>
-            <p className={styles.description}>
-              View and manage all candidates with key details like experience, education, and current company. 
-              Track their progress through stages such as New, Shortlisted, Interview, Rejected, and Hired.
-            </p>
+            <div className={styles.infoContent}>
+              <p className={styles.description}>
+                View and manage all applicants with key details like experience, education, and current company.
+                Track their progress through stages such as Added, Sourced, Pre-screening, and Assessment.
+              </p>
+              <div className={styles.legendRow}>
+                {[
+                  { label: "Added", className: styles.dotAdded },
+                  { label: "Sourced", className: styles.dotSourced },
+                  { label: "Pre-Screening", className: styles.dotScreening },
+                  { label: "Assessment", className: styles.dotAssessment },
+                  { label: "Client Interview", className: styles.dotInterview },
+                  { label: "Offer", className: styles.dotOffer },
+                  { label: "Rejected", className: styles.dotRejected },
+                ].map((item) => (
+                  <span key={item.label} className={styles.legendItem}>
+                    <span className={`${styles.legendDot} ${item.className}`} />
+                    {item.label}
+                  </span>
+                ))}
+              </div>
+            </div>
             <button className={styles.addButton} onClick={handleAddCandidate}>
-              <FiPlus size={16} />
+              <span className={styles.addIcon}>
+                <FiPlus size={14} />
+              </span>
               Add Candidate
             </button>
           </div>
@@ -274,27 +371,94 @@ export default function Candidates() {
             <CandidateFilterBar
               searchTerm={searchTerm}
               onSearchChange={handleSearchChange}
-              filterCandidatePosition={filterCandidatePosition}
-              onFilterCandidatePositionChange={handleFilterCandidatePositionChange}
-              filterCandidateStatus={filterCandidateStatus}
-              onFilterCandidateStatusChange={handleFilterCandidateStatusChange}
-              filterCandidateLocation={filterCandidateLocation}
-              onFilterCandidateLocationChange={handleFilterCandidateLocationChange}
-              uniqueCandidatePositions={uniqueCandidatePositions}
-              uniqueCandidateStatuses={uniqueCandidateStatuses}
-              uniqueCandidateLocations={uniqueCandidateLocations}
+              filterSource={filterSource}
+              onFilterSourceChange={handleFilterSourceChange}
+              filterRating={filterRating}
+              onFilterRatingChange={handleFilterRatingChange}
+              filterStage={filterStage}
+              onFilterStageChange={handleFilterStageChange}
+              filterStatus={filterStatus}
+              onFilterStatusChange={handleFilterStatusChange}
+              uniqueSources={uniqueSources}
+              uniqueRatings={uniqueRatings}
+              uniqueStages={uniqueStages}
+              uniqueStatuses={uniqueStatuses}
               hasFilters={hasFilters}
               onClearFilters={clearFilters}
             />
 
             <div className={styles.tableWrap}>
-              <DataTable 
-                data={filteredData} 
-                columns={tableColumns}
-                onView={handleViewCandidate}
-                onEdit={handleEditCandidate}
-                onDelete={handleDeleteCandidate}
-              />
+              <table className={styles.candidateTable}>
+                <thead>
+                  <tr>
+                    <th>Candidate Id</th>
+                    <th>Candidate Name</th>
+                    <th>Email Address</th>
+                    <th>Modified Time</th>
+                    <th>Source</th>
+                    <th>Rating</th>
+                    <th>Stage</th>
+                    <th>Status</th>
+                    <th className={styles.actionsCol}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredData.map((row, index) => (
+                    <tr key={`${row.candidateId}-${index}`}>
+                      <td>{row.candidateId}</td>
+                      <td>{row.candidateName}</td>
+                      <td>{row.candidateEmail}</td>
+                      <td>{row.modifiedTime}</td>
+                      <td>{row.source}</td>
+                      <td>
+                        <span className={styles.rating}>
+                          {row.rating}
+                          <FiStar className={styles.ratingStar} />
+                        </span>
+                      </td>
+                      <td>
+                        <span className={`${styles.stagePill} ${getStageClass(row.stage)}`}>
+                          {row.stage}
+                        </span>
+                      </td>
+                      <td>
+                        <span className={`${styles.statusPill} ${getStatusClass(row.status)}`}>
+                          <span className={styles.statusDot} />
+                          {row.status}
+                        </span>
+                      </td>
+                      <td className={styles.actionsCol}>
+                        <div className={styles.actionIcons}>
+                          <button
+                            type="button"
+                            className={styles.actionBtn}
+                            onClick={() => handleViewCandidate(row, index)}
+                            aria-label="View"
+                          >
+                            <FiEye size={16} />
+                          </button>
+                          <button
+                            type="button"
+                            className={styles.actionBtn}
+                            onClick={() => handleEditCandidate(row, index)}
+                            aria-label="Edit"
+                          >
+                            <FiEdit2 size={16} />
+                          </button>
+                          <button
+                            type="button"
+                            className={styles.actionBtn}
+                            onClick={() => handleDeleteCandidate(row, index)}
+                            aria-label="Delete"
+                          >
+                            <FiTrash2 size={16} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
 
             <div className={styles.tableFooter}>

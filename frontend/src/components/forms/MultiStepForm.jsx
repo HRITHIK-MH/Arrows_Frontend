@@ -171,6 +171,8 @@ const MultiStepForm = ({
               <span className="step-circle" aria-hidden="true">
                 {state === 'complete' ? (
                   <FiCheck className="step-check" aria-hidden="true" />
+                ) : state === 'active' ? (
+                  <span className="step-number">{index + 1}</span>
                 ) : (
                   <span className="step-dot" />
                 )}
@@ -181,12 +183,14 @@ const MultiStepForm = ({
         })}
       </div>
       <div className="multi-step-form-body">
-        <CurrentStepComponent 
-          formData={formData} 
-          onChange={handleChange} 
-          onSetStepFields={handleSetStepFields}
-          validationErrors={validationErrors}
-        />
+        <div className="form-step-scroll">
+          <CurrentStepComponent 
+            formData={formData} 
+            onChange={handleChange} 
+            onSetStepFields={handleSetStepFields}
+            validationErrors={validationErrors}
+          />
+        </div>
         <div className="form-buttons">
           {showDraftAction && (
             <button
