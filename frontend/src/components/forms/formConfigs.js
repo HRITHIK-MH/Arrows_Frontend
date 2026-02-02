@@ -2,6 +2,7 @@ import TeamMembersStep from "./TeamMembersStep";
 import PermissionStep from "./PermissionStep";
 import CandidateBasicInfoStep from "./CandidateBasicInfoStep";
 import CandidateDocumentsStep from "./CandidateDocumentsStep";
+import ClientBasicInfoStep from "./ClientBasicInfoStep";
 
 // Example configurations for different forms
 // Job Application Form Configuration
@@ -962,138 +963,87 @@ export const candidateConfig = {
 export const clientConfig = {
   title: "Add Client",
   itemName: "Clients",
+  formClassName: "client-form",
+  hideTitle: true,
+  showDraftAction: true,
+  draftLabel: "Save as Draft",
+  submitLabel: "Submit",
+  hideStepper: true,
   steps: [
     {
-      title: "Client Basic Information",
+      title: "Client Information",
+      component: ClientBasicInfoStep,
       fields: [
         {
           name: "clientId",
           label: "Client ID *",
           type: "text",
           required: true,
-          cssClass: "grid-col-1 grid-row-1",
-          validationRule: "requiredField"
+          validationRule: "requiredField",
+          placeholder: "CS342415"
         },
         {
           name: "clientName",
           label: "Client Name *",
           type: "text",
           required: true,
-          cssClass: "grid-col-2 grid-row-1",
-          validationRule: "requiredField"
+          validationRule: "requiredField",
+          placeholder: "Enter Last Name"
         },
         {
-          name: "clientEmail",
-          label: "Email *",
+          name: "contactEmail",
+          label: "Contact Email Address *",
           type: "email",
           required: true,
-          cssClass: "grid-col-1 grid-row-2"
+          validationRule: "requiredField",
+          placeholder: "Enter Email Address"
         },
         {
-          name: "clientPhone",
-          label: "Phone",
+          name: "contactNumber",
+          label: "Contact Number *",
           type: "tel",
           required: true,
-          cssClass: "grid-col-2 grid-row-2"
+          validationRule: "requiredField",
+          placeholder: "Enter Phone Number",
+          prefix: "+91"
         },
         {
-          name: "clientLocation",
-          label: "Location",
-          type: "select",
-          required: true,
-          cssClass: "grid-col-3 grid-row-2",
-          options: [
-            { value: "remote", label: "Remote" },
-            { value: "onsite", label: "On-site" },
-            { value: "hybrid", label: "Hybrid" },
-            { value: "new-york", label: "New York, NY" },
-            { value: "san-francisco", label: "San Francisco, CA" },
-            { value: "austin", label: "Austin, TX" },
-            { value: "seattle", label: "Seattle, WA" },
-            { value: "boston", label: "Boston, MA" },
-            { value: "chicago", label: "Chicago, IL" },
-            { value: "los-angeles", label: "Los Angeles, CA" },
-            { value: "miami", label: "Miami, FL" },
-            { value: "denver", label: "Denver, CO" }
-          ]
-        },
-        {
-          name: "clientCompany",
-          label: "Company Name *",
+          name: "primaryContactPerson",
+          label: "Primary Contact Person *",
           type: "text",
           required: true,
-          cssClass: "grid-col-1 grid-row-3",
+          validationRule: "requiredField",
+          placeholder: "Person Name"
+        },
+        {
+          name: "secondaryContactPerson",
+          label: "Secondary Contact Person *",
+          type: "text",
+          required: true,
+          validationRule: "requiredField",
+          placeholder: "Person Name"
+        },
+        {
+          name: "accountManager",
+          label: "Account Manager *",
+          type: "text",
+          required: true,
+          validationRule: "requiredField",
+          placeholder: "Account Manager"
+        },
+        {
+          name: "activeFrom",
+          label: "Active From *",
+          type: "date",
+          required: true,
           validationRule: "requiredField"
         },
         {
-          name: "clientIndustry",
-          label: "Industry",
-          type: "text",
-          required: true,
-          cssClass: "grid-col-2 grid-row-3"
-        },
-        {
-          name: "clientStatus",
-          label: "Status",
-          type: "select",
-          required: true,
-          cssClass: "grid-col-3 grid-row-3",
-          options: [
-            { value: "active", label: "Active" },
-            { value: "inactive", label: "Inactive" },
-            { value: "prospect", label: "Prospect" },
-            { value: "archived", label: "Archived" }
-          ]
-        },
-        {
-          name: "clientBudget",
-          label: "Budget (Min) *",
-          type: "number",
-          required: true,
-          cssClass: "grid-col-1 grid-row-4"
-        },
-        {
-          name: "clientBudgetMax",
-          label: "Budget (Max)",
-          type: "number",
-          required: true,
-          cssClass: "grid-col-2 grid-row-4"
-        },
-        {
-          name: "clientBillingType",
-          label: "Billing Type",
-          type: "select",
-          required: true,
-          cssClass: "grid-col-3 grid-row-4",
-          options: [
-            { value: "hourly", label: "Hourly" },
-            { value: "fixed", label: "Fixed Price" },
-            { value: "retainer", label: "Retainer" },
-            { value: "project", label: "Project Based" }
-          ]
-        }
-      ]
-    },
-    {
-      title: "Client Details",
-      fields: [
-        {
-          name: "clientWebsite",
-          label: "Website",
-          type: "text",
-          required: false
-        },
-        {
-          name: "clientDescription",
-          label: "Client Description",
+          name: "comments",
+          label: "Comments / Remarks",
           type: "textarea",
-          required: false
-        },
-        {
-          name: "clientNotes",
-          label: "Notes",
-          type: "textarea",
-          required: false
+          required: false,
+          placeholder: "Comments / Remarks"
         }
       ]
     }
@@ -1104,7 +1054,12 @@ export const clientConfig = {
         const fieldLabels = {
           clientId: 'Client ID',
           clientName: 'Client Name',
-          clientCompany: 'Company Name'
+          contactEmail: 'Contact Email Address',
+          contactNumber: 'Contact Number',
+          primaryContactPerson: 'Primary Contact Person',
+          secondaryContactPerson: 'Secondary Contact Person',
+          accountManager: 'Account Manager',
+          activeFrom: 'Active From'
         };
         const fieldLabel = fieldLabels[fieldName] || fieldName;
         return { isValid: false, message: `${fieldLabel} is required` };
@@ -1113,13 +1068,12 @@ export const clientConfig = {
     }
   },
   columns: [
+    { key: 'clientId', label: 'Client ID' },
     { key: 'clientName', label: 'Client Name' },
-    { key: 'clientCompany', label: 'Company' },
-    { key: 'clientEmail', label: 'Email' },
-    { key: 'clientPhone', label: 'Phone' },
-    { key: 'clientIndustry', label: 'Industry' },
-    { key: 'clientLocation', label: 'Location' },
-    { key: 'clientBudget', label: 'Budget' },
-    { key: 'clientStatus', label: 'Status' }
+    { key: 'contactEmail', label: 'Email' },
+    { key: 'contactNumber', label: 'Phone' },
+    { key: 'primaryContactPerson', label: 'Primary Contact Person' },
+    { key: 'accountManager', label: 'Account Manager' },
+    { key: 'activeFrom', label: 'Active From' }
   ]
 };
