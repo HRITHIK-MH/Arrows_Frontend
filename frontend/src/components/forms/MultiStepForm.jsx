@@ -10,7 +10,8 @@ const MultiStepForm = ({
   showDraftAction = false,
   draftLabel = "Save as Draft",
   onSaveDraft,
-  submitLabel = "Submit"
+  submitLabel = "Submit",
+  hideStepper = false
 }) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState({});
@@ -159,29 +160,31 @@ const MultiStepForm = ({
 
   return (
     <div className="multi-step-form">
-      <div className="step-indicator">
-        {steps.map((step, index) => {
-          const state = getStepState(index);
-          return (
-            <div
-              key={index}
-              className={`step ${state}`}
-              aria-current={state === 'active' ? 'step' : undefined}
-            >
-              <span className="step-circle" aria-hidden="true">
-                {state === 'complete' ? (
-                  <FiCheck className="step-check" aria-hidden="true" />
-                ) : state === 'active' ? (
-                  <span className="step-number">{index + 1}</span>
-                ) : (
-                  <span className="step-dot" />
-                )}
-              </span>
-              <span className="step-label">{step.title || `Step ${index + 1}`}</span>
-            </div>
-          );
-        })}
-      </div>
+      {!hideStepper && (
+        <div className="step-indicator">
+          {steps.map((step, index) => {
+            const state = getStepState(index);
+            return (
+              <div
+                key={index}
+                className={`step ${state}`}
+                aria-current={state === 'active' ? 'step' : undefined}
+              >
+                <span className="step-circle" aria-hidden="true">
+                  {state === 'complete' ? (
+                    <FiCheck className="step-check" aria-hidden="true" />
+                  ) : state === 'active' ? (
+                    <span className="step-number">{index + 1}</span>
+                  ) : (
+                    <span className="step-dot" />
+                  )}
+                </span>
+                <span className="step-label">{step.title || `Step ${index + 1}`}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
       <div className="multi-step-form-body">
         <div className="form-step-scroll">
           <CurrentStepComponent 
