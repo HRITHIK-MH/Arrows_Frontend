@@ -113,8 +113,90 @@ FilterBar.displayName = 'FilterBar';
 export default function JobOpenings() {
   const [showJobOpeningForm, setShowJobOpeningForm] = React.useState(false);
   const [showDataTable, setShowDataTable] = React.useState(true);
-  const [submittedData, setSubmittedData] = React.useState([]);
+  const [submittedData, setSubmittedData] = React.useState([
+    {
+      jobPositionId: "JOP-001",
+      positionName: "Senior React Developer",
+      minExperience: 4,
+      maxExperience: 7,
+      jobDescriptionLink: "https://example.com/jd/react",
+      positionLevel: "senior",
+      location: "hybrid",
+      noOfPositions: 2,
+      jobReceivedDate: "2026-01-12",
+      hiringType: "direct",
+      minSalary: 1200000,
+      maxSalary: 2000000,
+      jobType: "full-time",
+      technicalSkills: ["react", "javascript", "typescript"],
+      softSkills: ["communication", "teamwork"],
+      additionalSkills: "Redux",
+      clientId: "C1292938",
+      clientName: "MethodHub",
+      contactPersonName: "Divya Mehta",
+      contactPersonEmail: "divya.mehta@email.com",
+      assignedRecruiters: "Asha, Rohan",
+      targetDate: "2026-02-15",
+      jobOpeningStatus: "Active",
+      hiringManager: "Karthik Rao"
+    },
+    {
+      jobPositionId: "JOP-002",
+      positionName: "Product Manager",
+      minExperience: 6,
+      maxExperience: 10,
+      jobDescriptionLink: "https://example.com/jd/pm",
+      positionLevel: "manager",
+      location: "remote",
+      noOfPositions: 1,
+      jobReceivedDate: "2026-01-20",
+      hiringType: "contract",
+      minSalary: 1400000,
+      maxSalary: 2200000,
+      jobType: "contract",
+      technicalSkills: ["sql", "aws"],
+      softSkills: ["leadership", "communication"],
+      additionalSkills: "Roadmapping",
+      clientId: "C1292432",
+      clientName: "Arrows Inc",
+      contactPersonName: "Rahul Mehta",
+      contactPersonEmail: "rahul.mehta@email.com",
+      assignedRecruiters: "Priya, Naveen",
+      targetDate: "2026-03-01",
+      jobOpeningStatus: "Draft",
+      hiringManager: "Sneha Nair"
+    },
+    {
+      jobPositionId: "JOP-003",
+      positionName: "UI/UX Designer",
+      minExperience: 3,
+      maxExperience: 6,
+      jobDescriptionLink: "https://example.com/jd/uiux",
+      positionLevel: "mid",
+      location: "onsite",
+      noOfPositions: 1,
+      jobReceivedDate: "2026-01-18",
+      hiringType: "direct",
+      minSalary: 900000,
+      maxSalary: 1400000,
+      jobType: "full-time",
+      technicalSkills: ["html", "css"],
+      softSkills: ["creativity", "presentation"],
+      additionalSkills: "Figma",
+      clientId: "C1292921",
+      clientName: "NovaLabs",
+      contactPersonName: "Arjun Rao",
+      contactPersonEmail: "arjun.rao@email.com",
+      assignedRecruiters: "Nisha",
+      targetDate: "2026-02-05",
+      jobOpeningStatus: "Closed",
+      hiringManager: "Anitha Kumar"
+    }
+  ]);
   const [showSuccessMessage, setShowSuccessMessage] = React.useState(false);
+  const [editingIndex, setEditingIndex] = React.useState(null);
+  const [editingData, setEditingData] = React.useState(null);
+  const [editLocked, setEditLocked] = React.useState(false);
   const [searchTerm, setSearchTerm] = React.useState('');
   const [filterPostingTitle, setFilterPostingTitle] = React.useState('');
   const [filterTargetDate, setFilterTargetDate] = React.useState('');
@@ -271,6 +353,9 @@ export default function JobOpenings() {
   const handleCreateJobOpening = React.useCallback(() => {
     setShowJobOpeningForm(true);
     setShowDataTable(false);
+    setEditingIndex(null);
+    setEditingData(null);
+    setEditLocked(false);
   }, []);
 
   const handleViewJobOpening = React.useCallback((row, index) => {
@@ -280,7 +365,11 @@ export default function JobOpenings() {
 
   const handleEditJobOpening = React.useCallback((row, index) => {
     console.log('Edit job opening:', row);
-    alert('Edit functionality coming soon!');
+    setEditingIndex(index);
+    setEditingData(row);
+    setShowJobOpeningForm(true);
+    setShowDataTable(false);
+    setEditLocked(true);
   }, []);
 
   const handleDeleteJobOpening = React.useCallback((row, index) => {
@@ -295,17 +384,25 @@ export default function JobOpenings() {
       ...data,
       jobOpeningStatus: data.jobOpeningStatus || data.jobStatus || 'Active'
     };
-    console.log('Job opening created:', normalized);
-    setSubmittedData(prev => [...prev, normalized]);
+    if (editingIndex !== null) {
+      console.log('Job opening updated:', normalized);
+      setSubmittedData(prev => prev.map((item, idx) => (idx === editingIndex ? normalized : item)));
+    } else {
+      console.log('Job opening created:', normalized);
+      setSubmittedData(prev => [...prev, normalized]);
+    }
     setShowJobOpeningForm(false);
     setShowDataTable(true);
     setShowSuccessMessage(true);
+    setEditingIndex(null);
+    setEditingData(null);
+    setEditLocked(false);
     // Auto-hide success message after 3 seconds
     setTimeout(() => {
       setShowSuccessMessage(false);
     }, 3000);
     // Here you would typically send the data to your backend API
-  }, []);
+  }, [editingIndex]);
 
   return (
     <div className={styles.page}>
@@ -332,8 +429,21 @@ export default function JobOpenings() {
 
         {showJobOpeningForm && (
           <div className={styles.formWrap}>
+            {editingIndex !== null && (
+              <div className={styles.formHeader}>
+                <button
+                  type="button"
+                  className={styles.editCta}
+                  onClick={() => setEditLocked(false)}
+                >
+                  Edit JD
+                </button>
+              </div>
+            )}
             <ReusableForm
               config={jobOpeningConfig}
+              initialData={editingData}
+              readOnly={editLocked}
               onSubmit={handleJobOpeningSubmit}
             />
           </div>

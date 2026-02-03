@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
 import '@fontsource/poppins/400.css';
 import '@fontsource/poppins/500.css';
 import '@fontsource/poppins/700.css';
-import { useNavigate } from 'react-router-dom';
-import './Login.css';
+import { useState } from 'react';
+import { FiEye, FiEyeOff } from "react-icons/fi";
 import { MdOutlineEmail } from "react-icons/md";
 import { TbLockPassword } from "react-icons/tb";
-import { FiEye, FiEyeOff } from "react-icons/fi";
+import { useNavigate } from 'react-router-dom';
+import './Login.css';
 
 const Login = () => {
   const [email, setEmail] = useState('');

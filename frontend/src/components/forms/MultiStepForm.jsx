@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { FiCheck } from 'react-icons/fi';
 import './MultiStepForm.css';
 
@@ -11,10 +11,12 @@ const MultiStepForm = ({
   draftLabel = "Save as Draft",
   onSaveDraft,
   submitLabel = "Submit",
-  hideStepper = false
+  hideStepper = false,
+  initialData = null,
+  readOnly = false
 }) => {
   const [currentStep, setCurrentStep] = useState(0);
-  const [formData, setFormData] = useState({});
+  const [formData, setFormData] = useState(initialData || {});
   const [stepFields, setStepFields] = useState({});
 
   const normalizeLabel = (label, fallback) => {
@@ -158,6 +160,16 @@ const MultiStepForm = ({
     }
   };
 
+  useEffect(() => {
+    if (!initialData) {
+      setFormData({});
+      setCurrentStep(0);
+      return;
+    }
+    setFormData(initialData);
+    setCurrentStep(0);
+  }, [initialData]);
+
   return (
     <div className="multi-step-form">
       {!hideStepper && (
@@ -206,31 +218,34 @@ const MultiStepForm = ({
           )}
           <div className="form-buttons-right">
             {currentStep > 0 && (
-              <button
-                type="button"
-                className="form-btn secondary"
-                onClick={handlePrev}
-              >
-                Previous
-              </button>
-            )}
-            {currentStep < steps.length - 1 ? (
-              <button
-                type="button"
-                className="form-btn primary"
-                onClick={handleNext}
-              >
-                Next
-              </button>
-            ) : (
-              <button
-                type="button"
-                className="form-btn primary"
-                onClick={handleSubmit}
-              >
-                {submitLabel}
-              </button>
-            )}
+            <button
+              type="button"
+              className="form-btn secondary"
+              onClick={handlePrev}
+              disabled={readOnly}
+            >
+              Previous
+            </button>
+          )}
+          {currentStep < steps.length - 1 ? (
+            <button
+              type="button"
+              className="form-btn primary"
+              onClick={handleNext}
+              disabled={readOnly}
+            >
+              Next
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="form-btn primary"
+              onClick={handleSubmit}
+              disabled={readOnly}
+            >
+              {submitLabel}
+            </button>
+          )}
           </div>
         </div>
       </div>
