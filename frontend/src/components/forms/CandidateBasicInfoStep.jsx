@@ -67,7 +67,73 @@ const CandidateBasicInfoStep = ({
         </div>
         <div className="candidate-grid">
           {renderField("candidateId")}
-          {renderField("firstName")}
+          <div className="candidate-cell">
+            <div className="name-prefix-group">
+              <label className="name-prefix-label">
+                First Name <span className="required-star">*</span>
+              </label>
+              <div className="name-prefix-row">
+                <div className="name-prefix-select">
+                  {fieldMap.namePrefix && (
+                    <FormField
+                      key={fieldMap.namePrefix.name}
+                      label={fieldMap.namePrefix.label}
+                      type={fieldMap.namePrefix.type}
+                      name={fieldMap.namePrefix.name}
+                      value={formData[fieldMap.namePrefix.name] || ""}
+                      onChange={onChange}
+                      required={fieldMap.namePrefix.required}
+                      options={fieldMap.namePrefix.options}
+                      validate={fieldMap.namePrefix.validate}
+                      error={null}
+                      onValidation={fieldMap.namePrefix.onValidation}
+                      placeholder={fieldMap.namePrefix.placeholder}
+                      hideLabel={fieldMap.namePrefix.hideLabel}
+                      accept={fieldMap.namePrefix.accept}
+                      multiple={fieldMap.namePrefix.multiple}
+                      prefix={fieldMap.namePrefix.prefix}
+                      formData={formData}
+                      suppressError
+                    />
+                  )}
+                </div>
+                <div className="name-prefix-input">
+                  {fieldMap.firstName && (
+                    <FormField
+                      key={fieldMap.firstName.name}
+                      label={fieldMap.firstName.label}
+                      type={fieldMap.firstName.type}
+                      name={fieldMap.firstName.name}
+                      value={formData[fieldMap.firstName.name] || ""}
+                      onChange={onChange}
+                      required={fieldMap.firstName.required}
+                      options={fieldMap.firstName.options}
+                      validate={fieldMap.firstName.validate}
+                      error={null}
+                      onValidation={fieldMap.firstName.onValidation}
+                      placeholder={fieldMap.firstName.placeholder}
+                      hideLabel={fieldMap.firstName.hideLabel}
+                      accept={fieldMap.firstName.accept}
+                      multiple={fieldMap.firstName.multiple}
+                      prefix={fieldMap.firstName.prefix}
+                      formData={formData}
+                      suppressError
+                    />
+                  )}
+                </div>
+              </div>
+              {(validationErrors.namePrefix || validationErrors.firstName) && (
+                <div className="error-message">
+                  {validationErrors.namePrefix && (
+                    <div>{validationErrors.namePrefix}</div>
+                  )}
+                  {validationErrors.firstName && (
+                    <div>{validationErrors.firstName}</div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
           {renderField("lastName")}
           {renderField("primaryEmail")}
           {renderField("secondaryEmail")}

@@ -355,7 +355,8 @@ export const jobOpeningConfig = {
           required: true,
           cssClass: "grid-col-3 grid-row-4",
           accept: ".pdf",
-          placeholder: "Attachment"
+          placeholder: "Attachment",
+          showBrowseButton: true
         },
         {
           name: "technicalSkills",
@@ -714,11 +715,27 @@ export const candidateConfig = {
           placeholder: "Enter Candidate Id"
         },
         {
+          name: "namePrefix",
+          label: "Title",
+          type: "select",
+          required: true,
+          validationRule: "namePrefixRequired",
+          hideLabel: true,
+          placeholder: "None",
+          options: [
+            { value: "none", label: "None" },
+            { value: "mr", label: "Mr." },
+            { value: "mrs", label: "Mrs." },
+            { value: "ms", label: "Ms." }
+          ]
+        },
+        {
           name: "firstName",
           label: "First Name *",
           type: "text",
           required: true,
           validationRule: "requiredField",
+          hideLabel: true,
           placeholder: "Enter First Name"
         },
         {
@@ -1063,6 +1080,12 @@ export const clientConfig = {
         };
         const fieldLabel = fieldLabels[fieldName] || fieldName;
         return { isValid: false, message: `${fieldLabel} is required` };
+      }
+      return { isValid: true };
+    },
+    namePrefixRequired: async (value) => {
+      if (!value || value === 'none') {
+        return { isValid: false, message: 'Title is required' };
       }
       return { isValid: true };
     }

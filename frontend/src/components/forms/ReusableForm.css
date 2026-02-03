@@ -135,6 +135,11 @@
   resize: vertical;
 }
 
+.reusable-form-page.job-opening-form .form-field input::placeholder,
+.reusable-form-page.job-opening-form .form-field textarea::placeholder {
+  color: #94a3b8;
+}
+
 .reusable-form-page.job-opening-form .form-field input[type="file"] {
   min-height: 38px;
   padding: 6px 10px;
@@ -257,6 +262,10 @@
   overflow-y: auto;
   padding-right: 6px;
   padding-bottom: 20px;
+}
+
+.reusable-form-page.job-opening-form.read-only .form-step-scroll {
+  position: relative;
 }
 
 .reusable-form-page.job-opening-form .step-indicator {
@@ -840,6 +849,110 @@
   grid-column: 1 / -1;
 }
 
+.name-prefix-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.name-prefix-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: #94a3b8;
+}
+
+.name-prefix-row {
+  display: flex;
+  align-items: center;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f1f5f9;
+  overflow: visible;
+  min-height: 38px;
+}
+
+.name-prefix-select .form-field,
+.name-prefix-input .form-field {
+  margin-bottom: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.name-prefix-select {
+  width: 90px;
+  border-right: 1px solid #e2e8f0;
+  background: transparent;
+  position: relative;
+  z-index: 2;
+}
+
+.name-prefix-select .select-trigger {
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  min-height: 38px;
+  padding: 8px 12px;
+  font-size: 12px;
+  line-height: 1;
+  box-shadow: none;
+}
+
+.name-prefix-select .select-trigger:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+.name-prefix-select .select-chevron {
+  margin-left: 4px;
+}
+
+.name-prefix-select select,
+.name-prefix-input input {
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  min-height: 38px;
+  padding: 8px 12px;
+  font-size: 12px;
+  line-height: 1;
+  box-shadow: none;
+}
+
+.name-prefix-input .form-field {
+  border: none;
+  background: transparent;
+  padding: 0;
+}
+
+.name-prefix-row .form-field input {
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  border-radius: 0;
+}
+
+.name-prefix-row .form-field select {
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  border-radius: 0;
+}
+
+.name-prefix-select select:focus,
+.name-prefix-input input:focus {
+  border: none;
+  box-shadow: none;
+  outline: none;
+}
+
+.name-prefix-input {
+  flex: 1;
+}
+
+.name-prefix-input input::placeholder {
+  color: #9dabb8;
+}
+
 .reusable-form-page.candidate-form .form-field {
   margin-bottom: 0;
 }
@@ -866,6 +979,27 @@
 .reusable-form-page.candidate-form .form-field textarea {
   min-height: 96px;
   resize: vertical;
+}
+
+.reusable-form-page.candidate-form .form-field input::placeholder,
+.reusable-form-page.candidate-form .form-field textarea::placeholder {
+  color: #94a3b8;
+}
+
+.reusable-form-page.candidate-form .name-prefix-row .form-field input,
+.reusable-form-page.candidate-form .name-prefix-row .form-field select,
+.reusable-form-page.candidate-form .name-prefix-row .select-trigger {
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  border-radius: 0;
+}
+
+.reusable-form-page.candidate-form .name-prefix-row .form-field input:focus,
+.reusable-form-page.candidate-form .name-prefix-row .form-field select:focus,
+.reusable-form-page.candidate-form .name-prefix-row .select-trigger:focus {
+  outline: none;
+  box-shadow: none;
 }
 
 .reusable-form-page.candidate-form .form-field input:focus,
@@ -1136,6 +1270,11 @@
   resize: vertical;
 }
 
+.reusable-form-page.client-form .form-field input::placeholder,
+.reusable-form-page.client-form .form-field textarea::placeholder {
+  color: #94a3b8;
+}
+
 .reusable-form-page.client-form .form-field input:focus,
 .reusable-form-page.client-form .form-field select:focus,
 .reusable-form-page.client-form .form-field textarea:focus {
@@ -1260,5 +1399,105 @@
   .min-max-container {
     flex-direction: column;
     gap: 15px;
+  }
+}
+
+/* Extra small devices (phones, 600px and down) */
+@media only screen and (max-width: 600px) {
+  .reusable-form-page.job-opening-form,
+  .reusable-form-page.candidate-form {
+    padding: 0;
+  }
+
+  .reusable-form-page.job-opening-form .step-indicator,
+  .reusable-form-page.candidate-form .step-indicator {
+    --step-width: 96px;
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+
+  .reusable-form-page.job-opening-form .step-label,
+  .reusable-form-page.candidate-form .step-label {
+    font-size: 11px;
+  }
+
+  .reusable-form-page.job-opening-form .form-buttons,
+  .reusable-form-page.candidate-form .form-buttons {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .reusable-form-page.job-opening-form .form-buttons-right,
+  .reusable-form-page.candidate-form .form-buttons-right {
+    margin-left: 0;
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .reusable-form-page.job-opening-form .form-btn,
+  .reusable-form-page.candidate-form .form-btn {
+    width: 100%;
+  }
+
+  .reusable-form-page.job-opening-form .job-section-title,
+  .reusable-form-page.candidate-form .candidate-section-title {
+    font-size: 14px;
+  }
+
+  .name-prefix-row {
+    flex-direction: row;
+  }
+
+  .name-prefix-select {
+    width: 80px;
+  }
+
+  .job-basic-info-grid,
+  .candidate-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .candidate-span-2,
+  .candidate-span-3 {
+    grid-column: 1 / -1;
+  }
+}
+
+/* Small devices (portrait tablets and large phones, 600px and up) */
+@media only screen and (min-width: 600px) {
+  .reusable-form-page.job-opening-form .step-indicator,
+  .reusable-form-page.candidate-form .step-indicator {
+    --step-width: 110px;
+  }
+}
+
+/* Medium devices (landscape tablets, 768px and up) */
+@media only screen and (min-width: 768px) {
+  .reusable-form-page.job-opening-form .step-indicator {
+    --step-width: 140px;
+  }
+
+  .reusable-form-page.candidate-form .step-indicator {
+    --step-width: 160px;
+  }
+}
+
+/* Large devices (laptops/desktops, 992px and up) */
+@media only screen and (min-width: 992px) {
+  .job-basic-info-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .candidate-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* Extra large devices (large laptops and desktops, 1200px and up) */
+@media only screen and (min-width: 1200px) {
+  .reusable-form-page.job-opening-form .multi-step-form-body,
+  .reusable-form-page.candidate-form .multi-step-form-body {
+    max-height: calc(100vh - 260px);
   }
 }

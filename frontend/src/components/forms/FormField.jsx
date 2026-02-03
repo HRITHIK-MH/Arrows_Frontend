@@ -18,7 +18,10 @@ const FormField = ({
   accept,
   multiple,
   prefix,
-  formData
+  formData,
+  disabled,
+  showBrowseButton,
+  suppressError
 }) => {
   const [isValidating, setIsValidating] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -27,6 +30,7 @@ const FormField = ({
   const [customOptions, setCustomOptions] = useState([]);
   const [localError, setLocalError] = useState('');
   const dropdownRef = useRef(null);
+  const selectRef = useRef(null);
   const fileInputRef = useRef(null);
 
   // Sync prop error with local error when prop changes
@@ -343,20 +347,41 @@ const FormField = ({
           )}
         </div>
       ) : type === 'select' ? (
-        <select 
-          id={name} 
-          name={name} 
-          value={value} 
-          onChange={handleChange} 
-          required={required}
-        >
-          <option value="">{placeholder || "Select..."}</option>
-          {options.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
+        <div className={`select-field${isDropdownOpen ? ' open' : ''}`} ref={dropdownRef}>
+          <button
+            type="button"
+            id={name}
+            className="select-trigger"
+            onClick={() => !disabled && setIsDropdownOpen((prev) => !prev)}
+            disabled={disabled}
+            aria-haspopup="listbox"
+            aria-expanded={isDropdownOpen}
+          >
+            <span className="select-value">
+              {options.find(opt => opt.value === value)?.label || placeholder || "Select..."}
+            </span>
+            <span className="select-chevron" aria-hidden="true" />
+          </button>
+          {isDropdownOpen && (
+            <div className="select-dropdown" role="listbox">
+              {(options || []).map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  className={`select-option${option.value === value ? ' selected' : ''}`}
+                  onClick={() => {
+                    onChange(name, option.value);
+                    setIsDropdownOpen(false);
+                  }}
+                  role="option"
+                  aria-selected={option.value === value}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       ) : (
         type === 'textarea' ? (
           <textarea
@@ -369,6 +394,7 @@ const FormField = ({
             className={error ? 'error' : ''}
             placeholder={placeholder}
             rows="4"
+            disabled={disabled}
           />
         ) : (
           (() => {
@@ -393,16 +419,36 @@ const FormField = ({
                     accept={accept}
                     multiple={multiple}
                     aria-label={label}
+                    disabled={disabled}
                   />
-                  <div className="file-input-display no-button">
+                  <div className={`file-input-display${showBrowseButton ? ' with-button' : ' no-button'}`}>
                     <span className="file-icon upload-icon" aria-hidden="true">⬆</span>
+                    {showBrowseButton && (
+                      <button
+                        type="button"
+                        className="file-browse-btn"
+                        onClick={() => {
+                          if (!disabled && fileInputRef.current) {
+                            fileInputRef.current.click();
+                          }
+                        }}
+                        disabled={disabled}
+                      >
+                        Browse
+                      </button>
+                    )}
                     <input
                       type="text"
                       readOnly
                       value={fileName || ''}
                       placeholder={placeholder || 'No file chosen'}
                       className={`file-visual-input${error ? ' error' : ''}`}
-                      onClick={() => fileInputRef.current && fileInputRef.current.click()}
+                      onClick={() => {
+                        if (!disabled && fileInputRef.current) {
+                          fileInputRef.current.click();
+                        }
+                      }}
+                      disabled={disabled}
                     />
                   </div>
                 </div>
@@ -423,6 +469,7 @@ const FormField = ({
                 placeholder={placeholder}
                 accept={accept}
                 multiple={type === 'file' ? multiple : undefined}
+                disabled={disabled}
               />
             );
 
@@ -471,7 +518,7 @@ const FormField = ({
         )
       )}
       {isValidating && <span className="validation-loading">Validating...</span>}
-      {(localError || error) && (
+      {!suppressError && (localError || error) && (
         <>
           {console.log(`[FormField] Rendering error for ${name}: localError="${localError}", propError="${error}"`)}
           <span className="error-message">{localError || error}</span>

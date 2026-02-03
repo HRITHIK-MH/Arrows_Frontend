@@ -27,7 +27,7 @@ const createFormConfig = (config) => {
 };
 
 // Reusable step component
-const FormStep = ({ formData, onChange, fields, title, onSetStepFields, validationErrors = {} }) => {
+const FormStep = ({ formData, onChange, fields, title, onSetStepFields, validationErrors = {}, disabled = false }) => {
   console.log(`[FormStep] Rendering step: ${title}, validationErrors:`, validationErrors);
   console.log(`[FormStep] Received fields:`, fields.map(f => ({ name: f.name, hasOnValidation: !!f.onValidation, hasValidate: !!f.validate })));
   const isJobBasicInfo = title === "Job Basic Information" || title === "Job Information";
@@ -73,6 +73,8 @@ const FormStep = ({ formData, onChange, fields, title, onSetStepFields, validati
         multiple={field.multiple}
         prefix={field.prefix}
         formData={formData}
+        disabled={disabled}
+        showBrowseButton={field.showBrowseButton}
       />
     );
   };
@@ -200,7 +202,7 @@ const FormStep = ({ formData, onChange, fields, title, onSetStepFields, validati
 };
 
 // Main reusable form component
-const ReusableForm = ({ config, onSubmit }) => {
+const ReusableForm = ({ config, onSubmit, initialData, readOnly = false }) => {
   const [validationErrors, setValidationErrors] = useState({});
 
   const formConfig = createFormConfig(config);
@@ -278,6 +280,7 @@ const ReusableForm = ({ config, onSubmit }) => {
             fields={stepFieldsWithValidation}
             onSetStepFields={props.onSetStepFields}
             validationErrors={validationErrors}
+            disabled={readOnly}
           />
         )
       };
@@ -292,6 +295,7 @@ const ReusableForm = ({ config, onSubmit }) => {
           fields={stepFieldsWithValidation}
           onSetStepFields={props.onSetStepFields}
           validationErrors={validationErrors}
+          disabled={readOnly}
         />
       )
     };
@@ -299,21 +303,29 @@ const ReusableForm = ({ config, onSubmit }) => {
 
   // Validate all mandatory fields at once
   const validateAllMandatoryFields = async (data, fields) => {
-    const validationPromises = fields
-      .filter(field => field.required)
-      .map(field => 
-        validateMandatoryField(data[field.name], field.name, field.label)
-      );
-
-    const results = await Promise.all(validationPromises);
-    
     const errors = {};
-    const isValid = results.every(result => {
-      if (!result.isValid) {
-        errors[result.fieldName] = result.message;
+    let isValid = true;
+
+    for (const field of fields) {
+      if (!field.required && !field.validationRule) {
+        continue;
       }
-      return result.isValid;
-    });
+
+      let result = null;
+      if (field.validationRule) {
+        const validateFn = createValidationFunction(field.validationRule);
+        if (validateFn) {
+          result = await validateFn(data[field.name], field.name, data);
+        }
+      } else if (field.required) {
+        result = await validateMandatoryField(data[field.name], field.name, field.label);
+      }
+
+      if (result && !result.isValid) {
+        errors[result.fieldName || field.name] = result.message;
+        isValid = false;
+      }
+    }
 
     return { isValid, errors };
   };
@@ -369,13 +381,22 @@ const ReusableForm = ({ config, onSubmit }) => {
     const stepFields = config.steps[stepIndex]?.fields || [];
     const updatedErrors = { ...validationErrors };
     
-    // Validate all required fields on this step
+    // Validate all required fields on this step (and any custom rules)
     for (const field of stepFields) {
-      if (field.required) {
-        const value = data[field.name];
-        const fieldLabel = field.label ? field.label.replace('*', '').trim() : field.name;
-        const result = await validateMandatoryField(value, field.name, fieldLabel);
-        
+      const value = data[field.name];
+      const fieldLabel = field.label ? field.label.replace('*', '').trim() : field.name;
+      let result = null;
+
+      if (field.validationRule) {
+        const validateFn = createValidationFunction(field.validationRule);
+        if (validateFn) {
+          result = await validateFn(value, field.name, data);
+        }
+      } else if (field.required) {
+        result = await validateMandatoryField(value, field.name, fieldLabel);
+      }
+      
+      if (result) {
         if (!result.isValid) {
           // Field is invalid - set error
           updatedErrors[field.name] = result.message;
@@ -396,7 +417,9 @@ const ReusableForm = ({ config, onSubmit }) => {
   };
 
   return (
-    <div className={`reusable-form-page${config.formClassName ? ` ${config.formClassName}` : ''}`}>
+    <div
+      className={`reusable-form-page${config.formClassName ? ` ${config.formClassName}` : ''}${readOnly ? ' read-only' : ''}`}
+    >
       {!config.hideTitle && <h1>{config.title}</h1>}
       <MultiStepForm 
         steps={enhancedSteps} 
@@ -408,6 +431,8 @@ const ReusableForm = ({ config, onSubmit }) => {
         draftLabel={config.draftLabel}
         onSaveDraft={config.onSaveDraft}
         submitLabel={config.submitLabel}
+        initialData={initialData}
+        readOnly={readOnly}
       />
     </div>
   );
