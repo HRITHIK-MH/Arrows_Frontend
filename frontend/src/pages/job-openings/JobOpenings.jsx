@@ -1,10 +1,9 @@
 
 
 import * as React from "react";
-import { FiFilter, FiMoreHorizontal, FiPlus, FiSearch } from "react-icons/fi";
+import { FiFilter, FiMoreHorizontal, FiPlus, FiSearch, FiEye, FiEdit2, FiTrash2 } from "react-icons/fi";
 import styles from "./JobOpenings.module.scss";
 import ReusableForm from "../../components/forms/ReusableForm";
-import DataTable from "../../components/forms/DataTable";
 import StepProgressBar from "../../components/StepProgressBar";
 import { jobOpeningConfig } from "../../components/forms/formConfigs";
 import { debounce } from "../../utils/debounce";
@@ -138,7 +137,39 @@ export default function JobOpenings() {
       assignedRecruiters: "Asha, Rohan",
       targetDate: "2026-02-15",
       jobOpeningStatus: "Active",
-      hiringManager: "Karthik Rao"
+      hiringManager: "Karthik Rao",
+      candidates: [
+        {
+          candidateId: "C001",
+          candidateName: "Rahul Mehta",
+          candidateEmail: "rahul.mehta@email.com",
+          modifiedTime: "11/10/2025 05:30 PM",
+          source: "Resume Inbox",
+          rating: "3/5",
+          stage: "Assessment",
+          round: "Round 3"
+        },
+        {
+          candidateId: "C002",
+          candidateName: "Arun Kumar",
+          candidateEmail: "arun.kumar@email.com",
+          modifiedTime: "11/10/2025 05:30 PM",
+          source: "LinkedIn",
+          rating: "4/5",
+          stage: "Client Interview",
+          round: "Round 4"
+        },
+        {
+          candidateId: "C003",
+          candidateName: "Priya Sharma",
+          candidateEmail: "priya.sharma@email.com",
+          modifiedTime: "11/10/2025 05:30 PM",
+          source: "Naukri",
+          rating: "2/5",
+          stage: "Pre-Screening",
+          round: "Round 2"
+        }
+      ]
     },
     {
       jobPositionId: "JOP-002",
@@ -164,7 +195,29 @@ export default function JobOpenings() {
       assignedRecruiters: "Priya, Naveen",
       targetDate: "2026-03-01",
       jobOpeningStatus: "Draft",
-      hiringManager: "Sneha Nair"
+      hiringManager: "Sneha Nair",
+      candidates: [
+        {
+          candidateId: "C011",
+          candidateName: "Ananya Rao",
+          candidateEmail: "ananya.rao@email.com",
+          modifiedTime: "11/12/2025 11:20 AM",
+          source: "LinkedIn",
+          rating: "4/5",
+          stage: "Sourced",
+          round: "Round 1"
+        },
+        {
+          candidateId: "C012",
+          candidateName: "Vikram Singh",
+          candidateEmail: "vikram.singh@email.com",
+          modifiedTime: "11/12/2025 11:20 AM",
+          source: "Resume Inbox",
+          rating: "3/5",
+          stage: "Assessment",
+          round: "Round 2"
+        }
+      ]
     },
     {
       jobPositionId: "JOP-003",
@@ -190,7 +243,19 @@ export default function JobOpenings() {
       assignedRecruiters: "Nisha",
       targetDate: "2026-02-05",
       jobOpeningStatus: "Closed",
-      hiringManager: "Anitha Kumar"
+      hiringManager: "Anitha Kumar",
+      candidates: [
+        {
+          candidateId: "C021",
+          candidateName: "Sneha Iyer",
+          candidateEmail: "sneha.iyer@email.com",
+          modifiedTime: "11/18/2025 03:00 PM",
+          source: "LinkedIn",
+          rating: "4/5",
+          stage: "Pre-Screening",
+          round: "Round 1"
+        }
+      ]
     }
   ]);
   const [showSuccessMessage, setShowSuccessMessage] = React.useState(false);
@@ -203,6 +268,7 @@ export default function JobOpenings() {
   const [filterJobStatus, setFilterJobStatus] = React.useState('');
   const [filterHiringManager, setFilterHiringManager] = React.useState('');
   const [showRecruitmentPipeline, setShowRecruitmentPipeline] = React.useState(true);
+  const [expandedRows, setExpandedRows] = React.useState({});
 
   // Recruitment pipeline steps
   const recruitmentSteps = React.useMemo(() => [
@@ -333,22 +399,21 @@ export default function JobOpenings() {
     return styles.statusNeutral;
   }, []);
 
-  const tableColumns = React.useMemo(() => [
-    { key: 'openingJobId', label: 'Opening Job Id' },
-    { key: 'postingTitle', label: 'Posting Title' },
-    { key: 'clientId', label: 'Client Id' },
-    { key: 'assignedRecruiters', label: 'Assigned Recruiter(s)' },
-    { key: 'targetDate', label: 'Target Date' },
-    {
-      key: 'jobOpeningStatus',
-      label: 'Job Opening Status',
-      render: (value) => (
-        value ? <span className={`${styles.statusPill} ${getStatusClass(value)}`}>{value}</span> : "-"
-      )
-    },
-    { key: 'city', label: 'City' },
-    { key: 'hiringManager', label: 'Hiring Manager' }
-  ], [getStatusClass]);
+  const getStageClass = React.useCallback((stage) => {
+    const normalized = String(stage || '').toLowerCase();
+    if (normalized === 'added') return styles.stageAdded;
+    if (normalized === 'sourced') return styles.stageSourced;
+    if (normalized === 'pre-screening') return styles.stageScreening;
+    if (normalized === 'assessment') return styles.stageAssessment;
+    if (normalized === 'client interview') return styles.stageInterview;
+    if (normalized === 'offer') return styles.stageOffer;
+    if (normalized === 'rejected') return styles.stageRejected;
+    return styles.stageNeutral;
+  }, []);
+
+  const toggleRow = React.useCallback((rowKey) => {
+    setExpandedRows((prev) => ({ ...prev, [rowKey]: !prev[rowKey] }));
+  }, []);
 
   const handleCreateJobOpening = React.useCallback(() => {
     setShowJobOpeningForm(true);
@@ -471,23 +536,163 @@ export default function JobOpenings() {
             />
 
             <div className={styles.tableWrap}>
-              <DataTable 
-                data={filteredData} 
-                columns={tableColumns}
-                onView={handleViewJobOpening}
-                onEdit={handleEditJobOpening}
-                onDelete={handleDeleteJobOpening}
-              />
+              <table className={styles.jobTable}>
+                <thead>
+                  <tr>
+                    <th>Opening Job Id</th>
+                    <th>Posting Title</th>
+                    <th>Client Id</th>
+                    <th>Assigned Recruiter(s)</th>
+                    <th>Target Date</th>
+                    <th>Job Opening Status</th>
+                    <th>City</th>
+                    <th>Hiring Manager</th>
+                    <th className={styles.actionsCol}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredData.map((row, index) => {
+                    const rowKey = row.openingJobId || row.jobPositionId || String(index);
+                    const isExpanded = Boolean(expandedRows[rowKey]);
+                    return (
+                      <React.Fragment key={rowKey}>
+                        <tr>
+                          <td>
+                            <button
+                              type="button"
+                              className={`${styles.expandBtn}${isExpanded ? ` ${styles.expandBtnActive}` : ''}`}
+                              onClick={() => toggleRow(rowKey)}
+                              aria-label={isExpanded ? 'Collapse row' : 'Expand row'}
+                            >
+                              {isExpanded ? '▾' : '▸'}
+                            </button>
+                            {row.openingJobId}
+                          </td>
+                          <td>{row.postingTitle}</td>
+                          <td>{row.clientId}</td>
+                          <td>{row.assignedRecruiters}</td>
+                          <td>{row.targetDate}</td>
+                          <td>
+                            {row.jobOpeningStatus ? (
+                              <span className={`${styles.statusPill} ${getStatusClass(row.jobOpeningStatus)}`}>
+                                {row.jobOpeningStatus}
+                              </span>
+                            ) : "-"}
+                          </td>
+                          <td>{row.city}</td>
+                          <td>{row.hiringManager}</td>
+                          <td className={styles.actionsCol}>
+                            <div className={styles.actionIcons}>
+                              <button
+                                type="button"
+                                className={styles.actionBtn}
+                                onClick={() => handleViewJobOpening(row, index)}
+                                aria-label="View"
+                              >
+                                <FiEye size={16} />
+                              </button>
+                              <button
+                                type="button"
+                                className={styles.actionBtn}
+                                onClick={() => handleEditJobOpening(row, index)}
+                                aria-label="Edit"
+                              >
+                                <FiEdit2 size={16} />
+                              </button>
+                              <button
+                                type="button"
+                                className={styles.actionBtn}
+                                onClick={() => handleDeleteJobOpening(row, index)}
+                                aria-label="Delete"
+                              >
+                                <FiTrash2 size={16} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                        {isExpanded && (
+                          <tr className={styles.expandedRow}>
+                            <td colSpan={9}>
+                              <div className={styles.innerTableWrap}>
+                                <table className={styles.innerTable}>
+                                  <thead>
+                                    <tr>
+                                      <th>Candidate Id</th>
+                                      <th>Candidate Name</th>
+                                      <th>Email Address</th>
+                                      <th>Modified Time</th>
+                                      <th>Source</th>
+                                      <th>Rating</th>
+                                      <th>Stage</th>
+                                      <th>Round</th>
+                                      <th>Action</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {(row.candidates || []).map((candidate) => (
+                                      <tr key={`${rowKey}-${candidate.candidateId}`}>
+                                        <td>{candidate.candidateId}</td>
+                                        <td>{candidate.candidateName}</td>
+                                        <td>{candidate.candidateEmail}</td>
+                                        <td>{candidate.modifiedTime}</td>
+                                        <td>{candidate.source}</td>
+                                        <td className={styles.ratingCell}>
+                                          {candidate.rating}
+                                          <span className={styles.ratingStar}>★</span>
+                                        </td>
+                                        <td>
+                                          <span className={`${styles.stagePill} ${getStageClass(candidate.stage)}`}>
+                                            {candidate.stage}
+                                          </span>
+                                        </td>
+                                        <td>{candidate.round}</td>
+                                        <td>
+                                          <button type="button" className={styles.actionBtn} aria-label="View candidate">
+                                            <FiEye size={16} />
+                                          </button>
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
 
             <div className={styles.tableFooter}>
-              <span>Show</span>
-              <select className={styles.entriesSelect} defaultValue="10">
-                <option value="10">10</option>
-                <option value="25">25</option>
-                <option value="50">50</option>
-              </select>
-              <span>entries</span>
+              <div className={styles.footerLeft}>
+                <span>Show</span>
+                <select className={styles.entriesSelect} defaultValue="10">
+                  <option value="10">10</option>
+                  <option value="25">25</option>
+                  <option value="50">50</option>
+                </select>
+                <span>entries</span>
+              </div>
+              <div className={styles.pagination}>
+                <button type="button" className={styles.pageBtn} aria-label="Previous page">
+                  ‹
+                </button>
+                <button type="button" className={`${styles.pageBtn} ${styles.pageBtnActive}`}>
+                  1
+                </button>
+                <button type="button" className={styles.pageBtn}>
+                  2
+                </button>
+                <button type="button" className={styles.pageBtn}>
+                  3
+                </button>
+                <button type="button" className={styles.pageBtn} aria-label="Next page">
+                  ›
+                </button>
+              </div>
             </div>
           </div>
         )}
