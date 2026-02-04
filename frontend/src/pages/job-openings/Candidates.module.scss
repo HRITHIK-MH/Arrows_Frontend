@@ -111,6 +111,16 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  position: relative;
+}
+
+.legendItem:not(:last-child)::after {
+  content: '';
+  width: 22px;
+  height: 1px;
+  background: #e2e8f0;
+  display: inline-block;
+  margin-left: 8px;
 }
 
 .legendDot {
@@ -127,6 +137,14 @@
 .dotInterview { background: #64748b; }
 .dotOffer { background: #2563eb; }
 .dotRejected { background: #dc2626; }
+
+.legendTextAdded { color: #ec4899; }
+.legendTextSourced { color: #8b5cf6; }
+.legendTextScreening { color: #f97316; }
+.legendTextAssessment { color: #16a34a; }
+.legendTextInterview { color: #64748b; }
+.legendTextOffer { color: #2563eb; }
+.legendTextRejected { color: #dc2626; }
 
 .addButton {
   display: inline-flex;
@@ -183,10 +201,11 @@
   gap: 12px;
   flex-wrap: wrap;
   align-items: center;
-  padding: 10px;
-  background: #eef2f6;
+  padding: 6px;
+  background: #e6eaef;
   border-radius: 12px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #bfc8d1;
+  min-height: 36px;
 }
 
 .filtersLeft {
@@ -213,10 +232,11 @@
   align-items: center;
   gap: 8px;
   background: #fff;
-  border: 1px solid #dbe3ee;
+  border: 1px solid #bfc8d1;
   border-radius: 8px;
-  padding: 6px 10px;
-  min-width: 200px;
+  padding: 4px 8px;
+  min-height: 28px;
+  min-width: 180px;
   flex: 1 1 200px;
   max-width: 100%;
 }
@@ -230,9 +250,9 @@
   border: none;
   outline: none;
   background: transparent;
-  font-size: 12px;
+  font-size: 13px;
   width: 100%;
-  color: #111827;
+  color: #2c3135;
 
   &::placeholder {
     color: #9ca3af;
@@ -240,13 +260,14 @@
 }
 
 .selectField {
-  border: 1px solid #dbe3ee;
+  border: 1px solid #bfc8d1;
   background: #fff;
   border-radius: 8px;
-  padding: 6px 10px;
-  font-size: 12px;
-  color: #6b7280;
-  min-width: 130px;
+  padding: 4px 10px;
+  font-size: 13px;
+  color: #2c3135;
+  min-width: 120px;
+  height: 28px;
   cursor: pointer;
   transition: border-color 0.2s ease;
 
@@ -261,10 +282,10 @@
 }
 
 .moreButton {
-  border: 1px solid #dbe3ee;
+  border: 1px solid #bfc8d1;
   background: #fff;
   color: #64748b;
-  padding: 6px 8px;
+  padding: 4px 8px;
   border-radius: 8px;
   cursor: pointer;
   display: inline-flex;
@@ -281,10 +302,10 @@
 
 .applyButton,
 .clearButton {
-  border: 1px solid #dbe3ee;
+  border: 1px solid #bfc8d1;
   background: #f8fafc;
   color: #64748b;
-  padding: 6px 12px;
+  padding: 4px 10px;
   border-radius: 8px;
   font-size: 12px;
   cursor: pointer;
@@ -323,14 +344,19 @@
   color: #64748b;
   border-bottom: 1px solid #e2e8f0;
   text-align: left;
-  padding: 10px 12px;
+  padding: 0 12px;
+  height: 44px;
+  vertical-align: middle;
 }
 
 .candidateTable td {
-  font-size: 12px;
-  color: #0f172a;
+  font-size: 14px;
+  color: #2c3135;
   border-bottom: 1px dashed #e2e8f0;
-  padding: 12px;
+  padding: 0 12px;
+  height: 60px;
+  vertical-align: middle;
+  line-height: 22.8px;
 }
 
 .candidateTable tr:hover {
@@ -345,15 +371,21 @@
 .actionIcons {
   display: inline-flex;
   gap: 8px;
+  align-items: center;
+  padding: 4px 6px;
+  border: none;
+  border-radius: 8px;
+  height: 30px;
+  background: transparent;
 }
 
 .actionBtn {
-  border: 1px solid #e2e8f0;
-  background: #fff;
+  border: none;
+  background: transparent;
   color: #475569;
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -362,8 +394,12 @@
 
 .actionBtn:hover {
   background: #eef2f6;
-  border-color: #cbd5e1;
   color: #1f2937;
+}
+
+.actionBtn svg {
+  width: 18px;
+  height: 18px;
 }
 
 .tableHeader {
@@ -376,10 +412,17 @@
 .tableFooter {
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: space-between;
+  gap: 16px;
   font-size: 12px;
   color: #6b7280;
   padding: 0 4px;
+}
+
+.footerLeft {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .entriesSelect {
@@ -397,36 +440,69 @@
   }
 }
 
+.pagination {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pageBtn {
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #475569;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.pageBtn:hover {
+  background: #e2e8f0;
+  border-color: #cbd5e1;
+}
+
+.pageBtnActive {
+  background: #475569;
+  color: #fff;
+  border-color: #475569;
+}
+
 // Status Pills
 .statusPill {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
-  padding: 2px 10px;
-  border-radius: 999px;
+  padding: 0;
+  border-radius: 0;
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 400;
   line-height: 1.4;
 }
 
 .statusDot {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   background: currentColor;
 }
 
 .statusProgress {
-  background: #f1f5f9;
-  color: #0f172a;
-  border: 1px solid #e2e8f0;
+  background: transparent;
+  color: #111827;
+  border: none;
 }
 
 .statusCompleted {
-  background: #ecfdf3;
+  background: transparent;
   color: #15803d;
-  border: 1px solid #bbf7d0;
+  border: none;
 }
 
 .stagePill {
@@ -436,7 +512,7 @@
   padding: 2px 10px;
   border-radius: 999px;
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 400;
 }
 
 .stageAdded { background: #fde2f1; color: #be185d; border: 1px solid #f9a8d4; }

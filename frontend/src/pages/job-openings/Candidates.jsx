@@ -146,6 +146,8 @@ export default function Candidates() {
       status: "In Progress"
     }
   ]);
+  const [editingIndex, setEditingIndex] = React.useState(null);
+  const [editingData, setEditingData] = React.useState(null);
   const [showSuccessMessage, setShowSuccessMessage] = React.useState(false);
   const [searchTerm, setSearchTerm] = React.useState('');
   const [filterSource, setFilterSource] = React.useState('');
@@ -269,6 +271,8 @@ export default function Candidates() {
   const handleAddCandidate = React.useCallback(() => {
     setShowCandidateForm(true);
     setShowDataTable(false);
+    setEditingIndex(null);
+    setEditingData(null);
   }, []);
 
   const handleViewCandidate = React.useCallback((row, index) => {
@@ -278,7 +282,33 @@ export default function Candidates() {
 
   const handleEditCandidate = React.useCallback((row, index) => {
     console.log('Edit candidate:', row);
-    alert('Edit functionality coming soon!');
+    const [firstName = "", lastName = ""] = String(row.candidateName || "").split(" ");
+    setEditingIndex(index);
+    setEditingData({
+      candidateId: row.candidateId || "",
+      namePrefix: row.namePrefix || "none",
+      firstName: row.firstName || firstName,
+      lastName: row.lastName || lastName,
+      primaryEmail: row.primaryEmail || row.candidateEmail || "",
+      secondaryEmail: row.secondaryEmail || "",
+      phoneNumber: row.phoneNumber || "",
+      gender: row.gender || "",
+      yearsExperience: row.yearsExperience || "",
+      offersInHand: row.offersInHand || "",
+      comments: row.comments || "",
+      currentCompanyName: row.currentCompanyName || "",
+      jobTitleRole: row.jobTitleRole || "",
+      employmentType: row.employmentType || "",
+      noticePeriod: row.noticePeriod || "",
+      currentCtc: row.currentCtc || "",
+      expectedCtc: row.expectedCtc || "",
+      sourceId: row.sourceId || "",
+      recruiterId: row.recruiterId || "",
+      sourceName: row.sourceName || row.source || "",
+      sourcedDate: row.sourcedDate || "",
+    });
+    setShowCandidateForm(true);
+    setShowDataTable(false);
   }, []);
 
   const handleDeleteCandidate = React.useCallback((row, index) => {
@@ -303,23 +333,30 @@ export default function Candidates() {
       stage: data.stage || "Added",
       status: data.status || "In Progress"
     };
-    console.log('Candidate added:', normalized);
-    setSubmittedData(prev => [...prev, normalized]);
+    if (editingIndex !== null) {
+      console.log('Candidate updated:', normalized);
+      setSubmittedData(prev => prev.map((item, idx) => (idx === editingIndex ? normalized : item)));
+    } else {
+      console.log('Candidate added:', normalized);
+      setSubmittedData(prev => [...prev, normalized]);
+    }
     setShowCandidateForm(false);
     setShowDataTable(true);
     setShowSuccessMessage(true);
+    setEditingIndex(null);
+    setEditingData(null);
     // Auto-hide success message after 3 seconds
     setTimeout(() => {
       setShowSuccessMessage(false);
     }, 3000);
     // Here you would typically send the data to your backend API
-  }, [formatTimestamp]);
+  }, [formatTimestamp, editingIndex]);
 
   return (
     <div className={styles.page}>
       {showSuccessMessage && (
         <div className={styles.successMessage}>
-          ✓ Candidate added successfully
+          ✓ {editingIndex !== null ? 'Candidate updated successfully' : 'Candidate added successfully'}
         </div>
       )}
 
@@ -333,16 +370,16 @@ export default function Candidates() {
               </p>
               <div className={styles.legendRow}>
                 {[
-                  { label: "Added", className: styles.dotAdded },
-                  { label: "Sourced", className: styles.dotSourced },
-                  { label: "Pre-Screening", className: styles.dotScreening },
-                  { label: "Assessment", className: styles.dotAssessment },
-                  { label: "Client Interview", className: styles.dotInterview },
-                  { label: "Offer", className: styles.dotOffer },
-                  { label: "Rejected", className: styles.dotRejected },
+                  { label: "Added", dotClass: styles.dotAdded, textClass: styles.legendTextAdded },
+                  { label: "Sourced", dotClass: styles.dotSourced, textClass: styles.legendTextSourced },
+                  { label: "Pre-Screening", dotClass: styles.dotScreening, textClass: styles.legendTextScreening },
+                  { label: "Assessment", dotClass: styles.dotAssessment, textClass: styles.legendTextAssessment },
+                  { label: "Client Interview", dotClass: styles.dotInterview, textClass: styles.legendTextInterview },
+                  { label: "Offer", dotClass: styles.dotOffer, textClass: styles.legendTextOffer },
+                  { label: "Rejected", dotClass: styles.dotRejected, textClass: styles.legendTextRejected },
                 ].map((item) => (
-                  <span key={item.label} className={styles.legendItem}>
-                    <span className={`${styles.legendDot} ${item.className}`} />
+                  <span key={item.label} className={`${styles.legendItem} ${item.textClass}`}>
+                    <span className={`${styles.legendDot} ${item.dotClass}`} />
                     {item.label}
                   </span>
                 ))}
@@ -362,6 +399,7 @@ export default function Candidates() {
             <ReusableForm
               config={candidateConfig}
               onSubmit={handleCandidateSubmit}
+              initialData={editingData}
             />
           </div>
         )}
@@ -462,13 +500,32 @@ export default function Candidates() {
             </div>
 
             <div className={styles.tableFooter}>
-              <span>Show</span>
-              <select className={styles.entriesSelect} defaultValue="10">
-                <option value="10">10</option>
-                <option value="25">25</option>
-                <option value="50">50</option>
-              </select>
-              <span>entries</span>
+              <div className={styles.footerLeft}>
+                <span>Show</span>
+                <select className={styles.entriesSelect} defaultValue="10">
+                  <option value="10">10</option>
+                  <option value="25">25</option>
+                  <option value="50">50</option>
+                </select>
+                <span>entries</span>
+              </div>
+              <div className={styles.pagination}>
+                <button type="button" className={styles.pageBtn} aria-label="Previous page">
+                  ‹
+                </button>
+                <button type="button" className={`${styles.pageBtn} ${styles.pageBtnActive}`}>
+                  1
+                </button>
+                <button type="button" className={styles.pageBtn}>
+                  2
+                </button>
+                <button type="button" className={styles.pageBtn}>
+                  3
+                </button>
+                <button type="button" className={styles.pageBtn} aria-label="Next page">
+                  ›
+                </button>
+              </div>
             </div>
           </div>
         )}

@@ -153,10 +153,11 @@
   gap: 12px;
   flex-wrap: wrap;
   align-items: center;
-  padding: 10px;
-  background: #eef2f6;
+  padding: 6px;
+  background: #e6eaef;
   border-radius: 12px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #bfc8d1;
+  min-height: 36px;
 }
 
 .filtersLeft {
@@ -182,10 +183,11 @@
   align-items: center;
   gap: 8px;
   background: #fff;
-  border: 1px solid #dbe3ee;
+  border: 1px solid #bfc8d1;
   border-radius: 8px;
-  padding: 6px 10px;
-  min-width: 200px;
+  padding: 4px 8px;
+  min-height: 28px;
+  min-width: 180px;
   flex: 1 1 200px;
 }
 
@@ -198,26 +200,27 @@
   border: none;
   outline: none;
   background: transparent;
-  font-size: 12px;
+  font-size: 13px;
   width: 100%;
-  color: #111827;
+  color: #2c3135;
 }
 
 .selectField {
-  border: 1px solid #dbe3ee;
+  border: 1px solid #bfc8d1;
   background: #fff;
   border-radius: 8px;
-  padding: 6px 10px;
-  font-size: 12px;
-  color: #6b7280;
-  min-width: 130px;
+  padding: 4px 10px;
+  font-size: 13px;
+  color: #2c3135;
+  min-width: 120px;
+  height: 28px;
 }
 
 .moreButton {
-  border: 1px solid #dbe3ee;
+  border: 1px solid #bfc8d1;
   background: #fff;
   color: #64748b;
-  padding: 6px 8px;
+  padding: 4px 8px;
   border-radius: 8px;
   cursor: pointer;
   display: inline-flex;
@@ -227,10 +230,10 @@
 
 .applyButton,
 .clearButton {
-  border: 1px solid #dbe3ee;
+  border: 1px solid #bfc8d1;
   background: #f8fafc;
   color: #64748b;
-  padding: 6px 12px;
+  padding: 4px 10px;
   border-radius: 8px;
   font-size: 12px;
   cursor: pointer;
@@ -249,59 +252,162 @@
   background: #fff;
 }
 
-.tableWrap :global(.data-table-container) {
-  margin-top: 0;
-}
-
-.tableWrap :global(.data-table) {
-  box-shadow: none;
+.jobTable {
+  width: 100%;
   border-collapse: separate;
   border-spacing: 0;
   min-width: 940px;
 }
 
-.tableWrap :global(.data-table th) {
+.jobTable th {
   background-color: #eef2f6;
   font-weight: 600;
   font-size: 12px;
   color: #64748b;
   border-bottom: 1px solid #e2e8f0;
+  text-align: left;
+  padding: 0 12px;
+  height: 44px;
+  vertical-align: middle;
 }
 
-.tableWrap :global(.data-table th) {
-  background-color: #eef2f6;
-  font-weight: 600;
-  font-size: 12px;
-  color: #64748b;
-  border-bottom: 1px solid #e2e8f0;
-}
-
-.tableWrap :global(.data-table td) {
-  font-size: 12px;
-  color: #0f172a;
+.jobTable td {
+  font-size: 14px;
+  color: #2c3135;
   border-bottom: 1px dashed #e2e8f0;
+  padding: 0 12px;
+  line-height: 22.8px;
+  height: 60px;
+  vertical-align: middle;
 }
 
-.tableWrap :global(.data-table tr:hover) {
+.jobTable tr:hover {
   background-color: #f8fafc;
 }
 
-.tableWrap :global(.action-btn) {
-  color: #475569;
+.actionsCol {
+  text-align: center;
+  width: 120px;
+  vertical-align: middle;
 }
 
-.tableWrap :global(.action-btn:hover) {
-  background-color: #eef2f6;
-  transform: none;
+.actionIcons {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  padding: 4px 6px;
+  border: none;
+  border-radius: 8px;
+  height: 30px;
+  background: transparent;
+}
+
+.actionBtn {
+  border: none;
+  background: transparent;
+  color: #475569;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.actionBtn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.actionBtn:hover {
+  background: #eef2f6;
+  color: #1f2937;
+}
+
+.expandBtn {
+  margin-right: 8px;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #475569;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.expandBtnActive {
+  background: #e2e8f0;
+  color: #1f2937;
+}
+
+.expandedRow td {
+  padding: 0;
+  background: #f8fbff;
+}
+
+.innerTableWrap {
+  padding: 12px;
+}
+
+.innerTable {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: #edf3ff;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.innerTable th {
+  background: #dde7ff;
+  font-size: 11px;
+  color: #64748b;
+  font-weight: 600;
+  padding: 8px 10px;
+  text-align: left;
+  border-bottom: 1px solid #d5def5;
+}
+
+.innerTable td {
+  font-size: 11px;
+  color: #0f172a;
+  padding: 8px 10px;
+  border-bottom: 1px dashed #cbd5e1;
+  background: #f3f6ff;
+}
+
+.innerTable tr:last-child td {
+  border-bottom: none;
+}
+
+.ratingCell {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ratingStar {
+  color: #f59e0b;
 }
 
 .tableFooter {
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: space-between;
+  gap: 16px;
   font-size: 12px;
   color: #6b7280;
   padding: 0 4px;
+}
+
+.footerLeft {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .entriesSelect {
@@ -311,6 +417,39 @@
   padding: 4px 8px;
   font-size: 12px;
   color: #334155;
+}
+
+.pagination {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pageBtn {
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #475569;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.pageBtn:hover {
+  background: #e2e8f0;
+  border-color: #cbd5e1;
+}
+
+.pageBtnActive {
+  background: #475569;
+  color: #fff;
+  border-color: #475569;
 }
 
 .statusPill {
@@ -347,6 +486,25 @@
   color: #64748b;
   border: 1px solid #e2e8f0;
 }
+
+.stagePill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 400;
+}
+
+.stageAdded { background: #fde2f1; color: #be185d; border: 1px solid #f9a8d4; }
+.stageSourced { background: #ede9fe; color: #6d28d9; border: 1px solid #c4b5fd; }
+.stageScreening { background: #ffedd5; color: #c2410c; border: 1px solid #fdba74; }
+.stageAssessment { background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
+.stageInterview { background: #e2e8f0; color: #475569; border: 1px solid #cbd5e1; }
+.stageOffer { background: #dbeafe; color: #1d4ed8; border: 1px solid #93c5fd; }
+.stageRejected { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
+.stageNeutral { background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; }
 
 // Recruitment Pipeline Styles
 .pipelineCard {
