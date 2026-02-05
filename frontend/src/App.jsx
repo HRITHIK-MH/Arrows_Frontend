@@ -15,6 +15,7 @@ const Clients = lazy(() => import("./pages/job-openings/Clients.jsx"));
 const Interviews = lazy(() => import("./pages/interviews/Interviews.jsx"));
 const Reports = lazy(() => import("./pages/reports/Reports.jsx"));
 const UserRoles = lazy(() => import("./pages/user-roles/UserRoles.jsx"));
+const Calendar = lazy(() => import("./pages/calendar/Calendar.jsx"));
 const ApplicationForm = lazy(() => import("./pages/application/ApplicationForm.jsx"));
 const ExampleFormsPage = lazy(() => import("./pages/example-forms/ExampleFormsPage.jsx"));
 const ProgressBarDemo = lazy(() => import("./pages/example-forms/ProgressBarDemo.jsx"));
@@ -118,13 +119,14 @@ export default function App() {
             <Route path="/interviews" element={<Interviews />} />
             <Route path="/clients" element={<Clients />} />
             <Route path="/reports" element={<Reports />} />
+            <Route path="/calendar" element={<Calendar />} />
             <Route path="/users" element={<UserRoles />} />
             <Route path="/application" element={<ApplicationForm />} />
             <Route path="/example-forms" element={<ExampleFormsPage />} />
             <Route path="/progress-demo" element={<ProgressBarDemo />} />
             <Route path="/job-progress-example" element={<JobProgressExample />} />
 
-            {/* TODO: add /chat, /calendar routes */}
+            {/* TODO: add /chat route */}
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </Suspense>

@@ -98,7 +98,52 @@ ClientFilterBar.displayName = 'ClientFilterBar';
 export default function Clients() {
   const [showClientForm, setShowClientForm] = React.useState(false);
   const [showDataTable, setShowDataTable] = React.useState(true);
-  const [submittedData, setSubmittedData] = React.useState([]);
+  const [submittedData, setSubmittedData] = React.useState([
+    {
+      clientId: "C1292938",
+      clientName: "MethodHub",
+      clientCompany: "MethodHub Software",
+      clientEmail: "divya.mehta@email.com",
+      clientPhone: "+91 98765 43210",
+      clientIndustry: "IT Services",
+      clientLocation: "Bangalore",
+      clientBudget: "₹12L",
+      clientStatus: "Active"
+    },
+    {
+      clientId: "C1292432",
+      clientName: "Arrows Inc",
+      clientCompany: "Arrows Technologies",
+      clientEmail: "rahul.mehta@email.com",
+      clientPhone: "+91 97812 34567",
+      clientIndustry: "FinTech",
+      clientLocation: "Pune",
+      clientBudget: "₹9L",
+      clientStatus: "Prospect"
+    },
+    {
+      clientId: "C1292921",
+      clientName: "NovaLabs",
+      clientCompany: "NovaLabs Pvt Ltd",
+      clientEmail: "anitha.kumar@email.com",
+      clientPhone: "+91 98877 66554",
+      clientIndustry: "Healthcare",
+      clientLocation: "Chennai",
+      clientBudget: "₹7L",
+      clientStatus: "Inactive"
+    },
+    {
+      clientId: "C1293010",
+      clientName: "ZenSoft",
+      clientCompany: "ZenSoft Systems",
+      clientEmail: "sneha.nair@email.com",
+      clientPhone: "+91 99777 11223",
+      clientIndustry: "SaaS",
+      clientLocation: "Hyderabad",
+      clientBudget: "₹15L",
+      clientStatus: "Active"
+    }
+  ]);
   const [showSuccessMessage, setShowSuccessMessage] = React.useState(false);
   const [searchTerm, setSearchTerm] = React.useState('');
   const [filterClientIndustry, setFilterClientIndustry] = React.useState('');
