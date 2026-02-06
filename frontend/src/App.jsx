@@ -13,6 +13,7 @@ const JobOpenings = lazy(() => import("./pages/job-openings/JobOpenings.jsx"));
 const Candidates = lazy(() => import("./pages/job-openings/Candidates.jsx"));
 const Clients = lazy(() => import("./pages/job-openings/Clients.jsx"));
 const Interviews = lazy(() => import("./pages/interviews/Interviews.jsx"));
+const JobDescription = lazy(() => import("./pages/job-openings/JobDescription.jsx"));
 const Reports = lazy(() => import("./pages/reports/Reports.jsx"));
 const UserRoles = lazy(() => import("./pages/user-roles/UserRoles.jsx"));
 const Calendar = lazy(() => import("./pages/calendar/Calendar.jsx"));
@@ -118,6 +119,7 @@ export default function App() {
             <Route path="/candidates" element={<Candidates />} />
             <Route path="/interviews" element={<Interviews />} />
             <Route path="/clients" element={<Clients />} />
+            <Route path="/job-openings/:jobId" element={<JobDescription />} />
             <Route path="/reports" element={<Reports />} />
             <Route path="/calendar" element={<Calendar />} />
             <Route path="/users" element={<UserRoles />} />
