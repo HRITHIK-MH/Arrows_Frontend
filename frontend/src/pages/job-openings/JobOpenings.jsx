@@ -1,6 +1,7 @@
 
 
 import * as React from "react";
+import { useNavigate } from "react-router-dom";
 import { FiFilter, FiMoreHorizontal, FiPlus, FiSearch, FiEye, FiEdit2, FiTrash2 } from "react-icons/fi";
 import styles from "./JobOpenings.module.scss";
 import ReusableForm from "../../components/forms/ReusableForm";
@@ -110,6 +111,7 @@ const FilterBar = React.memo(({
 FilterBar.displayName = 'FilterBar';
 
 export default function JobOpenings() {
+  const navigate = useNavigate();
   const [showJobOpeningForm, setShowJobOpeningForm] = React.useState(false);
   const [showDataTable, setShowDataTable] = React.useState(true);
   const [submittedData, setSubmittedData] = React.useState([
@@ -425,8 +427,8 @@ export default function JobOpenings() {
 
   const handleViewJobOpening = React.useCallback((row, index) => {
     console.log('View job opening:', row);
-    alert('View job opening: ' + JSON.stringify(row, null, 2));
-  }, []);
+    navigate(`/job-openings/${row.openingJobId || row.jobPositionId || index}`, { state: { job: row } });
+  }, [navigate]);
 
   const handleEditJobOpening = React.useCallback((row, index) => {
     console.log('Edit job opening:', row);
