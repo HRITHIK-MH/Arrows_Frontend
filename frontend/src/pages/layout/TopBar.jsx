@@ -1,11 +1,11 @@
 
 
 // src/pages/layout/TopBar.jsx
-import { useMemo, useRef, useState, useEffect } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import SearchIconSvg from "../../assets/icons/search.svg?react";
+import NotificationBell from "../notification/notificationBell";
 import { LINKS } from "./routesConfig";
-import SearchIconSvg from "../../assets/icons/search.svg?react"
-import NotificationBell from "../notification/NotificationBell";
 
 
 /** Build segment -> label map from Sidebar LINKS */

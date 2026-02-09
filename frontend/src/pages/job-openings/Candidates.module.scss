@@ -534,6 +534,320 @@
   color: #f59e0b;
 }
 
+.viewDrawerOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.46);
+  z-index: 1100;
+  display: flex;
+  justify-content: flex-end;
+  -webkit-backdrop-filter: blur(1px);
+  backdrop-filter: blur(1px);
+}
+
+.viewDrawer {
+  width: min(820px, calc(100vw - 88px));
+  height: 100vh;
+  background: #fff;
+  box-shadow: -18px 0 38px rgba(15, 23, 42, 0.2);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  animation: slideDrawerIn 0.24s ease-out;
+}
+
+@keyframes slideDrawerIn {
+  from {
+    transform: translateX(24px);
+    opacity: 0.75;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.drawerTop {
+  padding: 16px 24px 14px;
+  border-bottom: 1px solid #dbe3ee;
+  background: #f2f5fb;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.drawerProfile {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.drawerAvatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: #f97316;
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 33px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.drawerIdentity h3 {
+  margin: 0;
+  font-size: 36px;
+  font-weight: 600;
+  color: #1f2937;
+  line-height: 1.1;
+}
+
+.drawerIdentity p {
+  margin: 2px 0 7px 0;
+  font-size: 14px;
+  color: #6b7280;
+  line-height: 1.35;
+}
+
+.drawerMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  font-size: 13px;
+  color: #2c3135;
+}
+
+.drawerMeta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  line-height: 1.35;
+}
+
+.drawerClose {
+  border: none;
+  background: transparent;
+  color: #1f2937;
+  width: 30px;
+  height: 30px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+}
+
+.drawerClose:hover {
+  background: #e8eef8;
+}
+
+.pipelineRow {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 12px 24px 14px;
+  background: #f2f5fb;
+  border-bottom: 1px solid #dbe3ee;
+  overflow-x: auto;
+}
+
+.pipelineStep {
+  --arrow-size: 16px;
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  color: #374151;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 8px 18px 8px 22px;
+  cursor: pointer;
+  position: relative;
+  min-width: 95px;
+  white-space: nowrap;
+  clip-path: polygon(0 0, calc(100% - var(--arrow-size)) 0, 100% 50%, calc(100% - var(--arrow-size)) 100%, 0 100%, var(--arrow-size) 50%);
+  margin-left: -8px;
+}
+
+.pipelineStep:first-child {
+  margin-left: 0;
+  clip-path: polygon(0 0, calc(100% - var(--arrow-size)) 0, 100% 50%, calc(100% - var(--arrow-size)) 100%, 0 100%);
+  padding-left: 16px;
+}
+
+.pipelineStep:last-child {
+  clip-path: polygon(0 0, 100% 0, 100% 50%, 100% 100%, 0 100%, var(--arrow-size) 50%);
+  padding-right: 14px;
+}
+
+.pipelineStepActive {
+  background: #4b5563;
+  color: #fff;
+  border-color: #4b5563;
+  z-index: 1;
+}
+
+.profileTabsRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 24px;
+  border-bottom: 1px solid #dbe3ee;
+  background: #fff;
+}
+
+.profileTabs {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.profileTab {
+  border: none;
+  background: transparent;
+  color: #374151;
+  font-size: 14px;
+  font-weight: 500;
+  padding-bottom: 6px;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+}
+
+.profileTabActive {
+  color: #f97316;
+  border-bottom: 2px solid #f97316;
+}
+
+.mapActionBar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.mapSelect {
+  border: 1px solid #dbe3ee;
+  background: #f8fafc;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #64748b;
+  padding: 7px 10px;
+  min-width: 200px;
+  height: 36px;
+}
+
+.mapJobBtn {
+  border: 1px solid #93c5fd;
+  background: #edf4ff;
+  color: #2563eb;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 7px 14px;
+  height: 36px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.profileContent {
+  padding: 16px 24px 24px;
+  overflow: auto;
+  flex: 1;
+  background: #fff;
+}
+
+.profileGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px 28px;
+}
+
+.profileItem {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.profileLabel {
+  font-size: 13px;
+  color: #6b7280;
+  line-height: 1.35;
+}
+
+.profileValue {
+  font-size: 15px;
+  color: #2c3135;
+  line-height: 1.4;
+  font-weight: 400;
+}
+
+.profileLink {
+  font-size: 15px;
+  color: #2563eb;
+  line-height: 1.4;
+  font-weight: 400;
+}
+
+.listContent {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.contentChip {
+  border: 1px solid #dbe3ee;
+  background: #f8fafc;
+  border-radius: 999px;
+  padding: 7px 12px;
+  font-size: 13px;
+  color: #1f2937;
+}
+
+.contentCard {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+  padding: 11px 13px;
+  min-width: 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: #1f2937;
+  font-size: 13px;
+}
+
+.drawerActions {
+  position: absolute;
+  top: 78px;
+  right: 20px;
+  display: inline-flex;
+  gap: 8px;
+}
+
+.shareBtn,
+.quickViewBtn {
+  width: 30px;
+  height: 30px;
+  border: 1px solid #b9c7e4;
+  border-radius: 999px;
+  background: #dce7fb;
+  color: #2c3135;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.shareBtn:hover,
+.quickViewBtn:hover {
+  background: #cbd9f4;
+}
+
 // Responsive Styles
 @media (max-width: 1024px) {
   .infoRow {
@@ -551,6 +865,14 @@
 
   .candidateTable {
     min-width: 880px;
+  }
+
+  .viewDrawer {
+    width: min(760px, calc(100vw - 80px));
+  }
+
+  .profileGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -574,6 +896,29 @@
 
   .selectField {
     min-width: 100px;
+  }
+
+  .viewDrawer {
+    width: 100vw;
+  }
+
+  .profileTabsRow {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .mapActionBar {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .mapSelect {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .profileGrid {
+    grid-template-columns: 1fr;
   }
 }
 

@@ -9,7 +9,12 @@ import {
   FiStar,
   FiEye,
   FiEdit2,
-  FiTrash2
+  FiTrash2,
+  FiX,
+  FiMail,
+  FiMapPin,
+  FiPhone,
+  FiShare2
 } from "react-icons/fi";
 import styles from "./Candidates.module.scss";
 import ReusableForm from "../../components/forms/ReusableForm";
@@ -101,6 +106,25 @@ const CandidateFilterBar = React.memo(({
 
 CandidateFilterBar.displayName = 'CandidateFilterBar';
 
+const PROFILE_TABS = [
+  "Basic Info",
+  "Skills",
+  "Resume",
+  "Timeline",
+  "Rating",
+  "Attachment",
+  "Job Applications",
+];
+
+const PIPELINE_STEPS = ["New", "In Review", "Engaged", "Offered", "Hired", "Rejected"];
+
+const MAP_JOB_OPTIONS = [
+  "ZR_431212_JOB",
+  "ZR_431213_JOB",
+  "ZR_431214_JOB",
+  "ZR_431215_JOB",
+];
+
 export default function Candidates() {
   const [showCandidateForm, setShowCandidateForm] = React.useState(false);
   const [showDataTable, setShowDataTable] = React.useState(true);
@@ -154,6 +178,12 @@ export default function Candidates() {
   const [filterRating, setFilterRating] = React.useState('');
   const [filterStage, setFilterStage] = React.useState('');
   const [filterStatus, setFilterStatus] = React.useState('');
+  const [isViewDrawerOpen, setIsViewDrawerOpen] = React.useState(false);
+  const [activeProfileTab, setActiveProfileTab] = React.useState("Basic Info");
+  const [activePipelineStep, setActivePipelineStep] = React.useState("Engaged");
+  const [selectedCandidate, setSelectedCandidate] = React.useState(null);
+  const [mapJobValue, setMapJobValue] = React.useState("");
+  const [mappedJobs, setMappedJobs] = React.useState([]);
 
   // Debounced search handler - reduces filter recalculations by 99%
   const debouncedSearch = React.useMemo(
@@ -268,6 +298,67 @@ export default function Candidates() {
     return `${month}/${day}/${year} ${pad(hours)}:${minutes} ${period}`;
   }, []);
 
+  const buildCandidateProfile = React.useCallback((row) => {
+    const [firstName = "", lastName = ""] = String(row.candidateName || "").split(" ");
+    const normalizedFirstName = row.firstName || firstName || "Rahul";
+    const normalizedLastName = row.lastName || lastName || "Mehta";
+    return {
+      candidateId: row.candidateId || "C001",
+      firstName: normalizedFirstName,
+      lastName: normalizedLastName,
+      fullName: `${normalizedFirstName} ${normalizedLastName}`.trim(),
+      role: row.role || "Senior Product Manager",
+      email: row.primaryEmail || row.candidateEmail || "rahul.mehta@email.com",
+      secondaryEmail: row.secondaryEmail || row.candidateEmail || "rahul.mehta@email.com",
+      phoneNumber: row.phoneNumber || "9876543210",
+      location: row.location || "Chennai, India",
+      dateOfBirth: row.dateOfBirth || "02/06/1999",
+      gender: row.gender || "Male",
+      currentCompany: row.currentCompanyName || "Method Hub",
+      experience: row.experience || "8 Years",
+      yearsExperience: row.yearsExperience || "8 Years",
+      offersInHand: row.offersInHand || "No",
+      currentCtc: row.currentCtc || "25,000,00 LPA",
+      expectedCtc: row.expectedCtc || "30,000,00 LPA",
+      skills: row.skills || ["React", "Node.js", "Java", "Communication"],
+      resume: row.resume || {
+        fileName: `${normalizedFirstName.toLowerCase()}-${normalizedLastName.toLowerCase()}-resume.pdf`,
+        uploadedOn: "11/10/2025",
+      },
+      attachments: row.attachments || ["Govt ID Proof.pdf", "Offer Letter.pdf"],
+      timeline: row.timeline || [
+        { label: "Profile Added", date: "11/10/2025" },
+        { label: "Sourced", date: "11/11/2025" },
+        { label: "Engaged", date: "11/12/2025" },
+      ],
+      rating: row.rating || "3/5",
+      source: row.source || "Resume Inbox",
+      stage: row.stage || "Sourced",
+      status: row.status || "In Progress",
+      jobApplications: row.jobApplications || ["ZR_431212_JOB"],
+    };
+  }, []);
+
+  React.useEffect(() => {
+    if (!isViewDrawerOpen) return undefined;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isViewDrawerOpen]);
+
+  React.useEffect(() => {
+    if (!isViewDrawerOpen) return undefined;
+    const handleEsc = (event) => {
+      if (event.key === "Escape") {
+        setIsViewDrawerOpen(false);
+      }
+    };
+    document.addEventListener("keydown", handleEsc);
+    return () => document.removeEventListener("keydown", handleEsc);
+  }, [isViewDrawerOpen]);
+
   const handleAddCandidate = React.useCallback(() => {
     setShowCandidateForm(true);
     setShowDataTable(false);
@@ -275,10 +366,27 @@ export default function Candidates() {
     setEditingData(null);
   }, []);
 
+  const getPipelineFromStage = React.useCallback((stage) => {
+    const normalized = String(stage || "").toLowerCase();
+    if (normalized === "added") return "New";
+    if (normalized === "sourced") return "In Review";
+    if (normalized === "pre-screening") return "Engaged";
+    if (normalized === "assessment") return "Offered";
+    if (normalized === "client interview") return "Hired";
+    if (normalized === "rejected") return "Rejected";
+    return "New";
+  }, []);
+
   const handleViewCandidate = React.useCallback((row, index) => {
     console.log('View candidate:', row);
-    alert('View candidate: ' + JSON.stringify(row, null, 2));
-  }, []);
+    const profile = buildCandidateProfile(row);
+    setSelectedCandidate(profile);
+    setActiveProfileTab("Basic Info");
+    setActivePipelineStep(getPipelineFromStage(profile.stage));
+    setMappedJobs(profile.jobApplications || []);
+    setMapJobValue("");
+    setIsViewDrawerOpen(true);
+  }, [buildCandidateProfile, getPipelineFromStage]);
 
   const handleEditCandidate = React.useCallback((row, index) => {
     console.log('Edit candidate:', row);
@@ -351,6 +459,158 @@ export default function Candidates() {
     }, 3000);
     // Here you would typically send the data to your backend API
   }, [formatTimestamp, editingIndex]);
+
+  const closeViewDrawer = React.useCallback(() => {
+    setIsViewDrawerOpen(false);
+  }, []);
+
+  const handleMapJob = React.useCallback(() => {
+    if (!mapJobValue) return;
+    setMappedJobs((prev) => (prev.includes(mapJobValue) ? prev : [...prev, mapJobValue]));
+    setMapJobValue("");
+    setActiveProfileTab("Job Applications");
+  }, [mapJobValue]);
+
+  const renderProfileContent = () => {
+    if (!selectedCandidate) return null;
+
+    if (activeProfileTab === "Basic Info") {
+      return (
+        <div className={styles.profileGrid}>
+          <div className={styles.profileItem}>
+            <span className={styles.profileLabel}>Candidate ID</span>
+            <span className={styles.profileValue}>{selectedCandidate.candidateId}</span>
+          </div>
+          <div className={styles.profileItem}>
+            <span className={styles.profileLabel}>First Name</span>
+            <span className={styles.profileValue}>{selectedCandidate.firstName}</span>
+          </div>
+          <div className={styles.profileItem}>
+            <span className={styles.profileLabel}>Last Name</span>
+            <span className={styles.profileValue}>{selectedCandidate.lastName}</span>
+          </div>
+          <div className={styles.profileItem}>
+            <span className={styles.profileLabel}>Primary Email Address</span>
+            <span className={styles.profileLink}>{selectedCandidate.email}</span>
+          </div>
+          <div className={styles.profileItem}>
+            <span className={styles.profileLabel}>Secondary Email Address</span>
+            <span className={styles.profileLink}>{selectedCandidate.secondaryEmail}</span>
+          </div>
+          <div className={styles.profileItem}>
+            <span className={styles.profileLabel}>Phone Number</span>
+            <span className={styles.profileValue}>{selectedCandidate.phoneNumber}</span>
+          </div>
+          <div className={styles.profileItem}>
+            <span className={styles.profileLabel}>Date Of Birth</span>
+            <span className={styles.profileValue}>{selectedCandidate.dateOfBirth}</span>
+          </div>
+          <div className={styles.profileItem}>
+            <span className={styles.profileLabel}>Gender</span>
+            <span className={styles.profileValue}>{selectedCandidate.gender}</span>
+          </div>
+          <div className={styles.profileItem}>
+            <span className={styles.profileLabel}>Current Company</span>
+            <span className={styles.profileValue}>{selectedCandidate.currentCompany}</span>
+          </div>
+          <div className={styles.profileItem}>
+            <span className={styles.profileLabel}>Experience</span>
+            <span className={styles.profileValue}>{selectedCandidate.experience}</span>
+          </div>
+          <div className={styles.profileItem}>
+            <span className={styles.profileLabel}>Years of Experience</span>
+            <span className={styles.profileValue}>{selectedCandidate.yearsExperience}</span>
+          </div>
+          <div className={styles.profileItem}>
+            <span className={styles.profileLabel}>Offers in Hand</span>
+            <span className={styles.profileValue}>{selectedCandidate.offersInHand}</span>
+          </div>
+          <div className={styles.profileItem}>
+            <span className={styles.profileLabel}>Current CTC</span>
+            <span className={styles.profileValue}>{selectedCandidate.currentCtc}</span>
+          </div>
+          <div className={styles.profileItem}>
+            <span className={styles.profileLabel}>Expected CTC</span>
+            <span className={styles.profileValue}>{selectedCandidate.expectedCtc}</span>
+          </div>
+        </div>
+      );
+    }
+
+    if (activeProfileTab === "Skills") {
+      return (
+        <div className={styles.listContent}>
+          {selectedCandidate.skills.map((skill) => (
+            <span key={skill} className={styles.contentChip}>
+              {skill}
+            </span>
+          ))}
+        </div>
+      );
+    }
+
+    if (activeProfileTab === "Resume") {
+      return (
+        <div className={styles.listContent}>
+          <div className={styles.contentCard}>
+            <strong>{selectedCandidate.resume.fileName}</strong>
+            <span>Uploaded: {selectedCandidate.resume.uploadedOn}</span>
+          </div>
+        </div>
+      );
+    }
+
+    if (activeProfileTab === "Timeline") {
+      return (
+        <div className={styles.listContent}>
+          {selectedCandidate.timeline.map((item) => (
+            <div key={`${item.label}-${item.date}`} className={styles.contentCard}>
+              <strong>{item.label}</strong>
+              <span>{item.date}</span>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    if (activeProfileTab === "Rating") {
+      return (
+        <div className={styles.listContent}>
+          <div className={styles.contentCard}>
+            <strong>Candidate Rating</strong>
+            <span>{selectedCandidate.rating}</span>
+          </div>
+        </div>
+      );
+    }
+
+    if (activeProfileTab === "Attachment") {
+      return (
+        <div className={styles.listContent}>
+          {selectedCandidate.attachments.map((file) => (
+            <div key={file} className={styles.contentCard}>
+              <strong>{file}</strong>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    return (
+      <div className={styles.listContent}>
+        {mappedJobs.length === 0 ? (
+          <div className={styles.contentCard}>No mapped jobs yet.</div>
+        ) : (
+          mappedJobs.map((jobId) => (
+            <div key={jobId} className={styles.contentCard}>
+              <strong>{jobId}</strong>
+              <span>{activePipelineStep}</span>
+            </div>
+          ))
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className={styles.page}>
@@ -530,6 +790,88 @@ export default function Candidates() {
           </div>
         )}
       </div>
+
+      {isViewDrawerOpen && selectedCandidate && (
+        <div className={styles.viewDrawerOverlay} onClick={closeViewDrawer}>
+          <aside className={styles.viewDrawer} onClick={(event) => event.stopPropagation()}>
+            <div className={styles.drawerTop}>
+              <div className={styles.drawerProfile}>
+                <div className={styles.drawerAvatar}>{selectedCandidate.firstName?.charAt(0) || "R"}</div>
+                <div className={styles.drawerIdentity}>
+                  <h3>{selectedCandidate.fullName}</h3>
+                  <p>{selectedCandidate.role}</p>
+                  <div className={styles.drawerMeta}>
+                    <span><FiMail size={12} /> {selectedCandidate.email}</span>
+                    <span><FiMapPin size={12} /> {selectedCandidate.location}</span>
+                    <span><FiPhone size={12} /> {selectedCandidate.phoneNumber}</span>
+                  </div>
+                </div>
+              </div>
+              <button type="button" className={styles.drawerClose} onClick={closeViewDrawer} aria-label="Close panel">
+                <FiX size={18} />
+              </button>
+            </div>
+
+            <div className={styles.pipelineRow}>
+              {PIPELINE_STEPS.map((step) => (
+                <button
+                  key={step}
+                  type="button"
+                  className={`${styles.pipelineStep}${activePipelineStep === step ? ` ${styles.pipelineStepActive}` : ""}`}
+                  onClick={() => setActivePipelineStep(step)}
+                >
+                  {step}
+                </button>
+              ))}
+            </div>
+
+            <div className={styles.profileTabsRow}>
+              <div className={styles.profileTabs}>
+                {PROFILE_TABS.map((tab) => (
+                  <button
+                    key={tab}
+                    type="button"
+                    className={`${styles.profileTab}${activeProfileTab === tab ? ` ${styles.profileTabActive}` : ""}`}
+                    onClick={() => setActiveProfileTab(tab)}
+                  >
+                    {tab}
+                  </button>
+                ))}
+              </div>
+
+              <div className={styles.mapActionBar}>
+                <select
+                  className={styles.mapSelect}
+                  value={mapJobValue}
+                  onChange={(event) => setMapJobValue(event.target.value)}
+                >
+                  <option value="">Search JD to Map</option>
+                  {MAP_JOB_OPTIONS.map((jobId) => (
+                    <option key={jobId} value={jobId}>
+                      {jobId}
+                    </option>
+                  ))}
+                </select>
+                <button type="button" className={styles.mapJobBtn} onClick={handleMapJob}>
+                  Map Job
+                </button>
+              </div>
+            </div>
+
+            <div className={styles.profileContent}>{renderProfileContent()}</div>
+
+            <div className={styles.drawerActions}>
+              <button type="button" className={styles.shareBtn} aria-label="Share">
+                <FiShare2 size={14} />
+              </button>
+              <button type="button" className={styles.quickViewBtn} aria-label="Quick view">
+                <FiEye size={14} />
+              </button>
+            </div>
+          </aside>
+        </div>
+      )}
+
     </div>
   );
 }
