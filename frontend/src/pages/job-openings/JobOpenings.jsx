@@ -1,13 +1,12 @@
 
 
 import * as React from "react";
+import { FiEdit2, FiEye, FiFilter, FiMoreHorizontal, FiPlus, FiSearch, FiTrash2 } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
-import { FiFilter, FiMoreHorizontal, FiPlus, FiSearch, FiEye, FiEdit2, FiTrash2 } from "react-icons/fi";
-import styles from "./JobOpenings.module.scss";
-import ReusableForm from "../../components/forms/ReusableForm";
-import StepProgressBar from "../../components/StepProgressBar";
 import { jobOpeningConfig } from "../../components/forms/formConfigs";
+import ReusableForm from "../../components/forms/ReusableForm";
 import { debounce } from "../../utils/debounce";
+import styles from "./JobOpenings.module.scss";
 
 
 // Memoized filter bar component to prevent unnecessary re-renders
@@ -269,26 +268,7 @@ export default function JobOpenings() {
   const [filterTargetDate, setFilterTargetDate] = React.useState('');
   const [filterJobStatus, setFilterJobStatus] = React.useState('');
   const [filterHiringManager, setFilterHiringManager] = React.useState('');
-  const [showRecruitmentPipeline, setShowRecruitmentPipeline] = React.useState(true);
   const [expandedRows, setExpandedRows] = React.useState({});
-
-  // Recruitment pipeline steps
-  const recruitmentSteps = React.useMemo(() => [
-    { label: 'Job Posted' },
-    { label: 'Screening' },
-    { label: 'Interviews' },
-    { label: 'Final Review' },
-    { label: 'Offer Stage' }
-  ], []);
-
-  // Mock data for pipeline stages (in real app, this would come from API)
-  const pipelineData = React.useMemo(() => ({
-    'Senior React Developer': 2,
-    'Product Manager': 1,
-    'UI/UX Designer': 3,
-    'Backend Engineer': 2,
-    'DevOps Engineer': 1
-  }), []);
 
   // Debounced search handler - reduces filter recalculations by 99%
   const debouncedSearch = React.useMemo(

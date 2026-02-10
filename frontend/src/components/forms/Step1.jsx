@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import FormField from './FormField';
 import './Step1.css';
 
@@ -71,7 +71,7 @@ const Step1 = ({ formData, onChange }) => {
       // If other field has a value, validate it too to update cross-field error
       if (otherValue !== undefined && otherValue !== '') {
         validateExperience(otherValue, otherField)
-          .then(res => {
+          .then(() => {
             setValidationErrors(prev => ({
               ...prev,
               [otherField]: null

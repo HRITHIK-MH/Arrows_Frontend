@@ -90,7 +90,7 @@ export const validatePhoneNumber = async (value, fieldName) => {
       });
     }
 
-    const phoneRegex = /^[\d\s\-\+\(\)]{7,}$/;
+    const phoneRegex = /^[\d\s\-+()]{7,}$/;
     const isValid = phoneRegex.test(value.replace(/\s/g, ''));
 
     resolve({

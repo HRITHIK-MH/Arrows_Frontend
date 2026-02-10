@@ -2,24 +2,24 @@
 
 import * as React from "react";
 import {
-  FiFilter,
-  FiMoreHorizontal,
-  FiPlus,
-  FiSearch,
-  FiStar,
-  FiEye,
   FiEdit2,
-  FiTrash2,
-  FiX,
+  FiEye,
+  FiFilter,
   FiMail,
   FiMapPin,
+  FiMoreHorizontal,
   FiPhone,
-  FiShare2
+  FiPlus,
+  FiSearch,
+  FiShare2,
+  FiStar,
+  FiTrash2,
+  FiX
 } from "react-icons/fi";
-import styles from "./Candidates.module.scss";
 import ReusableForm from "../../components/forms/ReusableForm";
 import { candidateConfig } from "../../components/forms/formConfigs";
 import { debounce } from "../../utils/debounce";
+import styles from "./Candidates.module.scss";
 
 
 // Memoized filter bar component to prevent unnecessary re-renders
@@ -377,7 +377,7 @@ export default function Candidates() {
     return "New";
   }, []);
 
-  const handleViewCandidate = React.useCallback((row, index) => {
+  const handleViewCandidate = React.useCallback((row) => {
     console.log('View candidate:', row);
     const profile = buildCandidateProfile(row);
     setSelectedCandidate(profile);
@@ -730,7 +730,7 @@ export default function Candidates() {
                           <button
                             type="button"
                             className={styles.actionBtn}
-                            onClick={() => handleViewCandidate(row, index)}
+                            onClick={() => handleViewCandidate(row)}
                             aria-label="View"
                           >
                             <FiEye size={16} />

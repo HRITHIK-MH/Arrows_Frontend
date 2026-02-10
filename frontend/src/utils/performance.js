@@ -12,13 +12,12 @@ export const measurePageLoad = () => {
   }
 
   window.addEventListener('load', () => {
-    const perfData = window.performance.timing;
-    const perfEntries = window.performance.getEntries();
+    const navTiming = window.performance.getEntriesByType('navigation')[0];
 
     // Calculate key metrics
-    const pageLoadTime = perfData.loadEventEnd - perfData.navigationStart;
-    const connectTime = perfData.responseEnd - perfData.requestStart;
-    const domContentLoadedTime = perfData.domContentLoadedEventEnd - perfData.navigationStart;
+    const pageLoadTime = navTiming.loadEventEnd - navTiming.fetchStart;
+    const connectTime = navTiming.responseEnd - navTiming.requestStart;
+    const domContentLoadedTime = navTiming.domContentLoadedEventEnd - navTiming.fetchStart;
 
     // Log metrics
     console.log('Performance Metrics:', {
@@ -39,7 +38,7 @@ export const measurePageLoad = () => {
         observer.observe({
           entryTypes: ['largest-contentful-paint', 'first-input', 'cumulative-layout-shift'],
         });
-      } catch (e) {
+      } catch {
         console.debug('PerformanceObserver not fully supported');
       }
     }
@@ -70,7 +69,7 @@ export const measurePerformance = (name, startMark, endMark) => {
       if (measures.length > 0) {
         console.log(`${name}: ${measures[0].duration}ms`);
       }
-    } catch (e) {
+    } catch {
       console.debug('Performance measurement not available');
     }
   }

@@ -1,6 +1,6 @@
-import React, { useEffect, useRef, useState } from 'react';
-import './FormField.css';
+import { useEffect, useRef, useState } from 'react';
 import { validateMandatoryField } from '../../utils/formValidation';
+import './FormField.css';
 
 const FormField = ({ 
   label, 
@@ -30,7 +30,6 @@ const FormField = ({
   const [customOptions, setCustomOptions] = useState([]);
   const [localError, setLocalError] = useState('');
   const dropdownRef = useRef(null);
-  const selectRef = useRef(null);
   const fileInputRef = useRef(null);
 
   // Sync prop error with local error when prop changes
@@ -47,7 +46,7 @@ const FormField = ({
       console.log(`[FormField.useEffect] Clearing error for ${name} - error prop is now empty`);
       setLocalError('');
     }
-  }, [error]);
+  }, [error, name]);
 
   const handleChange = (e) => {
     const newValue = type === 'file'
@@ -126,11 +125,6 @@ const FormField = ({
 
   const removeMultiSelectItem = (itemToRemove) => {
     const newValue = value.filter(item => item !== itemToRemove);
-    handleMultiSelectChange(newValue);
-  };
-
-  const addMultiSelectItem = (optionValue) => {
-    const newValue = [...(value || []), optionValue];
     handleMultiSelectChange(newValue);
   };
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 const TEAM_MEMBERS = [
   {
@@ -29,7 +29,10 @@ const TeamMembersStep = ({
   const selectedMembers = Array.isArray(formData.teamMembers)
     ? formData.teamMembers
     : [];
-  const memberRoles = formData.teamMemberRoles || {};
+  const memberRoles = useMemo(
+    () => formData.teamMemberRoles || {},
+    [formData.teamMemberRoles]
+  );
 
   useEffect(() => {
     if (formData.teamMembers === undefined) {
@@ -49,15 +52,6 @@ const TeamMembersStep = ({
     }
   }, [onSetStepFields]);
 
-  useEffect(() => {
-    if (!isModalOpen) {
-      return;
-    }
-    const fallbackId = TEAM_MEMBERS[0]?.id || "";
-    const nextId = selectedRecruiterId || fallbackId;
-    setSelectedRecruiterId(nextId);
-    setRecruiterRole(memberRoles[nextId] || "");
-  }, [isModalOpen, memberRoles, selectedRecruiterId]);
 
   const allSelected =
     TEAM_MEMBERS.length > 0 && selectedMembers.length === TEAM_MEMBERS.length;
@@ -81,6 +75,10 @@ const TeamMembersStep = ({
   };
 
   const openAssignModal = () => {
+    const fallbackId = TEAM_MEMBERS[0]?.id || "";
+    const nextId = selectedRecruiterId || fallbackId;
+    setSelectedRecruiterId(nextId);
+    setRecruiterRole(memberRoles[nextId] || "");
     setModalOpen(true);
   };
 
