@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { FiCheck } from 'react-icons/fi';
 import './MultiStepForm.css';
 
@@ -16,7 +16,7 @@ const MultiStepForm = ({
   readOnly = false
 }) => {
   const [currentStep, setCurrentStep] = useState(0);
-  const [formData, setFormData] = useState(initialData || {});
+  const [formData, setFormData] = useState(() => initialData || {});
   const [stepFields, setStepFields] = useState({});
 
   const normalizeLabel = (label, fallback) => {
@@ -141,11 +141,6 @@ const MultiStepForm = ({
     }
   };
 
-  // Check if current step is valid
-  const isCurrentStepValid = () => {
-    return validateCurrentStep(currentStep);
-  };
-
   const CurrentStepComponent = steps[currentStep].component;
 
   const getStepState = (index) => {
@@ -160,15 +155,6 @@ const MultiStepForm = ({
     }
   };
 
-  useEffect(() => {
-    if (!initialData) {
-      setFormData({});
-      setCurrentStep(0);
-      return;
-    }
-    setFormData(initialData);
-    setCurrentStep(0);
-  }, [initialData]);
 
   return (
     <div className="multi-step-form">

@@ -1,6 +1,6 @@
 import * as React from "react";
+import { FiArrowLeft, FiPlus, FiSearch } from "react-icons/fi";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { FiArrowLeft, FiSearch, FiPlus } from "react-icons/fi";
 import styles from "./JobDescription.module.scss";
 
   const fallbackJob = {
@@ -85,7 +85,7 @@ const JobDescription = () => {
     if (normalized === "offer") return styles.stageOffer;
     if (normalized === "rejected") return styles.stageRejected;
     return styles.stageNeutral;
-  }, [styles]);
+  }, []);
 
   const handleMoveTo = (index, nextStage) => {
     setCandidateRows((prev) =>

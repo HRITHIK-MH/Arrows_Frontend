@@ -1,7 +1,7 @@
 import * as React from "react";
-import { FiFilter, FiMoreHorizontal, FiSearch, FiChevronDown, FiChevronRight, FiPlus, FiEdit2, FiTrash2, FiX } from "react-icons/fi";
-import styles from "./Interviews.module.scss";
+import { FiChevronDown, FiChevronRight, FiEdit2, FiFilter, FiMoreHorizontal, FiPlus, FiSearch, FiTrash2, FiX } from "react-icons/fi";
 import DataTable from "../../components/forms/DataTable";
+import styles from "./Interviews.module.scss";
 
 export default function Interviews() {
   const [activeTab, setActiveTab] = React.useState("list"); // "list" or "group"
@@ -137,7 +137,7 @@ export default function Interviews() {
     handleCloseCreateGroupModal();
   };
 
-  const handleAddMember = (groupId) => {
+  const handleAddMember = () => {
     setShowAddMemberModal(true);
   };
 
