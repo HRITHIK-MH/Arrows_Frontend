@@ -4,7 +4,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import SearchIconSvg from "../../assets/icons/search.svg?react";
-import NotificationBell from "../notification/notificationBell";
+import NotificationBell from "../notification/NotificationBell";
 import { LINKS } from "./routesConfig";
 
 

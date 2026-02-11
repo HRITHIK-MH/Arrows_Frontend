@@ -7,7 +7,7 @@ export default function Dashboard() {
   const [jobs, setJobs] = useState([]);
   const [loadingJobs, setLoadingJobs] = useState(false);
   const [jobsError, setJobsError] = useState("");
-  const API_URL = "http://localhost:8080/api";
+  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
 
   const navItems = [
     { label: "Dashboard", path: "/dashboard" },

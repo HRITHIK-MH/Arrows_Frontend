@@ -1,6 +1,16 @@
 import * as React from "react";
-import { FiChevronDown, FiChevronRight, FiEdit2, FiFilter, FiMoreHorizontal, FiPlus, FiSearch, FiTrash2, FiX } from "react-icons/fi";
-import DataTable from "../../components/forms/DataTable";
+import {
+  FiChevronDown,
+  FiChevronRight,
+  FiEdit2,
+  FiEye,
+  FiFilter,
+  FiMoreHorizontal,
+  FiPlus,
+  FiSearch,
+  FiTrash2,
+  FiX,
+} from "react-icons/fi";
 import styles from "./Interviews.module.scss";
 
 export default function Interviews() {
@@ -56,28 +66,108 @@ export default function Interviews() {
         // const data = await response.json();
         // setInterviews(data);
         
-        // Sample data for demonstration
+        // Sample data aligned with design reference
         setInterviews([
           {
             candidateId: "C001",
-            candidateName: "John Doe",
-            roleJobTitle: "Software Engineer",
-            dateTime: "2026-02-15 10:00 AM",
-            company: "Tech Corp",
+            candidateName: "Arun Kumar",
+            roleJobTitle: "UX Designer",
+            dateTime: "29/12/2025 11:00 AM",
+            company: "ABC Tech",
             interviewType: "Technical",
             mode: "Online",
-            status: "Scheduled"
+            status: "Upcoming",
           },
           {
             candidateId: "C002",
-            candidateName: "Jane Smith",
+            candidateName: "Priya Sharma",
+            roleJobTitle: "Frontend Developer",
+            dateTime: "29/12/2025 04:00 PM",
+            company: "XYZ Ltd",
+            interviewType: "HR",
+            mode: "In-Person",
+            status: "Upcoming",
+          },
+          {
+            candidateId: "C003",
+            candidateName: "Ravi Patel",
             roleJobTitle: "Product Manager",
-            dateTime: "2026-02-16 2:00 PM",
-            company: "Innovation Ltd",
-            interviewType: "HR Round",
-            mode: "In-person",
-            status: "Completed"
-          }
+            dateTime: "29/12/2025 05:30 PM",
+            company: "Nova Corp",
+            interviewType: "Managerial",
+            mode: "Online",
+            status: "Rescheduled",
+          },
+          {
+            candidateId: "C004",
+            candidateName: "Shend Iyer",
+            roleJobTitle: "UI Designer",
+            dateTime: "02/01/2026 11:30 AM",
+            company: "PixelWorks",
+            interviewType: "Technical",
+            mode: "Online",
+            status: "Upcoming",
+          },
+          {
+            candidateId: "C005",
+            candidateName: "Vikram Singh",
+            roleJobTitle: "Backend Developer",
+            dateTime: "02/01/2026 02:15 PM",
+            company: "CodeBase",
+            interviewType: "Technical",
+            mode: "In-Person",
+            status: "Upcoming",
+          },
+          {
+            candidateId: "C006",
+            candidateName: "Ananya Rao",
+            roleJobTitle: "Data Analyst",
+            dateTime: "02/01/2026 04:30 PM",
+            company: "Insight Labs",
+            interviewType: "HR",
+            mode: "Online",
+            status: "Upcoming",
+          },
+          {
+            candidateId: "C007",
+            candidateName: "Karthik M",
+            roleJobTitle: "QA Engineer",
+            dateTime: "03/01/2026 10:00 AM",
+            company: "TestPro",
+            interviewType: "Technical",
+            mode: "Online",
+            status: "Rescheduled",
+          },
+          {
+            candidateId: "C008",
+            candidateName: "Neha Verma",
+            roleJobTitle: "Digital Marketer",
+            dateTime: "03/01/2026 11:30 AM",
+            company: "BrandHive",
+            interviewType: "HR",
+            mode: "Online",
+            status: "Rescheduled",
+          },
+          {
+            candidateId: "C009",
+            candidateName: "Suresh Nair",
+            roleJobTitle: "DevOps Engineer",
+            dateTime: "03/01/2026 02:00 PM",
+            company: "CloudNet",
+            interviewType: "Technical",
+            mode: "Online",
+            status: "Upcoming",
+          },
+          {
+            candidateId: "C0010",
+            candidateName: "Pooja Mehta",
+            roleJobTitle: "Business Analyst",
+            dateTime: "03/01/2026 04:00 PM",
+            company: "FinEdge",
+            interviewType: "Managerial",
+            mode: "In-Person",
+            status: "Upcoming",
+          },
         ]);
       } catch (error) {
         console.error("Error fetching interviews:", error);
@@ -186,120 +276,280 @@ export default function Interviews() {
   const uniqueInterviewTypes = [...new Set(interviews.map(i => i.interviewType))];
   const uniqueStatuses = [...new Set(interviews.map(i => i.status))];
 
+  const filteredInterviews = React.useMemo(() => {
+    const normalizedSearch = searchTerm.trim().toLowerCase();
+    return interviews.filter((item) => {
+      const matchesSearch =
+        !normalizedSearch ||
+        Object.values(item).some((value) =>
+          String(value).toLowerCase().includes(normalizedSearch)
+        );
+      const matchesRole = !filterRole || item.roleJobTitle === filterRole;
+      const matchesInterviewType =
+        !filterInterviewType || item.interviewType === filterInterviewType;
+      const matchesStatus = !filterStatus || item.status === filterStatus;
+      const matchesDateRange = !filterDateRange;
+      return (
+        matchesSearch &&
+        matchesRole &&
+        matchesInterviewType &&
+        matchesStatus &&
+        matchesDateRange
+      );
+    });
+  }, [
+    interviews,
+    searchTerm,
+    filterRole,
+    filterInterviewType,
+    filterStatus,
+    filterDateRange,
+  ]);
+
+  const hasFilters =
+    Boolean(searchTerm) ||
+    Boolean(filterRole) ||
+    Boolean(filterInterviewType) ||
+    Boolean(filterStatus) ||
+    Boolean(filterDateRange);
+
+  const clearFilters = React.useCallback(() => {
+    setSearchTerm("");
+    setFilterRole("");
+    setFilterInterviewType("");
+    setFilterStatus("");
+    setFilterDateRange("");
+  }, []);
+
   return (
-    <div className={styles.interviewsContainer}>
-      {/* Header Section */}
-      <div className={styles.headerSection}>
-        <h1 className={styles.pageTitle}>Interviews</h1>
-        <p className={styles.pageDescription}>
-          View and manage all scheduled upcoming interviews in one place. Track interview dates, 
-          candidates, roles, and interview modes, and take quick actions like rescheduling, 
-          joining meetings, or adding notes.
-        </p>
-      </div>
+    <div className={styles.page}>
+      <div className={styles.card}>
+        <div className={styles.infoBox}>
+          <p className={styles.pageDescription}>
+            View and manage all scheduled upcoming interviews in one place. Track interview dates,
+            candidates, roles, and interview modes, and take quick actions like rescheduling,
+            joining meetings, or adding notes.
+          </p>
 
-      {/* Tabs */}
-      <div className={styles.tabs}>
-        <button
-          className={`${styles.tab} ${activeTab === "list" ? styles.activeTab : ""}`}
-          onClick={() => setActiveTab("list")}
-        >
-          Interview List
-        </button>
-        <button
-          className={`${styles.tab} ${activeTab === "group" ? styles.activeTab : ""}`}
-          onClick={() => setActiveTab("group")}
-        >
-          Interview Group
-        </button>
-      </div>
-
-      {/* Filter Bar - Only show in Interview List tab */}
-      {activeTab === "list" && (
-        <div className={styles.filtersBar}>
-          <FiFilter className={styles.filterIcon} aria-hidden="true" />
-          
-          <div className={styles.searchField}>
-            <FiSearch className={styles.searchIcon} aria-hidden="true" />
-            <input
-              type="text"
-              placeholder="Search"
-              value={searchTerm}
-              onChange={handleSearchChange}
-              className={styles.searchInput}
-            />
+          <div className={styles.tabs}>
+            <button
+              className={`${styles.tab} ${activeTab === "list" ? styles.activeTab : ""}`}
+              onClick={() => setActiveTab("list")}
+            >
+              Interview List
+            </button>
+            <button
+              className={`${styles.tab} ${activeTab === "group" ? styles.activeTab : ""}`}
+              onClick={() => setActiveTab("group")}
+            >
+              Interview Group
+            </button>
           </div>
-
-          <select
-            value={filterRole}
-            onChange={(e) => setFilterRole(e.target.value)}
-            className={styles.selectField}
-          >
-            <option value="">Role / Job Title</option>
-            {uniqueRoles.map(role => (
-              <option key={role} value={role}>{role}</option>
-            ))}
-          </select>
-
-          <select
-            value={filterInterviewType}
-            onChange={(e) => setFilterInterviewType(e.target.value)}
-            className={styles.selectField}
-          >
-            <option value="">Interview Type</option>
-            {uniqueInterviewTypes.map(type => (
-              <option key={type} value={type}>{type}</option>
-            ))}
-          </select>
-
-          <select
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-            className={styles.selectField}
-          >
-            <option value="">Status</option>
-            {uniqueStatuses.map(status => (
-              <option key={status} value={status}>{status}</option>
-            ))}
-          </select>
-
-          <select
-            value={filterDateRange}
-            onChange={(e) => setFilterDateRange(e.target.value)}
-            className={styles.selectField}
-          >
-            <option value="">Date Range</option>
-            <option value="today">Today</option>
-            <option value="week">This Week</option>
-            <option value="month">This Month</option>
-          </select>
-
-          <button className={styles.moreButton} aria-label="More options">
-            <FiMoreHorizontal />
-          </button>
         </div>
-      )}
 
-      {/* Content Area */}
-      <div className={styles.contentArea}>
+        {/* Filter Bar - Only show in Interview List tab */}
+        {activeTab === "list" && (
+          <div className={styles.filtersBar}>
+            <div className={styles.filtersLeft}>
+              <FiFilter className={styles.filterIcon} aria-hidden="true" />
+
+              <div className={styles.searchField}>
+                <FiSearch className={styles.searchIcon} aria-hidden="true" />
+                <input
+                  type="text"
+                  placeholder="Search"
+                  value={searchTerm}
+                  onChange={handleSearchChange}
+                  className={styles.searchInput}
+                />
+              </div>
+
+              <select
+                value={filterRole}
+                onChange={(e) => setFilterRole(e.target.value)}
+                className={styles.selectField}
+              >
+                <option value="">Role / Job Title</option>
+                {uniqueRoles.map((role) => (
+                  <option key={role} value={role}>
+                    {role}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                value={filterInterviewType}
+                onChange={(e) => setFilterInterviewType(e.target.value)}
+                className={styles.selectField}
+              >
+                <option value="">Interview Type</option>
+                {uniqueInterviewTypes.map((type) => (
+                  <option key={type} value={type}>
+                    {type}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+                className={styles.selectField}
+              >
+                <option value="">Status</option>
+                {uniqueStatuses.map((status) => (
+                  <option key={status} value={status}>
+                    {status}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                value={filterDateRange}
+                onChange={(e) => setFilterDateRange(e.target.value)}
+                className={styles.selectField}
+              >
+                <option value="">Date Range</option>
+                <option value="today">Today</option>
+                <option value="week">This Week</option>
+                <option value="month">This Month</option>
+              </select>
+
+              <button className={styles.moreButton} aria-label="More options">
+                <FiMoreHorizontal />
+              </button>
+            </div>
+
+            <div className={styles.filtersRight}>
+              <button
+                type="button"
+                className={styles.clearButton}
+                onClick={clearFilters}
+                disabled={!hasFilters}
+              >
+                Clear
+              </button>
+              <button type="button" className={styles.applyButton} disabled={!hasFilters}>
+                Apply
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Content Area */}
+        <div className={styles.contentAreaLayout}>
         {activeTab === "list" ? (
           loading ? (
             <div className={styles.loadingState}>
               <p>Loading interviews...</p>
             </div>
-          ) : interviews.length === 0 ? (
+          ) : filteredInterviews.length === 0 ? (
             <div className={styles.emptyState}>
               <h2>No Interviews Found</h2>
-              <p>No interview data available at the moment.</p>
+              <p>Try changing the selected filters.</p>
             </div>
           ) : (
-            <DataTable
-              data={interviews}
-              columns={columns}
-              onView={handleView}
-              onEdit={handleEdit}
-              onDelete={handleDelete}
-            />
+            <>
+              <div className={styles.tableWrap}>
+                <table className={styles.interviewsTable}>
+                  <thead>
+                    <tr>
+                      {columns.map((column) => (
+                        <th key={column.key}>
+                          <span className={styles.headerLabel}>{column.label}</span>
+                          <span className={styles.sortArrows} aria-hidden="true">
+                            <span>▲</span>
+                            <span>▼</span>
+                          </span>
+                        </th>
+                      ))}
+                      <th className={styles.actionsCol}>
+                        <span className={styles.headerLabel}>Actions</span>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredInterviews.map((row, index) => (
+                      <tr key={`${row.candidateId}-${index}`}>
+                        <td>{row.candidateId}</td>
+                        <td>{row.candidateName}</td>
+                        <td>{row.roleJobTitle}</td>
+                        <td>{row.dateTime}</td>
+                        <td>{row.company}</td>
+                        <td>{row.interviewType}</td>
+                        <td>{row.mode}</td>
+                        <td>
+                          <span
+                            className={`${styles.statusPill} ${
+                              row.status === "Rescheduled"
+                                ? styles.statusRescheduled
+                                : styles.statusUpcoming
+                            }`}
+                          >
+                            {row.status}
+                          </span>
+                        </td>
+                        <td className={styles.actionsCol}>
+                          <div className={styles.actionIcons}>
+                            <button
+                              type="button"
+                              className={styles.actionBtn}
+                              onClick={() => handleView(row)}
+                              aria-label="View"
+                            >
+                              <FiEye size={16} />
+                            </button>
+                            <button
+                              type="button"
+                              className={styles.actionBtn}
+                              onClick={() => handleEdit(row)}
+                              aria-label="Edit"
+                            >
+                              <FiEdit2 size={16} />
+                            </button>
+                            <button
+                              type="button"
+                              className={styles.actionBtn}
+                              onClick={() => handleDelete(row)}
+                              aria-label="Delete"
+                            >
+                              <FiTrash2 size={16} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className={styles.tableFooter}>
+                <div className={styles.footerLeft}>
+                  <span>Show</span>
+                  <select className={styles.entriesSelect} defaultValue="10">
+                    <option value="10">10</option>
+                    <option value="25">25</option>
+                    <option value="50">50</option>
+                  </select>
+                  <span>entries</span>
+                </div>
+                <div className={styles.pagination}>
+                  <button type="button" className={styles.pageBtn} aria-label="Previous page">
+                    ‹
+                  </button>
+                  <button type="button" className={`${styles.pageBtn} ${styles.pageBtnActive}`}>
+                    1
+                  </button>
+                  <button type="button" className={styles.pageBtn}>
+                    2
+                  </button>
+                  <button type="button" className={styles.pageBtn}>
+                    3
+                  </button>
+                  <button type="button" className={styles.pageBtn} aria-label="Next page">
+                    ›
+                  </button>
+                </div>
+              </div>
+            </>
           )
         ) : (
           <div className={styles.groupView}>
@@ -466,6 +716,7 @@ export default function Interviews() {
             </div>
           </div>
         )}
+      </div>
       </div>
 
       {/* Add Team Member Modal */}
