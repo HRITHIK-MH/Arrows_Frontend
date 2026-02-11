@@ -12,7 +12,7 @@
   padding: 2rem;
   position: relative;
   color: #fff;
-  background-image: url("/src/assets/login/left-bg.jpg");
+  background-image: url("../../assets/login/left-bg.jpg");
 
 }
 

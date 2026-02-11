@@ -11,7 +11,7 @@ export default function CreateJob() {
   const [summary, setSummary] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const API_URL = "http://localhost:8080/api";
+  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
 
   const navItems = [
     { label: "Dashboard", path: "/dashboard" },

@@ -6,6 +6,8 @@ import { FiEye, FiEyeOff } from "react-icons/fi";
 import { MdOutlineEmail } from "react-icons/md";
 import { TbLockPassword } from "react-icons/tb";
 import { useNavigate } from 'react-router-dom';
+import arrowLogo from "../../assets/login/arrow_logo.png";
+import loginCircle from "../../assets/login/login_circle.png";
 import './Login.css';
 
 const Login = () => {
@@ -73,12 +75,12 @@ const Login = () => {
         <p className="para-text2">Please enter your email and password to continue.<br></br>
 If you've forgotten your password, use the "Forgot Password" option<br></br> to reset it. Make sure your login details are secure and up to date.</p>
         <img src="/mask_group.png" alt="Logo" className="login-logo" />
-        <img src="/src/assets/login/login_circle.png" alt="Login Circle" className="login-circle" />
+        <img src={loginCircle} alt="Login Circle" className="login-circle" />
         <img src="/login_circle2.png" alt="Login Circle 2" className="login-circle2" />
       </div>
       <div className="login-right">
         <div className="logo-wrapper">
-        <img src="/src/assets/login/arrow_logo.png" alt="Arrow Logo" className="arrow-logo" />
+        <img src={arrowLogo} alt="Arrow Logo" className="arrow-logo" />
         </div>
         <form onSubmit={handleSubmit} className="login-form">
           <div className="form-group email-group">
