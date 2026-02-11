@@ -59,10 +59,12 @@ const JobDescription = () => {
   const { state } = useLocation();
   const { jobId } = useParams();
   const job = state?.job || fallbackJob;
+  const uploadInputRef = React.useRef(null);
 
   const [activeStage, setActiveStage] = React.useState("Sourced");
   const [searchTerm, setSearchTerm] = React.useState("");
   const [candidateRows, setCandidateRows] = React.useState(job.candidates || []);
+  const [uploadedCandidateFileName, setUploadedCandidateFileName] = React.useState("");
 
   const displayedRows = React.useMemo(() => {
     return candidateRows.filter((row) => {
@@ -106,6 +108,16 @@ const JobDescription = () => {
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return value;
     return date.toLocaleDateString("en-US", { day: "2-digit", month: "short", year: "numeric" });
+  };
+
+  const handleUploadClick = () => {
+    uploadInputRef.current?.click();
+  };
+
+  const handleUploadFileChange = (event) => {
+    const [file] = event.target.files || [];
+    if (!file) return;
+    setUploadedCandidateFileName(file.name);
   };
 
   return (
@@ -175,7 +187,21 @@ const JobDescription = () => {
                 />
               </div>
               <button type="button" className={styles.mapBtn}>Map Job</button>
-              <button type="button" className={styles.uploadBtn}>Upload Candidate</button>
+              <button type="button" className={styles.uploadBtn} onClick={handleUploadClick}>
+                Upload Candidate
+              </button>
+              <input
+                ref={uploadInputRef}
+                type="file"
+                className={styles.hiddenFileInput}
+                accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt"
+                onChange={handleUploadFileChange}
+              />
+              {uploadedCandidateFileName ? (
+                <span className={styles.uploadedFileName} title={uploadedCandidateFileName}>
+                  {uploadedCandidateFileName}
+                </span>
+              ) : null}
             </div>
           </div>
 
