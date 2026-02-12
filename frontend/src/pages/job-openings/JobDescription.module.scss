@@ -168,6 +168,11 @@
   font-weight: 600;
 }
 
+.stageTabDisabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .addStageBtn {
   width: 22px;
   height: 22px;
@@ -184,49 +189,74 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .searchBox {
   display: flex;
   align-items: center;
   gap: 6px;
-  border: 1px solid #dbe3ee;
+  border: 1px solid #bfc8d1;
   background: #fff;
   border-radius: 8px;
   padding: 4px 8px;
+  min-height: 30px;
+  min-width: 220px;
 }
 
 .searchBox input {
   border: none;
   outline: none;
-  font-size: 12px;
+  font-size: 13px;
+  width: 210px;
+  color: #2c3135;
+  background: transparent;
+}
+
+.searchBox input::placeholder {
+  color: #9ca3af;
 }
 
 .searchIcon {
   color: #94a3b8;
+  font-size: 14px;
 }
 
 .mapBtn {
-  border: 1px solid #e2e8f0;
-  background: #eef2f6;
+  border: 1px solid #bfc8d1;
+  background: #f8fafc;
   color: #94a3b8;
-  padding: 6px 10px;
+  padding: 4px 10px;
   border-radius: 8px;
   font-size: 12px;
+  min-height: 30px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mapBtn:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
 }
 
 .uploadBtn {
-  border: none;
-  background: #3b82f6;
-  color: #fff;
-  padding: 6px 10px;
+  border: 1px solid #93c5fd;
+  background: #edf4ff;
+  color: #2563eb;
+  padding: 4px 10px;
   border-radius: 8px;
   font-size: 12px;
+  min-height: 30px;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .uploadBtn:hover {
-  background: #2f72dc;
+  background: #dbeafe;
 }
 
 .hiddenFileInput {
@@ -260,6 +290,10 @@
   border-spacing: 0;
 }
 
+.candidateTableMapped {
+  table-layout: fixed;
+}
+
 .candidateTable th {
   font-size: 12px;
   color: #64748b;
@@ -268,11 +302,31 @@
   padding: 8px 10px;
 }
 
+.checkboxHead {
+  width: 26px;
+  padding-left: 8px !important;
+  padding-right: 4px !important;
+}
+
 .candidateTable td {
   font-size: 12px;
   color: #0f172a;
   border-bottom: 1px dashed #e2e8f0;
   padding: 10px;
+  vertical-align: middle;
+}
+
+.checkboxCell {
+  width: 26px;
+  padding-left: 8px !important;
+  padding-right: 4px !important;
+}
+
+.rowCheckbox {
+  width: 14px;
+  height: 14px;
+  accent-color: #8b95a1;
+  cursor: default;
 }
 
 .ratingCell {
@@ -285,12 +339,43 @@
   color: #f59e0b;
 }
 
+.matchScoreWrap {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.matchScoreCell {
+  text-align: center;
+}
+
+.matchScoreInner {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #fff;
+  color: #1f2937;
+  font-size: 10px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .stagePill {
   background: #ede9fe;
   color: #7c3aed;
   border-radius: 999px;
   padding: 2px 10px;
   font-size: 11px;
+}
+
+.stageCell {
+  white-space: nowrap;
 }
 
 .stageSourced { background: #ede9fe; color: #7c3aed; border: 1px solid #c4b5fd; }
@@ -318,12 +403,81 @@
 }
 
 .moveSelect {
-  border: 1px solid #dbe3ee;
-  background: #f8fafc;
+  border: 1px solid #bfc8d1;
+  background: #fff;
   border-radius: 8px;
-  padding: 4px 8px;
-  font-size: 12px;
-  color: #94a3b8;
+  padding: 4px 30px 4px 10px;
+  font-size: 13px;
+  color: #2c3135;
+  height: 28px;
+  line-height: 1.2;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2394A3B8' stroke-width='1.8' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 12px 8px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.moveSelect option,
+.entriesSelect option {
+  background: #ffffff;
+  color: #1f2937;
+}
+
+/* Matches the dark selected option from the reference list popup */
+.moveSelect option:checked,
+.entriesSelect option:checked {
+  background: #737373;
+  color: #ffffff;
+}
+
+.moveSelect:focus {
+  outline: none;
+  border-color: #93c5fd;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+}
+
+.moveSelect:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.moveSelectWide {
+  min-width: 170px;
+}
+
+.eyeActionBtn {
+  border: none;
+  background: transparent;
+  color: #475569;
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.eyeActionBtn:hover {
+  background: #eef2f6;
+  color: #1f2937;
+}
+
+.actionsCell {
+  width: 70px;
+  text-align: center;
+}
+
+.actionsCellWide {
+  min-width: 190px;
 }
 
 .tableFooter {
@@ -336,10 +490,58 @@
 }
 
 .entriesSelect {
-  border: 1px solid #dbe3ee;
+  border: 1px solid #bfc8d1;
   background: #fff;
   border-radius: 8px;
-  padding: 4px 8px;
+  padding: 4px 24px 4px 8px;
   font-size: 12px;
-  color: #334155;
+  color: #2c3135;
+  height: 28px;
+  line-height: 1.2;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2394A3B8' stroke-width='1.8' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  background-size: 12px 8px;
+}
+
+.entriesSelect:focus {
+  outline: none;
+  border-color: #93c5fd;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+}
+
+.approvalFooter {
+  margin-top: 12px;
+  border-top: 1px solid #dbe3ee;
+  padding: 14px 0 2px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.approveBtn {
+  border: 1px solid #1d66c9;
+  background: #1d66c9;
+  color: #fff;
+  padding: 8px 18px;
+  border-radius: 8px;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
+}
+
+.approveBtn:hover {
+  background: #1555a8;
+  border-color: #1555a8;
+}
+
+.approveBtn:disabled {
+  background: #b8c5d8;
+  border-color: #b8c5d8;
+  cursor: not-allowed;
+  opacity: 0.8;
 }

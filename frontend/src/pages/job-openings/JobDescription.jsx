@@ -1,5 +1,5 @@
 import * as React from "react";
-import { FiArrowLeft, FiPlus, FiSearch } from "react-icons/fi";
+import { FiArrowLeft, FiEye, FiPlus, FiSearch } from "react-icons/fi";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import styles from "./JobDescription.module.scss";
 
@@ -19,6 +19,7 @@ import styles from "./JobDescription.module.scss";
         recruiterName: "Parthiban",
         source: "Naukri",
         rating: "2/5",
+        matchingScore: 92,
         stage: "Pre-Screening",
         status: "In Progress",
       },
@@ -29,6 +30,7 @@ import styles from "./JobDescription.module.scss";
         recruiterName: "Parthiban",
         source: "Resume Inbox",
         rating: "2/5",
+        matchingScore: 90,
         stage: "Pre-Screening",
         status: "In Progress",
       },
@@ -39,6 +41,7 @@ import styles from "./JobDescription.module.scss";
         recruiterName: "Parthiban",
         source: "LinkedIn",
         rating: "3/5",
+        matchingScore: 85,
         stage: "Assessment",
         status: "Completed",
       },
@@ -61,22 +64,66 @@ const JobDescription = () => {
   const job = state?.job || fallbackJob;
   const uploadInputRef = React.useRef(null);
 
-  const [activeStage, setActiveStage] = React.useState("Sourced");
+  const preparedRows = React.useMemo(
+    () =>
+      (job.candidates || []).map((row, index) => ({
+        ...row,
+        rowId: row.rowId || `${row.candidateId || "cand"}-${index}`,
+        recruiterName: row.recruiterName || job.hiringManager || "Parthiban",
+        source: row.source || "Resume Inbox",
+        stage: row.stage || "Sourced",
+        status: row.status || (row.stage === "Assessment" ? "Completed" : "In Progress"),
+        matchingScore:
+          typeof row.matchingScore === "number"
+            ? row.matchingScore
+            : Math.max(65, 92 - index * 5),
+      })),
+    [job.candidates, job.hiringManager]
+  );
+
+  const [activeStage, setActiveStage] = React.useState("Map Candidates");
   const [searchTerm, setSearchTerm] = React.useState("");
-  const [candidateRows, setCandidateRows] = React.useState(job.candidates || []);
+  const [candidateRows, setCandidateRows] = React.useState(preparedRows);
+  const [selectedRowIds, setSelectedRowIds] = React.useState(() =>
+    preparedRows.map((row) => row.rowId)
+  );
+  const [approvedRowIds, setApprovedRowIds] = React.useState([]);
   const [uploadedCandidateFileName, setUploadedCandidateFileName] = React.useState("");
 
   const displayedRows = React.useMemo(() => {
-    return candidateRows.filter((row) => {
-      const matchesStage = activeStage === "Map Candidates" ? true : row.stage === activeStage;
-      const matchesSearch =
-        !searchTerm ||
-        Object.values(row).some((value) =>
-          String(value).toLowerCase().includes(searchTerm.toLowerCase())
-        );
-      return matchesStage && matchesSearch;
-    });
-  }, [candidateRows, activeStage, searchTerm]);
+    return candidateRows
+      .map((row) =>
+        activeStage === "Sourced"
+          ? {
+              ...row,
+              stage: "Sourced",
+            }
+          : row
+      )
+      .filter((row) => {
+        const matchesStage =
+          activeStage === "Map Candidates"
+            ? true
+            : activeStage === "Sourced"
+            ? approvedRowIds.includes(row.rowId)
+            : row.stage === activeStage;
+        const matchesSearch =
+          !searchTerm ||
+          Object.values(row).some((value) =>
+            String(value).toLowerCase().includes(searchTerm.toLowerCase())
+          );
+        return matchesStage && matchesSearch;
+      });
+  }, [candidateRows, activeStage, searchTerm, approvedRowIds]);
+
+  const isMapStage = activeStage === "Map Candidates";
+  const isSourcedStage = activeStage === "Sourced";
+  const hasApprovedCandidates = approvedRowIds.length > 0;
+
+  const allMapRowsSelected =
+    isMapStage &&
+    displayedRows.length > 0 &&
+    displayedRows.every((row) => selectedRowIds.includes(row.rowId));
 
   const getStageClass = React.useCallback((stage) => {
     const normalized = String(stage || "").toLowerCase();
@@ -103,6 +150,45 @@ const JobDescription = () => {
     );
   };
 
+  const handleCandidateEyeClick = React.useCallback((row) => {
+    setActiveStage("Map Candidates");
+    setSearchTerm(row.candidateName || row.candidateId || "");
+  }, []);
+
+  const handleRowCheckboxChange = React.useCallback((rowId) => {
+    setSelectedRowIds((prev) =>
+      prev.includes(rowId) ? prev.filter((id) => id !== rowId) : [...prev, rowId]
+    );
+  }, []);
+
+  const handleSelectAllMapRows = React.useCallback(() => {
+    const visibleRowIds = displayedRows.map((row) => row.rowId);
+    if (visibleRowIds.length === 0) return;
+
+    setSelectedRowIds((prev) => {
+      const allVisibleSelected = visibleRowIds.every((rowId) => prev.includes(rowId));
+      if (allVisibleSelected) {
+        return prev.filter((rowId) => !visibleRowIds.includes(rowId));
+      }
+      return Array.from(new Set([...prev, ...visibleRowIds]));
+    });
+  }, [displayedRows]);
+
+  const handleApproveMappedCandidates = React.useCallback(() => {
+    if (selectedRowIds.length === 0) return;
+
+    setApprovedRowIds((prev) => Array.from(new Set([...prev, ...selectedRowIds])));
+    setCandidateRows((prev) =>
+      prev.map((row) =>
+        selectedRowIds.includes(row.rowId)
+          ? { ...row, stage: "Sourced", status: "In Progress" }
+          : row
+      )
+    );
+    setActiveStage("Sourced");
+    setSearchTerm("");
+  }, [selectedRowIds]);
+
   const formatDate = (value) => {
     if (!value) return "-";
     const date = new Date(value);
@@ -118,6 +204,13 @@ const JobDescription = () => {
     const [file] = event.target.files || [];
     if (!file) return;
     setUploadedCandidateFileName(file.name);
+  };
+
+  const getScoreCircleStyle = (score) => {
+    const safeScore = Math.max(0, Math.min(100, Number(score) || 0));
+    return {
+      background: `conic-gradient(#f97316 ${safeScore * 3.6}deg, #e2e8f0 0deg)`,
+    };
   };
 
   return (
@@ -163,14 +256,22 @@ const JobDescription = () => {
           <div className={styles.stageRow}>
             <div className={styles.stageTabs}>
               {stageTabs.map((tab) => (
+                (() => {
+                  const isSourcedLocked = tab === "Sourced" && !hasApprovedCandidates;
+                  return (
                 <button
                   key={tab}
                   type="button"
-                  className={`${styles.stageTab}${activeStage === tab ? ` ${styles.stageTabActive}` : ""}`}
-                  onClick={() => setActiveStage(tab)}
+                  className={`${styles.stageTab}${activeStage === tab ? ` ${styles.stageTabActive}` : ""}${isSourcedLocked ? ` ${styles.stageTabDisabled}` : ""}`}
+                  onClick={() => {
+                    if (!isSourcedLocked) setActiveStage(tab);
+                  }}
+                  disabled={isSourcedLocked}
                 >
                   {tab}
                 </button>
+                  );
+                })()
               ))}
               <button type="button" className={styles.addStageBtn} aria-label="Add stage">
                 <FiPlus size={12} />
@@ -186,7 +287,9 @@ const JobDescription = () => {
                   onChange={(event) => setSearchTerm(event.target.value)}
                 />
               </div>
-              <button type="button" className={styles.mapBtn}>Map Job</button>
+              <button type="button" className={styles.mapBtn} disabled={!isMapStage}>
+                Map Job
+              </button>
               <button type="button" className={styles.uploadBtn} onClick={handleUploadClick}>
                 Upload Candidate
               </button>
@@ -206,56 +309,103 @@ const JobDescription = () => {
           </div>
 
           <div className={styles.tableWrap}>
-            <table className={styles.candidateTable}>
+            <table
+              className={`${styles.candidateTable}${isMapStage ? ` ${styles.candidateTableMapped}` : ""}`}
+            >
               <thead>
                 <tr>
+                  {isMapStage ? (
+                    <th className={styles.checkboxHead}>
+                      <input
+                        type="checkbox"
+                        checked={allMapRowsSelected}
+                        onChange={handleSelectAllMapRows}
+                        className={styles.rowCheckbox}
+                        aria-label="Select all candidates"
+                      />
+                    </th>
+                  ) : null}
                   <th>Candidate Id</th>
                   <th>Candidate Name</th>
                   <th>Email Address</th>
                   <th>Recruiter Name</th>
                   <th>Source</th>
-                  <th>Rating</th>
-                  <th>Stage</th>
-                  <th>Status</th>
+                  {isMapStage ? <th>Matching Score</th> : <th>Rating</th>}
+                  {!isMapStage ? <th>Stage</th> : null}
+                  {!isMapStage ? <th>Status</th> : null}
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {displayedRows.map((row, index) => (
-                  <tr key={`${row.candidateId}-${index}`}>
+                  <tr key={row.rowId || `${row.candidateId}-${index}`}>
+                    {isMapStage ? (
+                      <td className={styles.checkboxCell}>
+                        <input
+                          type="checkbox"
+                          checked={selectedRowIds.includes(row.rowId)}
+                          onChange={() => handleRowCheckboxChange(row.rowId)}
+                          className={styles.rowCheckbox}
+                          aria-label={`Select ${row.candidateName}`}
+                        />
+                      </td>
+                    ) : null}
                     <td>{row.candidateId}</td>
                     <td>{row.candidateName}</td>
                     <td>{row.candidateEmail}</td>
                     <td>{row.recruiterName}</td>
                     <td>{row.source}</td>
-                    <td className={styles.ratingCell}>
-                      {row.rating}
-                      <span className={styles.ratingStar}>★</span>
-                    </td>
-                    <td>
-                      <span className={`${styles.stagePill} ${getStageClass(row.stage)}`}>{row.stage}</span>
-                    </td>
-                    <td>
-                      <span
-                        className={`${styles.statusDot} ${
-                          row.status === "Completed" ? styles.statusGreen : styles.statusDark
-                        }`}
-                      />
-                      {row.status}
-                    </td>
-                    <td>
-                      <select
-                        className={styles.moveSelect}
-                        value=""
-                        onChange={(event) => handleMoveTo(index, event.target.value)}
-                      >
-                        <option value="">Move to</option>
-                        {stageTabs.filter((tab) => tab !== "Map Candidates").map((tab) => (
-                          <option key={tab} value={tab}>
-                            {tab}
-                          </option>
-                        ))}
-                      </select>
+                    {isMapStage ? (
+                      <td className={styles.matchScoreCell}>
+                        <span className={styles.matchScoreWrap} style={getScoreCircleStyle(row.matchingScore)}>
+                          <span className={styles.matchScoreInner}>{row.matchingScore}%</span>
+                        </span>
+                      </td>
+                    ) : (
+                      <td className={styles.ratingCell}>
+                        {row.rating}
+                        <span className={styles.ratingStar}>★</span>
+                      </td>
+                    )}
+                    {!isMapStage ? (
+                      <td className={styles.stageCell}>
+                        <span className={`${styles.stagePill} ${getStageClass(row.stage)}`}>{row.stage}</span>
+                      </td>
+                    ) : null}
+                    {!isMapStage ? (
+                      <td>
+                        <span
+                          className={`${styles.statusDot} ${
+                            row.status === "Completed" ? styles.statusGreen : styles.statusDark
+                          }`}
+                        />
+                        {row.status}
+                      </td>
+                    ) : null}
+                    <td className={isMapStage ? styles.actionsCell : styles.actionsCellWide}>
+                      {isMapStage ? (
+                        <button
+                          type="button"
+                          className={styles.eyeActionBtn}
+                          onClick={() => handleCandidateEyeClick(row)}
+                          aria-label="View mapped candidate"
+                        >
+                          <FiEye size={16} />
+                        </button>
+                      ) : (
+                        <select
+                          className={`${styles.moveSelect}${isSourcedStage ? ` ${styles.moveSelectWide}` : ""}`}
+                          value=""
+                          onChange={(event) => handleMoveTo(index, event.target.value)}
+                        >
+                          <option value="">Move to</option>
+                          {stageTabs.filter((tab) => tab !== "Map Candidates").map((tab) => (
+                            <option key={tab} value={tab}>
+                              {tab}
+                            </option>
+                          ))}
+                        </select>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -271,6 +421,18 @@ const JobDescription = () => {
               <span>entries</span>
             </div>
           </div>
+          {isMapStage ? (
+            <div className={styles.approvalFooter}>
+              <button
+                type="button"
+                className={styles.approveBtn}
+                onClick={handleApproveMappedCandidates}
+                disabled={selectedRowIds.length === 0}
+              >
+                Approve
+              </button>
+            </div>
+          ) : null}
         </div>
       </div>
     </div>

@@ -209,11 +209,25 @@
   border: 1px solid #bfc8d1;
   background: #fff;
   border-radius: 8px;
-  padding: 4px 10px;
+  padding: 4px 30px 4px 10px;
   font-size: 13px;
   color: #2c3135;
   min-width: 120px;
   height: 28px;
+  line-height: 1.2;
+  cursor: pointer;
+  flex: 0 0 auto;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  -ms-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2394A3B8' stroke-width='1.8' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 12px 8px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
 }
 
 .moreButton {
