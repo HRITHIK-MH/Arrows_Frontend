@@ -31,6 +31,30 @@ const FormField = ({
   const [localError, setLocalError] = useState('');
   const dropdownRef = useRef(null);
   const fileInputRef = useRef(null);
+  const safeOptions = Array.isArray(options) ? options : [];
+  const safeLabel = typeof label === 'string' ? label : '';
+  const cleanedLabel = safeLabel.replace('*', '').trim();
+  const normalizedSelectOptions = safeOptions
+    .map((option, index) => {
+      if (option && typeof option === 'object') {
+        const optionValue = Object.prototype.hasOwnProperty.call(option, 'value') ? option.value : '';
+        const optionLabel = Object.prototype.hasOwnProperty.call(option, 'label')
+          ? option.label
+          : optionValue;
+        return {
+          key: String(optionValue ?? `option-${index}`),
+          value: optionValue,
+          label: String(optionLabel ?? ''),
+        };
+      }
+
+      return {
+        key: String(option ?? `option-${index}`),
+        value: option,
+        label: String(option ?? ''),
+      };
+    })
+    .filter((option) => option.label !== '');
 
   // Sync prop error with local error when prop changes
   // This ensures errors from parent (Next button click) are displayed
@@ -54,46 +78,49 @@ const FormField = ({
       : e.target.value;
     console.log(`[FormField.handleChange] ${name}: value=`, newValue, ` (type=${type}), required=${required}, hasError=${!!error}, onValidation=${!!onValidation}, formData:`, formData);
     onChange(name, newValue);
-    
+    triggerFieldValidation(newValue);
+  };
+
+  const triggerFieldValidation = (newValue) => {
     // Validate if:
     // 1. Custom validation function exists, OR
     // 2. Field is required, OR
     // 3. There's already an error showing (user is correcting it)
     const shouldValidate = validate || required || error;
-    
-    if (shouldValidate) {
-      if (validate) {
-        console.log(`[FormField.handleChange] Using custom validate for ${name}`);
-        setIsValidating(true);
-        // Pass updated formData with new value to validation function
-        // Ensure formData exists, use empty object as fallback
-        const currentFormData = formData || {};
-        const updatedFormData = { ...currentFormData, [name]: newValue };
-        console.log(`[FormField.handleChange] Calling validate with updatedFormData:`, updatedFormData);
-        validate(newValue, name, updatedFormData).then(result => {
-          console.log(`[FormField.handleChange] Custom validation done for ${name}:`, result);
+    if (!shouldValidate) return;
+
+    if (validate) {
+      console.log(`[FormField.triggerFieldValidation] Using custom validate for ${name}`);
+      setIsValidating(true);
+      const currentFormData = formData || {};
+      const updatedFormData = { ...currentFormData, [name]: newValue };
+      Promise.resolve(validate(newValue, name, updatedFormData))
+        .then(result => {
+          console.log(`[FormField.triggerFieldValidation] Custom validation done for ${name}:`, result);
           handleValidationResult(result);
-        }).catch(err => {
-          console.log(`[FormField.handleChange] Custom validation error for ${name}:`, err);
+        })
+        .catch(err => {
+          console.log(`[FormField.triggerFieldValidation] Custom validation error for ${name}:`, err);
           handleValidationResult(err);
-        }).finally(() => setIsValidating(false));
-      } else {
-        // For required fields or fields with errors, run mandatory validation
-        console.log(`[FormField.handleChange] Running validation for ${name} (required=${required}, hasError=${!!error})`);
-        setIsValidating(true);
-        const fieldLabel = label ? label.replace('*', '').trim() : name;
-        validateMandatoryField(newValue, name, fieldLabel)
-          .then(result => {
-            console.log(`[FormField.handleChange] ✅ Validation result for ${name}:`, result);
-            handleValidationResult(result);
-          })
-          .catch(err => {
-            console.log(`[FormField.handleChange] ❌ Validation error for ${name}:`, err);
-            handleValidationResult(err);
-          })
-          .finally(() => setIsValidating(false));
-      }
+        })
+        .finally(() => setIsValidating(false));
+      return;
     }
+
+    // For required fields or fields with errors, run mandatory validation
+    console.log(`[FormField.triggerFieldValidation] Running mandatory validation for ${name}`);
+    setIsValidating(true);
+    const fieldLabel = cleanedLabel || name;
+    validateMandatoryField(newValue, name, fieldLabel)
+      .then(result => {
+        console.log(`[FormField.triggerFieldValidation] ✅ Validation result for ${name}:`, result);
+        handleValidationResult(result);
+      })
+      .catch(err => {
+        console.log(`[FormField.triggerFieldValidation] ❌ Validation error for ${name}:`, err);
+        handleValidationResult(err);
+      })
+      .finally(() => setIsValidating(false));
   };
 
   const handleMultiSelectChange = (selectedValues) => {
@@ -115,7 +142,7 @@ const FormField = ({
       // For required fields, always validate on change to clear/show errors
       console.log(`[FormField] Validating required multiselect on change`);
       setIsValidating(true);
-      const fieldLabel = label ? label.replace('*', '').trim() : name;
+      const fieldLabel = cleanedLabel || name;
       validateMandatoryField(selectedValues, name, fieldLabel)
         .then(handleValidationResult)
         .catch(handleValidationResult)
@@ -198,7 +225,7 @@ const FormField = ({
       // For required fields without custom validation, validate that field has value
       else if (required) {
         // Extract label from prop (removing asterisk if present)
-        const fieldLabel = label ? label.replace('*', '').trim() : name;
+        const fieldLabel = cleanedLabel || name;
         const validationResult = await validateMandatoryField(value, name, fieldLabel);
         handleValidationResult(validationResult);
       }
@@ -231,15 +258,15 @@ const FormField = ({
     };
   }, [isDropdownOpen]);
 
-  const searchPlaceholder = (label || '').toLowerCase().includes('skill')
+  const searchPlaceholder = safeLabel.toLowerCase().includes('skill')
     ? 'Search skills'
     : 'Search';
 
-  const selectionPlaceholder = (label || '').toLowerCase().includes('skill')
+  const selectionPlaceholder = safeLabel.toLowerCase().includes('skill')
     ? 'Select skills'
     : 'Select options';
 
-  const baseOptions = Array.isArray(options) ? options : [];
+  const baseOptions = safeOptions;
   const mergedOptions = [...baseOptions, ...customOptions].filter(
     (option, index, self) =>
       self.findIndex((item) => item.value === option.value) === index
@@ -254,13 +281,13 @@ const FormField = ({
     <div className={`form-field${name ? ` field-${name}` : ''}`}>
       {type === 'file' && console.log(`[FormField.render] ${name} render, prop value=`, value, 'typeof=', typeof value, 'isArray=', Array.isArray(value))}
       <label htmlFor={name} className={hideLabel ? 'label-hidden' : undefined}>
-        {label.includes('*') ? (
+        {safeLabel.includes('*') ? (
           <>
-            {label.replace('*', '')}
+            {cleanedLabel}
             <span className="required-star">*</span>
           </>
         ) : (
-          label
+          safeLabel
         )}
       </label>
       {type === 'multiselect' ? (
@@ -352,27 +379,32 @@ const FormField = ({
             aria-expanded={isDropdownOpen}
           >
             <span className="select-value">
-              {options.find(opt => opt.value === value)?.label || placeholder || "Select..."}
+              {normalizedSelectOptions.find((opt) => String(opt.value) === String(value))?.label || placeholder || "Select..."}
             </span>
             <span className="select-chevron" aria-hidden="true" />
           </button>
           {isDropdownOpen && (
             <div className="select-dropdown" role="listbox">
-              {(options || []).map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  className={`select-option${option.value === value ? ' selected' : ''}`}
-                  onClick={() => {
-                    onChange(name, option.value);
-                    setIsDropdownOpen(false);
-                  }}
-                  role="option"
-                  aria-selected={option.value === value}
-                >
-                  {option.label}
-                </button>
-              ))}
+              {normalizedSelectOptions.length === 0 ? (
+                <div className="select-empty">No options available</div>
+              ) : (
+                normalizedSelectOptions.map((option) => (
+                  <button
+                    key={option.key}
+                    type="button"
+                    className={`select-option${String(option.value) === String(value) ? ' selected' : ''}`}
+                    onClick={() => {
+                      onChange(name, option.value);
+                      triggerFieldValidation(option.value);
+                      setIsDropdownOpen(false);
+                    }}
+                    role="option"
+                    aria-selected={String(option.value) === String(value)}
+                  >
+                    {option.label}
+                  </button>
+                ))
+              )}
             </div>
           )}
         </div>
