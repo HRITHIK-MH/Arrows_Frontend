@@ -545,3 +545,341 @@
   cursor: not-allowed;
   opacity: 0.8;
 }
+
+.stageMoveToast {
+  position: fixed;
+  top: calc(var(--header-height) + 10px);
+  right: 28px;
+  z-index: 1300;
+  background: #ffffff;
+  border: 1px solid #dbe6f3;
+  border-radius: 10px;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.16);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+}
+
+.toastIcon {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid #67c152;
+  color: #30a046;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.toastText {
+  font-size: 13px;
+  color: #1f2937;
+  font-weight: 600;
+}
+
+.preScreenOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  background: rgba(15, 23, 42, 0.42);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.preScreenModal {
+  width: min(860px, 100%);
+  border-radius: 24px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.24);
+  padding: 20px 22px 16px;
+}
+
+.preScreenHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.preScreenTitle {
+  margin: 0;
+  font-size: 30px;
+  line-height: 1.1;
+  font-weight: 700;
+  color: #111827;
+}
+
+.preScreenClose {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #94a3b8;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.preScreenClose:hover {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.preScreenStepper {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  margin: 6px 0 14px;
+}
+
+.preStep {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 150px;
+  gap: 8px;
+}
+
+.preStepCircle {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid #cbd5e1;
+  background: #ffffff;
+  color: #1d4ed8;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.preStepCircleActive {
+  border-color: #1d66c9;
+}
+
+.preStepCircleComplete {
+  border-color: #1d66c9;
+  background: #1d66c9;
+  color: #ffffff;
+}
+
+.preStepDot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #1d66c9;
+}
+
+.preStepLabel {
+  font-size: 21px;
+  color: #374151;
+  font-weight: 500;
+}
+
+.preStepLabelActive {
+  color: #111827;
+  font-weight: 700;
+}
+
+.preStepLine {
+  width: 190px;
+  border-top: 2px solid #d4dbe5;
+  margin-top: 15px;
+}
+
+.preStepLineActive {
+  border-color: #1d66c9;
+}
+
+.preScreenBody {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.preFieldGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.preFieldGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.preFieldLabel {
+  font-size: 20px;
+  color: #2c3135;
+  font-weight: 500;
+}
+
+.requiredStar {
+  color: #ef4444;
+}
+
+.preRadioRow {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.preRadioLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 18px;
+  color: #1f2937;
+}
+
+.preFieldGroup input,
+.preFieldGroup select,
+.preFieldGroup textarea {
+  border: 1px solid #dbe3ee;
+  border-radius: 8px;
+  background: #f3f6fb;
+  color: #2c3135;
+  font-size: 16px;
+  line-height: 1.2;
+  padding: 10px 12px;
+  min-height: 46px;
+}
+
+.preFieldGroup textarea {
+  min-height: 90px;
+  resize: vertical;
+}
+
+.preFieldGroup input::placeholder,
+.preFieldGroup textarea::placeholder {
+  color: #9aa8bb;
+}
+
+.preFieldGroup input:focus,
+.preFieldGroup select:focus,
+.preFieldGroup textarea:focus {
+  outline: none;
+  border-color: #93c5fd;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.12);
+  background: #ffffff;
+}
+
+.preCheckLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 17px;
+  color: #374151;
+}
+
+.preActionRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.preBtn {
+  border: 1px solid #c6d4ea;
+  border-radius: 8px;
+  font-size: 16px;
+  line-height: 1;
+  min-height: 36px;
+  padding: 8px 14px;
+  cursor: pointer;
+}
+
+.preBtnPrimary {
+  background: #2f79df;
+  border-color: #2f79df;
+  color: #ffffff;
+}
+
+.preBtnPrimary:disabled {
+  background: #d4e1f4;
+  border-color: #d4e1f4;
+  color: #8fa6c3;
+  cursor: not-allowed;
+}
+
+.preBtnSecondary {
+  background: #e8f0ff;
+  border-color: #c4d8fa;
+  color: #2f79df;
+}
+
+.preBtnSecondary:disabled {
+  background: #edf2fa;
+  border-color: #dde6f3;
+  color: #9aa8bb;
+  cursor: not-allowed;
+}
+
+.preBtnGhost {
+  background: #f8fbff;
+  color: #2f79df;
+}
+
+@media (max-width: 1100px) {
+  .preScreenModal {
+    width: min(720px, 100%);
+  }
+
+  .preScreenTitle {
+    font-size: 24px;
+  }
+
+  .preStepLabel {
+    font-size: 16px;
+  }
+
+  .preFieldLabel {
+    font-size: 16px;
+  }
+
+  .preRadioLabel {
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 760px) {
+  .stageMoveToast {
+    right: 12px;
+    left: 12px;
+  }
+
+  .preScreenOverlay {
+    padding: 10px;
+  }
+
+  .preScreenModal {
+    border-radius: 16px;
+    padding: 14px 14px 12px;
+  }
+
+  .preScreenStepper {
+    margin-bottom: 10px;
+  }
+
+  .preStepLine {
+    width: 70px;
+  }
+
+  .preStep {
+    min-width: 95px;
+  }
+
+  .preFieldGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .preActionRow {
+    flex-wrap: wrap;
+  }
+}
