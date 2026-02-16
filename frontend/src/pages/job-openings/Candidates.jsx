@@ -339,6 +339,13 @@ export default function Candidates() {
     };
   }, []);
 
+  // Ensure body overflow is always reset when component unmounts
+  React.useEffect(() => {
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, []);
+
   React.useEffect(() => {
     if (!isViewDrawerOpen) return undefined;
     const previousOverflow = document.body.style.overflow;
