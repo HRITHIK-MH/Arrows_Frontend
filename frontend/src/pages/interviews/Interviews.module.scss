@@ -39,17 +39,17 @@
 .tabs {
   display: flex;
   align-items: center;
-  gap: 24px;
+  gap: 16px;
 }
 
 .tab {
   border: none;
   background: transparent;
   color: #2f3a4a;
-  font-size: 26px;
+  font-size: 22px;
   font-weight: 500;
-  line-height: 1.3;
-  padding: 0 0 9px;
+  line-height: 1.2;
+  padding: 0 0 8px;
   cursor: pointer;
   border-bottom: 3px solid transparent;
   transition: color 0.18s ease, border-color 0.18s ease;
@@ -785,6 +785,10 @@
 }
 
 @media only screen and (max-width: 1200px) {
+  .tab {
+    font-size: 20px;
+  }
+
   .filtersBar {
     flex-wrap: wrap;
   }
@@ -800,6 +804,10 @@
 }
 
 @media only screen and (max-width: 992px) {
+  .tab {
+    font-size: 18px;
+  }
+
   .groupView {
     flex-direction: column;
   }
@@ -825,11 +833,11 @@
   }
 
   .tabs {
-    gap: 16px;
+    gap: 12px;
   }
 
   .tab {
-    font-size: 14px;
+    font-size: 16px;
   }
 
   .filtersBar {
@@ -852,6 +860,10 @@
 }
 
 @media only screen and (max-width: 600px) {
+  .tab {
+    font-size: 14px;
+  }
+
   .filtersLeft {
     width: 100%;
   }
