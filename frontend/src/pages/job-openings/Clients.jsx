@@ -1,7 +1,17 @@
 
 
 import * as React from "react";
-import { FiFilter, FiMoreHorizontal, FiPlus, FiSearch } from "react-icons/fi";
+import {
+  FiFilter,
+  FiMail,
+  FiMapPin,
+  FiMoreHorizontal,
+  FiPhone,
+  FiPlus,
+  FiSearch,
+  FiUser,
+  FiX
+} from "react-icons/fi";
 import styles from "./Clients.module.scss";
 import ReusableForm from "../../components/forms/ReusableForm";
 import DataTable from "../../components/forms/DataTable";
@@ -108,7 +118,14 @@ export default function Clients() {
       clientIndustry: "IT Services",
       clientLocation: "Bangalore",
       clientBudget: "₹12L",
-      clientStatus: "Active"
+      clientStatus: "Active",
+      contactEmail: "divya.mehta@email.com",
+      contactNumber: "9876543210",
+      primaryContactPerson: "Divya Mehta",
+      secondaryContactPerson: "Rahul Mehta",
+      accountManager: "Saravanan",
+      activeFrom: "2026-01-15",
+      comments: "Strategic client for engineering hiring"
     },
     {
       clientId: "C1292432",
@@ -119,7 +136,14 @@ export default function Clients() {
       clientIndustry: "FinTech",
       clientLocation: "Pune",
       clientBudget: "₹9L",
-      clientStatus: "Prospect"
+      clientStatus: "Prospect",
+      contactEmail: "rahul.mehta@email.com",
+      contactNumber: "9781234567",
+      primaryContactPerson: "Rahul Mehta",
+      secondaryContactPerson: "Anita S",
+      accountManager: "Parthiban",
+      activeFrom: "2026-02-01",
+      comments: "Awaiting final contract confirmation"
     },
     {
       clientId: "C1292921",
@@ -130,7 +154,14 @@ export default function Clients() {
       clientIndustry: "Healthcare",
       clientLocation: "Chennai",
       clientBudget: "₹7L",
-      clientStatus: "Inactive"
+      clientStatus: "Inactive",
+      contactEmail: "anitha.kumar@email.com",
+      contactNumber: "9887766554",
+      primaryContactPerson: "Anitha Kumar",
+      secondaryContactPerson: "Srinidhi P",
+      accountManager: "Sneha Nair",
+      activeFrom: "2025-11-20",
+      comments: "Paused requirements this quarter"
     },
     {
       clientId: "C1293010",
@@ -141,14 +172,89 @@ export default function Clients() {
       clientIndustry: "SaaS",
       clientLocation: "Hyderabad",
       clientBudget: "₹15L",
-      clientStatus: "Active"
+      clientStatus: "Active",
+      contactEmail: "sneha.nair@email.com",
+      contactNumber: "9977711223",
+      primaryContactPerson: "Sneha Nair",
+      secondaryContactPerson: "Vikram S",
+      accountManager: "Arjun Rao",
+      activeFrom: "2026-01-08",
+      comments: "Rapid hiring plan in progress"
     }
   ]);
+  const [editingIndex, setEditingIndex] = React.useState(null);
+  const [editingData, setEditingData] = React.useState(null);
   const [showSuccessMessage, setShowSuccessMessage] = React.useState(false);
+  const [successMessageText, setSuccessMessageText] = React.useState("Client added successfully");
   const [searchTerm, setSearchTerm] = React.useState('');
   const [filterClientIndustry, setFilterClientIndustry] = React.useState('');
   const [filterClientStatus, setFilterClientStatus] = React.useState('');
   const [filterClientLocation, setFilterClientLocation] = React.useState('');
+  const [isViewDrawerOpen, setIsViewDrawerOpen] = React.useState(false);
+  const [selectedClient, setSelectedClient] = React.useState(null);
+
+  const formatPhoneNumber = React.useCallback((value) => {
+    const raw = String(value || "").trim();
+    if (!raw) return "";
+    if (raw.startsWith("+")) return raw;
+    return `+91 ${raw}`;
+  }, []);
+
+  const normalizeClientRecord = React.useCallback((data) => {
+    const contactEmail = data.contactEmail || data.clientEmail || "";
+    const contactNumber = String(data.contactNumber || "").trim();
+    const clientPhoneSource = data.clientPhone || contactNumber;
+
+    return {
+      ...data,
+      clientId: data.clientId || "",
+      clientName: data.clientName || "",
+      clientCompany: data.clientCompany || data.clientName || "Client",
+      clientEmail: data.clientEmail || contactEmail,
+      clientPhone: formatPhoneNumber(clientPhoneSource),
+      clientIndustry: data.clientIndustry || "IT Services",
+      clientLocation: data.clientLocation || "Bangalore",
+      clientBudget: data.clientBudget || "₹0",
+      clientStatus: data.clientStatus || "Active",
+      contactEmail,
+      contactNumber,
+      primaryContactPerson: data.primaryContactPerson || "",
+      secondaryContactPerson: data.secondaryContactPerson || "",
+      accountManager: data.accountManager || "",
+      activeFrom: data.activeFrom || "",
+      comments: data.comments || "",
+    };
+  }, [formatPhoneNumber]);
+
+  const mapClientToFormData = React.useCallback((row) => ({
+    clientId: row.clientId || "",
+    clientName: row.clientName || "",
+    contactEmail: row.contactEmail || row.clientEmail || "",
+    contactNumber: String(row.contactNumber || row.clientPhone || "").replace(/^\+91\s?/, "").trim(),
+    primaryContactPerson: row.primaryContactPerson || "",
+    secondaryContactPerson: row.secondaryContactPerson || "",
+    accountManager: row.accountManager || "",
+    activeFrom: row.activeFrom || "",
+    comments: row.comments || "",
+  }), []);
+
+  React.useEffect(() => {
+    if (!isViewDrawerOpen) return undefined;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isViewDrawerOpen]);
+
+  React.useEffect(() => {
+    if (!isViewDrawerOpen) return undefined;
+    const onEsc = (event) => {
+      if (event.key === "Escape") setIsViewDrawerOpen(false);
+    };
+    document.addEventListener("keydown", onEsc);
+    return () => document.removeEventListener("keydown", onEsc);
+  }, [isViewDrawerOpen]);
 
   // Debounced search handler - reduces filter recalculations by 99%
   const debouncedSearch = React.useMemo(
@@ -251,17 +357,23 @@ export default function Clients() {
   const handleAddClient = React.useCallback(() => {
     setShowClientForm(true);
     setShowDataTable(false);
+    setEditingIndex(null);
+    setEditingData(null);
   }, []);
 
   const handleViewClient = React.useCallback((row) => {
     console.log('View client:', row);
-    alert('View client: ' + JSON.stringify(row, null, 2));
-  }, []);
+    setSelectedClient(normalizeClientRecord(row));
+    setIsViewDrawerOpen(true);
+  }, [normalizeClientRecord]);
 
-  const handleEditClient = React.useCallback((row) => {
+  const handleEditClient = React.useCallback((row, index) => {
     console.log('Edit client:', row);
-    alert('Edit functionality coming soon!');
-  }, []);
+    setEditingIndex(index);
+    setEditingData(mapClientToFormData(row));
+    setShowClientForm(true);
+    setShowDataTable(false);
+  }, [mapClientToFormData]);
 
   const handleDeleteClient = React.useCallback((row, index) => {
     console.log('Delete client:', row);
@@ -271,23 +383,38 @@ export default function Clients() {
   }, []);
 
   const handleClientSubmit = React.useCallback((data) => {
-    console.log('Client added:', data);
-    setSubmittedData(prev => [...prev, data]);
+    const normalized = normalizeClientRecord(data);
+    const isEditMode = editingIndex !== null;
+    console.log(isEditMode ? 'Client updated:' : 'Client added:', normalized);
+
+    setSubmittedData(prev => (
+      isEditMode
+        ? prev.map((item, idx) => (idx === editingIndex ? { ...item, ...normalized } : item))
+        : [...prev, normalized]
+    ));
+
     setShowClientForm(false);
     setShowDataTable(true);
+    setEditingIndex(null);
+    setEditingData(null);
+    setSuccessMessageText(isEditMode ? "Client updated successfully" : "Client added successfully");
     setShowSuccessMessage(true);
     // Auto-hide success message after 3 seconds
     setTimeout(() => {
       setShowSuccessMessage(false);
     }, 3000);
     // Here you would typically send the data to your backend API
+  }, [editingIndex, normalizeClientRecord]);
+
+  const closeViewDrawer = React.useCallback(() => {
+    setIsViewDrawerOpen(false);
   }, []);
 
   return (
     <div className={styles.page}>
       {showSuccessMessage && (
         <div className={styles.successMessage}>
-          ✓ Client added successfully
+          ✓ {successMessageText}
         </div>
       )}
 
@@ -310,6 +437,7 @@ export default function Clients() {
             <ReusableForm
               config={clientConfig}
               onSubmit={handleClientSubmit}
+              initialData={editingData}
             />
           </div>
         )}
@@ -354,6 +482,82 @@ export default function Clients() {
           </div>
         )}
       </div>
+
+      {isViewDrawerOpen && selectedClient && (
+        <div className={styles.viewDrawerOverlay} onClick={closeViewDrawer}>
+          <aside className={styles.viewDrawer} onClick={(event) => event.stopPropagation()}>
+            <div className={styles.drawerTop}>
+              <div className={styles.drawerIdentity}>
+                <div className={styles.drawerAvatar}>
+                  {selectedClient.clientName?.charAt(0) || "C"}
+                </div>
+                <div>
+                  <h3>{selectedClient.clientName}</h3>
+                  <p>{selectedClient.clientCompany}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                className={styles.drawerClose}
+                onClick={closeViewDrawer}
+                aria-label="Close panel"
+              >
+                <FiX size={18} />
+              </button>
+            </div>
+
+            <div className={styles.drawerMeta}>
+              <span><FiMail size={12} /> {selectedClient.contactEmail || "-"}</span>
+              <span><FiPhone size={12} /> {selectedClient.clientPhone || "-"}</span>
+              <span><FiMapPin size={12} /> {selectedClient.clientLocation || "-"}</span>
+            </div>
+
+            <div className={styles.drawerGrid}>
+              <div className={styles.drawerItem}>
+                <span className={styles.drawerLabel}>Client ID</span>
+                <span className={styles.drawerValue}>{selectedClient.clientId || "-"}</span>
+              </div>
+              <div className={styles.drawerItem}>
+                <span className={styles.drawerLabel}>Industry</span>
+                <span className={styles.drawerValue}>{selectedClient.clientIndustry || "-"}</span>
+              </div>
+              <div className={styles.drawerItem}>
+                <span className={styles.drawerLabel}>Status</span>
+                <span className={`${styles.statusPill} ${getStatusClass(selectedClient.clientStatus)}`}>
+                  {selectedClient.clientStatus || "-"}
+                </span>
+              </div>
+              <div className={styles.drawerItem}>
+                <span className={styles.drawerLabel}>Budget</span>
+                <span className={styles.drawerValue}>{selectedClient.clientBudget || "-"}</span>
+              </div>
+              <div className={styles.drawerItem}>
+                <span className={styles.drawerLabel}>Primary Contact</span>
+                <span className={styles.drawerValue}>{selectedClient.primaryContactPerson || "-"}</span>
+              </div>
+              <div className={styles.drawerItem}>
+                <span className={styles.drawerLabel}>Secondary Contact</span>
+                <span className={styles.drawerValue}>{selectedClient.secondaryContactPerson || "-"}</span>
+              </div>
+              <div className={styles.drawerItem}>
+                <span className={styles.drawerLabel}>Account Manager</span>
+                <span className={styles.drawerValue}>{selectedClient.accountManager || "-"}</span>
+              </div>
+              <div className={styles.drawerItem}>
+                <span className={styles.drawerLabel}>Active From</span>
+                <span className={styles.drawerValue}>{selectedClient.activeFrom || "-"}</span>
+              </div>
+            </div>
+
+            <div className={styles.drawerNote}>
+              <span className={styles.drawerLabel}>
+                <FiUser size={12} /> Comments / Remarks
+              </span>
+              <p>{selectedClient.comments || "No remarks available."}</p>
+            </div>
+          </aside>
+        </div>
+      )}
     </div>
   );
 }
