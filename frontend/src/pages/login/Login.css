@@ -262,13 +262,6 @@
   text-align: center;
 }
 
-@media (max-width: 768px) {
-  .login-container {
-    flex-direction: column;
-  }
-}
-
-
 .logo-wrapper {
   margin: 4.5rem 0 2rem;
   width: 100%;
@@ -280,25 +273,25 @@
   margin-top: 1.5rem;
 }
 
-
-@media only screen and (max-width: 600px) {
+/* Extra small devices (phones, 599px and down) */
+@media only screen and (max-width: 599px) {
   .login-container {
     flex-direction: column;
-    height: auto;
     min-height: 100vh;
+    height: auto;
   }
 
   .login-left {
     padding: 1.5rem 1rem;
     text-align: center;
-    background-image: none; 
+    background-image: none;
   }
 
   .login-left h1,
   .sign-in {
+    margin-top: 1.25rem;
     font-size: 26px;
     line-height: 32px;
-    margin-top: 2rem;
   }
 
   .para-text1 {
@@ -317,39 +310,56 @@
   }
 
   .login-right {
-    padding: 1.5rem 1rem;
-  }
-
-  .login-form {
-    padding: 1.5rem;
-    max-width: 100%;
-    box-shadow: none;
-    border: none;
+    padding: 1.25rem 1rem 1.5rem;
   }
 
   .logo-wrapper {
-    margin: 2rem 0 1.5rem;
+    margin: 1.75rem 0 1rem;
+  }
+
+  .arrow-logo {
+    width: 96px;
+  }
+
+  .login-form {
+    margin-top: 1rem;
+    max-width: 100%;
+    padding: 1.25rem;
+    border: 1px solid #e2e8f0;
+    box-shadow: none;
+  }
+
+  .form-options {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
   }
 }
 
-
+/* Small devices (large phones, 600px to 767px) */
 @media only screen and (min-width: 600px) and (max-width: 767px) {
   .login-container {
     flex-direction: column;
+    min-height: 100vh;
+    height: auto;
   }
 
   .login-left {
-    padding: 2rem;
+    padding: 2rem 1.5rem;
+    text-align: center;
     background-image: none;
   }
 
   .login-left h1,
   .sign-in {
+    margin-top: 1.5rem;
     font-size: 30px;
+    line-height: 38px;
   }
 
   .para-text2 {
     font-size: 15px;
+    line-height: 24px;
   }
 
   .login-logo,
@@ -358,51 +368,103 @@
     display: none;
   }
 
+  .login-right {
+    padding: 1.5rem;
+  }
+
+  .logo-wrapper {
+    margin: 2rem 0 1.25rem;
+  }
+
   .login-form {
-    max-width: 420px;
+    margin-top: 1rem;
+    max-width: 460px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
   }
 }
 
+/* Medium devices (tablets, 768px to 991px) */
 @media only screen and (min-width: 768px) and (max-width: 991px) {
   .login-container {
     flex-direction: column;
+    min-height: 100vh;
+    height: auto;
   }
 
   .login-left {
-    padding: 3rem;
+    padding: 2.5rem 2rem;
     background-size: cover;
+    background-position: center;
   }
 
   .login-left h1,
   .sign-in {
+    margin-top: 2rem;
     font-size: 34px;
-  }
-
-  .login-form {
-    max-width: 440px;
+    line-height: 42px;
   }
 
   .login-circle,
   .login-circle2 {
     display: none;
   }
-}
 
-@media only screen and (min-width: 992px) {
-  .login-container {
-    flex-direction: row;
-    height: 100vh;
+  .login-logo {
+    width: 280px;
   }
 
+  .login-right {
+    padding: 1.75rem 2rem;
+  }
+
+  .logo-wrapper {
+    margin: 2.25rem 0 1.5rem;
+  }
+
+  .login-form {
+    margin-top: 1rem;
+    max-width: 500px;
+  }
+}
+
+/* Large devices (laptops/desktops, 992px to 1199px) */
+@media only screen and (min-width: 992px) and (max-width: 1199px) {
+  .login-container {
+    flex-direction: row;
+  }
+
+  .login-left {
+    padding: 2.5rem 3rem;
+  }
+
+  .login-left h1,
+  .sign-in {
+    margin-top: 4rem;
+    font-size: 34px;
+    line-height: 42px;
+  }
+
+  .para-text2 {
+    font-size: 16px;
+    line-height: 25px;
+  }
+
+  .login-logo {
+    width: 320px;
+  }
+
+  .login-form {
+    max-width: 390px;
+  }
+}
+
+/* Extra large devices (large desktops, 1200px to 1439px) */
+@media only screen and (min-width: 1200px) and (max-width: 1439px) {
   .login-left {
     padding: 3rem 4rem;
   }
 
-  .login-form {
-    max-width: 400px;
-  }
-}
-@media only screen and (min-width: 1200px) {
   .login-left h1,
   .sign-in {
     font-size: 39px;
@@ -411,9 +473,58 @@
 
   .para-text2 {
     font-size: 18px;
+    line-height: 28px;
   }
 
   .login-form {
     max-width: 420px;
+  }
+}
+
+/* Ultra-wide screens (1440px and up) */
+@media only screen and (min-width: 1440px) {
+  .login-left {
+    padding: 3.5rem 5rem;
+  }
+
+  .login-left h1,
+  .sign-in {
+    margin-top: 6.5rem;
+    font-size: 42px;
+    line-height: 50px;
+  }
+
+  .para-text1 {
+    font-size: 22px;
+  }
+
+  .para-text2 {
+    font-size: 19px;
+    line-height: 30px;
+  }
+
+  .login-form {
+    max-width: 440px;
+  }
+
+  .arrow-logo {
+    width: 130px;
+  }
+}
+
+/* Short-height screens (landscape laptops) */
+@media only screen and (max-height: 760px) and (min-width: 992px) {
+  .login-left h1,
+  .sign-in {
+    margin-top: 3rem;
+  }
+
+  .logo-wrapper {
+    margin-top: 2rem;
+  }
+
+  .login-form {
+    margin-top: 1rem;
+    padding: 1.5rem;
   }
 }
