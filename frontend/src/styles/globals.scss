@@ -701,11 +701,6 @@ $gutter: 1rem;
 .button {
   /* ...base styles... */
  
---icon-size: 1rem;            /* customize per button */
-  --icon-gap: 0.5rem;           /* space between icon and text */
-  --icon-url: '';               /* set per use (in CSS or inline style) */
-
-
   display: inline-flex;         /* ✅ aligns icon and text nicely */
   align-items: center;
 
@@ -723,23 +718,6 @@ $gutter: 1rem;
 
   &:hover { background-color: var(--button-hover); }
   &:disabled { background-color: #ccc; cursor: not-allowed; }
-
-
-
-
-  &::before {
-    content: '';
-    width: 1rem; height: 1rem;
-    display: inline-block;
-    margin-right: 0.5rem;
-    background: no-repeat center / contain;
-  }
-
-
-  &[data-icon="search"]::before { background-image: url('../assets/icons/search.svg'); }
-  &[data-icon="download"]::before { background-image: url('../assets/icons/download.svg'); }
-  &[data-icon="edit"]::before { background-image: url('../assets/icons/edit.svg'); }
-  &[data-icon="add-circle"]::before { background-image: url('../assets/icons/add-circle.svg'); }
 }
 
 

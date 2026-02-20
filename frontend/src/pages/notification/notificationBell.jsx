@@ -1,7 +1,5 @@
-
-
 import { useState, useRef, useEffect } from 'react';
-import bellIconUrl from '../../assets/icons/bell.svg'; // ← adjust the relative path to your file
+import { FiBell } from "react-icons/fi";
 import './notification.scss'; // import the SCSS (global)
 
 
@@ -38,7 +36,7 @@ export default function NotificationBell() {
         aria-expanded={open}
         onClick={() => setOpen(v => !v)}
       >
-        <img className="icon" src={bellIconUrl} alt="" aria-hidden />
+        <FiBell className="icon" aria-hidden />
         {unread > 0 && (
           <span className="notifBadge" aria-label={`${unread} unread notifications`}>
             {unread}

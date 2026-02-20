@@ -14,7 +14,6 @@ import {
   FiPhone,
   FiPlus,
   FiSearch,
-  FiShare2,
   FiStar,
   FiTrash2,
   FiX
@@ -847,6 +846,19 @@ export default function Candidates() {
     });
   }, []);
 
+  const handleAttachmentDelete = React.useCallback((fileId) => {
+    setSelectedCandidate((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        attachments: (prev.attachments || []).filter((file) => {
+          if (typeof file === "string") return file !== fileId;
+          return file.id !== fileId;
+        }),
+      };
+    });
+  }, []);
+
   const handleDownloadFile = React.useCallback((fileName) => {
     const blob = new Blob([`Mock file generated for ${fileName}`], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
@@ -1214,7 +1226,12 @@ export default function Candidates() {
                   <button type="button" className={styles.iconBtn} aria-label="Preview">
                     <FiEye size={16} />
                   </button>
-                  <button type="button" className={styles.iconBtn} aria-label="Delete">
+                  <button
+                    type="button"
+                    className={styles.iconBtn}
+                    onClick={() => handleAttachmentDelete(fileData.id)}
+                    aria-label="Delete"
+                  >
                     <FiTrash2 size={16} />
                   </button>
                 </div>
@@ -1540,15 +1557,6 @@ export default function Candidates() {
             </div>
 
             <div className={styles.profileContent}>{renderProfileContent()}</div>
-
-            <div className={styles.drawerActions}>
-              <button type="button" className={styles.shareBtn} aria-label="Share">
-                <FiShare2 size={14} />
-              </button>
-              <button type="button" className={styles.quickViewBtn} aria-label="Quick view">
-                <FiEye size={14} />
-              </button>
-            </div>
           </aside>
         </div>
       )}
