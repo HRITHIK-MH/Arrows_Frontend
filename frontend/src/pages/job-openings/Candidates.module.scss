@@ -600,7 +600,7 @@
 
 .drawerIdentity h3 {
   margin: 0 0 2px;
-  font-size: 35px;
+  font-size: 33px;
   font-weight: 600;
   color: #1f2937;
   line-height: 1;
@@ -617,7 +617,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 6px 14px;
-  font-size: 14px;
+  font-size: 13px;
   color: #2c3135;
 }
 
@@ -660,12 +660,12 @@
   border: 1px solid #cbd5e1;
   background: #fff;
   color: #2f3742;
-  font-size: 18px;
+  font-size: 13px;
   font-weight: 500;
-  padding: 7px 30px 7px 32px;
+  padding: 7px 22px 7px 24px;
   cursor: pointer;
   position: relative;
-  min-width: 154px;
+  min-width: 108px;
   white-space: nowrap;
   clip-path: polygon(0 0, calc(100% - var(--arrow-size)) 0, 100% 50%, calc(100% - var(--arrow-size)) 100%, 0 100%, var(--arrow-size) 50%);
   margin-left: -9px;
@@ -675,12 +675,12 @@
 .pipelineStep:first-child {
   margin-left: 0;
   clip-path: polygon(0 0, calc(100% - var(--arrow-size)) 0, 100% 50%, calc(100% - var(--arrow-size)) 100%, 0 100%);
-  padding-left: 22px;
+  padding-left: 16px;
 }
 
 .pipelineStep:last-child {
   clip-path: polygon(0 0, 100% 0, 100% 50%, 100% 100%, 0 100%, var(--arrow-size) 50%);
-  padding-right: 20px;
+  padding-right: 14px;
 }
 
 .pipelineStepActive {
@@ -711,17 +711,17 @@
   border: none;
   background: transparent;
   color: #374151;
-  font-size: 28px;
+  font-size: 15px;
   font-weight: 500;
-  padding-bottom: 8px;
+  padding-bottom: 6px;
   cursor: pointer;
-  border-bottom: 3px solid transparent;
+  border-bottom: 2px solid transparent;
   line-height: 1.1;
 }
 
 .profileTabActive {
   color: #f97316;
-  border-bottom: 3px solid #f97316;
+  border-bottom: 2px solid #f97316;
 }
 
 .mapActionBar {
@@ -975,6 +975,10 @@
   color: #2f3742;
   border-bottom: 1px dashed #dbe3ee;
   vertical-align: middle;
+}
+
+.skillDraftRow td {
+  background: #f8fbff;
 }
 
 .skillInput {
@@ -1338,33 +1342,6 @@
   border-bottom: none;
 }
 
-.drawerActions {
-  position: absolute;
-  top: 83px;
-  right: 24px;
-  display: inline-flex;
-  gap: 8px;
-}
-
-.shareBtn,
-.quickViewBtn {
-  width: 30px;
-  height: 30px;
-  border: 1px solid #b9c7e4;
-  border-radius: 999px;
-  background: #dce7fb;
-  color: #2c3135;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-}
-
-.shareBtn:hover,
-.quickViewBtn:hover {
-  background: #cbd9f4;
-}
-
 // Responsive Styles
 @media (max-width: 1400px) {
   .viewDrawer {
@@ -1372,17 +1349,17 @@
   }
 
   .drawerIdentity h3 {
-    font-size: 30px;
+    font-size: 28px;
   }
 
   .profileTab {
-    font-size: 22px;
+    font-size: 14px;
   }
 
   .pipelineStep {
-    font-size: 15px;
-    min-width: 130px;
-    padding: 8px 22px 8px 24px;
+    font-size: 12px;
+    min-width: 100px;
+    padding: 8px 16px 8px 18px;
   }
 }
 
@@ -1413,13 +1390,13 @@
   }
 
   .profileTab {
-    font-size: 17px;
+    font-size: 14px;
     border-bottom-width: 2px;
   }
 
   .pipelineStep {
-    min-width: 108px;
-    font-size: 13px;
+    min-width: 94px;
+    font-size: 12px;
     padding: 7px 14px 7px 18px;
   }
 
@@ -1462,17 +1439,12 @@
     padding: 14px 16px 10px;
   }
 
-  .drawerActions {
-    top: 72px;
-    right: 16px;
-  }
-
   .pipelineRow {
     padding: 10px 16px 12px;
   }
 
   .profileTab {
-    font-size: 15px;
+    font-size: 13px;
   }
 
   .profileTabsRow {

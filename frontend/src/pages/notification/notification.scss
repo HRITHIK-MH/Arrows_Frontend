@@ -41,22 +41,12 @@
 }
 
 
-/* Icon (image) */
+/* Icon */
 .notifBtn .icon {
-  display: block;
+  display: inline-block;
   width: 18px;
   height: 18px;
-  object-fit: contain;
 }
-
-
-/* If you prefer color-inheriting mask instead of <img>, use:
-.iconMask {
-  width: 18px; height: 18px; display: block;
-  background-color: currentColor;
-  mask: url('/icons/bell.svg') no-repeat center / contain; // put bell.svg in public/icons for this
-}
-*/
 
 
 /* Unread badge */

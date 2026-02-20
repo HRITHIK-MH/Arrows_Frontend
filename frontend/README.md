@@ -1,16 +1,37 @@
-# React + Vite
+# MethodHub Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React + Vite frontend for recruitment operations.
 
-Currently, two official plugins are available:
+## Scripts
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+```bash
+npm run dev      # uses --mode dev  -> loads .env.dev
+npm run build    # uses --mode prod -> loads .env.prod
+npm run preview  # preview production build mode
+npm run lint
+```
 
-## React Compiler
+## Environment Files
 
-The React Compiler is currently not compatible with SWC. See [this issue](https://github.com/vitejs/vite-plugin-react/issues/428) for tracking the progress.
+- `.env.dev` – local/dev endpoints and ports
+- `.env.prod` – production endpoints
+- `.env.example` – reference template
 
-## Expanding the ESLint configuration
+All runtime environment variables used by Vite should be prefixed with `VITE_`.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## Styling Convention
+
+- Global style entry: `src/styles/globals.scss` (imported once in `src/main.jsx`)
+- Component/page styles: colocated CSS/SCSS modules (`*.module.scss`) or component-specific CSS
+- Avoid adding additional global CSS entry files.
+
+## Icon Convention
+
+- Use React icon components (Feather/Lucide-like set via `react-icons`) for consistency.
+- Prefer code-based icons over static SVG asset imports unless a branded icon is required.
+
+## Asset Convention
+
+- Keep application images in `src/assets/`.
+- Use `public/` only for truly static files referenced by absolute path.
+- Do not commit generated output folders like `dist/`.

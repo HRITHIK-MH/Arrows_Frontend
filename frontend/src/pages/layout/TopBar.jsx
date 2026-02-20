@@ -3,7 +3,7 @@
 // src/pages/layout/TopBar.jsx
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import SearchIconSvg from "../../assets/icons/search.svg?react";
+import { FiSearch } from "react-icons/fi";
 import NotificationBell from "../notification/NotificationBell";
 import { LINKS } from "./routesConfig";
 
@@ -153,7 +153,7 @@ export default function TopBar({ isSidebarOpen, setSidebarOpen }) {
           />
           {/* Icon on the right, loaded from assets */}
           <button type="submit" className="searchBtn" aria-label="Submit search">
-            <SearchIconSvg className="searchIcon" aria-hidden />
+            <FiSearch className="searchIcon" aria-hidden />
           </button>
         </form>
        

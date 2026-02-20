@@ -7,7 +7,9 @@ import { MdOutlineEmail } from "react-icons/md";
 import { TbLockPassword } from "react-icons/tb";
 import { useNavigate } from 'react-router-dom';
 import arrowLogo from "../../assets/login/arrow_logo.png";
+import maskGroup from "../../assets/login/mask_group.png";
 import loginCircle from "../../assets/login/login_circle.png";
+import loginCircle2 from "../../assets/login/login_circle2.png";
 import './Login.css';
 
 const Login = () => {
@@ -74,9 +76,9 @@ const Login = () => {
         <p className="para-text1">Access Your Account</p>
         <p className="para-text2">Please enter your email and password to continue.<br></br>
 If you've forgotten your password, use the "Forgot Password" option<br></br> to reset it. Make sure your login details are secure and up to date.</p>
-        <img src="/mask_group.png" alt="Logo" className="login-logo" />
+        <img src={maskGroup} alt="Logo" className="login-logo" />
         <img src={loginCircle} alt="Login Circle" className="login-circle" />
-        <img src="/login_circle2.png" alt="Login Circle 2" className="login-circle2" />
+        <img src={loginCircle2} alt="Login Circle 2" className="login-circle2" />
       </div>
       <div className="login-right">
         <div className="logo-wrapper">
