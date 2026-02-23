@@ -93,6 +93,20 @@ const FormStep = ({ formData, onChange, fields, title, onSetStepFields, validati
     });
 
     const getField = (name) => (fieldMap[name] ? renderField(fieldMap[name]) : null);
+    const getFirstAvailableField = (keys, predicate) => {
+      for (const key of keys) {
+        if (fieldMap[key]) {
+          return renderField(fieldMap[key]);
+        }
+      }
+      if (typeof predicate === 'function') {
+        const matchedField = fields.find(predicate);
+        if (matchedField) {
+          return renderField(matchedField);
+        }
+      }
+      return null;
+    };
 
     const renderGroup = (label, required, minKey, maxKey) => (
       <div className="field-group">
@@ -106,6 +120,51 @@ const FormStep = ({ formData, onChange, fields, title, onSetStepFields, validati
         </div>
       </div>
     );
+
+    const technicalSkillsOptions = Array.isArray(fieldMap.technicalSkills?.options)
+      ? fieldMap.technicalSkills.options
+      : [];
+
+    const fallbackAddTechnicalOptions = technicalSkillsOptions.length
+      ? technicalSkillsOptions
+      : [
+          { value: 'machine-learning', label: 'Machine Learning' },
+          { value: 'deep-learning', label: 'Deep Learning' },
+          { value: 'nlp', label: 'NLP' },
+          { value: 'data-science', label: 'Data Science' },
+          { value: 'computer-vision', label: 'Computer Vision' },
+          { value: 'azure', label: 'Microsoft Azure' }
+        ];
+
+    const addTechnicalConfig =
+      fieldMap.addTechnicalSkills ||
+      fieldMap.addTechnicalSkill ||
+      fieldMap.additionalTechnicalSkills ||
+      fieldMap['grid-col-1 grid-row-6'] ||
+      fields.find((field) => {
+        const fieldName = String(field?.name || '').toLowerCase();
+        const fieldLabel = String(field?.label || '').toLowerCase();
+        return (
+          field?.cssClass?.includes('grid-row-6') ||
+          fieldName.includes('addtechnical') ||
+          (fieldName.includes('technical') && fieldName.includes('additional')) ||
+          (fieldLabel.includes('add') && fieldLabel.includes('technical'))
+        );
+      }) ||
+      {
+        name: 'addTechnicalSkills',
+        label: 'Add Technical Skill',
+        type: 'multiselect',
+        required: false
+      };
+
+    const addTechnicalFieldName = addTechnicalConfig.name || 'addTechnicalSkills';
+    const addTechnicalFieldOptions = Array.isArray(addTechnicalConfig.options) && addTechnicalConfig.options.length
+      ? addTechnicalConfig.options
+      : fallbackAddTechnicalOptions;
+    const addTechnicalFieldValue = Array.isArray(formData[addTechnicalFieldName])
+      ? formData[addTechnicalFieldName]
+      : [];
 
     return (
       <div className="job-basic-info-step">
@@ -164,6 +223,28 @@ const FormStep = ({ formData, onChange, fields, title, onSetStepFields, validati
             </div>
             <div className="grid-cell grid-col-3 grid-row-5">
               {getField('additionalSkills')}
+            </div>
+
+            <div className="grid-cell grid-col-1 grid-row-6">
+              <FormField
+                label={addTechnicalConfig.label || 'Add Technical Skill'}
+                type="multiselect"
+                name={addTechnicalFieldName}
+                value={addTechnicalFieldValue}
+                onChange={onChange}
+                required={Boolean(addTechnicalConfig.required)}
+                options={addTechnicalFieldOptions}
+                validate={addTechnicalConfig.validate}
+                error={validationErrors[addTechnicalFieldName]}
+                onValidation={addTechnicalConfig.onValidation}
+                placeholder={addTechnicalConfig.placeholder || 'Select skills'}
+                hideLabel={addTechnicalConfig.hideLabel}
+                accept={addTechnicalConfig.accept}
+                multiple={addTechnicalConfig.multiple}
+                prefix={addTechnicalConfig.prefix}
+                formData={formData}
+                disabled={disabled}
+              />
             </div>
           </div>
         </div>
