@@ -23,4 +23,4 @@ frontend/.env.local
 Thumbs.db
 .idea/
 .vscode/
-frontend/node_modules/@babel/core/lib/config/helpers/environment.js
+frontend/node_modules/
