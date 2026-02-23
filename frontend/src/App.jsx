@@ -10,7 +10,12 @@ import Login from "./pages/login/Login.jsx";
 // Lazy load page components for code splitting
 const Dashboard = lazy(() => import("./pages/dashboard/Dashboard.jsx"));
 const JobOpenings = lazy(() => import("./pages/job-openings/JobOpenings.jsx"));
-const Candidates = lazy(() => import("./pages/job-openings/Candidates.jsx"));
+const Candidates = lazy(() => 
+  import("./pages/job-openings/Candidates.jsx").catch(err => {
+    console.error("Failed to load Candidates:", err);
+    throw err;
+  })
+);
 const Clients = lazy(() => import("./pages/job-openings/Clients.jsx"));
 const Interviews = lazy(() => import("./pages/interviews/Interviews.jsx"));
 const JobDescription = lazy(() => import("./pages/job-openings/JobDescription.jsx"));
@@ -36,6 +41,12 @@ const LoadingFallback = () => (
 export default function App() {
   const [isSidebarOpen, setSidebarOpen] = React.useState(false);
   const location = useLocation();
+  
+  // Debug logging for route changes
+  useEffect(() => {
+    console.log('Route changed to:', location.pathname);
+  }, [location.pathname]);
+  
   useEffect(() => {
     document.documentElement.classList.remove("dark");
     document.documentElement.style.backgroundColor = "#ffffff";
@@ -111,7 +122,7 @@ export default function App() {
 
       <main className="main">
         <Suspense fallback={<LoadingFallback />}>
-          <Routes>
+          <Routes key={location.pathname}>
             <Route path="/" element={<Navigate to="/login" replace />} />
             <Route path="/login" element={<Login />} />
             <Route path="/dashboard" element={<Dashboard />} />
