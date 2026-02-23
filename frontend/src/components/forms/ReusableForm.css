@@ -53,7 +53,7 @@
 .job-basic-info-grid {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
-  grid-template-rows: repeat(5, auto);
+  grid-template-rows: repeat(6, auto);
   gap: 16px 20px;
   align-items: start;
 }
@@ -76,6 +76,7 @@
 .grid-cell.grid-row-3 { grid-row: 3; }
 .grid-cell.grid-row-4 { grid-row: 4; }
 .grid-cell.grid-row-5 { grid-row: 5; }
+.grid-cell.grid-row-6 { grid-row: 6; }
 
 /* Min-Max container for side-by-side layout */
 .min-max-container {
@@ -1392,7 +1393,10 @@
 
   .grid-cell.grid-row-1,
   .grid-cell.grid-row-2,
-  .grid-cell.grid-row-3 {
+  .grid-cell.grid-row-3,
+  .grid-cell.grid-row-4,
+  .grid-cell.grid-row-5,
+  .grid-cell.grid-row-6 {
     grid-row: auto;
   }
 

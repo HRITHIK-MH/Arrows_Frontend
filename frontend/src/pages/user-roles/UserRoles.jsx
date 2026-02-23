@@ -1,7 +1,7 @@
 import * as React from "react";
-import { FiPlus, FiEdit2, FiTrash2, FiEye } from "react-icons/fi";
-import styles from "./UserRoles.module.scss";
+import { FiPlus } from "react-icons/fi";
 import DataTable from "../../components/forms/DataTable";
+import styles from "./UserRoles.module.scss";
 
 export default function UserRoles() {
   const [users, setUsers] = React.useState([]);

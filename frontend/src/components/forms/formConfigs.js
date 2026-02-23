@@ -384,7 +384,9 @@ export const jobOpeningConfig = {
             { value: "typescript", label: "TypeScript" },
             { value: "vue", label: "Vue.js" },
             { value: "angular", label: "Angular" },
-            { value: "dotnet", label: ".NET" }
+            { value: "dotnet", label: ".NET" },
+            { value: "machine-learning", label: "Machine Learning" },
+            { value: "azure", label: "Microsoft Azure" }
           ]
         },
         {
@@ -419,6 +421,22 @@ export const jobOpeningConfig = {
           required: false,
           cssClass: "grid-col-3 grid-row-5",
           placeholder: "Select Skill"
+        },
+        {
+          name: "addTechnicalSkills",
+          label: "Add Technical Skill",
+          type: "multiselect",
+          required: false,
+          cssClass: "grid-col-1 grid-row-6",
+          options: [
+            { value: "machine-learning", label: "Machine Learning" },
+            { value: "deep-learning", label: "Deep Learning" },
+            { value: "nlp", label: "NLP" },
+            { value: "data-science", label: "Data Science" },
+            { value: "computer-vision", label: "Computer Vision" },
+            { value: "azure", label: "Microsoft Azure" },
+            { value: "gcp", label: "Google Cloud Platform" }
+          ]
         },
         {
           name: "clientId",

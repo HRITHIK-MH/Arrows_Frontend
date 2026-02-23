@@ -36,7 +36,7 @@ export default function NotificationBell() {
         aria-expanded={open}
         onClick={() => setOpen(v => !v)}
       >
-        <FiBell className="icon" aria-hidden />
+        <img className="icon" src={bellIconUrl} alt="" aria-hidden />
         {unread > 0 && (
           <span className="notifBadge" aria-label={`${unread} unread notifications`}>
             {unread}
@@ -73,6 +73,5 @@ export default function NotificationBell() {
     </div>
   );
 }
-
 
 
