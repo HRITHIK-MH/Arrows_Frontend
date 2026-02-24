@@ -162,9 +162,15 @@ const FormStep = ({ formData, onChange, fields, title, onSetStepFields, validati
     const addTechnicalFieldOptions = Array.isArray(addTechnicalConfig.options) && addTechnicalConfig.options.length
       ? addTechnicalConfig.options
       : fallbackAddTechnicalOptions;
-    const addTechnicalFieldValue = Array.isArray(formData[addTechnicalFieldName])
-      ? formData[addTechnicalFieldName]
-      : [];
+    const normalizedAddTechnicalConfig = {
+      ...addTechnicalConfig,
+      name: addTechnicalFieldName,
+      label: addTechnicalConfig.label || 'Add Technical Skill',
+      type: 'multiselect',
+      required: Boolean(addTechnicalConfig.required),
+      options: addTechnicalFieldOptions,
+      placeholder: addTechnicalConfig.placeholder || 'Select skills'
+    };
 
     return (
       <div className="job-basic-info-step">
@@ -217,34 +223,15 @@ const FormStep = ({ formData, onChange, fields, title, onSetStepFields, validati
 
             <div className="grid-cell grid-col-1 grid-row-5">
               {getField('technicalSkills')}
+              <div className="stacked-field-below">
+                {renderField(normalizedAddTechnicalConfig)}
+              </div>
             </div>
             <div className="grid-cell grid-col-2 grid-row-5">
               {getField('softSkills')}
             </div>
             <div className="grid-cell grid-col-3 grid-row-5">
               {getField('additionalSkills')}
-            </div>
-
-            <div className="grid-cell grid-col-1 grid-row-6">
-              <FormField
-                label={addTechnicalConfig.label || 'Add Technical Skill'}
-                type="multiselect"
-                name={addTechnicalFieldName}
-                value={addTechnicalFieldValue}
-                onChange={onChange}
-                required={Boolean(addTechnicalConfig.required)}
-                options={addTechnicalFieldOptions}
-                validate={addTechnicalConfig.validate}
-                error={validationErrors[addTechnicalFieldName]}
-                onValidation={addTechnicalConfig.onValidation}
-                placeholder={addTechnicalConfig.placeholder || 'Select skills'}
-                hideLabel={addTechnicalConfig.hideLabel}
-                accept={addTechnicalConfig.accept}
-                multiple={addTechnicalConfig.multiple}
-                prefix={addTechnicalConfig.prefix}
-                formData={formData}
-                disabled={disabled}
-              />
             </div>
           </div>
         </div>
