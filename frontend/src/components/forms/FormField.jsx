@@ -73,12 +73,28 @@ const FormField = ({
   }, [error, name]);
 
   const handleChange = (e) => {
-    const newValue = type === 'file'
+    let newValue = type === 'file'
       ? (e.target.multiple ? Array.from(e.target.files) : e.target.files[0])
       : e.target.value;
+
+    if (type === 'number' && typeof newValue === 'string') {
+      const sanitized = newValue.replace(/[^\d]/g, '');
+      newValue = sanitized;
+      if (sanitized !== e.target.value) {
+        e.target.value = sanitized;
+      }
+    }
+
     console.log(`[FormField.handleChange] ${name}: value=`, newValue, ` (type=${type}), required=${required}, hasError=${!!error}, onValidation=${!!onValidation}, formData:`, formData);
     onChange(name, newValue);
     triggerFieldValidation(newValue);
+  };
+
+  const handleNumberKeyDown = (event) => {
+    if (type !== 'number') return;
+    if (['e', 'E', '+', '-', '.'].includes(event.key)) {
+      event.preventDefault();
+    }
   };
 
   const triggerFieldValidation = (newValue) => {
@@ -265,6 +281,7 @@ const FormField = ({
   const selectionPlaceholder = safeLabel.toLowerCase().includes('skill')
     ? 'Select skills'
     : 'Select options';
+  const hasOpenDropdown = isDropdownOpen && (type === 'select' || type === 'multiselect');
 
   const baseOptions = safeOptions;
   const mergedOptions = [...baseOptions, ...customOptions].filter(
@@ -278,7 +295,7 @@ const FormField = ({
   });
 
   return (
-    <div className={`form-field${name ? ` field-${name}` : ''}`}>
+    <div className={`form-field${name ? ` field-${name}` : ''}${hasOpenDropdown ? ' dropdown-open' : ''}`}>
       {type === 'file' && console.log(`[FormField.render] ${name} render, prop value=`, value, 'typeof=', typeof value, 'isArray=', Array.isArray(value))}
       <label htmlFor={name} className={hideLabel ? 'label-hidden' : undefined}>
         {safeLabel.includes('*') ? (
@@ -291,7 +308,7 @@ const FormField = ({
         )}
       </label>
       {type === 'multiselect' ? (
-        <div className="multiselect-container" ref={dropdownRef}>
+        <div className={`multiselect-container${isDropdownOpen ? ' open' : ''}`} ref={dropdownRef}>
           <div
             className={`selected-items${isDropdownOpen ? ' open' : ''}`}
             role="button"
@@ -489,8 +506,24 @@ const FormField = ({
                 value={type === 'file' ? undefined : value}
                 onChange={handleChange}
                 onBlur={handleBlur}
+                onKeyDown={handleNumberKeyDown}
+                onPaste={(event) => {
+                  if (type !== 'number') return;
+                  const pastedText = event.clipboardData?.getData('text') || '';
+                  if (/[^\d]/.test(pastedText)) {
+                    event.preventDefault();
+                    const digitsOnly = pastedText.replace(/[^\d]/g, '');
+                    if (digitsOnly) {
+                      const nextValue = `${event.currentTarget.value || ''}${digitsOnly}`;
+                      onChange(name, nextValue);
+                      triggerFieldValidation(nextValue);
+                    }
+                  }
+                }}
                 required={required}
                 min={type === 'number' ? '0' : undefined}
+                inputMode={type === 'number' ? 'numeric' : undefined}
+                pattern={type === 'number' ? '[0-9]*' : undefined}
                 className={error ? 'error' : ''}
                 placeholder={placeholder}
                 accept={accept}
