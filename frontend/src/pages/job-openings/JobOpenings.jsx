@@ -1,5 +1,4 @@
 
-
 import * as React from "react";
 import { FiEdit2, FiEye, FiFilter, FiMoreHorizontal, FiPlus, FiSearch, FiTrash2 } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
@@ -7,8 +6,6 @@ import { jobOpeningConfig } from "../../components/forms/formConfigs";
 import ReusableForm from "../../components/forms/ReusableForm";
 import { debounce } from "../../utils/debounce";
 import styles from "./JobOpenings.module.scss";
-
-
 // Memoized filter bar component to prevent unnecessary re-renders
 const FilterBar = React.memo(({
   searchTerm,
@@ -239,7 +236,7 @@ export default function JobOpenings() {
       technicalSkills: ["html", "css"],
       softSkills: ["creativity", "presentation"],
       additionalSkills: "Figma",
-      addTechnicalSkills: ["computer-vision"],
+      extraTechnicalSkills: ["computer-vision"],
       clientId: "C1292921",
       clientName: "NovaLabs",
       contactPersonName: "Arjun Rao",
@@ -432,6 +429,7 @@ export default function JobOpenings() {
   const handleJobOpeningSubmit = React.useCallback((data) => {
     const normalized = {
       ...data,
+      extraTechnicalSkills: data.extraTechnicalSkills ?? data.addTechnicalSkills ?? [],
       jobOpeningStatus: data.jobOpeningStatus || data.jobStatus || 'Active'
     };
     if (editingIndex !== null) {
@@ -492,7 +490,15 @@ export default function JobOpenings() {
             )}
             <ReusableForm
               config={jobOpeningConfig}
-              initialData={editingData}
+              initialData={
+                editingData
+                  ? {
+                      ...editingData,
+                      extraTechnicalSkills:
+                        editingData.extraTechnicalSkills ?? editingData.addTechnicalSkills ?? []
+                    }
+                  : editingData
+              }
               readOnly={editLocked}
               onSubmit={handleJobOpeningSubmit}
             />

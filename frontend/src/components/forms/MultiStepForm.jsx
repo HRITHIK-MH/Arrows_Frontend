@@ -24,8 +24,21 @@ const MultiStepForm = ({
     return label.replace('*', '').trim() || fallback;
   };
 
+  const toUniqueList = (items = []) => [...new Set(items.filter(Boolean))];
+
+  const buildWarningMessage = (missing = [], invalid = []) => {
+    const lines = ['Please complete the required fields before continuing.'];
+    if (missing.length) {
+      lines.push('', `Missing: ${toUniqueList(missing).join(', ')}`);
+    }
+    if (invalid.length) {
+      lines.push('', `Invalid: ${toUniqueList(invalid).join(', ')}`);
+    }
+    return lines.join('\n');
+  };
+
   const getStepIssues = (stepIndex) => {
-    const currentStepFields = stepFields[stepIndex] || [];
+    const currentStepFields = stepFields[stepIndex] || steps[stepIndex]?.fields || [];
 
     if (currentStepFields.length === 0) {
       return { missing: [], invalid: [] };
@@ -69,14 +82,7 @@ const MultiStepForm = ({
       return;
     }
 
-    const lines = [];
-    if (missing.length) {
-      lines.push(`Missing: ${missing.join(', ')}`);
-    }
-    if (invalid.length) {
-      lines.push(`Invalid: ${invalid.join(', ')}`);
-    }
-    window.alert(lines.join('\n'));
+    window.alert(buildWarningMessage(missing, invalid));
   };
 
   const validateCurrentStep = (stepIndex) => {
@@ -87,18 +93,42 @@ const MultiStepForm = ({
     return missing.length === 0 && invalid.length === 0;
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (currentStep < steps.length - 1) {
+      let isStepValid = true;
+      let stepIssues = null;
+
       // Trigger validation for the current step fields
       if (onValidateStep && !steps[currentStep]?.skipValidation) {
-        onValidateStep(currentStep, formData);
+        try {
+          stepIssues = await Promise.resolve(onValidateStep(currentStep, formData));
+        } catch (validationError) {
+          stepIssues = {
+            isValid: false,
+            missingFields: [],
+            invalidFields: ['Please review this step']
+          };
+          console.error('[MultiStepForm] Step validation failed:', validationError);
+        }
+      }
+
+      if (stepIssues && typeof stepIssues.isValid === 'boolean') {
+        isStepValid = stepIssues.isValid;
+      } else {
+        isStepValid = validateCurrentStep(currentStep);
       }
       
       // Check if current step is valid before proceeding
-      if (validateCurrentStep(currentStep)) {
+      if (isStepValid) {
         setCurrentStep(currentStep + 1);
       } else {
-        showStepWarning(currentStep);
+        if (stepIssues?.missingFields?.length || stepIssues?.invalidFields?.length) {
+          window.alert(
+            buildWarningMessage(stepIssues.missingFields || [], stepIssues.invalidFields || [])
+          );
+        } else {
+          showStepWarning(currentStep);
+        }
       }
     }
   };
@@ -126,19 +156,48 @@ const MultiStepForm = ({
   };
 
   const handleSubmit = (e) => {
-    if (e) {
-      e.preventDefault();
-    }
-    if (currentStep < steps.length - 1) {
-      handleNext();
-      return;
-    }
-    // Check if current step is valid before submitting
-    if (validateCurrentStep(currentStep)) {
-      onSubmit(formData);
-    } else {
-      showStepWarning(currentStep);
-    }
+    void (async () => {
+      if (e) {
+        e.preventDefault();
+      }
+      if (currentStep < steps.length - 1) {
+        await handleNext();
+        return;
+      }
+
+      let isStepValid = true;
+      let stepIssues = null;
+
+      if (onValidateStep && !steps[currentStep]?.skipValidation) {
+        try {
+          stepIssues = await Promise.resolve(onValidateStep(currentStep, formData));
+        } catch (validationError) {
+          stepIssues = {
+            isValid: false,
+            missingFields: [],
+            invalidFields: ['Please review this step']
+          };
+          console.error('[MultiStepForm] Submit validation failed:', validationError);
+        }
+      }
+
+      if (stepIssues && typeof stepIssues.isValid === 'boolean') {
+        isStepValid = stepIssues.isValid;
+      } else {
+        isStepValid = validateCurrentStep(currentStep);
+      }
+
+      // Check if current step is valid before submitting
+      if (isStepValid) {
+        onSubmit(formData);
+      } else if (stepIssues?.missingFields?.length || stepIssues?.invalidFields?.length) {
+        window.alert(
+          buildWarningMessage(stepIssues.missingFields || [], stepIssues.invalidFields || [])
+        );
+      } else {
+        showStepWarning(currentStep);
+      }
+    })();
   };
 
   const CurrentStepComponent = steps[currentStep].component;

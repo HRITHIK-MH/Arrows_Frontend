@@ -4,6 +4,44 @@ import CandidateBasicInfoStep from "./CandidateBasicInfoStep";
 import CandidateDocumentsStep from "./CandidateDocumentsStep";
 import ClientBasicInfoStep from "./ClientBasicInfoStep";
 
+const isEmptyValue = (value) =>
+  value === undefined ||
+  value === null ||
+  (typeof value === "string" && value.trim() === "") ||
+  (Array.isArray(value) && value.length === 0);
+
+const isStrictInteger = (value) => /^\d+$/.test(String(value).trim());
+
+const validateIntegerValue = (value, { label, min, max }) => {
+  if (isEmptyValue(value)) {
+    return { isValid: false, message: `${label} is required` };
+  }
+
+  if (!isStrictInteger(value)) {
+    return { isValid: false, message: `${label} must contain digits only` };
+  }
+
+  const parsedValue = parseInt(String(value).trim(), 10);
+
+  if (parsedValue < min || parsedValue > max) {
+    return {
+      isValid: false,
+      message: `${label} must be between ${min} and ${max}`
+    };
+  }
+
+  return { isValid: true };
+};
+
+const isValidEmail = (value) =>
+  /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value).trim());
+
+const isValidPhoneNumber = (value, minDigits = 10, maxDigits = 10) => {
+  const digits = String(value || "").replace(/\D/g, "");
+  const isWithinRange = digits.length >= minDigits && digits.length <= maxDigits;
+  return isWithinRange && /^\d+$/.test(digits);
+};
+
 // Example configurations for different forms
 // Job Application Form Configuration
 export const jobApplicationConfig = {
@@ -79,33 +117,19 @@ export const jobApplicationConfig = {
   ],
   validationRules: {
     experience: (value) => {
-      if (!value && value !== 0) {
-        return { isValid: false, message: 'This field is required' };
-      }
-
-      const numValue = parseFloat(value);
-      if (isNaN(numValue)) {
-        return { isValid: false, message: 'Please enter a valid number' };
-      }
-
-      if (numValue < 0) {
-        return { isValid: false, message: 'Experience cannot be negative' };
-      }
-
-      if (numValue > 50) {
-        return { isValid: false, message: 'Experience cannot exceed 50 years' };
-      }
-
-      return { isValid: true };
+      return validateIntegerValue(value, {
+        label: "Experience",
+        min: 0,
+        max: 50
+      });
     },
     phone: (value) => {
-      if (!value) {
-        return { isValid: false, message: 'Phone number is required' };
+      if (isEmptyValue(value)) {
+        return { isValid: false, message: "Phone number is required" };
       }
 
-      const phoneRegex = /^[+]?[1-9][\d]{0,15}$/;
-      if (!phoneRegex.test(value.replace(/[ -()]/g, ''))) {
-        return { isValid: false, message: 'Please enter a valid phone number' };
+      if (!isValidPhoneNumber(value, 10, 15)) {
+        return { isValid: false, message: "Please enter a valid phone number" };
       }
 
       return { isValid: true };
@@ -289,6 +313,7 @@ export const jobOpeningConfig = {
           type: "number",
           required: true,
           cssClass: "grid-col-1 grid-row-3",
+          validationRule: "numberOfPositions",
           placeholder: "No of positions"
         },
         {
@@ -364,6 +389,7 @@ export const jobOpeningConfig = {
           type: "multiselect",
           required: true,
           cssClass: "grid-col-1 grid-row-5",
+          validationRule: "skills",
           options: [
             { value: "javascript", label: "JavaScript" },
             { value: "react", label: "React" },
@@ -395,6 +421,7 @@ export const jobOpeningConfig = {
           type: "multiselect",
           required: true,
           cssClass: "grid-col-2 grid-row-5",
+          validationRule: "skills",
           options: [
             { value: "communication", label: "Communication" },
             { value: "leadership", label: "Leadership" },
@@ -472,6 +499,7 @@ export const jobOpeningConfig = {
           label: "Contact Person Email Id",
           type: "email",
           required: false,
+          validationRule: "emailOptional",
           cssClass: "grid-col-1 grid-row-2",
           placeholder: "Enter Contact Person Email"
         }
@@ -511,89 +539,63 @@ export const jobOpeningConfig = {
   ],
   validationRules: {
     experience: (value, fieldName, formData) => {
-      console.log(`[Validation.experience] Called - fieldName: ${fieldName}, value: ${value}, formData:`, formData);
-      
-      if (!value && value !== 0) {
-        console.log(`[Validation.experience] Field is required`);
-        return { isValid: false, message: 'This field is required' };
+      const label = fieldName === "maxExperience" ? "Max experience" : "Min experience";
+      const integerValidation = validateIntegerValue(value, {
+        label,
+        min: 0,
+        max: 50
+      });
+
+      if (!integerValidation.isValid) {
+        return integerValidation;
       }
 
-      const numValue = parseFloat(value);
-      if (isNaN(numValue)) {
-        console.log(`[Validation.experience] Invalid number`);
-        return { isValid: false, message: 'Please enter a valid number' };
+      const currentFormData = { ...(formData || {}), [fieldName]: String(value).trim() };
+      const minDefined = !isEmptyValue(currentFormData.minExperience);
+      const maxDefined = !isEmptyValue(currentFormData.maxExperience);
+
+      if (minDefined && maxDefined) {
+        const minExperience = parseInt(String(currentFormData.minExperience).trim(), 10);
+        const maxExperience = parseInt(String(currentFormData.maxExperience).trim(), 10);
+
+        if (minExperience > maxExperience) {
+          return { isValid: false, message: "Min experience cannot be greater than max experience" };
+        }
       }
 
-      if (numValue < 0) {
-        console.log(`[Validation.experience] Negative value`);
-        return { isValid: false, message: 'Experience cannot be negative' };
-      }
-
-      if (numValue > 50) {
-        console.log(`[Validation.experience] Too high`);
-        return { isValid: false, message: 'Experience cannot exceed 50 years' };
-      }
-
-      // Cross-field validation for experience
-      const currentFormData = { ...(formData || {}), [fieldName]: value };
-      const minExp = parseFloat(currentFormData.minExperience || 0);
-      const maxExp = parseFloat(currentFormData.maxExperience || 0);
-
-      // Check if both min and max are defined (have actual values, not empty strings)
-      const minDefined = currentFormData.minExperience !== undefined && currentFormData.minExperience !== '' && currentFormData.minExperience !== null;
-      const maxDefined = currentFormData.maxExperience !== undefined && currentFormData.maxExperience !== '' && currentFormData.maxExperience !== null;
-
-      console.log(`[Validation.experience] Cross-field check - minExp: ${minExp}, maxExp: ${maxExp}, minDefined: ${minDefined}, maxDefined: ${maxDefined}`);
-
-      if (minDefined && maxDefined && minExp > maxExp) {
-        console.log(`[Validation.experience] ❌ Min > Max - throwing error`);
-        return { isValid: false, message: 'Min experience cannot be greater than max experience' };
-      }
-
-      console.log(`[Validation.experience] ✅ Valid`);
       return { isValid: true };
     },
+    numberOfPositions: (value) =>
+      validateIntegerValue(value, {
+        label: "No of positions",
+        min: 1,
+        max: 999
+      }),
     salary: (value, fieldName, formData) => {
-      console.log(`[Validation.salary] Called - fieldName: ${fieldName}, value: ${value}, formData:`, formData);
-      
-      if (!value && value !== 0) {
-        console.log(`[Validation.salary] Field is required`);
-        return { isValid: false, message: 'This field is required' };
+      const label = fieldName === "maxSalary" ? "Max salary" : "Min salary";
+      const integerValidation = validateIntegerValue(value, {
+        label,
+        min: 0,
+        max: 10000000
+      });
+
+      if (!integerValidation.isValid) {
+        return integerValidation;
       }
 
-      const numValue = parseFloat(value);
-      if (isNaN(numValue)) {
-        console.log(`[Validation.salary] Invalid number`);
-        return { isValid: false, message: 'Please enter a valid salary amount' };
+      const currentFormData = { ...(formData || {}), [fieldName]: String(value).trim() };
+      const minDefined = !isEmptyValue(currentFormData.minSalary);
+      const maxDefined = !isEmptyValue(currentFormData.maxSalary);
+
+      if (minDefined && maxDefined) {
+        const minSalary = parseInt(String(currentFormData.minSalary).trim(), 10);
+        const maxSalary = parseInt(String(currentFormData.maxSalary).trim(), 10);
+
+        if (minSalary > maxSalary) {
+          return { isValid: false, message: "Min salary cannot be greater than max salary" };
+        }
       }
 
-      if (numValue < 0) {
-        console.log(`[Validation.salary] Negative value`);
-        return { isValid: false, message: 'Salary cannot be negative' };
-      }
-
-      if (numValue > 10000000) {
-        console.log(`[Validation.salary] Too high`);
-        return { isValid: false, message: 'Salary seems too high' };
-      }
-
-      // Cross-field validation for salary
-      const currentFormData = { ...(formData || {}), [fieldName]: value };
-      const minSalary = parseFloat(currentFormData.minSalary || 0);
-      const maxSalary = parseFloat(currentFormData.maxSalary || 0);
-
-      // Check if both min and max are defined (have actual values, not empty strings)
-      const minDefined = currentFormData.minSalary !== undefined && currentFormData.minSalary !== '' && currentFormData.minSalary !== null;
-      const maxDefined = currentFormData.maxSalary !== undefined && currentFormData.maxSalary !== '' && currentFormData.maxSalary !== null;
-
-      console.log(`[Validation.salary] Cross-field check - minSalary: ${minSalary}, maxSalary: ${maxSalary}, minDefined: ${minDefined}, maxDefined: ${maxDefined}`);
-
-      if (minDefined && maxDefined && minSalary > maxSalary) {
-        console.log(`[Validation.salary] ❌ Min > Max - throwing error`);
-        return { isValid: false, message: 'Min salary cannot be greater than max salary' };
-      }
-
-      console.log(`[Validation.salary] ✅ Valid`);
       return { isValid: true };
     },
     skills: (value) => {
@@ -613,7 +615,7 @@ export const jobOpeningConfig = {
     },
     requiredField: async (value, fieldName) => {
       // Check if value is empty
-      if (!value || (typeof value === 'string' && value.trim() === '')) {
+      if (isEmptyValue(value)) {
         const fieldLabels = {
           jobPositionId: 'Job Position Id',
           positionName: 'Position Name'
@@ -623,9 +625,27 @@ export const jobOpeningConfig = {
       }
 
       // Additional validation for specific fields
+      if (fieldName === "positionName") {
+        const trimmedValue = String(value).trim();
+        if (trimmedValue.length < 2 || trimmedValue.length > 100) {
+          return {
+            isValid: false,
+            message: "Position Name must be between 2 and 100 characters"
+          };
+        }
+
+        if (!/^[A-Za-z0-9][A-Za-z0-9 &(),./-]*$/.test(trimmedValue)) {
+          return {
+            isValid: false,
+            message: "Position Name contains unsupported special characters"
+          };
+        }
+      }
+
       if (fieldName === 'jobPositionId') {
         // Validate Job Position ID format
-        if (!/^[A-Z0-9\-_]{1,20}$/.test(value)) {
+        const trimmedValue = String(value).trim();
+        if (!/^[A-Z0-9\-_]{1,20}$/.test(trimmedValue)) {
           return { 
             isValid: false, 
             message: 'Job Position ID must be 1-20 characters (alphanumeric, hyphens, underscores only)' 
@@ -639,7 +659,7 @@ export const jobOpeningConfig = {
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ jobPositionId: value })
+            body: JSON.stringify({ jobPositionId: trimmedValue })
           });
 
           if (response.ok) {
@@ -655,6 +675,17 @@ export const jobOpeningConfig = {
           // Return success for client-side validation only
           return { isValid: true };
         }
+      }
+
+      return { isValid: true };
+    },
+    emailOptional: (value) => {
+      if (isEmptyValue(value)) {
+        return { isValid: true };
+      }
+
+      if (!isValidEmail(value)) {
+        return { isValid: false, message: "Please enter a valid email address" };
       }
 
       return { isValid: true };
@@ -769,6 +800,7 @@ export const candidateConfig = {
           label: "Primary Email Address *",
           type: "email",
           required: true,
+          validationRule: "emailRequired",
           placeholder: "Enter Email Address"
         },
         {
@@ -776,6 +808,7 @@ export const candidateConfig = {
           label: "Secondary Email Address",
           type: "email",
           required: false,
+          validationRule: "emailOptional",
           placeholder: "Enter Email Address"
         },
         {
@@ -783,7 +816,7 @@ export const candidateConfig = {
           label: "Phone Number *",
           type: "tel",
           required: true,
-          validationRule: "requiredField",
+          validationRule: "phoneRequired",
           placeholder: "Enter Phone Number",
           prefix: "+91"
         },
@@ -870,7 +903,7 @@ export const candidateConfig = {
           label: "Notice Period *",
           type: "text",
           required: true,
-          validationRule: "requiredField",
+          validationRule: "noticePeriod",
           placeholder: "Enter Total Duration"
         },
         {
@@ -878,7 +911,7 @@ export const candidateConfig = {
           label: "Current CTC *",
           type: "text",
           required: true,
-          validationRule: "requiredField",
+          validationRule: "ctc",
           placeholder: "Enter Current CTC"
         },
         {
@@ -886,7 +919,7 @@ export const candidateConfig = {
           label: "Expected CTC *",
           type: "text",
           required: true,
-          validationRule: "requiredField",
+          validationRule: "ctc",
           placeholder: "Enter Expected CTC"
         },
         {
@@ -960,7 +993,7 @@ export const candidateConfig = {
   ],
   validationRules: {
     requiredField: async (value, fieldName) => {
-      if (!value || (typeof value === 'string' && value.trim() === '')) {
+      if (isEmptyValue(value)) {
         const fieldLabels = {
           candidateId: 'Candidate Id',
           firstName: 'First Name',
@@ -979,6 +1012,85 @@ export const candidateConfig = {
         const fieldLabel = fieldLabels[fieldName] || fieldName;
         return { isValid: false, message: `${fieldLabel} is required` };
       }
+      return { isValid: true };
+    },
+    namePrefixRequired: async (value) => {
+      if (isEmptyValue(value) || String(value).toLowerCase() === "none") {
+        return { isValid: false, message: "Title is required" };
+      }
+      return { isValid: true };
+    },
+    emailRequired: async (value) => {
+      if (isEmptyValue(value)) {
+        return { isValid: false, message: "Email is required" };
+      }
+
+      if (!isValidEmail(value)) {
+        return { isValid: false, message: "Please enter a valid email address" };
+      }
+
+      return { isValid: true };
+    },
+    emailOptional: async (value, fieldName, formData) => {
+      if (isEmptyValue(value)) {
+        return { isValid: true };
+      }
+
+      if (!isValidEmail(value)) {
+        return { isValid: false, message: "Please enter a valid email address" };
+      }
+
+      const primaryEmail = String(formData?.primaryEmail || "").trim().toLowerCase();
+      const secondaryEmail = String(value).trim().toLowerCase();
+
+      if (primaryEmail && primaryEmail === secondaryEmail) {
+        return { isValid: false, message: "Secondary email must be different from primary email" };
+      }
+
+      return { isValid: true };
+    },
+    phoneRequired: async (value) => {
+      if (isEmptyValue(value)) {
+        return { isValid: false, message: "Phone Number is required" };
+      }
+
+      if (!isValidPhoneNumber(value, 10, 10)) {
+        return { isValid: false, message: "Phone Number must be exactly 10 digits" };
+      }
+
+      return { isValid: true };
+    },
+    noticePeriod: async (value) =>
+      validateIntegerValue(value, {
+        label: "Notice Period",
+        min: 0,
+        max: 365
+      }),
+    ctc: async (value, fieldName, formData) => {
+      const label = fieldName === "expectedCtc" ? "Expected CTC" : "Current CTC";
+      const integerValidation = validateIntegerValue(value, {
+        label,
+        min: 0,
+        max: 100000000
+      });
+
+      if (!integerValidation.isValid) {
+        return integerValidation;
+      }
+
+      const currentFormData = { ...(formData || {}), [fieldName]: String(value).trim() };
+      const currentDefined = !isEmptyValue(currentFormData.currentCtc);
+      const expectedDefined = !isEmptyValue(currentFormData.expectedCtc);
+
+      if (currentDefined && expectedDefined) {
+        const currentCtc = parseInt(String(currentFormData.currentCtc).trim(), 10);
+        const expectedCtc = parseInt(String(currentFormData.expectedCtc).trim(), 10);
+
+        if (expectedCtc < currentCtc) {
+          return { isValid: false, message: "Expected CTC cannot be less than Current CTC" };
+        }
+      }
+
       return { isValid: true };
     }
   },
@@ -1030,7 +1142,7 @@ export const clientConfig = {
           label: "Contact Email Address *",
           type: "email",
           required: true,
-          validationRule: "requiredField",
+          validationRule: "emailRequired",
           placeholder: "Enter Email Address"
         },
         {
@@ -1038,7 +1150,7 @@ export const clientConfig = {
           label: "Contact Number *",
           type: "tel",
           required: true,
-          validationRule: "requiredField",
+          validationRule: "phoneRequired",
           placeholder: "Enter Phone Number",
           prefix: "+91"
         },
@@ -1085,7 +1197,7 @@ export const clientConfig = {
   ],
   validationRules: {
     requiredField: async (value, fieldName) => {
-      if (!value || (typeof value === 'string' && value.trim() === '')) {
+      if (isEmptyValue(value)) {
         const fieldLabels = {
           clientId: 'Client ID',
           clientName: 'Client Name',
@@ -1099,6 +1211,28 @@ export const clientConfig = {
         const fieldLabel = fieldLabels[fieldName] || fieldName;
         return { isValid: false, message: `${fieldLabel} is required` };
       }
+      return { isValid: true };
+    },
+    emailRequired: async (value) => {
+      if (isEmptyValue(value)) {
+        return { isValid: false, message: "Contact Email Address is required" };
+      }
+
+      if (!isValidEmail(value)) {
+        return { isValid: false, message: "Please enter a valid email address" };
+      }
+
+      return { isValid: true };
+    },
+    phoneRequired: async (value) => {
+      if (isEmptyValue(value)) {
+        return { isValid: false, message: "Contact Number is required" };
+      }
+
+      if (!isValidPhoneNumber(value, 10, 10)) {
+        return { isValid: false, message: "Contact Number must be exactly 10 digits" };
+      }
+
       return { isValid: true };
     },
     namePrefixRequired: async (value) => {

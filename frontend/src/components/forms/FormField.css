@@ -80,6 +80,11 @@
 }
 .form-field {
   margin-bottom: 15px;
+  position: relative;
+}
+
+.form-field.dropdown-open {
+  z-index: 3000;
 }
 
 .form-field label {
@@ -137,7 +142,10 @@
 .select-field {
   position: relative;
   width: 100%;
-  isolation: isolate;
+}
+
+.select-field.open {
+  z-index: 3001;
 }
 
 .select-trigger {
@@ -190,7 +198,7 @@
   border-radius: 8px;
   background: #fff;
   box-shadow: 0 8px 20px rgba(13, 51, 79, 0.12);
-  z-index: 40;
+  z-index: 3002;
   max-height: 220px;
   overflow-y: auto;
 }
@@ -347,6 +355,10 @@
   position: relative;
 }
 
+.multiselect-container.open {
+  z-index: 3001;
+}
+
 .selected-items {
   display: flex;
   flex-wrap: wrap;
@@ -417,7 +429,7 @@
   box-sizing: border-box;
   background-color: #fff;
   box-shadow: 0 18px 30px rgba(15, 23, 42, 0.12);
-  z-index: 10;
+  z-index: 3002;
 }
 
 .multiselect-search {

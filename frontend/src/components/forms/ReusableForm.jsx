@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
 import axios from 'axios';
-import MultiStepForm from './MultiStepForm';
-import FormField from './FormField';
-import './ReusableForm.css';
+import React, { useState } from 'react';
 import { validateMandatoryField } from '../../utils/formValidation';
+import FormField from './FormField';
+import MultiStepForm from './MultiStepForm';
+import './ReusableForm.css';
 
 // Reusable form configuration
 const createFormConfig = (config) => {
@@ -152,13 +152,13 @@ const FormStep = ({ formData, onChange, fields, title, onSetStepFields, validati
         );
       }) ||
       {
-        name: 'addTechnicalSkills',
+        name: 'extraTechnicalSkills',
         label: 'Add Technical Skill',
         type: 'multiselect',
         required: false
       };
 
-    const addTechnicalFieldName = addTechnicalConfig.name || 'addTechnicalSkills';
+    const addTechnicalFieldName = addTechnicalConfig.name || 'extraTechnicalSkills';
     const addTechnicalFieldOptions = Array.isArray(addTechnicalConfig.options) && addTechnicalConfig.options.length
       ? addTechnicalConfig.options
       : fallbackAddTechnicalOptions;
@@ -224,6 +224,7 @@ const FormStep = ({ formData, onChange, fields, title, onSetStepFields, validati
             <div className="grid-cell grid-col-1 grid-row-5">
               {getField('technicalSkills')}
               <div className="stacked-field-below">
+                
                 {renderField(normalizedAddTechnicalConfig)}
               </div>
             </div>
@@ -281,26 +282,18 @@ const ReusableForm = ({ config, onSubmit, initialData, readOnly = false }) => {
     if (!rule) return null;
 
     return async (value, fieldName, formData) => {
-      return new Promise((resolve, reject) => {
-        setTimeout(async () => {
-          try {
-            // formData is now passed from FormField with current values
-            const result = await rule(value, fieldName, formData);
-            if (result && typeof result === 'object' && 'isValid' in result) {
-              if (result.isValid) {
-                resolve(result);
-              } else {
-                reject(result);
-              }
-            } else {
-              // Handle case where result might not be in expected format
-              resolve({ isValid: true });
-            }
-          } catch (error) {
-            reject(error);
-          }
-        }, 500);
-      });
+      try {
+        const result = await rule(value, fieldName, formData);
+        if (result && typeof result === 'object' && 'isValid' in result) {
+          return result;
+        }
+        return { isValid: true };
+      } catch (error) {
+        if (error && typeof error === 'object' && 'isValid' in error) {
+          return error;
+        }
+        return { isValid: false, message: 'Validation failed' };
+      }
     };
   };
 
@@ -342,6 +335,7 @@ const ReusableForm = ({ config, onSubmit, initialData, readOnly = false }) => {
       return {
         title: step.title,
         skipValidation: Boolean(configStep?.skipValidation),
+        fields: stepFieldsWithValidation,
         component: (props) => (
           <StepComponent
             {...props}
@@ -357,6 +351,7 @@ const ReusableForm = ({ config, onSubmit, initialData, readOnly = false }) => {
     return {
       title: step.title,
       skipValidation: Boolean(configStep?.skipValidation),
+      fields: stepFieldsWithValidation,
       component: (props) => (
         <StepComponent
           {...props}
@@ -372,30 +367,38 @@ const ReusableForm = ({ config, onSubmit, initialData, readOnly = false }) => {
   // Validate all mandatory fields at once
   const validateAllMandatoryFields = async (data, fields) => {
     const errors = {};
-    let isValid = true;
 
-    for (const field of fields) {
-      if (!field.required && !field.validationRule) {
-        continue;
-      }
-
-      let result = null;
-      if (field.validationRule) {
-        const validateFn = createValidationFunction(field.validationRule);
-        if (validateFn) {
-          result = await validateFn(data[field.name], field.name, data);
+    const validationResults = await Promise.all(
+      fields.map(async (field) => {
+        if (!field.required && !field.validationRule) {
+          return null;
         }
-      } else if (field.required) {
-        result = await validateMandatoryField(data[field.name], field.name, field.label);
-      }
 
+        if (field.validationRule) {
+          const validateFn = createValidationFunction(field.validationRule);
+          if (!validateFn) return null;
+          const result = await validateFn(data[field.name], field.name, data);
+          return { field, result };
+        }
+
+        if (field.required) {
+          const result = await validateMandatoryField(data[field.name], field.name, field.label);
+          return { field, result };
+        }
+
+        return null;
+      })
+    );
+
+    validationResults.forEach((item) => {
+      if (!item) return;
+      const { field, result } = item;
       if (result && !result.isValid) {
         errors[result.fieldName || field.name] = result.message;
-        isValid = false;
       }
-    }
+    });
 
-    return { isValid, errors };
+    return { isValid: Object.keys(errors).length === 0, errors };
   };
 
   const handleSubmit = async (formData) => {
@@ -448,40 +451,62 @@ const ReusableForm = ({ config, onSubmit, initialData, readOnly = false }) => {
     console.log(`[ReusableForm] validateStepFields called for step ${stepIndex}`);
     const stepFields = config.steps[stepIndex]?.fields || [];
     const updatedErrors = { ...validationErrors };
-    
-    // Validate all required fields on this step (and any custom rules)
-    for (const field of stepFields) {
-      const value = data[field.name];
-      const fieldLabel = field.label ? field.label.replace('*', '').trim() : field.name;
-      let result = null;
+    const missingFields = [];
+    const invalidFields = [];
 
-      if (field.validationRule) {
-        const validateFn = createValidationFunction(field.validationRule);
-        if (validateFn) {
-          result = await validateFn(value, field.name, data);
-        }
-      } else if (field.required) {
-        result = await validateMandatoryField(value, field.name, fieldLabel);
-      }
-      
-      if (result) {
-        if (!result.isValid) {
-          // Field is invalid - set error
-          updatedErrors[field.name] = result.message;
-          console.log(`[validateStepFields] Setting error for ${field.name}: ${result.message}`);
-        } else {
-          // Field is valid - clear error if it exists
-          if (updatedErrors[field.name]) {
-            delete updatedErrors[field.name];
-            console.log(`[validateStepFields] Clearing error for ${field.name}`);
+    const isEmptyValue = (value) =>
+      value === undefined ||
+      value === null ||
+      (typeof value === 'string' && value.trim() === '') ||
+      (Array.isArray(value) && value.length === 0);
+    
+    const fieldResults = await Promise.all(
+      stepFields.map(async (field) => {
+        const value = data[field.name];
+        const fieldLabel = field.label ? field.label.replace('*', '').trim() : field.name;
+        let result = null;
+
+        if (field.validationRule) {
+          const validateFn = createValidationFunction(field.validationRule);
+          if (validateFn) {
+            result = await validateFn(value, field.name, data);
           }
+        } else if (field.required) {
+          result = await validateMandatoryField(value, field.name, fieldLabel);
         }
+
+        return { field, fieldLabel, value, result };
+      })
+    );
+
+    fieldResults.forEach(({ field, fieldLabel, value, result }) => {
+      if (!result) return;
+
+      if (!result.isValid) {
+        updatedErrors[field.name] = result.message;
+        console.log(`[validateStepFields] Setting error for ${field.name}: ${result.message}`);
+
+        if (field.required && isEmptyValue(value)) {
+          missingFields.push(fieldLabel);
+        } else {
+          invalidFields.push(fieldLabel);
+        }
+      } else if (updatedErrors[field.name]) {
+        delete updatedErrors[field.name];
+        console.log(`[validateStepFields] Clearing error for ${field.name}`);
       }
-    }
+    });
     
     // Update validation errors state all at once
     setValidationErrors(updatedErrors);
     console.log(`[validateStepFields] Final validation errors:`, updatedErrors);
+
+    return {
+      isValid: missingFields.length === 0 && invalidFields.length === 0,
+      errors: updatedErrors,
+      missingFields,
+      invalidFields
+    };
   };
 
   return (
