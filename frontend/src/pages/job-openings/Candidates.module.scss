@@ -326,7 +326,8 @@
 .tableWrap {
   border: 1px solid #e2e8f0;
   border-radius: 12px;
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
   background: #fff;
 }
 
@@ -1518,5 +1519,251 @@
   .skillSaveBtn,
   .skillAddBtn {
     flex: 1;
+  }
+}
+
+@media (max-width: 1200px) {
+  .card {
+    padding: 16px;
+  }
+
+  .filtersLeft {
+    gap: 8px;
+  }
+
+  .searchField {
+    flex: 1 1 220px;
+  }
+
+  .selectField {
+    flex: 1 1 150px;
+    min-width: 150px;
+  }
+
+  .candidateTable {
+    min-width: 1040px;
+  }
+
+  .viewDrawer {
+    width: min(980px, calc(100vw - 40px));
+  }
+}
+
+@media (max-width: 992px) {
+  .page {
+    height: auto;
+    min-height: 100%;
+    overflow: visible;
+  }
+
+  .card {
+    padding: 14px;
+    border-radius: 12px;
+    overflow: visible;
+  }
+
+  .filtersBar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .filtersLeft {
+    width: 100%;
+  }
+
+  .filtersRight {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .searchField,
+  .selectField,
+  .moreButton {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .tableFooter {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .pagination {
+    justify-content: flex-end;
+  }
+
+  .viewDrawer {
+    width: calc(100vw - 20px);
+  }
+
+  .profileTabsRow {
+    gap: 12px;
+  }
+
+  .profileTabs {
+    width: 100%;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 2px;
+  }
+
+  .profileTab {
+    white-space: nowrap;
+  }
+
+  .mapActionBar {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .mapSelectWrap {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .mapSelectTrigger {
+    min-width: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .card {
+    padding: 12px;
+  }
+
+  .description {
+    font-size: 12px;
+    line-height: 1.4;
+  }
+
+  .legendRow {
+    gap: 8px 12px;
+  }
+
+  .filtersLeft {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filtersRight {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .applyButton,
+  .clearButton {
+    width: 100%;
+  }
+
+  .candidateTable {
+    min-width: 920px;
+  }
+
+  .candidateTable th,
+  .candidateTable td {
+    padding: 0 10px;
+  }
+
+  .actionIcons {
+    gap: 6px;
+    padding: 2px 4px;
+  }
+
+  .actionBtn {
+    width: 20px;
+    height: 20px;
+  }
+
+  .drawerTop {
+    padding: 12px 14px 10px;
+  }
+
+  .drawerAvatar {
+    width: 46px;
+    height: 46px;
+    font-size: 28px;
+  }
+
+  .drawerIdentity h3 {
+    font-size: 22px;
+  }
+
+  .drawerMeta {
+    gap: 6px 10px;
+    font-size: 12px;
+  }
+
+  .pipelineRow {
+    padding: 8px 12px 10px;
+  }
+
+  .pipelineStep {
+    min-width: 88px;
+    font-size: 11px;
+    padding: 7px 12px 7px 14px;
+  }
+
+  .profileContent {
+    padding: 12px 14px 18px;
+  }
+
+  .skillTableWrap,
+  .jobApplicationTableWrap {
+    overflow-x: auto;
+  }
+
+  .skillTable,
+  .jobApplicationTable {
+    min-width: 720px;
+  }
+}
+
+@media (max-width: 600px) {
+  .card {
+    padding: 10px;
+  }
+
+  .title {
+    font-size: 18px;
+  }
+
+  .infoRow {
+    padding: 10px 12px;
+  }
+
+  .addButton {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .legendItem:not(:last-child)::after {
+    width: 16px;
+    margin-left: 6px;
+  }
+
+  .tableFooter {
+    font-size: 11px;
+  }
+
+  .footerLeft {
+    flex-wrap: wrap;
+  }
+
+  .pageBtn {
+    width: 26px;
+    height: 26px;
+  }
+
+  .viewDrawerOverlay {
+    justify-content: stretch;
+  }
+
+  .viewDrawer {
+    width: 100vw;
+    border-radius: 0;
   }
 }

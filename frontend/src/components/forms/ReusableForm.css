@@ -1507,3 +1507,80 @@
     max-height: calc(100vh - 260px);
   }
 }
+
+@media only screen and (max-width: 1200px) {
+  .job-basic-info-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: auto;
+    gap: 14px 16px;
+  }
+
+  .job-basic-info-grid .grid-cell.grid-col-1,
+  .job-basic-info-grid .grid-cell.grid-col-2,
+  .job-basic-info-grid .grid-cell.grid-col-3 {
+    grid-column: auto;
+  }
+
+  .job-basic-info-grid .grid-cell.grid-row-1,
+  .job-basic-info-grid .grid-cell.grid-row-2,
+  .job-basic-info-grid .grid-cell.grid-row-3,
+  .job-basic-info-grid .grid-cell.grid-row-4,
+  .job-basic-info-grid .grid-cell.grid-row-5 {
+    grid-row: auto;
+  }
+
+  .job-basic-info-grid.job-basic-info-grid--client {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .reusable-form-page.job-opening-form .step-indicator {
+    --step-width: 130px;
+    gap: 20px;
+  }
+
+  .reusable-form-page.job-opening-form .multi-step-form-body,
+  .reusable-form-page.candidate-form .multi-step-form-body,
+  .reusable-form-page.client-form .multi-step-form-body {
+    max-height: calc(100vh - 240px);
+  }
+}
+
+@media only screen and (max-width: 992px) {
+  .job-basic-info-grid,
+  .job-basic-info-grid.job-basic-info-grid--client {
+    grid-template-columns: 1fr;
+  }
+
+  .candidate-grid,
+  .client-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .candidate-span-2,
+  .candidate-span-3,
+  .client-span-2 {
+    grid-column: 1 / -1;
+  }
+
+  .reusable-form-page.job-opening-form .form-step-scroll,
+  .reusable-form-page.candidate-form .form-step-scroll,
+  .reusable-form-page.client-form .form-step-scroll {
+    padding-right: 0;
+  }
+
+  .reusable-form-page.job-opening-form .form-buttons,
+  .reusable-form-page.candidate-form .form-buttons,
+  .reusable-form-page.client-form .form-buttons {
+    position: static;
+    margin-top: 20px;
+    padding-top: 14px;
+  }
+
+  .reusable-form-page.job-opening-form .step-indicator,
+  .reusable-form-page.candidate-form .step-indicator {
+    justify-content: flex-start;
+    overflow-x: auto;
+    max-width: 100%;
+    padding-bottom: 6px;
+  }
+}
