@@ -262,7 +262,8 @@
 .tableWrap {
   border: 1px solid #e2e8f0;
   border-radius: 12px;
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
   background: #fff;
 }
 
@@ -919,6 +920,181 @@
 
   .pipelineTitle {
     font-size: 16px;
+  }
+}
+
+@media only screen and (max-width: 1200px) {
+  .jobCard {
+    padding: 16px;
+  }
+
+  .filtersLeft {
+    gap: 8px;
+  }
+
+  .searchField {
+    flex: 1 1 220px;
+  }
+
+  .selectField {
+    flex: 1 1 150px;
+    min-width: 150px;
+  }
+
+  .jobTable {
+    min-width: 1040px;
+  }
+
+  .innerTable {
+    min-width: 760px;
+  }
+}
+
+@media only screen and (max-width: 992px) {
+  .page {
+    height: auto;
+    min-height: 100%;
+    overflow: visible;
+  }
+
+  .jobCard {
+    padding: 14px;
+    border-radius: 12px;
+    overflow: visible;
+  }
+
+  .infoRow {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .createButton {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .filtersBar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .filtersLeft {
+    width: 100%;
+  }
+
+  .searchField,
+  .selectField,
+  .moreButton {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .filtersRight {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .jobTable {
+    min-width: 980px;
+  }
+
+  .innerTableWrap {
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
+  .tableFooter {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .pagination {
+    justify-content: flex-end;
+  }
+}
+
+@media only screen and (max-width: 768px) {
+  .jobCard {
+    padding: 12px;
+  }
+
+  .description {
+    font-size: 12px;
+    line-height: 1.4;
+  }
+
+  .filtersLeft {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filtersRight {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .applyButton,
+  .clearButton {
+    width: 100%;
+  }
+
+  .jobTable th,
+  .jobTable td {
+    padding: 0 10px;
+  }
+
+  .innerTable {
+    min-width: 680px;
+  }
+
+  .actionIcons {
+    gap: 6px;
+    padding: 2px 4px;
+  }
+
+  .actionBtn {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+@media only screen and (max-width: 600px) {
+  .jobCard {
+    padding: 10px;
+  }
+
+  .title {
+    font-size: 18px;
+  }
+
+  .tableFooter {
+    font-size: 11px;
+  }
+
+  .footerLeft {
+    flex-wrap: wrap;
+  }
+
+  .pageBtn {
+    width: 26px;
+    height: 26px;
+  }
+}
+
+@media only screen and (max-width: 480px) {
+  .jobTable {
+    min-width: 920px;
+  }
+
+  .innerTable {
+    min-width: 620px;
+  }
+
+  .filtersBar {
+    padding: 6px;
   }
 }
 
