@@ -19,6 +19,19 @@ npm run lint
 
 All runtime environment variables used by Vite should be prefixed with `VITE_`.
 
+### Microsoft Calendar (Graph API) Variables
+
+Set these in both `.env.dev` and `.env.prod`:
+
+```bash
+VITE_MS_CLIENT_ID=<azure-app-client-id>
+VITE_MS_TENANT_ID=common
+VITE_MS_REDIRECT_URI=<frontend-url>
+VITE_MS_GRAPH_SCOPES=User.Read,Calendars.Read
+```
+
+`VITE_MS_CLIENT_ID` is required to enable Outlook connect/sync actions in the Calendar screen.
+
 ## Styling Convention
 
 - Global style entry: `src/styles/globals.scss` (imported once in `src/main.jsx`)
