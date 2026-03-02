@@ -1,5 +1,22 @@
 import * as React from "react";
-import { FiCalendar, FiChevronLeft, FiChevronRight, FiClock, FiUser } from "react-icons/fi";
+import {
+  FiCalendar,
+  FiChevronLeft,
+  FiChevronRight,
+  FiClock,
+  FiLink2,
+  FiLogIn,
+  FiLogOut,
+  FiRefreshCw,
+  FiUser,
+} from "react-icons/fi";
+import {
+  connectMicrosoftCalendar,
+  disconnectMicrosoftCalendar,
+  fetchMicrosoftCalendarEvents,
+  getMicrosoftCalendarConnection,
+  isMicrosoftCalendarConfigured,
+} from "../../api/microsoftCalendar";
 import { getMeetings, subscribeMeetings } from "../../utils/meetingStore";
 import styles from "./Calendar.module.scss";
 
@@ -157,32 +174,88 @@ const formatRangeLabel = (view, date) => {
   }).format(date);
 };
 
+const getRangeForView = (view, date) => {
+  if (view === "month") {
+    const start = new Date(date.getFullYear(), date.getMonth(), 1, 0, 0, 0, 0);
+    const end = new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59, 999);
+    return { start, end };
+  }
+
+  if (view === "week") {
+    const start = startOfWeek(date);
+    const end = addDays(start, 6);
+    end.setHours(23, 59, 59, 999);
+    return { start, end };
+  }
+
+  const start = new Date(date);
+  start.setHours(0, 0, 0, 0);
+  const end = new Date(date);
+  end.setHours(23, 59, 59, 999);
+  return { start, end };
+};
+
 const Calendar = () => {
   const [view, setView] = React.useState("day");
   const [currentDate, setCurrentDate] = React.useState(new Date(DEFAULT_DATE));
   const [meetings, setMeetings] = React.useState(() => getMeetings());
   const [selectedEventId, setSelectedEventId] = React.useState("");
+  const [microsoftEvents, setMicrosoftEvents] = React.useState([]);
+  const [isMicrosoftConnected, setIsMicrosoftConnected] = React.useState(false);
+  const [microsoftAccountName, setMicrosoftAccountName] = React.useState("");
+  const [isMicrosoftLoading, setIsMicrosoftLoading] = React.useState(false);
+  const [microsoftError, setMicrosoftError] = React.useState("");
+  const [lastSyncAt, setLastSyncAt] = React.useState(null);
+
+  const isMicrosoftConfigured = React.useMemo(() => isMicrosoftCalendarConfigured(), []);
 
   React.useEffect(() => {
     const unsubscribe = subscribeMeetings(setMeetings);
     return unsubscribe;
   }, []);
 
+  React.useEffect(() => {
+    let active = true;
+
+    const checkConnection = async () => {
+      if (!isMicrosoftConfigured) return;
+
+      try {
+        const connection = await getMicrosoftCalendarConnection();
+        if (!active) return;
+        setIsMicrosoftConnected(connection.connected);
+        setMicrosoftAccountName(connection.accountName || "");
+      } catch (error) {
+        if (!active) return;
+        setMicrosoftError(error.message || "Unable to initialize Microsoft Calendar connection.");
+      }
+    };
+
+    checkConnection();
+
+    return () => {
+      active = false;
+    };
+  }, [isMicrosoftConfigured]);
+
   const events = React.useMemo(() => {
     const seeded = DEFAULT_EVENTS.map((item, index) => normalizeEvent(item, index, "seed")).filter(Boolean);
     const live = (meetings || [])
       .map((item, index) => normalizeEvent(item, index, "live"))
       .filter(Boolean);
+    const graph = (microsoftEvents || [])
+      .map((item, index) => normalizeEvent(item, index, "microsoft"))
+      .filter(Boolean);
 
     const merged = [...seeded];
-    live.forEach((item) => {
+    [...live, ...graph].forEach((item) => {
       const index = merged.findIndex((event) => event.id === item.id);
       if (index >= 0) merged[index] = item;
       else merged.push(item);
     });
 
     return merged.sort((left, right) => left.start.getTime() - right.start.getTime());
-  }, [meetings]);
+  }, [meetings, microsoftEvents]);
 
   const eventsByDate = React.useMemo(() => {
     const map = new Map();
@@ -215,6 +288,67 @@ const Calendar = () => {
 
   const weekHourSlots = React.useMemo(() => getHourSlots(WEEK_START_HOUR, WEEK_END_HOUR), []);
   const dayHourSlots = React.useMemo(() => getHourSlots(DAY_START_HOUR, DAY_END_HOUR, false), []);
+
+  const syncMicrosoftCalendar = React.useCallback(async () => {
+    if (!isMicrosoftConfigured || !isMicrosoftConnected) return;
+
+    const { start, end } = getRangeForView(view, currentDate);
+
+    setIsMicrosoftLoading(true);
+    setMicrosoftError("");
+
+    try {
+      const remoteEvents = await fetchMicrosoftCalendarEvents({
+        startDate: start,
+        endDate: end,
+      });
+      setMicrosoftEvents(remoteEvents);
+      setLastSyncAt(new Date());
+    } catch (error) {
+      setMicrosoftError(error.message || "Failed to fetch Microsoft Calendar events.");
+    } finally {
+      setIsMicrosoftLoading(false);
+    }
+  }, [currentDate, isMicrosoftConfigured, isMicrosoftConnected, view]);
+
+  React.useEffect(() => {
+    if (!isMicrosoftConnected) return;
+    syncMicrosoftCalendar();
+  }, [isMicrosoftConnected, syncMicrosoftCalendar]);
+
+  const handleConnectMicrosoft = async () => {
+    if (!isMicrosoftConfigured) return;
+
+    setIsMicrosoftLoading(true);
+    setMicrosoftError("");
+
+    try {
+      const result = await connectMicrosoftCalendar();
+      setIsMicrosoftConnected(result.connected);
+      setMicrosoftAccountName(result.accountName || "");
+    } catch (error) {
+      setMicrosoftError(error.message || "Microsoft Calendar sign-in failed.");
+    } finally {
+      setIsMicrosoftLoading(false);
+    }
+  };
+
+  const handleDisconnectMicrosoft = async () => {
+    setIsMicrosoftLoading(true);
+    setMicrosoftError("");
+
+    try {
+      await disconnectMicrosoftCalendar();
+      setIsMicrosoftConnected(false);
+      setMicrosoftAccountName("");
+      setMicrosoftEvents([]);
+      setLastSyncAt(null);
+    } catch (error) {
+      setMicrosoftError(error.message || "Microsoft Calendar sign-out failed.");
+    } finally {
+      setIsMicrosoftLoading(false);
+    }
+  };
 
   const toPixelTop = (date, startHour, endHour) => {
     const minutesFromStart = (date.getHours() - startHour) * 60 + date.getMinutes();
@@ -315,24 +449,79 @@ const Calendar = () => {
               <span className={styles.rangeLabel}>{formatRangeLabel(view, currentDate)}</span>
             </div>
 
-            {selectedEvent ? (
-              <div className={styles.eventPreview}>
-                <span className={styles.eventPreviewBadge} data-tone={selectedEvent.tone} />
-                <div>
-                  <div className={styles.eventPreviewTitle}>{selectedEvent.title}</div>
-                  <div className={styles.eventPreviewMeta}>
-                    <FiClock />
-                    {selectedEvent.start.toLocaleString("en-GB", {
-                      day: "2-digit",
-                      month: "short",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
+            <div className={styles.controlsRight}>
+              {isMicrosoftConfigured ? (
+                <div className={styles.microsoftActions}>
+                  {isMicrosoftConnected ? (
+                    <>
+                      <button
+                        type="button"
+                        className={styles.microsoftBtn}
+                        onClick={syncMicrosoftCalendar}
+                        disabled={isMicrosoftLoading}
+                      >
+                        <FiRefreshCw />
+                        {isMicrosoftLoading ? "Syncing..." : "Sync Outlook"}
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.microsoftBtnSecondary}
+                        onClick={handleDisconnectMicrosoft}
+                        disabled={isMicrosoftLoading}
+                      >
+                        <FiLogOut />
+                        Disconnect
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      type="button"
+                      className={styles.microsoftBtn}
+                      onClick={handleConnectMicrosoft}
+                      disabled={isMicrosoftLoading}
+                    >
+                      <FiLogIn />
+                      {isMicrosoftLoading ? "Connecting..." : "Connect Outlook"}
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <div className={styles.microsoftHint}>
+                  Configure Microsoft Calendar in `.env.dev` / `.env.prod`
+                </div>
+              )}
+
+              {selectedEvent ? (
+                <div className={styles.eventPreview}>
+                  <span className={styles.eventPreviewBadge} data-tone={selectedEvent.tone} />
+                  <div>
+                    <div className={styles.eventPreviewTitle}>{selectedEvent.title}</div>
+                    <div className={styles.eventPreviewMeta}>
+                      <FiClock />
+                      {selectedEvent.start.toLocaleString("en-GB", {
+                        day: "2-digit",
+                        month: "short",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ) : null}
+              ) : null}
+            </div>
           </div>
+
+          {isMicrosoftConnected ? (
+            <div className={styles.microsoftMeta}>
+              <span className={styles.microsoftPill}>
+                <FiLink2 />
+                {microsoftAccountName || "Connected to Microsoft Calendar"}
+              </span>
+              {lastSyncAt ? <span>Last sync: {lastSyncAt.toLocaleTimeString("en-GB")}</span> : null}
+            </div>
+          ) : null}
+
+          {microsoftError ? <div className={styles.microsoftError}>{microsoftError}</div> : null}
 
           {view === "month" ? (
             <div className={styles.monthGrid}>
