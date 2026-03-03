@@ -230,8 +230,6 @@ const MultiStepForm = ({
                 <span className="step-circle" aria-hidden="true">
                   {state === 'complete' ? (
                     <FiCheck className="step-check" aria-hidden="true" />
-                  ) : state === 'active' ? (
-                    <span className="step-number">{index + 1}</span>
                   ) : (
                     <span className="step-dot" />
                   )}
