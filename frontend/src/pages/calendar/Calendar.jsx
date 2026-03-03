@@ -200,6 +200,7 @@ const Calendar = () => {
   const [currentDate, setCurrentDate] = React.useState(new Date(DEFAULT_DATE));
   const [meetings, setMeetings] = React.useState(() => getMeetings());
   const [selectedEventId, setSelectedEventId] = React.useState("");
+  const [isEventPopupOpen, setIsEventPopupOpen] = React.useState(false);
   const [microsoftEvents, setMicrosoftEvents] = React.useState([]);
   const [isMicrosoftConnected, setIsMicrosoftConnected] = React.useState(false);
   const [microsoftAccountName, setMicrosoftAccountName] = React.useState("");
@@ -316,6 +317,26 @@ const Calendar = () => {
     syncMicrosoftCalendar();
   }, [isMicrosoftConnected, syncMicrosoftCalendar]);
 
+  React.useEffect(() => {
+    if (!isEventPopupOpen) return undefined;
+
+    const onEscape = (event) => {
+      if (event.key === "Escape") {
+        setIsEventPopupOpen(false);
+      }
+    };
+
+    document.addEventListener("keydown", onEscape);
+    return () => {
+      document.removeEventListener("keydown", onEscape);
+    };
+  }, [isEventPopupOpen]);
+
+  const handleEventClick = React.useCallback((eventId) => {
+    setSelectedEventId(eventId);
+    setIsEventPopupOpen(true);
+  }, []);
+
   const handleConnectMicrosoft = async () => {
     if (!isMicrosoftConfigured) return;
 
@@ -404,7 +425,7 @@ const Calendar = () => {
           top: `${toPixelTop(event.start, WEEK_START_HOUR, WEEK_END_HOUR)}px`,
           height: `${toPixelHeight(event, WEEK_START_HOUR, WEEK_END_HOUR)}px`,
         }}
-        onClick={() => setSelectedEventId(event.id)}
+        onClick={() => handleEventClick(event.id)}
       >
         {event.title}
       </button>
@@ -556,7 +577,7 @@ const Calendar = () => {
                           data-tone={event.tone}
                           onClick={(eventClick) => {
                             eventClick.stopPropagation();
-                            setSelectedEventId(event.id);
+                            handleEventClick(event.id);
                             setCurrentDate(new Date(cell.date));
                           }}
                         >
@@ -637,7 +658,7 @@ const Calendar = () => {
                           top: `${toPixelTop(event.start, DAY_START_HOUR, DAY_END_HOUR)}px`,
                           height: `${toPixelHeight(event, DAY_START_HOUR, DAY_END_HOUR)}px`,
                         }}
-                        onClick={() => setSelectedEventId(event.id)}
+                        onClick={() => handleEventClick(event.id)}
                       >
                         {event.title}
                       </button>
@@ -656,29 +677,41 @@ const Calendar = () => {
           ) : null}
         </div>
 
-        {selectedEvent ? (
-          <div className={styles.eventDetailCard}>
-            <div className={styles.eventDetailTitle}>{selectedEvent.title}</div>
-            <div className={styles.eventDetailRow}>
-              <FiUser />
-              <span>{selectedEvent.candidateName || selectedEvent.candidateId || "Candidate"}</span>
-            </div>
-            <div className={styles.eventDetailRow}>
-              <FiClock />
-              <span>
-                {selectedEvent.start.toLocaleString("en-GB", {
-                  day: "2-digit",
-                  month: "short",
-                  year: "numeric",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
-              </span>
-            </div>
-            <div className={styles.eventDetailRow}>
-              <span className={styles.eventDetailPill} data-tone={selectedEvent.tone}>
-                {selectedEvent.stage}
-              </span>
+        {selectedEvent && isEventPopupOpen ? (
+          <div className={styles.eventModalOverlay} onClick={() => setIsEventPopupOpen(false)}>
+            <div className={styles.eventModal} onClick={(event) => event.stopPropagation()}>
+              <div className={styles.eventModalHeader}>
+                <h3 className={styles.eventModalTitle}>{selectedEvent.title}</h3>
+                <button
+                  type="button"
+                  className={styles.eventModalClose}
+                  onClick={() => setIsEventPopupOpen(false)}
+                  aria-label="Close event details"
+                >
+                  ×
+                </button>
+              </div>
+              <div className={styles.eventDetailRow}>
+                <FiUser />
+                <span>{selectedEvent.candidateName || selectedEvent.candidateId || "Candidate"}</span>
+              </div>
+              <div className={styles.eventDetailRow}>
+                <FiClock />
+                <span>
+                  {selectedEvent.start.toLocaleString("en-GB", {
+                    day: "2-digit",
+                    month: "short",
+                    year: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </span>
+              </div>
+              <div className={styles.eventDetailRow}>
+                <span className={styles.eventDetailPill} data-tone={selectedEvent.tone}>
+                  {selectedEvent.stage}
+                </span>
+              </div>
             </div>
           </div>
         ) : null}

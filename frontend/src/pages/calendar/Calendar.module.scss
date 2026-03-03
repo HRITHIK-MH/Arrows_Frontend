@@ -521,22 +521,6 @@
   pointer-events: none;
 }
 
-.eventDetailCard {
-  margin-top: 12px;
-  border: 1px solid #dbe3ee;
-  border-radius: 10px;
-  background: #f8fbff;
-  padding: 12px;
-  display: grid;
-  gap: 8px;
-}
-
-.eventDetailTitle {
-  font-size: 14px;
-  color: #0f172a;
-  font-weight: 600;
-}
-
 .eventDetailRow {
   display: inline-flex;
   align-items: center;
@@ -559,6 +543,58 @@
 .eventDetailPill[data-tone="red"] { background: #e54b64; }
 .eventDetailPill[data-tone="gray"] { background: #66717f; }
 .eventDetailPill[data-tone="yellow"] { background: #9a851e; }
+
+.eventModalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+  padding: 16px;
+}
+
+.eventModal {
+  width: min(460px, 100%);
+  border: 1px solid #dbe3ee;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.2);
+  padding: 16px;
+  display: grid;
+  gap: 10px;
+}
+
+.eventModalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.eventModalTitle {
+  margin: 0;
+  font-size: 16px;
+  color: #0f172a;
+  font-weight: 600;
+}
+
+.eventModalClose {
+  border: 1px solid #d1d9e2;
+  border-radius: 8px;
+  width: 30px;
+  height: 30px;
+  background: #ffffff;
+  color: #475569;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.eventModalClose:hover {
+  background: #f8fafc;
+}
 
 @media (max-width: 1200px) {
   .rangeLabel {
