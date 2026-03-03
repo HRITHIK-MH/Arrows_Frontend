@@ -3,8 +3,8 @@ import { useEffect, useMemo, useState } from "react";
 const TEAM_MEMBERS = [
   {
     id: "A83261",
-    name: "Raghul Mehta",
-    email: "raghul.mehta@email.com",
+    name: "Rahul Mehta",
+    email: "rahul.mehta@email.com",
     role: "Team Lead",
   },
   {
@@ -52,26 +52,11 @@ const TeamMembersStep = ({
     }
   }, [onSetStepFields]);
 
-
-  const allSelected =
-    TEAM_MEMBERS.length > 0 && selectedMembers.length === TEAM_MEMBERS.length;
-
   const toggleMember = (memberId) => {
     const nextSelection = selectedMembers.includes(memberId)
       ? selectedMembers.filter((id) => id !== memberId)
       : [...selectedMembers, memberId];
     onChange("teamMembers", nextSelection);
-  };
-
-  const toggleAll = () => {
-    if (allSelected) {
-      onChange("teamMembers", []);
-      return;
-    }
-    onChange(
-      "teamMembers",
-      TEAM_MEMBERS.map((member) => member.id)
-    );
   };
 
   const openAssignModal = () => {
@@ -118,14 +103,7 @@ const TeamMembersStep = ({
         <table>
           <thead>
             <tr>
-              <th className="select-col">
-                <input
-                  type="checkbox"
-                  checked={allSelected}
-                  onChange={toggleAll}
-                  aria-label="Select all team members"
-                />
-              </th>
+              <th className="select-col" />
               <th>Recruiter Id</th>
               <th>Recruiter Name</th>
               <th>Email Address</th>

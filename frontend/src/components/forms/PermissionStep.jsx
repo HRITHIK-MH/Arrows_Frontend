@@ -9,12 +9,6 @@ const JOB_ACTIVATION_OPTIONS = [
   { value: "target-date", label: "Target date" },
 ];
 
-const RESUME_SUBMISSION_OPTIONS = [
-  { value: "max10", label: "Max 10" },
-  { value: "max20", label: "Max 20" },
-  { value: "others", label: "Others" },
-];
-
 const FOCUS_LOCATION_OPTIONS = [
   { value: "base", label: "Base" },
   { value: "any", label: "Any" },
@@ -30,20 +24,9 @@ const AVAILABILITY_OPTIONS = [
   { value: "3month", label: "3 month" },
 ];
 
-const JOB_POSTING_CHANNELS = [
-  { value: "website", label: "Website" },
-  { value: "linkedin", label: "LinkedIn" },
-];
-
 const PermissionStep = ({ formData, onChange, onSetStepFields }) => {
-  const jobActivationStatus =
-    formData.jobActivationStatus || "validity-upto";
-  const subVendor = formData.subVendor || "yes";
-  const jobPostingChannels = Array.isArray(formData.jobPostingChannels)
-    ? formData.jobPostingChannels
-    : [];
-  const resumeSubmissionLimit =
-    formData.resumeSubmissionLimit || "max10";
+  const jobActivationStatus = formData.jobActivationStatus || "validity-upto";
+  const subVendor = formData.subVendor || "no";
   const focusLocationType = formData.focusLocationType || "base";
   const availabilityOptions = Array.isArray(formData.availabilityOptions)
     ? formData.availabilityOptions
@@ -54,13 +37,7 @@ const PermissionStep = ({ formData, onChange, onSetStepFields }) => {
       onChange("jobActivationStatus", "validity-upto");
     }
     if (formData.subVendor === undefined) {
-      onChange("subVendor", "yes");
-    }
-    if (formData.jobPostingChannels === undefined) {
-      onChange("jobPostingChannels", ["website", "linkedin"]);
-    }
-    if (formData.resumeSubmissionLimit === undefined) {
-      onChange("resumeSubmissionLimit", "max10");
+      onChange("subVendor", "no");
     }
     if (formData.focusLocationType === undefined) {
       onChange("focusLocationType", "base");
@@ -74,8 +51,6 @@ const PermissionStep = ({ formData, onChange, onSetStepFields }) => {
   }, [
     formData.jobActivationStatus,
     formData.subVendor,
-    formData.jobPostingChannels,
-    formData.resumeSubmissionLimit,
     formData.focusLocationType,
     formData.focusLocationValue,
     formData.availabilityOptions,
@@ -88,23 +63,12 @@ const PermissionStep = ({ formData, onChange, onSetStepFields }) => {
         { name: "jobActivationStatus", label: "Job Activation", required: false },
         { name: "jobActivationDate", label: "Job Activation Date", required: false },
         { name: "subVendor", label: "Sub Vendor", required: false },
-        { name: "jobPostingChannels", label: "Job Posting", required: false },
-        { name: "websiteUrl", label: "Website URL", required: false },
-        { name: "linkedinId", label: "LinkedIn ID", required: false },
-        { name: "resumeSubmissionLimit", label: "Resume Submission", required: false },
         { name: "focusLocationType", label: "Focus Location", required: false },
         { name: "focusLocationValue", label: "Focus Location Value", required: false },
         { name: "availabilityOptions", label: "Availability", required: false },
       ]);
     }
   }, [onSetStepFields]);
-
-  const toggleJobPostingChannel = (channel) => {
-    const nextChannels = jobPostingChannels.includes(channel)
-      ? jobPostingChannels.filter((item) => item !== channel)
-      : [...jobPostingChannels, channel];
-    onChange("jobPostingChannels", nextChannels);
-  };
 
   const toggleAvailabilityOption = (option) => {
     const nextOptions = availabilityOptions.includes(option)
@@ -141,8 +105,7 @@ const PermissionStep = ({ formData, onChange, onSetStepFields }) => {
             type="date"
             className="permission-input"
             value={formData.jobActivationDate || ""}
-            onChange={(e) => onChange("jobActivationDate", e.target.value)}
-            placeholder="DD-MM-YYYY"
+            onChange={(event) => onChange("jobActivationDate", event.target.value)}
           />
         </section>
 
@@ -164,70 +127,6 @@ const PermissionStep = ({ formData, onChange, onSetStepFields }) => {
                   onChange={() => onChange("subVendor", value)}
                 />
                 <span>{value === "yes" ? "Yes" : "No"}</span>
-              </label>
-            ))}
-          </div>
-        </section>
-
-        <section className="permission-panel">
-          <div className="permission-header">
-            <h3 className="permission-title">Job Posting</h3>
-            <p className="permission-subtitle">Post job in channels</p>
-          </div>
-          <div className="permission-options inline">
-            {JOB_POSTING_CHANNELS.map((channel) => (
-              <label key={channel.value} className="permission-option">
-                <input
-                  type="checkbox"
-                  checked={jobPostingChannels.includes(channel.value)}
-                  onChange={() => toggleJobPostingChannel(channel.value)}
-                />
-                <span>{channel.label}</span>
-              </label>
-            ))}
-          </div>
-          <div className="permission-field">
-            <input
-              type="text"
-              className="permission-input"
-              placeholder="Website URL"
-              value={formData.websiteUrl || ""}
-              onChange={(e) => onChange("websiteUrl", e.target.value)}
-              disabled={!jobPostingChannels.includes("website")}
-            />
-          </div>
-          <div className="permission-field">
-            <input
-              type="text"
-              className="permission-input"
-              placeholder="LinkedIn ID"
-              value={formData.linkedinId || ""}
-              onChange={(e) => onChange("linkedinId", e.target.value)}
-              disabled={!jobPostingChannels.includes("linkedin")}
-            />
-          </div>
-        </section>
-
-        <section className="permission-panel">
-          <div className="permission-header">
-            <h3 className="permission-title">Resume Submission</h3>
-            <p className="permission-subtitle">
-              Ability to submit resumes to the relevant JD
-            </p>
-          </div>
-          <div className="permission-options inline">
-            {RESUME_SUBMISSION_OPTIONS.map((option) => (
-              <label key={option.value} className="permission-option">
-                <input
-                  type="radio"
-                  name="resumeSubmissionLimit"
-                  value={option.value}
-                  checked={resumeSubmissionLimit === option.value}
-                  onChange={() =>
-                    onChange("resumeSubmissionLimit", option.value)
-                  }
-                />
-                <span>{option.label}</span>
               </label>
             ))}
           </div>
@@ -257,12 +156,12 @@ const PermissionStep = ({ formData, onChange, onSetStepFields }) => {
             className="permission-input"
             placeholder="Location"
             value={formData.focusLocationValue || ""}
-            onChange={(e) => onChange("focusLocationValue", e.target.value)}
+            onChange={(event) => onChange("focusLocationValue", event.target.value)}
             disabled={focusLocationType === "any"}
           />
         </section>
 
-        <section className="permission-panel">
+        <section className="permission-panel permission-panel--availability">
           <div className="permission-header">
             <h3 className="permission-title">Availability</h3>
             <p className="permission-subtitle">

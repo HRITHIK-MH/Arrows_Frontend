@@ -506,20 +506,7 @@ export const jobOpeningConfig = {
       ]
     },
     {
-      title: "Team Members",
-      component: TeamMembersStep,
-      skipValidation: true,
-      fields: [
-        {
-          name: "teamMembers",
-          label: "Team Members",
-          type: "custom",
-          required: false
-        }
-      ]
-    },
-    {
-      title: "Submission",
+      title: "Client Requirement",
       component: PermissionStep,
       fields: [
         {
@@ -531,6 +518,19 @@ export const jobOpeningConfig = {
         {
           name: "permissionAccess",
           label: "Access",
+          type: "custom",
+          required: false
+        }
+      ]
+    },
+    {
+      title: "Team Members",
+      component: TeamMembersStep,
+      skipValidation: true,
+      fields: [
+        {
+          name: "teamMembers",
+          label: "Team Members",
           type: "custom",
           required: false
         }
