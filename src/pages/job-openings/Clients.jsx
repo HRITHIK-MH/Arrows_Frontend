@@ -12,11 +12,11 @@ import {
   FiUser,
   FiX
 } from "react-icons/fi";
-import styles from "./Clients.module.scss";
-import ReusableForm from "../../components/forms/ReusableForm";
 import DataTable from "../../components/forms/DataTable";
 import { clientConfig } from "../../components/forms/formConfigs";
+import ReusableForm from "../../components/forms/ReusableForm";
 import { debounce } from "../../utils/debounce";
+import styles from "./Clients.module.scss";
 
 
 // Memoized filter bar component to prevent unnecessary re-renders
