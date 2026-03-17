@@ -87,7 +87,6 @@ const FormField = ({
 
     console.log(`[FormField.handleChange] ${name}: value=`, newValue, ` (type=${type}), required=${required}, hasError=${!!error}, onValidation=${!!onValidation}, formData:`, formData);
     onChange(name, newValue);
-    triggerFieldValidation(newValue);
   };
 
   const handleNumberKeyDown = (event) => {
