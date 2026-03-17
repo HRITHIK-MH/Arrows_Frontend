@@ -123,7 +123,7 @@ const MultiStepForm = ({
         setCurrentStep(currentStep + 1);
       } else {
         if (stepIssues?.missingFields?.length || stepIssues?.invalidFields?.length) {
-          window.alert(
+          console.warn(
             buildWarningMessage(stepIssues.missingFields || [], stepIssues.invalidFields || [])
           );
         } else {
