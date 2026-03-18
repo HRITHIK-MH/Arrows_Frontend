@@ -34,7 +34,7 @@ const validateIntegerValue = (value, { label, min, max }) => {
 };
 
 const isValidEmail = (value) =>
-  /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value).trim());
+  /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(String(value).trim());
 
 const isValidPhoneNumber = (value, minDigits = 10, maxDigits = 10) => {
   const digits = String(value || "").replace(/\D/g, "");
@@ -646,9 +646,9 @@ export const jobOpeningConfig = {
         // Validate Job Position ID format
         const trimmedValue = String(value).trim();
         if (!/^[A-Z0-9\-_]{1,20}$/.test(trimmedValue)) {
-          return { 
-            isValid: false, 
-            message: 'Job Position ID must be 1-20 characters (alphanumeric, hyphens, underscores only)' 
+          return {
+            isValid: false,
+            message: 'Job Position ID must be 1-20 characters (alphanumeric, hyphens, underscores only)'
           };
         }
 
@@ -761,7 +761,7 @@ export const candidateConfig = {
           type: "text",
           required: true,
           validationRule: "requiredField",
-          placeholder: "Enter Candidate Id"
+          placeholder: "CS342415"
         },
         {
           name: "namePrefix",
@@ -867,7 +867,9 @@ export const candidateConfig = {
           label: "Comments / Remarks",
           type: "textarea",
           required: false,
-          placeholder: "Comments / Remarks"
+          placeholder: "Comments / Remarks",
+          maxLength: 1000,
+          validationRule: "comments"
         },
         {
           name: "currentCompanyName",
@@ -923,25 +925,69 @@ export const candidateConfig = {
           placeholder: "Enter Expected CTC"
         },
         {
+          name: "primarySkill",
+          label: "Primary Skill *",
+          type: "select",
+          required: true,
+          validationRule: "requiredField",
+          placeholder: "Select Primary Skill",
+          options: [
+            { value: "java", label: "Core Java" },
+            { value: "python", label: "Python" },
+            { value: "react", label: "React" },
+            { value: "node", label: "Node.js" },
+            { value: "aws", label: "AWS" }
+          ]
+        },
+        {
+          name: "skillExperienceLevel",
+          label: "Experience Level *",
+          type: "select",
+          required: true,
+          validationRule: "requiredField",
+          placeholder: "Select Experience Level",
+          options: [
+            { value: "beginner", label: "Beginner" },
+            { value: "intermediate", label: "Intermediate" },
+            { value: "expert", label: "Expert" }
+          ]
+        },
+        {
+          name: "skillLastUsed",
+          label: "Last Used *",
+          type: "select",
+          required: true,
+          validationRule: "requiredField",
+          placeholder: "Select Year",
+          options: [
+            { value: "2025", label: "2025" },
+            { value: "2024", label: "2024" },
+            { value: "2023", label: "2023" },
+            { value: "2022", label: "2022" },
+            { value: "2021", label: "2021" }
+          ]
+        },
+        {
           name: "sourceId",
           label: "Source Id",
           type: "text",
           required: false,
-          placeholder: "Source Id"
+          placeholder: "SC1293737747"
         },
         {
           name: "recruiterId",
           label: "Recruiter Id",
           type: "text",
           required: false,
-          placeholder: "Recruiter Id"
+          placeholder: "QW71271"
         },
         {
           name: "sourceName",
           label: "Source Name",
           type: "text",
           required: false,
-          placeholder: "Source Name"
+          placeholder: "Parthigan",
+          validationRule: "alphabeticOnly"
         },
         {
           name: "sourcedDate",
@@ -1007,11 +1053,75 @@ export const candidateConfig = {
           noticePeriod: 'Notice Period',
           currentCtc: 'Current CTC',
           expectedCtc: 'Expected CTC',
+          primarySkill: 'Primary Skill',
+          skillExperienceLevel: 'Experience Level',
+          skillLastUsed: 'Last Used',
           candidateResume: 'Resume'
         };
         const fieldLabel = fieldLabels[fieldName] || fieldName;
         return { isValid: false, message: `${fieldLabel} is required` };
       }
+
+      // Strict format validation for Candidate ID
+      if (fieldName === 'candidateId') {
+        const trimmedValue = String(value).trim();
+        // Alphanumeric with specific length (e.g. 4-20 chars) and must start with a letter
+        if (!/^[A-Za-z][A-Za-z0-9\-]{3,19}$/.test(trimmedValue)) {
+          return {
+            isValid: false,
+            message: 'Candidate ID must be 4-20 characters, start with a letter and contain only letters, numbers, or hyphens'
+          };
+        }
+      }
+
+      // Name validation: Letters, spaces, hyphens, and dots only
+      if (fieldName === 'firstName' || fieldName === 'lastName') {
+        const trimmedValue = String(value).trim();
+        if (!/^[A-Za-z\s.\-]+$/.test(trimmedValue)) {
+          const fieldLabel = fieldName === 'firstName' ? 'First Name' : 'Last Name';
+          return {
+            isValid: false,
+            message: `${fieldLabel} should only contain letters, spaces, dots or hyphens`
+          };
+        }
+      }
+
+      // Alphanumeric validation for Job Title/Role (must not be numeric alone)
+      if (fieldName === 'jobTitleRole') {
+        const trimmedValue = String(value).trim();
+        if (!/^[A-Za-z0-9\s]+$/.test(trimmedValue)) {
+          return {
+            isValid: false,
+            message: "Job Title / Role should only contain letters, numbers and spaces"
+          };
+        }
+        if (!/[A-Za-z]/.test(trimmedValue)) {
+          return {
+            isValid: false,
+            message: "Job Title / Role cannot consist of numbers alone. Please include at least one letter"
+          };
+        }
+      }
+
+      // Alphanumeric validation for Company Name (must not be numeric alone)
+      if (fieldName === 'currentCompanyName') {
+        const trimmedValue = String(value).trim();
+        // 1. Basic allowed characters check
+        if (!/^[A-Za-z0-9\s.\-&',]+$/.test(trimmedValue)) {
+          return {
+            isValid: false,
+            message: "Company Name should only contain letters, numbers, spaces, and basic punctuation"
+          };
+        }
+        // 2. Reject numeric-only values (must contain at least one letter)
+        if (!/[A-Za-z]/.test(trimmedValue)) {
+          return {
+            isValid: false,
+            message: "Company Name cannot consist of numbers alone. Please include at least one letter"
+          };
+        }
+      }
+
       return { isValid: true };
     },
     namePrefixRequired: async (value) => {
@@ -1049,13 +1159,33 @@ export const candidateConfig = {
 
       return { isValid: true };
     },
+    alphabeticOnly: async (value) => {
+      if (isEmptyValue(value)) return { isValid: true };
+      if (!/^[A-Za-z\s.\-]+$/.test(String(value).trim())) {
+        return { isValid: false, message: "Source Name should only contain alphabetic characters" };
+      }
+      return { isValid: true };
+    },
+    comments: async (value) => {
+      if (isEmptyValue(value)) return { isValid: true };
+      if (String(value).length > 1000) {
+        return { isValid: false, message: "Comments cannot exceed 1000 characters" };
+      }
+      return { isValid: true };
+    },
     phoneRequired: async (value) => {
       if (isEmptyValue(value)) {
         return { isValid: false, message: "Phone Number is required" };
       }
 
+      const digits = String(value).replace(/\D/g, "");
       if (!isValidPhoneNumber(value, 10, 10)) {
         return { isValid: false, message: "Phone Number must be exactly 10 digits" };
+      }
+
+      // Reject unrealistic numbers (all same digits like 0000000000, 1111111111, etc.)
+      if (/^(\d)\1{9}$/.test(digits)) {
+        return { isValid: false, message: "Please enter a valid, realistic phone number" };
       }
 
       return { isValid: true };
@@ -1229,8 +1359,14 @@ export const clientConfig = {
         return { isValid: false, message: "Contact Number is required" };
       }
 
+      const digits = String(value).replace(/\D/g, "");
       if (!isValidPhoneNumber(value, 10, 10)) {
         return { isValid: false, message: "Contact Number must be exactly 10 digits" };
+      }
+
+      // Reject unrealistic numbers (all same digits like 0000000000, 1111111111, etc.)
+      if (/^(\d)\1{9}$/.test(digits)) {
+        return { isValid: false, message: "Please enter a valid, realistic phone number" };
       }
 
       return { isValid: true };

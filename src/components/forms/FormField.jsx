@@ -2,14 +2,14 @@ import { useEffect, useRef, useState } from 'react';
 import { validateMandatoryField } from '../../utils/formValidation';
 import './FormField.css';
 
-const FormField = ({ 
-  label, 
-  type, 
-  name, 
-  value, 
-  onChange, 
-  required, 
-  options, 
+const FormField = ({
+  label,
+  type,
+  name,
+  value,
+  onChange,
+  required,
+  options,
   validate,
   error,
   onValidation,
@@ -21,7 +21,8 @@ const FormField = ({
   formData,
   disabled,
   showBrowseButton,
-  suppressError
+  suppressError,
+  maxLength
 }) => {
   const [isValidating, setIsValidating] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -60,14 +61,9 @@ const FormField = ({
   // This ensures errors from parent (Next button click) are displayed
   // And when parent clears the error (after validation passes), localError is also cleared
   useEffect(() => {
-    console.log(`[FormField.useEffect] ${name}: error prop changed to:`, error);
     if (error) {
-      // Always update localError when parent has an error
-      console.log(`[FormField.useEffect] Syncing prop error to local: ${name} = ${error}`);
       setLocalError(error);
     } else {
-      // When parent clears the error, clear localError immediately
-      console.log(`[FormField.useEffect] Clearing error for ${name} - error prop is now empty`);
       setLocalError('');
     }
   }, [error, name]);
@@ -85,7 +81,6 @@ const FormField = ({
       }
     }
 
-    console.log(`[FormField.handleChange] ${name}: value=`, newValue, ` (type=${type}), required=${required}, hasError=${!!error}, onValidation=${!!onValidation}, formData:`, formData);
     onChange(name, newValue);
   };
 
@@ -105,17 +100,14 @@ const FormField = ({
     if (!shouldValidate) return;
 
     if (validate) {
-      console.log(`[FormField.triggerFieldValidation] Using custom validate for ${name}`);
       setIsValidating(true);
       const currentFormData = formData || {};
       const updatedFormData = { ...currentFormData, [name]: newValue };
       Promise.resolve(validate(newValue, name, updatedFormData))
         .then(result => {
-          console.log(`[FormField.triggerFieldValidation] Custom validation done for ${name}:`, result);
           handleValidationResult(result);
         })
         .catch(err => {
-          console.log(`[FormField.triggerFieldValidation] Custom validation error for ${name}:`, err);
           handleValidationResult(err);
         })
         .finally(() => setIsValidating(false));
@@ -123,16 +115,13 @@ const FormField = ({
     }
 
     // For required fields or fields with errors, run mandatory validation
-    console.log(`[FormField.triggerFieldValidation] Running mandatory validation for ${name}`);
     setIsValidating(true);
     const fieldLabel = cleanedLabel || name;
     validateMandatoryField(newValue, name, fieldLabel)
       .then(result => {
-        console.log(`[FormField.triggerFieldValidation] ✅ Validation result for ${name}:`, result);
         handleValidationResult(result);
       })
       .catch(err => {
-        console.log(`[FormField.triggerFieldValidation] ❌ Validation error for ${name}:`, err);
         handleValidationResult(err);
       })
       .finally(() => setIsValidating(false));
@@ -140,22 +129,16 @@ const FormField = ({
 
   const handleMultiSelectChange = (selectedValues) => {
     onChange(name, selectedValues);
-    
-    // Always trigger validation on change
-    console.log(`[FormField multiselect onChange] Field: ${name}, Count: ${selectedValues?.length || 0}, Required: ${required}, HasError: ${!!error}, formData:`, formData);
-    
+
     if (validate) {
       // Custom validation function
-      console.log(`[FormField] Using custom validate function for multiselect`);
       setIsValidating(true);
       // Pass updated formData with new value to validation function
       const currentFormData = formData || {};
       const updatedFormData = { ...currentFormData, [name]: selectedValues };
-      console.log(`[FormField] Calling validate with updatedFormData:`, updatedFormData);
       validate(selectedValues, name, updatedFormData).then(handleValidationResult).catch(handleValidationResult).finally(() => setIsValidating(false));
     } else if (required) {
       // For required fields, always validate on change to clear/show errors
-      console.log(`[FormField] Validating required multiselect on change`);
       setIsValidating(true);
       const fieldLabel = cleanedLabel || name;
       validateMandatoryField(selectedValues, name, fieldLabel)
@@ -200,26 +183,21 @@ const FormField = ({
 
   const handleValidationResult = (result) => {
     if (result && typeof result === 'object') {
-      console.log(`[Validation] Field: ${name}, Valid: ${result.isValid}, Message: ${result.message}, onValidation exists: ${!!onValidation}`);
-      
+
+
       // Update local error state immediately for instant UI feedback
       if (result.isValid) {
         setLocalError('');
-        console.log(`[Validation] ✅ Local error cleared for ${name}`);
       } else {
         setLocalError(result.message);
-        console.log(`[Validation] ❌ Local error set for ${name}: ${result.message}`);
       }
-      
+
       // Also call parent callback for state management - this is critical for clearing errors
       if (onValidation) {
-        console.log(`[Validation] Calling onValidation callback for ${name}, isValid: ${result.isValid}`);
         onValidation(name, result);
-      } else {
-        console.log(`[Validation] WARNING: onValidation is not defined for field ${name}`);
       }
     } else {
-      console.log(`[Validation] Field: ${name}, Error: Invalid result format, onValidation exists: ${!!onValidation}`);
+
       setLocalError('Validation failed');
       if (onValidation) {
         onValidation(name, { isValid: false, message: 'Validation failed' });
@@ -236,7 +214,7 @@ const FormField = ({
       if (validate) {
         const validationResult = await validate(value, name);
         handleValidationResult(validationResult);
-      } 
+      }
       // For required fields without custom validation, validate that field has value
       else if (required) {
         // Extract label from prop (removing asterisk if present)
@@ -295,7 +273,7 @@ const FormField = ({
 
   return (
     <div className={`form-field${name ? ` field-${name}` : ''}${hasOpenDropdown ? ' dropdown-open' : ''}`}>
-      {type === 'file' && console.log(`[FormField.render] ${name} render, prop value=`, value, 'typeof=', typeof value, 'isArray=', Array.isArray(value))}
+
       <label htmlFor={name} className={hideLabel ? 'label-hidden' : undefined}>
         {safeLabel.includes('*') ? (
           <>
@@ -309,6 +287,7 @@ const FormField = ({
       {type === 'multiselect' ? (
         <div className={`multiselect-container${isDropdownOpen ? ' open' : ''}`} ref={dropdownRef}>
           <div
+            id={name}
             className={`selected-items${isDropdownOpen ? ' open' : ''}`}
             role="button"
             tabIndex={0}
@@ -326,8 +305,8 @@ const FormField = ({
                 return (
                   <span key={selectedValue} className="selected-item">
                     {option?.label || selectedValue}
-                    <button 
-                      type="button" 
+                    <button
+                      type="button"
                       className="remove-item"
                       onClick={(event) => {
                         event.stopPropagation();
@@ -436,6 +415,7 @@ const FormField = ({
             className={error ? 'error' : ''}
             placeholder={placeholder}
             rows="4"
+            maxLength={maxLength}
             disabled={disabled}
           />
         ) : (
@@ -525,6 +505,7 @@ const FormField = ({
                 pattern={type === 'number' ? '[0-9]*' : undefined}
                 className={error ? 'error' : ''}
                 placeholder={placeholder}
+                maxLength={maxLength}
                 accept={accept}
                 multiple={type === 'file' ? multiple : undefined}
                 disabled={disabled}
@@ -578,7 +559,6 @@ const FormField = ({
       {isValidating && <span className="validation-loading">Validating...</span>}
       {!suppressError && (localError || error) && (
         <>
-          {console.log(`[FormField] Rendering error for ${name}: localError="${localError}", propError="${error}"`)}
           <span className="error-message">{localError || error}</span>
         </>
       )}

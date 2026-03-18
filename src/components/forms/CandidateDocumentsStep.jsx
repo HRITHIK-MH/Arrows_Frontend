@@ -17,14 +17,6 @@ const CandidateDocumentsStep = ({ formData, onChange, onSetStepFields }) => {
     ? formData.candidateDocuments
     : [];
 
-  React.useEffect(() => {
-    if (onSetStepFields) {
-      onSetStepFields([
-        { name: "candidateDocuments", label: "Candidate Documents", required: false },
-      ]);
-    }
-  }, [onSetStepFields]);
-
   const addFiles = (fileList) => {
     const files = Array.from(fileList || []).map((file) => ({
       id: `${file.name}-${file.lastModified}-${file.size}`,
@@ -61,7 +53,7 @@ const CandidateDocumentsStep = ({ formData, onChange, onSetStepFields }) => {
     if (formData.candidateResume) {
       const resumeId =
         formData.candidateResume?.name &&
-        formData.candidateResume?.size !== undefined
+          formData.candidateResume?.size !== undefined
           ? `${formData.candidateResume.name}-${formData.candidateResume.lastModified}-${formData.candidateResume.size}`
           : null;
       if (resumeId && !nextDocs.some((doc) => doc.id === resumeId)) {
