@@ -8,16 +8,7 @@ const CandidateBasicInfoStep = ({
   onSetStepFields,
   validationErrors = {},
 }) => {
-  useEffect(() => {
-    if (!onSetStepFields) return;
-    onSetStepFields(
-      fields.map((field) => ({
-        name: field.name,
-        label: field.label,
-        required: Boolean(field.required),
-      }))
-    );
-  }, [fields, onSetStepFields]);
+
 
   const fieldMap = useMemo(() => {
     const map = {};
@@ -58,6 +49,30 @@ const CandidateBasicInfoStep = ({
     );
   };
 
+  const skills = formData.skills || [
+    { primarySkill: "", skillExperienceLevel: "", skillLastUsed: "" }
+  ];
+
+  const handleAddField = () => {
+    const newSkills = [...skills, { primarySkill: "", skillExperienceLevel: "", skillLastUsed: "" }];
+    onChange("skills", newSkills);
+  };
+
+  const handleRemoveField = (index) => {
+    const newSkills = skills.filter((_, i) => i !== index);
+    onChange("skills", newSkills);
+  };
+
+  const handleSkillChange = (index, fieldName, value) => {
+    const newSkills = [...skills];
+    newSkills[index] = { ...newSkills[index], [fieldName]: value };
+    onChange("skills", newSkills);
+  };
+
+  const isAddButtonDisabled = skills.some(
+    skill => !skill.primarySkill || !skill.skillExperienceLevel || !skill.skillLastUsed
+  );
+
   return (
     <div className="candidate-step">
       <div className="candidate-section">
@@ -85,7 +100,7 @@ const CandidateBasicInfoStep = ({
                       required={fieldMap.namePrefix.required}
                       options={fieldMap.namePrefix.options}
                       validate={fieldMap.namePrefix.validate}
-                      error={null}
+                      error={validationErrors.namePrefix}
                       onValidation={fieldMap.namePrefix.onValidation}
                       placeholder={fieldMap.namePrefix.placeholder}
                       hideLabel={fieldMap.namePrefix.hideLabel}
@@ -109,7 +124,7 @@ const CandidateBasicInfoStep = ({
                       required={fieldMap.firstName.required}
                       options={fieldMap.firstName.options}
                       validate={fieldMap.firstName.validate}
-                      error={null}
+                      error={validationErrors.firstName}
                       onValidation={fieldMap.firstName.onValidation}
                       placeholder={fieldMap.firstName.placeholder}
                       hideLabel={fieldMap.firstName.hideLabel}
@@ -157,6 +172,68 @@ const CandidateBasicInfoStep = ({
           {renderField("noticePeriod")}
           {renderField("currentCtc")}
           {renderField("expectedCtc")}
+        </div>
+      </div>
+
+      <div className="candidate-section">
+        <div className="candidate-section-header">
+          <h3 className="candidate-section-title">Add Skill set</h3>
+          <div className="candidate-section-divider" />
+        </div>
+
+        {skills.map((skill, index) => (
+          <div key={index} className="skill-row-container">
+            <div className="candidate-grid">
+              <div className="candidate-cell">
+                <FormField
+                  {...fieldMap.primarySkill}
+                  value={skill.primarySkill}
+                  onChange={(_, value) => handleSkillChange(index, "primarySkill", value)}
+                  formData={formData}
+                  hideLabel={index > 0}
+                />
+              </div>
+              <div className="candidate-cell">
+                <FormField
+                  {...fieldMap.skillExperienceLevel}
+                  value={skill.skillExperienceLevel}
+                  onChange={(_, value) => handleSkillChange(index, "skillExperienceLevel", value)}
+                  formData={formData}
+                  hideLabel={index > 0}
+                />
+              </div>
+              <div className="candidate-cell skill-last-used-cell">
+                <FormField
+                  {...fieldMap.skillLastUsed}
+                  value={skill.skillLastUsed}
+                  onChange={(_, value) => handleSkillChange(index, "skillLastUsed", value)}
+                  formData={formData}
+                  hideLabel={index > 0}
+                />
+                {skills.length > 1 && (
+                  <button
+                    type="button"
+                    className="remove-skill-button"
+                    onClick={() => handleRemoveField(index)}
+                    title="Remove Skill"
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        ))}
+
+        <div className="candidate-section-actions">
+          <button
+            type="button"
+            className={`add-skill-button ${isAddButtonDisabled ? 'disabled' : ''}`}
+            onClick={handleAddField}
+            disabled={isAddButtonDisabled}
+          >
+            Add Primary Skill
+          </button>
         </div>
       </div>
 

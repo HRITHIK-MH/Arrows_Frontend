@@ -68,14 +68,37 @@
   min-height: auto;
 }
 
-.grid-cell.grid-col-1 { grid-column: 1; }
-.grid-cell.grid-col-2 { grid-column: 2; }
-.grid-cell.grid-col-3 { grid-column: 3; }
-.grid-cell.grid-row-1 { grid-row: 1; }
-.grid-cell.grid-row-2 { grid-row: 2; }
-.grid-cell.grid-row-3 { grid-row: 3; }
-.grid-cell.grid-row-4 { grid-row: 4; }
-.grid-cell.grid-row-5 { grid-row: 5; }
+.grid-cell.grid-col-1 {
+  grid-column: 1;
+}
+
+.grid-cell.grid-col-2 {
+  grid-column: 2;
+}
+
+.grid-cell.grid-col-3 {
+  grid-column: 3;
+}
+
+.grid-cell.grid-row-1 {
+  grid-row: 1;
+}
+
+.grid-cell.grid-row-2 {
+  grid-row: 2;
+}
+
+.grid-cell.grid-row-3 {
+  grid-row: 3;
+}
+
+.grid-cell.grid-row-4 {
+  grid-row: 4;
+}
+
+.grid-cell.grid-row-5 {
+  grid-row: 5;
+}
 
 /* Min-Max container for side-by-side layout */
 .min-max-container {
@@ -84,7 +107,7 @@
   align-items: flex-start;
 }
 
-.min-max-container > * {
+.min-max-container>* {
   flex: 1;
 }
 
@@ -826,9 +849,9 @@
 
 .candidate-section-title {
   margin: 0;
-  font-size: 13px;
+  font-size: 16px;
   font-weight: 600;
-  color: #0f172a;
+  color: #111827;
 }
 
 .candidate-section-divider {
@@ -844,6 +867,76 @@
 
 .candidate-cell {
   min-width: 0;
+}
+
+.add-skill-button.disabled {
+  background: #cbd5e1 !important;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.add-skill-button.disabled:hover {
+  background: #cbd5e1 !important;
+}
+
+.skill-row-container {
+  margin-bottom: 14px;
+}
+
+.skill-row-container:last-of-type {
+  margin-bottom: 0;
+}
+
+.skill-last-used-cell {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.skill-last-used-cell .form-field {
+  flex: 1;
+}
+
+.remove-skill-button {
+  background: transparent;
+  border: none;
+  color: #ef4444;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 4px 8px;
+  margin-bottom: 6px;
+  /* Align with input field */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s;
+}
+
+.remove-skill-button:hover {
+  color: #dc2626;
+}
+
+.candidate-section-actions {
+  display: flex;
+  margin-top: 12px;
+}
+
+.add-skill-button {
+  background: #3b82f6;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.add-skill-button:hover {
+  background: #2563eb;
 }
 
 .candidate-span-2 {
@@ -863,7 +956,7 @@
 .name-prefix-label {
   font-size: 11px;
   font-weight: 500;
-  color: #94a3b8;
+  color: #000000;
 }
 
 .name-prefix-row {
@@ -965,7 +1058,7 @@
 .reusable-form-page.candidate-form .form-field label {
   font-size: 11px;
   font-weight: 500;
-  color: #94a3b8;
+  color: #000000;
   margin-bottom: 6px;
 }
 
@@ -1411,6 +1504,7 @@
 
 /* Extra small devices (phones, 600px and down) */
 @media only screen and (max-width: 600px) {
+
   .reusable-form-page.job-opening-form,
   .reusable-form-page.candidate-form {
     padding: 0;
@@ -1473,6 +1567,7 @@
 
 /* Small devices (portrait tablets and large phones, 600px and up) */
 @media only screen and (min-width: 600px) {
+
   .reusable-form-page.job-opening-form .step-indicator,
   .reusable-form-page.candidate-form .step-indicator {
     --step-width: 110px;
@@ -1503,6 +1598,7 @@
 
 /* Extra large devices (large laptops and desktops, 1200px and up) */
 @media only screen and (min-width: 1200px) {
+
   .reusable-form-page.job-opening-form .multi-step-form-body,
   .reusable-form-page.candidate-form .multi-step-form-body {
     max-height: calc(100vh - 260px);
@@ -1547,6 +1643,7 @@
 }
 
 @media only screen and (max-width: 992px) {
+
   .job-basic-info-grid,
   .job-basic-info-grid.job-basic-info-grid--client {
     grid-template-columns: 1fr;

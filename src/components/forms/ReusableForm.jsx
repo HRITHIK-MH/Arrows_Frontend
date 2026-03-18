@@ -1,5 +1,5 @@
 import axios from 'axios';
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { validateMandatoryField } from '../../utils/formValidation';
 import FormField from './FormField';
 import MultiStepForm from './MultiStepForm';
@@ -28,8 +28,6 @@ const createFormConfig = (config) => {
 
 // Reusable step component
 const FormStep = ({ formData, onChange, fields, title, onSetStepFields, validationErrors = {}, disabled = false }) => {
-  console.log(`[FormStep] Rendering step: ${title}, validationErrors:`, validationErrors);
-  console.log(`[FormStep] Received fields:`, fields.map(f => ({ name: f.name, hasOnValidation: !!f.onValidation, hasValidate: !!f.validate })));
   const isJobBasicInfo = title === "Job Basic Information" || title === "Job Information";
   const fieldMetaSignatureRef = React.useRef('');
 
@@ -52,8 +50,6 @@ const FormStep = ({ formData, onChange, fields, title, onSetStepFields, validati
   }, [fields, onSetStepFields, isJobBasicInfo]);
 
   const renderField = (field) => {
-    console.log(`[FormStep.renderField] Rendering field ${field.name}, error: ${validationErrors[field.name]}`);
-      console.log(`[FormStep.renderField] Field ${field.name} has onValidation:`, !!field.onValidation);
     return (
       <FormField
         key={field.name}
@@ -87,9 +83,6 @@ const FormStep = ({ formData, onChange, fields, title, onSetStepFields, validati
         fieldMap[field.cssClass] = field;
       }
       fieldMap[field.name] = field;
-        if (field.name === 'jobPositionId' || field.name === 'positionName' || field.name === 'minExperience') {
-          console.log(`[isJobBasicInfo] Field ${field.name} has onValidation:`, !!field.onValidation, ', validate:', !!field.validate);
-        }
     });
 
     const getField = (name) => (fieldMap[name] ? renderField(fieldMap[name]) : null);
@@ -128,13 +121,13 @@ const FormStep = ({ formData, onChange, fields, title, onSetStepFields, validati
     const fallbackAddTechnicalOptions = technicalSkillsOptions.length
       ? technicalSkillsOptions
       : [
-          { value: 'machine-learning', label: 'Machine Learning' },
-          { value: 'deep-learning', label: 'Deep Learning' },
-          { value: 'nlp', label: 'NLP' },
-          { value: 'data-science', label: 'Data Science' },
-          { value: 'computer-vision', label: 'Computer Vision' },
-          { value: 'azure', label: 'Microsoft Azure' }
-        ];
+        { value: 'machine-learning', label: 'Machine Learning' },
+        { value: 'deep-learning', label: 'Deep Learning' },
+        { value: 'nlp', label: 'NLP' },
+        { value: 'data-science', label: 'Data Science' },
+        { value: 'computer-vision', label: 'Computer Vision' },
+        { value: 'azure', label: 'Microsoft Azure' }
+      ];
 
     const addTechnicalConfig =
       fieldMap.addTechnicalSkills ||
@@ -224,7 +217,7 @@ const FormStep = ({ formData, onChange, fields, title, onSetStepFields, validati
             <div className="grid-cell grid-col-1 grid-row-5">
               {getField('technicalSkills')}
               <div className="stacked-field-below">
-                
+
                 {renderField(normalizedAddTechnicalConfig)}
               </div>
             </div>
@@ -274,10 +267,10 @@ const FormStep = ({ formData, onChange, fields, title, onSetStepFields, validati
 const ReusableForm = ({ config, onSubmit, initialData, readOnly = false }) => {
   const [validationErrors, setValidationErrors] = useState({});
 
-  const formConfig = createFormConfig(config);
+  const formConfig = useMemo(() => createFormConfig(config), [config]);
 
   // Create validation functions
-  const createValidationFunction = (ruleName) => {
+  const createValidationFunction = useCallback((ruleName) => {
     const rule = config.validationRules?.[ruleName];
     if (!rule) return null;
 
@@ -295,74 +288,49 @@ const ReusableForm = ({ config, onSubmit, initialData, readOnly = false }) => {
         return { isValid: false, message: 'Validation failed' };
       }
     };
-  };
+  }, [config.validationRules]);
 
   // Handle validation - persist errors until field value is valid
-  const handleValidation = (fieldName, result) => {
-    console.log(`[ReusableForm.handleValidation] Called for ${fieldName}:`, result);
-    console.log(`[ReusableForm.handleValidation] Current errors before update:`, validationErrors);
-    
+  const handleValidation = useCallback((fieldName, result) => {
     setValidationErrors(prev => {
       const updatedErrors = { ...prev };
-      
+
       if (result.isValid) {
         // Only clear error if field is actually valid
         delete updatedErrors[fieldName];
-        console.log(`[ReusableForm.handleValidation] ✅ Clearing error for ${fieldName}`);
       } else {
         // Set error message and keep it
         updatedErrors[fieldName] = result.message;
-        console.log(`[ReusableForm.handleValidation] ❌ Setting error for ${fieldName}: ${result.message}`);
       }
-      
-      console.log(`[ReusableForm.handleValidation] Updated errors:`, updatedErrors);
+
       return updatedErrors;
     });
-  };
+  }, []);
 
   // Enhanced steps with validation
-  const enhancedSteps = formConfig.steps.map((step, index) => {
-    const StepComponent = step.component;
-    const configStep = config.steps[index];
-    const stepFields = configStep?.fields || [];
-    const stepFieldsWithValidation = stepFields.map(field => ({
-      ...field,
-      validate: field.validationRule ? createValidationFunction(field.validationRule) : field.validate || null,
-      onValidation: handleValidation
-    }));
+  const enhancedSteps = useMemo(() => {
+    return formConfig.steps.map((step, index) => {
+      const configStep = config.steps[index];
+      const stepFields = configStep?.fields || [];
+      const stepFieldsWithValidation = stepFields.map(field => ({
+        ...field,
+        validate: field.validationRule ? createValidationFunction(field.validationRule) : field.validate || null,
+        onValidation: handleValidation
+      }));
 
-    if (configStep?.component) {
       return {
         title: step.title,
         skipValidation: Boolean(configStep?.skipValidation),
         fields: stepFieldsWithValidation,
-        component: (props) => (
-          <StepComponent
-            {...props}
-            fields={stepFieldsWithValidation}
-            onSetStepFields={props.onSetStepFields}
-            validationErrors={validationErrors}
-            disabled={readOnly}
-          />
-        )
+        component: step.component || FormStep,
+        componentProps: {
+          fields: stepFieldsWithValidation,
+          validationErrors: validationErrors,
+          disabled: readOnly
+        }
       };
-    }
-
-    return {
-      title: step.title,
-      skipValidation: Boolean(configStep?.skipValidation),
-      fields: stepFieldsWithValidation,
-      component: (props) => (
-        <StepComponent
-          {...props}
-          fields={stepFieldsWithValidation}
-          onSetStepFields={props.onSetStepFields}
-          validationErrors={validationErrors}
-          disabled={readOnly}
-        />
-      )
-    };
-  });
+    });
+  }, [formConfig, config.steps, createValidationFunction, handleValidation, validationErrors, readOnly]);
 
   // Validate all mandatory fields at once
   const validateAllMandatoryFields = async (data, fields) => {
@@ -459,7 +427,7 @@ const ReusableForm = ({ config, onSubmit, initialData, readOnly = false }) => {
       value === null ||
       (typeof value === 'string' && value.trim() === '') ||
       (Array.isArray(value) && value.length === 0);
-    
+
     const fieldResults = await Promise.all(
       stepFields.map(async (field) => {
         const value = data[field.name];
@@ -496,7 +464,7 @@ const ReusableForm = ({ config, onSubmit, initialData, readOnly = false }) => {
         console.log(`[validateStepFields] Clearing error for ${field.name}`);
       }
     });
-    
+
     // Update validation errors state all at once
     setValidationErrors(updatedErrors);
     console.log(`[validateStepFields] Final validation errors:`, updatedErrors);
@@ -514,9 +482,9 @@ const ReusableForm = ({ config, onSubmit, initialData, readOnly = false }) => {
       className={`reusable-form-page${config.formClassName ? ` ${config.formClassName}` : ''}${readOnly ? ' read-only' : ''}`}
     >
       {!config.hideTitle && <h1>{config.title}</h1>}
-      <MultiStepForm 
-        steps={enhancedSteps} 
-        onSubmit={handleSubmit} 
+      <MultiStepForm
+        steps={enhancedSteps}
+        onSubmit={handleSubmit}
         validationErrors={validationErrors}
         onValidateStep={validateStepFields}
         hideStepper={config.hideStepper}
