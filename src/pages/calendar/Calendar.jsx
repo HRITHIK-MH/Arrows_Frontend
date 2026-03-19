@@ -196,7 +196,7 @@ const getRangeForView = (view, date) => {
 };
 
 const Calendar = () => {
-  const [view, setView] = React.useState("day");
+  const [view, setView] = React.useState("month");
   const [currentDate, setCurrentDate] = React.useState(new Date(DEFAULT_DATE));
   const [meetings, setMeetings] = React.useState(() => getMeetings());
   const [selectedEventId, setSelectedEventId] = React.useState("");
