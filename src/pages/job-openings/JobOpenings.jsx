@@ -19,7 +19,6 @@ const FilterBar = React.memo(({
   filterHiringManager,
   onFilterHiringManagerChange,
   uniquePostingTitles,
-  uniqueTargetDates,
   uniqueJobStatuses,
   uniqueHiringManagers,
   hasFilters,
@@ -50,16 +49,12 @@ const FilterBar = React.memo(({
         ))}
       </select>
 
-      <select
+      <input
+        type="date"
         value={filterTargetDate}
         onChange={onFilterTargetDateChange}
-        className={styles.selectField}
-      >
-        <option value="">Target Date</option>
-        {uniqueTargetDates.map(date => (
-          <option key={date} value={date}>{date}</option>
-        ))}
-      </select>
+        className={styles.dateField}
+      />
 
       <select
         value={filterJobStatus}
@@ -82,16 +77,13 @@ const FilterBar = React.memo(({
           <option key={manager} value={manager}>{manager}</option>
         ))}
       </select>
-
       <button className={styles.moreButton} type="button" aria-label="More filters">
         <FiMoreHorizontal size={16} />
       </button>
+
     </div>
 
     <div className={styles.filtersRight}>
-      <button className={styles.applyButton} type="button" disabled={!hasFilters}>
-        Apply
-      </button>
       <button
         className={styles.clearButton}
         type="button"
@@ -118,7 +110,7 @@ export default function JobOpenings() {
       maxExperience: 7,
       jobDescriptionLink: "https://example.com/jd/react",
       positionLevel: "senior",
-      location: "hybrid",
+      location: "Delhi",
       noOfPositions: 2,
       jobReceivedDate: "2026-01-12",
       hiringType: "direct",
@@ -177,7 +169,7 @@ export default function JobOpenings() {
       maxExperience: 10,
       jobDescriptionLink: "https://example.com/jd/pm",
       positionLevel: "manager",
-      location: "remote",
+      location: "Pune",
       noOfPositions: 1,
       jobReceivedDate: "2026-01-20",
       hiringType: "contract",
@@ -226,7 +218,7 @@ export default function JobOpenings() {
       maxExperience: 6,
       jobDescriptionLink: "https://example.com/jd/uiux",
       positionLevel: "mid",
-      location: "onsite",
+      location: "Bangalore",
       noOfPositions: 1,
       jobReceivedDate: "2026-01-18",
       hiringType: "direct",
@@ -314,11 +306,6 @@ export default function JobOpenings() {
   // Get unique values for filter dropdowns - memoized to avoid recalculations
   const uniquePostingTitles = React.useMemo(() => 
     [...new Set(normalizedData.map(item => item.postingTitle).filter(Boolean))],
-    [normalizedData]
-  );
-
-  const uniqueTargetDates = React.useMemo(() =>
-    [...new Set(normalizedData.map(item => item.targetDate).filter(Boolean))],
     [normalizedData]
   );
 
@@ -519,7 +506,6 @@ export default function JobOpenings() {
               filterHiringManager={filterHiringManager}
               onFilterHiringManagerChange={handleFilterHiringManagerChange}
               uniquePostingTitles={uniquePostingTitles}
-              uniqueTargetDates={uniqueTargetDates}
               uniqueJobStatuses={uniqueJobStatuses}
               uniqueHiringManagers={uniqueHiringManagers}
               hasFilters={hasFilters}
@@ -528,6 +514,17 @@ export default function JobOpenings() {
 
             <div className={styles.tableWrap}>
               <table className={styles.jobTable}>
+                <colgroup>
+                  <col className={styles.colOpeningJobId} />
+                  <col />
+                  <col className={styles.colClientId} />
+                  <col />
+                  <col className={styles.colTargetDate} />
+                  <col />
+                  <col className={styles.colCity} />
+                  <col />
+                  <col className={styles.colActions} />
+                </colgroup>
                 <thead>
                   <tr>
                     <th>Opening Job Id</th>
