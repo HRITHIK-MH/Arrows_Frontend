@@ -556,17 +556,65 @@ body {
 
 /* Mobile: keep title readable, shrink actions if needed */
 @media (max-width: 768px) {
+  html,
+  body,
+  #root,
+  .app,
+  .main {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  .header {
+    flex-wrap: wrap;
+    align-items: flex-start;
+    row-gap: 8px;
+    height: auto;
+    min-height: var(--header-height);
+    padding: 8px var(--space-3);
+  }
+
+  .topTitleBlock {
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+
+  .breadcrumbList {
+    flex-wrap: wrap;
+    gap: 4px 8px;
+  }
+
   .topActions {
-    gap: 10px;
+    margin-left: 0;
+    width: 100%;
+    min-width: 0;
+    gap: 8px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    align-items: center;
   }
 
   .search {
-    width: min(100%, 320px);
-    margin-left: auto;
+    width: 100%;
+    max-width: none;
+    margin-left: 0;
   }
 
   .searchInput {
     font-size: 13px;
+  }
+
+  .profileText {
+    display: none;
+  }
+
+  .profileBtn {
+    padding: 4px 6px;
+  }
+
+  .profileAvatar {
+    width: 30px;
+    height: 30px;
   }
 }
 
@@ -781,22 +829,31 @@ $gutter: 1rem;
   /* Collapse grid to single column; sidebar overlays when opened */
   .app {
     grid-template-columns: 1fr;   /* no reserved sidebar column */
-    grid-template-rows: var(--header-height) 1fr;
+    grid-template-rows: auto minmax(0, 1fr);
     column-gap: 0;
+    min-height: 100dvh;
   }
 
 
   .header {
     grid-column: 1;
     grid-row: 1;
-    padding: 0 var(--space-3);
+    padding: 8px var(--space-3);
+    max-width: 100%;
+    overflow-x: hidden;
   }
 
 
   .main {
     grid-column: 1;
     grid-row: 2;
-    padding: var(--space-4);
+    padding: var(--space-3);
+    max-width: 100%;
+    overflow-x: hidden;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: calc(var(--space-4) + env(safe-area-inset-bottom));
   }
 
 
@@ -843,7 +900,18 @@ $gutter: 1rem;
   }
 
 
-  .main { padding: var(--space-3); }
+  .main {
+    padding: var(--space-3);
+    padding-bottom: calc(var(--space-4) + env(safe-area-inset-bottom));
+  }
+
+  .topActions {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .profile {
+    display: none;
+  }
 
 
   .nav { gap: 6px; }

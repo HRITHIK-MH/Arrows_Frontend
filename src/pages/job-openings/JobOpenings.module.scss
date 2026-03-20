@@ -3,6 +3,8 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
+  width: 100%;
+  max-width: 100%;
   height: calc(100vh - var(--header-height));
   min-height: 0;
   overflow: hidden;
@@ -60,11 +62,15 @@
   background: #fff;
   border-radius: 14px;
   box-shadow: 0 1px 4px rgba(15, 23, 42, 0.06);
-  padding: 20px;
+  padding: clamp(16px, 1.2vw, 24px);
   border: 1px solid var(--blue-border);
   flex: 1 1 auto;
   min-height: 0;
+  width: 100%;
+  max-width: 100%;
+  margin: 0 auto;
   overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .infoRow {
@@ -145,6 +151,7 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+  min-height: 0;
 }
 
 .filtersBar {
@@ -165,13 +172,15 @@
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
-  flex: 1 1 auto;
+  flex: 1 1 72%;
+  min-width: 0;
 }
 
 .filtersRight {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex: 0 0 auto;
 }
 
 .filterIcon {
@@ -187,8 +196,8 @@
   border-radius: 8px;
   padding: 4px 8px;
   min-height: 28px;
-  min-width: 180px;
-  flex: 1 1 200px;
+  min-width: 200px;
+  flex: 1 1 240px;
 }
 
 .searchIcon {
@@ -212,7 +221,7 @@
   padding: 4px 30px 4px 10px;
   font-size: 13px;
   color: #2c3135;
-  min-width: 120px;
+  min-width: 140px;
   height: 28px;
   line-height: 1.2;
   cursor: pointer;
@@ -263,15 +272,17 @@
   border: 1px solid #e2e8f0;
   border-radius: 12px;
   overflow-x: auto;
-  overflow-y: hidden;
+  overflow-y: auto;
   background: #fff;
+  max-width: 100%;
+  max-height: min(56vh, 560px);
 }
 
 .jobTable {
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
-  min-width: 940px;
+  min-width: 980px;
 }
 
 .jobTable th {
@@ -414,6 +425,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
+  flex-wrap: wrap;
   font-size: 12px;
   color: #6b7280;
   padding: 0 4px;
@@ -883,11 +895,11 @@
   }
 
   .filtersBar {
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
   }
 
   .filtersLeft {
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
   }
 
   .filtersRight {
@@ -897,6 +909,58 @@
 
   .tableWrap :global(.data-table) {
     min-width: 940px;
+  }
+}
+
+@media only screen and (min-width: 1400px) {
+  .page {
+    padding-inline: clamp(8px, 1.2vw, 24px);
+  }
+
+  .jobCard {
+    max-width: 1680px;
+  }
+
+  .filtersBar {
+    flex-wrap: nowrap;
+  }
+
+  .filtersLeft {
+    flex-wrap: nowrap;
+  }
+
+  .tableWrap {
+    max-height: min(58vh, 620px);
+  }
+
+  .jobTable {
+    min-width: 1160px;
+  }
+}
+
+@media only screen and (min-width: 1850px) and (min-height: 1000px) {
+  .page {
+    gap: 20px;
+  }
+
+  .jobCard {
+    max-width: 1760px;
+  }
+
+  .tableSection {
+    gap: 14px;
+  }
+
+  .tableWrap {
+    max-height: min(60vh, 680px);
+  }
+
+  .jobTable th {
+    font-size: 13px;
+  }
+
+  .jobTable td {
+    font-size: 14px;
   }
 }
 
@@ -942,7 +1006,7 @@
   }
 
   .jobTable {
-    min-width: 1040px;
+    min-width: 980px;
   }
 
   .innerTable {
@@ -961,6 +1025,7 @@
     padding: 14px;
     border-radius: 12px;
     overflow: visible;
+    overflow-y: visible;
   }
 
   .infoRow {
@@ -988,20 +1053,44 @@
   .moreButton {
     width: 100%;
     min-width: 0;
+    flex: 0 0 auto;
+  }
+
+  .searchField,
+  .selectField {
+    height: 38px;
+    min-height: 38px;
+  }
+
+  .moreButton {
+    height: 36px;
+    min-height: 36px;
   }
 
   .filtersRight {
     width: 100%;
-    justify-content: flex-end;
+    justify-content: stretch;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .applyButton,
+  .clearButton {
+    width: 100%;
   }
 
   .jobTable {
     min-width: 980px;
   }
 
+  .tableWrap {
+    max-height: none;
+    overflow-y: visible;
+  }
+
   .innerTableWrap {
     overflow-x: auto;
-    overflow-y: hidden;
+    overflow-y: visible;
   }
 
   .tableFooter {
@@ -1016,6 +1105,15 @@
 }
 
 @media only screen and (max-width: 768px) {
+  .page,
+  .jobCard,
+  .tableSection,
+  .tableWrap,
+  .innerTableWrap {
+    max-width: 100%;
+    min-width: 0;
+  }
+
   .jobCard {
     padding: 12px;
   }
@@ -1043,11 +1141,77 @@
 
   .jobTable th,
   .jobTable td {
-    padding: 0 10px;
+    padding: 8px;
+    height: auto;
+    line-height: 1.35;
+    white-space: normal;
+    word-break: normal;
+    overflow-wrap: anywhere;
+    vertical-align: top;
+  }
+
+  .tableWrap {
+    overflow-x: hidden;
+  }
+
+  .jobTable {
+    min-width: 100%;
+    width: 100%;
+    table-layout: auto;
+  }
+
+  .jobTable th:nth-child(3),
+  .jobTable td:nth-child(3),
+  .jobTable th:nth-child(4),
+  .jobTable td:nth-child(4),
+  .jobTable th:nth-child(5),
+  .jobTable td:nth-child(5),
+  .jobTable th:nth-child(7),
+  .jobTable td:nth-child(7),
+  .jobTable th:nth-child(8),
+  .jobTable td:nth-child(8) {
+    display: none;
+  }
+
+  .actionsCol {
+    width: 78px;
+  }
+
+  .jobTable th {
+    font-size: 11px;
+  }
+
+  .jobTable td {
+    font-size: 13px;
+  }
+
+  .statusPill {
+    padding: 2px 8px;
+    font-size: 10px;
   }
 
   .innerTable {
-    min-width: 680px;
+    min-width: 100%;
+    width: 100%;
+    table-layout: auto;
+  }
+
+  .innerTable th,
+  .innerTable td {
+    white-space: normal;
+    word-break: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .innerTable th:nth-child(3),
+  .innerTable td:nth-child(3),
+  .innerTable th:nth-child(4),
+  .innerTable td:nth-child(4),
+  .innerTable th:nth-child(7),
+  .innerTable td:nth-child(7),
+  .innerTable th:nth-child(8),
+  .innerTable td:nth-child(8) {
+    display: none;
   }
 
   .actionIcons {
@@ -1078,6 +1242,20 @@
     flex-wrap: wrap;
   }
 
+  .filtersRight {
+    grid-template-columns: 1fr;
+  }
+
+  .searchField,
+  .selectField {
+    height: 36px;
+    min-height: 36px;
+  }
+
+  .tableWrap {
+    max-height: none;
+  }
+
   .pageBtn {
     width: 26px;
     height: 26px;
@@ -1085,12 +1263,9 @@
 }
 
 @media only screen and (max-width: 480px) {
-  .jobTable {
-    min-width: 920px;
-  }
-
+  .jobTable,
   .innerTable {
-    min-width: 620px;
+    min-width: 100%;
   }
 
   .filtersBar {
