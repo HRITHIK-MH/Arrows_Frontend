@@ -7,6 +7,12 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react()],
+    css: {
+      modules: {
+        // Keep class names human-readable in DOM: JobOpenings__page
+        generateScopedName: '[name]__[local]',
+      },
+    },
     server: {
       host: "0.0.0.0",
       port: Number(env.VITE_PORT || 5173),
