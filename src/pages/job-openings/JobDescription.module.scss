@@ -2,6 +2,8 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
+  width: 100%;
+  max-width: 100%;
   height: calc(100vh - var(--header-height));
   min-height: 0;
   overflow: hidden;
@@ -15,13 +17,17 @@
   border: 1px solid var(--blue-border);
   flex: 1 1 auto;
   min-height: 0;
+  max-width: 100%;
   overflow: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .headerRow {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
   margin-bottom: 16px;
 }
 
@@ -144,6 +150,9 @@
   flex-wrap: wrap;
   gap: 12px;
   margin-top: 16px;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
 }
 
 .stageTabs {
@@ -190,6 +199,7 @@
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+  width: 100%;
 }
 
 .searchBox {
@@ -201,6 +211,7 @@
   border-radius: 8px;
   padding: 4px 8px;
   min-height: 30px;
+  flex: 1 1 auto;
   min-width: 220px;
 }
 
@@ -282,16 +293,19 @@
   background: #fff;
   border-radius: 12px;
   padding: 12px;
+  overflow-x: auto;
 }
 
 .candidateTable {
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
+  min-width: 900px;
 }
 
 .candidateTableMapped {
-  table-layout: fixed;
+  table-layout: auto;
+  min-width: 950px;
 }
 
 .candidateTable th {
@@ -299,7 +313,10 @@
   color: #64748b;
   text-align: left;
   border-bottom: 1px solid #e2e8f0;
-  padding: 8px 10px;
+  padding: 10px 12px;
+  white-space: nowrap;
+  background: #f8fafc;
+  font-weight: 600;
 }
 
 .checkboxHead {
@@ -312,8 +329,10 @@
   font-size: 12px;
   color: #0f172a;
   border-bottom: 1px dashed #e2e8f0;
-  padding: 10px;
+  padding: 12px;
   vertical-align: middle;
+  word-break: break-word;
+  max-width: 140px;
 }
 
 .checkboxCell {
@@ -375,7 +394,8 @@
 }
 
 .stageCell {
-  white-space: nowrap;
+  white-space: normal;
+  max-width: 100px;
 }
 
 .stageSourced { background: #ede9fe; color: #7c3aed; border: 1px solid #c4b5fd; }
@@ -449,7 +469,7 @@
 }
 
 .moveSelectWide {
-  min-width: 170px;
+  min-width: 160px;
 }
 
 .eyeActionBtn {
@@ -472,12 +492,15 @@
 }
 
 .actionsCell {
-  width: 70px;
+  width: 80px;
   text-align: center;
+  padding: 12px 8px !important;
 }
 
 .actionsCellWide {
-  min-width: 190px;
+  min-width: 220px;
+  text-align: center;
+  padding: 12px 8px !important;
 }
 
 .tableFooter {
@@ -847,7 +870,200 @@
   }
 }
 
+@media (max-width: 992px) {
+  .page {
+    height: auto;
+    min-height: 100vh;
+    overflow: visible;
+  }
+
+  .card {
+    overflow: visible;
+    padding: 14px;
+  }
+
+  .headerRow {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .detailCard {
+    padding: 12px;
+  }
+
+  .detailHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .stageRow {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+  }
+
+  .stageTabs {
+    width: 100%;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .stageTab {
+    font-size: 12px;
+    padding: 6px 10px;
+  }
+
+  .stageActions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .searchBox {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .mapBtn,
+  .uploadBtn {
+    width: 100%;
+  }
+
+  .candidateTable {
+    font-size: 11px;
+    min-width: 850px;
+  }
+
+  .candidateTableMapped {
+    min-width: 850px;
+  }
+
+  .candidateTable th,
+  .candidateTable td {
+    padding: 8px;
+  }
+
+  .tableWrap {
+    padding: 8px;
+    overflow-x: auto;
+  }
+}
+
 @media (max-width: 760px) {
+  .card {
+    padding: 12px;
+  }
+
+  .headerLeft {
+    width: 100%;
+    flex-direction: row;
+    gap: 8px;
+  }
+
+  .title {
+    font-size: 16px;
+  }
+
+  .breadcrumb {
+    font-size: 10px;
+  }
+
+  .detailCard {
+    padding: 10px;
+  }
+
+  .avatar {
+    width: 40px;
+    height: 40px;
+    font-size: 16px;
+  }
+
+  .jobId {
+    font-size: 14px;
+  }
+
+  .jobSub {
+    font-size: 11px;
+    gap: 4px;
+  }
+
+  .tags {
+    flex-direction: column;
+    gap: 6px;
+    width: 100%;
+  }
+
+  .tagPrimary,
+  .tagWarning {
+    font-size: 10px;
+    padding: 2px 6px;
+  }
+
+  .candidateTable {
+    min-width: 800px;
+  }
+
+  .candidateTableMapped {
+    min-width: 800px;
+  }
+
+  .stageTabs {
+    gap: 6px;
+  }
+
+  .stageTab {
+    font-size: 11px;
+    padding: 4px 8px;
+  }
+
+  .stageActions {
+    gap: 8px;
+  }
+
+  .searchBox {
+    height: 28px;
+  }
+
+  .searchBox input {
+    width: 100%;
+    font-size: 12px;
+  }
+
+  .mapBtn,
+  .uploadBtn {
+    font-size: 11px;
+    padding: 6px 8px;
+    height: 28px;
+  }
+
+  .uploadedFileName {
+    font-size: 10px;
+    padding: 4px 6px;
+  }
+
+  .candidateTable {
+    font-size: 10px;
+  }
+
+  .candidateTable th,
+  .candidateTable td {
+    padding: 6px;
+    height: auto;
+  }
+
+  .candidateTable th:nth-child(4),
+  .candidateTable td:nth-child(4),
+  .candidateTable th:nth-child(5),
+  .candidateTable td:nth-child(5) {
+    display: none;
+  }
+
+  .tableWrap {
+    padding: 6px;
+  }
+
   .stageMoveToast {
     right: 12px;
     left: 12px;
@@ -880,5 +1096,91 @@
 
   .preActionRow {
     flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 480px) {
+  .card {
+    padding: 10px;
+  }
+
+  .title {
+    font-size: 14px;
+  }
+
+  .breadcrumb {
+    display: none;
+  }
+
+  .avatar {
+    width: 36px;
+    height: 36px;
+    font-size: 14px;
+  }
+
+  .stageTabs {
+    gap: 4px;
+  }
+
+  .stageTab {
+    font-size: 10px;
+    padding: 3px 6px;
+  }
+
+  .addStageBtn {
+    width: 18px;
+    height: 18px;
+  }
+
+  .searchBox {
+    height: 26px;
+  }
+
+  .searchBox input {
+    font-size: 11px;
+  }
+
+  .candidateTable {
+    min-width: 100%;
+    table-layout: fixed;
+  }
+
+  .candidateTableMapped {
+    min-width: 100% !important;
+    table-layout: fixed;
+  }
+
+  .checkboxHead,
+  .checkboxCell {
+    width: 20px;
+    padding: 4px 2px !important;
+  }
+
+  .candidateTable th {
+    font-size: 9px;
+    padding: 4px;
+  }
+
+  .candidateTable td {
+    font-size: 9px;
+    padding: 4px;
+  }
+
+  .moveSelect {
+    width: 100%;
+    padding: 4px 22px 4px 6px;
+  }
+
+  .moveSelectWide {
+    min-width: 100%;
+  }
+
+  .candidateTable th:nth-child(3),
+  .candidateTable td:nth-child(3),
+  .candidateTable th:nth-child(4),
+  .candidateTable td:nth-child(4),
+  .candidateTable th:nth-child(5),
+  .candidateTable td:nth-child(5) {
+    display: none;
   }
 }
