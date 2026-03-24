@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { FiBell } from 'react-icons/fi';
 import './notification.scss'; // import the SCSS (global)
 
 
@@ -35,7 +36,7 @@ export default function NotificationBell() {
         aria-expanded={open}
         onClick={() => setOpen(v => !v)}
       >
-        
+        <FiBell className="icon" aria-hidden="true" />
         {unread > 0 && (
           <span className="notifBadge" aria-label={`${unread} unread notifications`}>
             {unread}
