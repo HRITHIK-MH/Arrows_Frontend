@@ -49,6 +49,15 @@ export default function App() {
     document.documentElement.style.backgroundColor = "#ffffff";
   }, []);
 
+  useEffect(() => {
+    const shouldLockScroll = location.pathname !== "/login" && isSidebarOpen && window.innerWidth <= 768;
+    document.body.style.overflow = shouldLockScroll ? "hidden" : "";
+
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isSidebarOpen, location.pathname]);
+
   // Close the sidebar on route changes for small screens
   React.useEffect(() => {
     if (window.innerWidth <= 768) {

@@ -896,6 +896,67 @@
   }
 }
 
+@media only screen and (max-width: 768px) {
+  .page {
+    height: auto;
+    min-height: 100%;
+    overflow: visible;
+  }
+
+  .card,
+  .contentArea {
+    overflow: visible;
+  }
+
+  .filtersLeft,
+  .filtersRight {
+    width: 100%;
+  }
+
+  .filtersRight {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .searchField,
+  .selectField,
+  .moreButton,
+  .clearButton,
+  .applyButton {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .tableWrap,
+  .skillTableWrap,
+  .jobApplicationTableWrap,
+  .profileTabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .interviewsTable,
+  .skillTable,
+  .jobApplicationTable {
+    width: max-content;
+    min-width: 820px;
+  }
+
+  .viewDrawer {
+    width: 100vw;
+    max-width: 100vw;
+  }
+}
+
+@media only screen and (max-width: 480px) {
+  .interviewsTable,
+  .skillTable,
+  .jobApplicationTable {
+    min-width: 680px;
+  }
+}
+
 .viewDrawerOverlay {
   position: fixed;
   inset: 0;

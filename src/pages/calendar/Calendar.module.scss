@@ -674,3 +674,40 @@
     display: none;
   }
 }
+
+@media (max-width: 768px) {
+  .page {
+    height: auto;
+    min-height: 100%;
+    overflow: visible;
+  }
+
+  .card {
+    overflow: visible;
+    padding: 14px;
+  }
+
+  .calendarCard {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .controlsLeft,
+  .controlsRight,
+  .microsoftActions,
+  .eventPreview {
+    width: 100%;
+  }
+
+  .weekTimeline,
+  .dayTimeline {
+    min-width: 720px;
+  }
+}
+
+@media (max-width: 480px) {
+  .weekTimeline,
+  .dayTimeline {
+    min-width: 640px;
+  }
+}

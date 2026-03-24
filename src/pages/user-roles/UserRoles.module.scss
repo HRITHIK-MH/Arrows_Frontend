@@ -771,3 +771,33 @@
     transform: scale(0.98);
   }
 }
+
+@media (max-width: 768px) {
+  .userRolesContainer,
+  .contentArea {
+    min-width: 0;
+  }
+
+  .contentArea {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .orgChart {
+    width: max-content;
+    min-width: 100%;
+    align-items: flex-start;
+    padding: 8px 0;
+  }
+
+  .managerColumn,
+  .recruitersList {
+    width: 100%;
+    align-items: stretch;
+  }
+
+  .cardInner {
+    width: min(320px, calc(100vw - 48px));
+    min-width: 0;
+  }
+}

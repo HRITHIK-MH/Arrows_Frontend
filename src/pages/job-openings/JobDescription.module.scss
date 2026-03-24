@@ -1184,3 +1184,52 @@
     display: none;
   }
 }
+
+@media (max-width: 768px) {
+  .page {
+    height: auto;
+    min-height: 100%;
+    overflow: visible;
+  }
+
+  .card {
+    overflow: visible;
+  }
+
+  .tableWrap,
+  .skillTableWrap,
+  .jobApplicationTableWrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .candidateTable,
+  .candidateTableMapped,
+  .skillTable,
+  .jobApplicationTable {
+    width: max-content;
+    min-width: 720px;
+  }
+
+  .stageActions,
+  .mapActionBar,
+  .skillButtons {
+    width: 100%;
+  }
+
+  .searchBox,
+  .mapSelectWrap,
+  .mapSelectTrigger {
+    width: 100%;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .candidateTable,
+  .candidateTableMapped,
+  .skillTable,
+  .jobApplicationTable {
+    min-width: 640px;
+  }
+}

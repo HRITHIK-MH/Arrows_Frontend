@@ -1804,3 +1804,126 @@
     border-radius: 0;
   }
 }
+
+@media (max-width: 768px) {
+  .page {
+    height: auto;
+    min-height: 100%;
+    overflow: visible;
+  }
+
+  .card,
+  .tableSection {
+    overflow: visible;
+  }
+
+  .filtersLeft,
+  .filtersRight {
+    width: 100%;
+  }
+
+  .filtersRight {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .searchField,
+  .selectField,
+  .moreButton,
+  .clearButton {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .tableWrap,
+  .skillTableWrap,
+  .jobApplicationTableWrap,
+  .profileTabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .candidateTable,
+  .skillTable,
+  .jobApplicationTable {
+    width: max-content;
+    min-width: 820px;
+  }
+
+  .viewDrawer {
+    width: 100vw;
+    max-width: 100vw;
+  }
+}
+
+@media (max-width: 480px) {
+  .page {
+    gap: 10px;
+  }
+
+  .card {
+    padding: 8px;
+    border-radius: 10px;
+  }
+
+  .infoRow {
+    padding: 10px;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .infoContent {
+    gap: 8px;
+    width: 100%;
+  }
+
+  .description {
+    font-size: 12px;
+    line-height: 1.4;
+  }
+
+  .legendRow {
+    gap: 6px 10px;
+  }
+
+  .legendItem {
+    font-size: 11px;
+  }
+
+  .legendItem:not(:last-child)::after {
+    display: none;
+  }
+
+  .addButton {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .tableSection {
+    margin-top: 12px;
+    gap: 8px;
+  }
+
+  .filtersBar {
+    padding: 6px;
+    gap: 8px;
+  }
+
+  .searchField,
+  .selectField,
+  .moreButton,
+  .clearButton {
+    height: 34px;
+    min-height: 34px;
+  }
+
+  .candidateTable,
+  .skillTable,
+  .jobApplicationTable {
+    min-width: 680px;
+  }
+
+  .stageMoveToast {
+    top: calc(var(--header-height) + 8px);
+  }
+}

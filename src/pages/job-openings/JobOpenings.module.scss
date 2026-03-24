@@ -1322,6 +1322,59 @@
   }
 }
 
+@media only screen and (max-width: 768px) {
+  .page {
+    height: auto;
+    min-height: 100%;
+    overflow: visible;
+  }
+
+  .jobCard {
+    overflow: visible;
+    overflow-y: visible;
+  }
+
+  .filtersLeft,
+  .filtersRight {
+    width: 100%;
+  }
+
+  .filtersRight {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .searchField,
+  .selectField,
+  .dateField,
+  .moreButton,
+  .clearButton {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .tableWrap,
+  .innerTableWrap {
+    overflow-x: auto;
+    overflow-y: visible;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .jobTable,
+  .innerTable {
+    width: max-content;
+    min-width: 720px;
+  }
+}
+
+@media only screen and (max-width: 480px) {
+  .jobTable,
+  .innerTable {
+    min-width: 640px;
+  }
+}
+
 .moreButtonWrapper {
   position: relative;
   display: inline-flex;

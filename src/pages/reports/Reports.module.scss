@@ -295,3 +295,25 @@
   min-width: 40px;
   text-align: right;
 }
+
+@media (max-width: 768px) {
+  .reportsContainer,
+  .contentArea,
+  .chartContainer,
+  .chartBarWrapper {
+    min-width: 0;
+  }
+
+  .tabsSection {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .tab {
+    white-space: nowrap;
+  }
+
+  .chartLabel {
+    word-break: break-word;
+  }
+}

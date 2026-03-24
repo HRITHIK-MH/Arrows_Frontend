@@ -360,3 +360,32 @@
     grid-template-columns: 1fr;
   }
 }
+
+@media (max-width: 768px) {
+  .page {
+    height: auto;
+    min-height: 100%;
+    overflow: visible;
+  }
+
+  .card,
+  .tableSection {
+    overflow: visible;
+  }
+
+  .tableWrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .tableWrap :global(.data-table) {
+    width: max-content;
+    min-width: 820px;
+  }
+}
+
+@media (max-width: 480px) {
+  .tableWrap :global(.data-table) {
+    min-width: 680px;
+  }
+}

@@ -144,7 +144,16 @@
 
 /* Responsive tweaks */
 @media (max-width: 480px) {
-  .notifMenu { min-width: 220px; }
+  .notif {
+    width: 100%;
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .notifMenu {
+    min-width: min(220px, calc(100vw - 20px));
+    right: 0;
+  }
 }
 
 
