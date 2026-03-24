@@ -84,6 +84,8 @@ const FormField = ({
     onChange(name, newValue);
   };
 
+  const resolvedInputType = type === 'number' ? 'text' : type;
+
   const handleNumberKeyDown = (event) => {
     if (type !== 'number') return;
     if (['e', 'E', '+', '-', '.'].includes(event.key)) {
@@ -479,7 +481,7 @@ const FormField = ({
 
             const inputElement = (
               <input
-                type={type}
+                type={resolvedInputType}
                 id={name}
                 name={name}
                 value={type === 'file' ? undefined : value}

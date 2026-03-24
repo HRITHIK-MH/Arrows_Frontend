@@ -8,6 +8,7 @@ const CandidateBasicInfoStep = ({
   onSetStepFields,
   validationErrors = {},
 }) => {
+  const isFresher = formData.candidateType === "fresher";
 
 
   const fieldMap = useMemo(() => {
@@ -18,31 +19,85 @@ const CandidateBasicInfoStep = ({
     return map;
   }, [fields]);
 
-  const renderField = (name, extraClass = "") => {
+  useEffect(() => {
+    if (!onSetStepFields) return;
+
+    const hiddenForFresher = [
+      "currentCompanyName",
+      "jobTitleRole",
+      "employmentType",
+      "noticePeriod",
+      "currentCtc",
+      "expectedCtc",
+    ];
+
+    onSetStepFields(
+      fields
+        .filter((field) => !(isFresher && hiddenForFresher.includes(field.name)))
+        .map((field) => ({
+          name: field.name,
+          label: field.label,
+          required: Boolean(field.required),
+        }))
+    );
+  }, [fields, isFresher, onSetStepFields]);
+
+  useEffect(() => {
+    const sourceIdOptions = Array.isArray(fieldMap.sourceId?.options)
+      ? fieldMap.sourceId.options
+      : [];
+    const sourceNameOptions = Array.isArray(fieldMap.sourceName?.options)
+      ? fieldMap.sourceName.options
+      : [];
+
+    if (formData.sourceId) {
+      const matchedSource = sourceIdOptions.find(
+        (option) => String(option.value) === String(formData.sourceId)
+      );
+
+      if (matchedSource?.sourceName && matchedSource.sourceName !== formData.sourceName) {
+        onChange("sourceName", matchedSource.sourceName);
+      }
+      return;
+    }
+
+    if (formData.sourceName) {
+      const matchedSource = sourceNameOptions.find(
+        (option) => String(option.value) === String(formData.sourceName)
+      );
+
+      if (matchedSource?.sourceId && matchedSource.sourceId !== formData.sourceId) {
+        onChange("sourceId", matchedSource.sourceId);
+      }
+    }
+  }, [fieldMap, formData.sourceId, formData.sourceName, onChange]);
+
+  const renderField = (name, extraClass = "", overrides = {}) => {
     const field = fieldMap[name];
     if (!field) return null;
     const value =
       formData[field.name] || (field.type === "multiselect" ? [] : "");
+    const fieldProps = { ...field, ...overrides };
 
     return (
       <div className={`candidate-cell${extraClass ? ` ${extraClass}` : ""}`}>
         <FormField
-          key={field.name}
-          label={field.label}
-          type={field.type}
-          name={field.name}
+          key={fieldProps.name}
+          label={fieldProps.label}
+          type={fieldProps.type}
+          name={fieldProps.name}
           value={value}
           onChange={onChange}
-          required={field.required}
-          options={field.options}
-          validate={field.validate}
-          error={validationErrors[field.name]}
-          onValidation={field.onValidation}
-          placeholder={field.placeholder}
-          hideLabel={field.hideLabel}
-          accept={field.accept}
-          multiple={field.multiple}
-          prefix={field.prefix}
+          required={fieldProps.required}
+          options={fieldProps.options}
+          validate={fieldProps.validate}
+          error={validationErrors[fieldProps.name]}
+          onValidation={fieldProps.onValidation}
+          placeholder={fieldProps.placeholder}
+          hideLabel={fieldProps.hideLabel}
+          accept={fieldProps.accept}
+          multiple={fieldProps.multiple}
+          prefix={fieldProps.prefix}
           formData={formData}
         />
       </div>
@@ -165,14 +220,38 @@ const CandidateBasicInfoStep = ({
           <h3 className="candidate-section-title">Current Company Info</h3>
           <div className="candidate-section-divider" />
         </div>
-        <div className="candidate-grid">
-          {renderField("currentCompanyName")}
-          {renderField("jobTitleRole")}
-          {renderField("employmentType")}
-          {renderField("noticePeriod")}
-          {renderField("currentCtc")}
-          {renderField("expectedCtc")}
+        <div className="candidate-type-toggle">
+          <label className={`candidate-type-option${isFresher ? " active" : ""}`}>
+            <input
+              type="radio"
+              name="candidateType"
+              value="fresher"
+              checked={isFresher}
+              onChange={() => onChange("candidateType", "fresher")}
+            />
+            Fresher
+          </label>
+          <label className={`candidate-type-option${!isFresher ? " active" : ""}`}>
+            <input
+              type="radio"
+              name="candidateType"
+              value="experienced"
+              checked={!isFresher}
+              onChange={() => onChange("candidateType", "experienced")}
+            />
+            Experienced
+          </label>
         </div>
+        {!isFresher && (
+          <div className="candidate-grid">
+            {renderField("currentCompanyName")}
+            {renderField("jobTitleRole")}
+            {renderField("employmentType")}
+            {renderField("noticePeriod")}
+            {renderField("currentCtc")}
+            {renderField("expectedCtc")}
+          </div>
+        )}
       </div>
 
       <div className="candidate-section">

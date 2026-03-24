@@ -269,6 +269,10 @@ const ReusableForm = ({ config, onSubmit, initialData, readOnly = false }) => {
 
   const formConfig = useMemo(() => createFormConfig(config), [config]);
 
+  React.useEffect(() => {
+    setValidationErrors({});
+  }, [initialData, config]);
+
   // Create validation functions
   const createValidationFunction = useCallback((ruleName) => {
     const rule = config.validationRules?.[ruleName];
@@ -332,6 +336,18 @@ const ReusableForm = ({ config, onSubmit, initialData, readOnly = false }) => {
     });
   }, [formConfig, config.steps, createValidationFunction, handleValidation, validationErrors, readOnly]);
 
+  const resolveFieldValue = useCallback((data, fieldName) => {
+    if (data && data[fieldName] !== undefined) {
+      return data[fieldName];
+    }
+
+    if (["primarySkill", "skillExperienceLevel", "skillLastUsed"].includes(fieldName)) {
+      return data?.skills?.[0]?.[fieldName];
+    }
+
+    return data?.[fieldName];
+  }, []);
+
   // Validate all mandatory fields at once
   const validateAllMandatoryFields = async (data, fields) => {
     const errors = {};
@@ -345,12 +361,16 @@ const ReusableForm = ({ config, onSubmit, initialData, readOnly = false }) => {
         if (field.validationRule) {
           const validateFn = createValidationFunction(field.validationRule);
           if (!validateFn) return null;
-          const result = await validateFn(data[field.name], field.name, data);
+          const result = await validateFn(resolveFieldValue(data, field.name), field.name, data);
           return { field, result };
         }
 
         if (field.required) {
-          const result = await validateMandatoryField(data[field.name], field.name, field.label);
+          const result = await validateMandatoryField(
+            resolveFieldValue(data, field.name),
+            field.name,
+            field.label
+          );
           return { field, result };
         }
 
@@ -370,6 +390,8 @@ const ReusableForm = ({ config, onSubmit, initialData, readOnly = false }) => {
   };
 
   const handleSubmit = async (formData) => {
+    const itemLabel = String(config.itemName || 'Form').toLowerCase();
+
     try {
       // Validate all mandatory fields before submission
       const allFields = config.steps.flatMap(step => step.fields || []);
@@ -392,23 +414,26 @@ const ReusableForm = ({ config, onSubmit, initialData, readOnly = false }) => {
       // Clear validation errors on successful validation
       setValidationErrors({});
 
-      // Make AJAX call to submit the job
-      const response = await axios.post('/api/jobs', formData);
+      if (config.submitRequest) {
+        await config.submitRequest(formData);
+      } else if (config.submitEndpoint) {
+        await axios.post(config.submitEndpoint, formData);
+      }
 
       // Call the onSubmit callback if provided
       onSubmit?.(formData);
 
       // Handle successful submission
-      console.log('Job submitted successfully:', response.data);
+      console.log(`${config.itemName || 'Form'} submitted successfully`);
     } catch (error) {
-      console.error('Error submitting job:', error);
+      console.error(`Error submitting ${itemLabel}:`, error);
 
       // For development purposes, treat as success if it's a network error (no backend)
       if (error.code === 'ERR_NETWORK' || error.response?.status === 404) {
         console.log('No backend server available, treating as successful submission for development');
         onSubmit?.(formData);
       } else {
-        alert('Error submitting job. Please try again.');
+        alert(`Error submitting ${itemLabel}. Please try again.`);
         return;
       }
     }
@@ -430,7 +455,7 @@ const ReusableForm = ({ config, onSubmit, initialData, readOnly = false }) => {
 
     const fieldResults = await Promise.all(
       stepFields.map(async (field) => {
-        const value = data[field.name];
+        const value = resolveFieldValue(data, field.name);
         const fieldLabel = field.label ? field.label.replace('*', '').trim() : field.name;
         let result = null;
 

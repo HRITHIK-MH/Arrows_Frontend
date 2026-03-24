@@ -39,7 +39,12 @@ const CandidateFilterBar = React.memo(({
   uniqueStages,
   uniqueStatuses,
   hasFilters,
-  onClearFilters
+  onClearFilters,
+  isMoreMenuOpen,
+  moreMenuRef,
+  onToggleMoreMenu,
+  onQuickFilterStatus,
+  onQuickFilterStage,
 }) => (
   <div className={styles.filtersBar}>
     <div className={styles.filtersLeft}>
@@ -83,15 +88,29 @@ const CandidateFilterBar = React.memo(({
         ))}
       </select>
 
-      <button className={styles.moreButton} type="button" aria-label="More filters">
-        <FiMoreHorizontal size={16} />
-      </button>
+      <div className={styles.moreMenuWrap} ref={moreMenuRef}>
+        <button
+          className={styles.moreButton}
+          type="button"
+          aria-label="More filters"
+          aria-haspopup="menu"
+          aria-expanded={isMoreMenuOpen}
+          onClick={onToggleMoreMenu}
+        >
+          <FiMoreHorizontal size={16} />
+        </button>
+        {isMoreMenuOpen && (
+          <div className={styles.moreMenu} role="menu">
+            <button type="button" className={styles.moreMenuItem} onClick={() => onQuickFilterStatus("In Progress")}>Only In Progress</button>
+            <button type="button" className={styles.moreMenuItem} onClick={() => onQuickFilterStatus("Completed")}>Only Completed</button>
+            <button type="button" className={styles.moreMenuItem} onClick={() => onQuickFilterStage("Sourced")}>Only Sourced</button>
+            <button type="button" className={styles.moreMenuItem} onClick={onClearFilters}>Reset Filters</button>
+          </div>
+        )}
+      </div>
     </div>
 
     <div className={styles.filtersRight}>
-      <button className={styles.applyButton} type="button" disabled={!hasFilters}>
-        Apply
-      </button>
       <button
         className={styles.clearButton}
         type="button"
@@ -247,9 +266,9 @@ export default function Candidates() {
   const [filterRating, setFilterRating] = React.useState('');
   const [filterStage, setFilterStage] = React.useState('');
   const [filterStatus, setFilterStatus] = React.useState('');
+  const [isMoreMenuOpen, setIsMoreMenuOpen] = React.useState(false);
   const [isViewDrawerOpen, setIsViewDrawerOpen] = React.useState(false);
   const [activeProfileTab, setActiveProfileTab] = React.useState("Basic Info");
-  const [activePipelineStep, setActivePipelineStep] = React.useState("Engaged");
   const [selectedCandidate, setSelectedCandidate] = React.useState(null);
   const [activeSkillType, setActiveSkillType] = React.useState("primary");
   const [isAddingSkill, setIsAddingSkill] = React.useState(false);
@@ -258,6 +277,7 @@ export default function Candidates() {
   const [mapQuery, setMapQuery] = React.useState("");
   const [isMapDropdownOpen, setIsMapDropdownOpen] = React.useState(false);
   const mapDropdownRef = React.useRef(null);
+  const moreMenuRef = React.useRef(null);
 
   // Debounced search handler - reduces filter recalculations by 99%
   const debouncedSearch = React.useMemo(
@@ -340,6 +360,17 @@ export default function Candidates() {
     setFilterRating('');
     setFilterStage('');
     setFilterStatus('');
+    setIsMoreMenuOpen(false);
+  }, []);
+
+  const handleQuickFilterStatus = React.useCallback((status) => {
+    setFilterStatus(status);
+    setIsMoreMenuOpen(false);
+  }, []);
+
+  const handleQuickFilterStage = React.useCallback((stage) => {
+    setFilterStage(stage);
+    setIsMoreMenuOpen(false);
   }, []);
 
   const getStageClass = React.useCallback((stage) => {
@@ -596,7 +627,7 @@ export default function Candidates() {
       location: row.location || "Chennai, India",
       dateOfBirth: row.dateOfBirth || "02/06/1999",
       gender: row.gender || "Male",
-      currentCompany: row.currentCompanyName || "Method Hub",
+      currentCompany: row.currentCompanyName || (row.candidateType === "fresher" ? "Not applicable" : "Method Hub"),
       experience: row.experience || "8 Years",
       yearsExperience: row.yearsExperience || "8 Years",
       offersInHand: row.offersInHand || "No",
@@ -655,6 +686,17 @@ export default function Candidates() {
     return () => document.removeEventListener("mousedown", handleOutsideClick);
   }, [isMapDropdownOpen]);
 
+  React.useEffect(() => {
+    if (!isMoreMenuOpen) return undefined;
+    const handleOutsideClick = (event) => {
+      if (moreMenuRef.current && !moreMenuRef.current.contains(event.target)) {
+        setIsMoreMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, [isMoreMenuOpen]);
+
   const handleAddCandidate = React.useCallback(() => {
     setShowCandidateForm(true);
     setShowDataTable(false);
@@ -662,23 +704,29 @@ export default function Candidates() {
     setEditingData(null);
   }, []);
 
-  const getPipelineFromStage = React.useCallback((stage) => {
-    const normalized = String(stage || "").toLowerCase();
-    if (normalized === "added") return "New";
-    if (normalized === "sourced") return "In Review";
-    if (normalized === "pre-screening") return "Engaged";
-    if (normalized === "assessment") return "Offered";
-    if (normalized === "client interview") return "Hired";
-    if (normalized === "rejected") return "Rejected";
+  const getPipelineStep = React.useCallback((candidate) => {
+    const normalizedStatus = String(candidate?.status || "").toLowerCase();
+    const normalizedStage = String(candidate?.stage || "").toLowerCase();
+
+    if (normalizedStatus === "rejected" || normalizedStage === "rejected") return "Rejected";
+    if (normalizedStatus === "hired" || normalizedStage === "offer accepted") return "Hired";
+    if (normalizedStatus === "offered" || normalizedStage === "offer" || normalizedStage === "assessment") return "Offered";
+    if (normalizedStatus === "engaged" || normalizedStage === "pre-screening" || normalizedStage === "client interview") return "Engaged";
+    if (normalizedStatus === "in review" || normalizedStage === "sourced") return "In Review";
+    if (normalizedStatus === "new" || normalizedStage === "added") return "New";
     return "New";
   }, []);
+
+  const activePipelineStep = React.useMemo(
+    () => (selectedCandidate ? getPipelineStep(selectedCandidate) : ""),
+    [getPipelineStep, selectedCandidate]
+  );
 
   const handleViewCandidate = React.useCallback((row) => {
     console.log('View candidate:', row);
     const profile = buildCandidateProfile(row);
     setSelectedCandidate(profile);
     setActiveProfileTab("Basic Info");
-    setActivePipelineStep(getPipelineFromStage(profile.stage));
     setActiveSkillType("primary");
     setIsAddingSkill(false);
     setSkillDraft(createSkillDraft());
@@ -686,7 +734,7 @@ export default function Candidates() {
     setMapQuery("");
     setIsMapDropdownOpen(false);
     setIsViewDrawerOpen(true);
-  }, [buildCandidateProfile, getPipelineFromStage]);
+  }, [buildCandidateProfile]);
 
   const handleEditCandidate = React.useCallback((row, index) => {
     console.log('Edit candidate:', row);
@@ -1354,6 +1402,11 @@ export default function Candidates() {
               uniqueStatuses={uniqueStatuses}
               hasFilters={hasFilters}
               onClearFilters={clearFilters}
+              isMoreMenuOpen={isMoreMenuOpen}
+              moreMenuRef={moreMenuRef}
+              onToggleMoreMenu={() => setIsMoreMenuOpen((prev) => !prev)}
+              onQuickFilterStatus={handleQuickFilterStatus}
+              onQuickFilterStage={handleQuickFilterStage}
             />
 
             <div className={styles.tableWrap}>
@@ -1489,7 +1542,8 @@ export default function Candidates() {
                   key={step}
                   type="button"
                   className={`${styles.pipelineStep}${activePipelineStep === step ? ` ${styles.pipelineStepActive}` : ""}`}
-                  onClick={() => setActivePipelineStep(step)}
+                  aria-current={activePipelineStep === step ? "step" : undefined}
+                  tabIndex={-1}
                 >
                   {step}
                 </button>

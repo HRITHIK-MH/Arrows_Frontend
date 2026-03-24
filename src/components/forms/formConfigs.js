@@ -42,6 +42,40 @@ const isValidPhoneNumber = (value, minDigits = 10, maxDigits = 10) => {
   return isWithinRange && /^\d+$/.test(digits);
 };
 
+const isFresherCandidate = (formData) => formData?.candidateType === "fresher";
+
+const SOURCE_DIRECTORY = [
+  { id: "SRC-001", name: "Resume Inbox" },
+  { id: "SRC-002", name: "Employee Referral" },
+  { id: "SRC-003", name: "LinkedIn" },
+  { id: "SRC-004", name: "Seek" },
+  { id: "SRC-005", name: "Added by User" }
+];
+
+const RECRUITER_DIRECTORY = [
+  { id: "REC-001", name: "Parthiban" },
+  { id: "REC-002", name: "Manigandan" },
+  { id: "REC-003", name: "Saravanan" },
+  { id: "REC-004", name: "Priya" }
+];
+
+const SOURCE_ID_OPTIONS = SOURCE_DIRECTORY.map(({ id, name }) => ({
+  value: id,
+  label: `${id} - ${name}`,
+  sourceName: name,
+}));
+
+const SOURCE_NAME_OPTIONS = SOURCE_DIRECTORY.map(({ id, name }) => ({
+  value: name,
+  label: `${name} (${id})`,
+  sourceId: id,
+}));
+
+const RECRUITER_OPTIONS = RECRUITER_DIRECTORY.map(({ id, name }) => ({
+  value: id,
+  label: `${id} - ${name}`,
+}));
+
 // Example configurations for different forms
 // Job Application Form Configuration
 export const jobApplicationConfig = {
@@ -902,27 +936,27 @@ export const candidateConfig = {
         },
         {
           name: "noticePeriod",
-          label: "Notice Period *",
-          type: "text",
+          label: "Notice Period (Days) *",
+          type: "number",
           required: true,
           validationRule: "noticePeriod",
-          placeholder: "Enter Total Duration"
+          placeholder: "Enter notice period in days"
         },
         {
           name: "currentCtc",
-          label: "Current CTC *",
-          type: "text",
+          label: "Current CTC (Annual INR) *",
+          type: "number",
           required: true,
           validationRule: "ctc",
-          placeholder: "Enter Current CTC"
+          placeholder: "Enter annual current CTC in INR"
         },
         {
           name: "expectedCtc",
-          label: "Expected CTC *",
-          type: "text",
+          label: "Expected CTC (Annual INR) *",
+          type: "number",
           required: true,
           validationRule: "ctc",
-          placeholder: "Enter Expected CTC"
+          placeholder: "Enter annual expected CTC in INR"
         },
         {
           name: "primarySkill",
@@ -969,31 +1003,35 @@ export const candidateConfig = {
         },
         {
           name: "sourceId",
-          label: "Source Id",
-          type: "text",
-          required: false,
-          placeholder: "SC1293737747"
+          label: "Source Id *",
+          type: "select",
+          required: true,
+          validationRule: "sourceReference",
+          placeholder: "Select Source Id",
+          options: SOURCE_ID_OPTIONS
         },
         {
           name: "recruiterId",
           label: "Recruiter Id",
-          type: "text",
+          type: "select",
           required: false,
-          placeholder: "QW71271"
+          placeholder: "Select Recruiter Id",
+          options: RECRUITER_OPTIONS
         },
         {
           name: "sourceName",
           label: "Source Name",
-          type: "text",
+          type: "select",
           required: false,
-          placeholder: "Parthigan",
-          validationRule: "alphabeticOnly"
+          placeholder: "Select Source Name",
+          options: SOURCE_NAME_OPTIONS
         },
         {
           name: "sourcedDate",
-          label: "Sourced Date",
+          label: "Sourced Date *",
           type: "date",
-          required: false
+          required: true,
+          validationRule: "requiredField"
         }
       ]
     },
@@ -1038,7 +1076,14 @@ export const candidateConfig = {
     }
   ],
   validationRules: {
-    requiredField: async (value, fieldName) => {
+    requiredField: async (value, fieldName, formData) => {
+      if (
+        isFresherCandidate(formData) &&
+        ["currentCompanyName", "jobTitleRole", "currentCtc"].includes(fieldName)
+      ) {
+        return { isValid: true };
+      }
+
       if (isEmptyValue(value)) {
         const fieldLabels = {
           candidateId: 'Candidate Id',
@@ -1056,6 +1101,8 @@ export const candidateConfig = {
           primarySkill: 'Primary Skill',
           skillExperienceLevel: 'Experience Level',
           skillLastUsed: 'Last Used',
+          sourceId: 'Source Id',
+          sourcedDate: 'Sourced Date',
           candidateResume: 'Resume'
         };
         const fieldLabel = fieldLabels[fieldName] || fieldName;
@@ -1166,6 +1213,16 @@ export const candidateConfig = {
       }
       return { isValid: true };
     },
+    sourceReference: async (_, fieldName, formData) => {
+      const hasSourceId = !isEmptyValue(formData?.sourceId);
+      const hasSourceName = !isEmptyValue(formData?.sourceName);
+
+      if (!hasSourceId && !hasSourceName) {
+        return { isValid: false, message: "Select a Source Id or Source Name" };
+      }
+
+      return { isValid: true };
+    },
     comments: async (value) => {
       if (isEmptyValue(value)) return { isValid: true };
       if (String(value).length > 1000) {
@@ -1190,14 +1247,23 @@ export const candidateConfig = {
 
       return { isValid: true };
     },
-    noticePeriod: async (value) =>
-      validateIntegerValue(value, {
-        label: "Notice Period",
+    noticePeriod: async (value, fieldName, formData) => {
+      if (isFresherCandidate(formData) && isEmptyValue(value)) {
+        return { isValid: true };
+      }
+      return validateIntegerValue(value, {
+        label: "Notice Period (Days)",
         min: 0,
         max: 365
-      }),
+      });
+    },
     ctc: async (value, fieldName, formData) => {
       const label = fieldName === "expectedCtc" ? "Expected CTC" : "Current CTC";
+
+      if (isFresherCandidate(formData) && isEmptyValue(value)) {
+        return { isValid: true };
+      }
+
       const integerValidation = validateIntegerValue(value, {
         label,
         min: 0,
