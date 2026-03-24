@@ -37,7 +37,6 @@ export default function NotificationBell() {
         onClick={() => setOpen(v => !v)}
       >
         <FiBell className="icon" aria-hidden="true" />
-        
         {unread > 0 && (
           <span className="notifBadge" aria-label={`${unread} unread notifications`}>
             {unread}

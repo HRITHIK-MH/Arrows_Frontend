@@ -23,7 +23,21 @@ const FilterBar = React.memo(({
   uniqueHiringManagers,
   hasFilters,
   onClearFilters
-}) => (
+}) => {
+  const [showMoreMenu, setShowMoreMenu] = React.useState(false);
+  const moreMenuRef = React.useRef(null);
+
+  React.useEffect(() => {
+    function onDocClick(e) {
+      if (moreMenuRef.current && !moreMenuRef.current.contains(e.target)) {
+        setShowMoreMenu(false);
+      }
+    }
+    document.addEventListener('mousedown', onDocClick);
+    return () => document.removeEventListener('mousedown', onDocClick);
+  }, []);
+
+  return (
   <div className={styles.filtersBar}>
     <div className={styles.filtersLeft}>
       <FiFilter className={styles.filterIcon} aria-hidden="true" />
@@ -77,9 +91,24 @@ const FilterBar = React.memo(({
           <option key={manager} value={manager}>{manager}</option>
         ))}
       </select>
-      <button className={styles.moreButton} type="button" aria-label="More filters">
-        <FiMoreHorizontal size={16} />
-      </button>
+      <div ref={moreMenuRef} className={styles.moreButtonWrapper}>
+        <button
+          className={styles.moreButton}
+          type="button"
+          aria-label="More filters"
+          onClick={() => setShowMoreMenu(v => !v)}
+          aria-expanded={showMoreMenu}
+        >
+          <FiMoreHorizontal size={16} />
+        </button>
+        {showMoreMenu && (
+          <div className={styles.moreMenu} role="menu">
+            <div className={styles.moreMenuItem} role="menuitem">Client ID</div>
+            <div className={styles.moreMenuItem} role="menuitem">Client Name</div>
+            <div className={styles.moreMenuItem} role="menuitem">Account Manager</div>
+          </div>
+        )}
+      </div>
 
     </div>
 
@@ -94,7 +123,8 @@ const FilterBar = React.memo(({
       </button>
     </div>
   </div>
-));
+  );
+});
 
 FilterBar.displayName = 'FilterBar';
 
@@ -295,11 +325,13 @@ export default function JobOpenings() {
       openingJobId: item.openingJobId ?? item.jobPositionId ?? item.jobId ?? "",
       postingTitle: item.postingTitle ?? item.positionName ?? item.jobTitle ?? "",
       clientId: item.clientId ?? item.clientID ?? "",
+      clientName: item.clientName ?? "",
       assignedRecruiters: item.assignedRecruiters ?? item.assignedRecruiter ?? item.recruiters ?? "",
       targetDate: item.targetDate ?? item.jobReceivedDate ?? "",
       jobOpeningStatus: item.jobOpeningStatus ?? item.jobStatus ?? "",
       city: item.city ?? item.location ?? "",
       hiringManager: item.hiringManager ?? "",
+      accountManager: item.accountManager ?? item.hiringManager ?? "",
     }))
   ), [submittedData]);
 
@@ -529,11 +561,11 @@ export default function JobOpenings() {
                   <tr>
                     <th>Opening Job Id</th>
                     <th>Posting Title</th>
-                    <th>Client Id</th>
+                    <th>Client Name</th>
                     <th>Assigned Recruiter(s)</th>
                     <th>Target Date</th>
                     <th>Job Opening Status</th>
-                    <th>City</th>
+                    <th>Account Manager</th>
                     <th>Hiring Manager</th>
                     <th className={styles.actionsCol}>Actions</th>
                   </tr>
@@ -557,7 +589,7 @@ export default function JobOpenings() {
                             {row.openingJobId}
                           </td>
                           <td>{row.postingTitle}</td>
-                          <td>{row.clientId}</td>
+                          <td>{row.clientName}</td>
                           <td>{row.assignedRecruiters}</td>
                           <td>{row.targetDate}</td>
                           <td>
@@ -567,7 +599,7 @@ export default function JobOpenings() {
                               </span>
                             ) : "-"}
                           </td>
-                          <td>{row.city}</td>
+                          <td>{row.accountManager}</td>
                           <td>{row.hiringManager}</td>
                           <td className={styles.actionsCol}>
                             <div className={styles.actionIcons}>
@@ -600,7 +632,7 @@ export default function JobOpenings() {
                         </tr>
                         {isExpanded && (
                           <tr className={styles.expandedRow}>
-                            <td colSpan={9}>
+                            <td colSpan={10}>
                               <div className={styles.innerTableWrap}>
                                 <table className={styles.innerTable}>
                                   <thead>

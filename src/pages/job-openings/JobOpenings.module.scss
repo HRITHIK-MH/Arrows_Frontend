@@ -152,6 +152,8 @@
   flex-direction: column;
   gap: 12px;
   min-height: 0;
+  flex: 1;
+  overflow: hidden;
 }
 
 .filtersBar {
@@ -287,7 +289,8 @@
   overflow-y: auto;
   background: #fff;
   max-width: 100%;
-  max-height: min(56vh, 560px);
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .jobTable {
@@ -443,6 +446,9 @@
   padding: 8px 10px;
   border-bottom: 1px dashed #cbd5e1;
   background: #f3f6ff;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  max-width: 200px;
 }
 
 .innerTable tr:last-child td {
@@ -1313,6 +1319,40 @@
 
   .filtersBar {
     padding: 6px;
+  }
+}
+
+.moreButtonWrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.moreMenu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  background: #fff;
+  border: 1px solid #d9d9d9;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  min-width: 180px;
+  z-index: 1000;
+}
+
+.moreMenuItem {
+  padding: 10px 14px;
+  font-size: 13px;
+  color: #4b5563;
+  cursor: pointer;
+  border-bottom: 1px solid #f0f0f0;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  &:hover {
+    background: #f5f7fa;
   }
 }
 
