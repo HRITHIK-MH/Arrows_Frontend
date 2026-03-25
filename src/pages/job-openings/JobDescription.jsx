@@ -140,6 +140,7 @@ const JobDescription = () => {
   const [candidateRows, setCandidateRows] = React.useState(preparedRows);
   const [selectedRowIds, setSelectedRowIds] = React.useState([]);
   const [uploadedCandidateFileName, setUploadedCandidateFileName] = React.useState("");
+  const [candidatePreview, setCandidatePreview] = React.useState(null);
   const [preScreeningModal, setPreScreeningModal] = React.useState(null);
   const [stageMoveToast, setStageMoveToast] = React.useState("");
 
@@ -232,8 +233,11 @@ const JobDescription = () => {
   }, [preScreeningModal]);
 
   const handleCandidateEyeClick = React.useCallback((row) => {
-    setActiveStage("Map Candidates");
-    setSearchTerm(row.candidateName || row.candidateId || "");
+    setCandidatePreview(row);
+  }, []);
+
+  const closeCandidatePreview = React.useCallback(() => {
+    setCandidatePreview(null);
   }, []);
 
   const handleRowCheckboxChange = React.useCallback((rowId) => {
@@ -275,6 +279,20 @@ const JobDescription = () => {
     const timer = window.setTimeout(() => setStageMoveToast(""), 2800);
     return () => window.clearTimeout(timer);
   }, [stageMoveToast]);
+
+  React.useEffect(() => {
+    if (!candidatePreview) return undefined;
+    const onEsc = (event) => {
+      if (event.key === "Escape") setCandidatePreview(null);
+    };
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    document.addEventListener("keydown", onEsc);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", onEsc);
+    };
+  }, [candidatePreview]);
 
   const formatDate = (value) => {
     if (!value) return "-";
@@ -539,6 +557,69 @@ const JobDescription = () => {
           ) : null}
         </div>
       </div>
+
+      {candidatePreview ? (
+        <div className={styles.previewOverlay} onClick={closeCandidatePreview}>
+          <div className={styles.previewModal} onClick={(event) => event.stopPropagation()}>
+            <div className={styles.previewHeader}>
+              <h3 className={styles.previewTitle}>Candidate Profile</h3>
+              <button
+                type="button"
+                className={styles.previewClose}
+                onClick={closeCandidatePreview}
+                aria-label="Close candidate profile"
+              >
+                <FiX size={18} />
+              </button>
+            </div>
+
+            <div className={styles.previewIdentity}>
+              <div className={styles.previewAvatar}>
+                {(candidatePreview.candidateName || "C").charAt(0).toUpperCase()}
+              </div>
+              <div>
+                <h4>{candidatePreview.candidateName || "-"}</h4>
+                <p>{candidatePreview.candidateId || "-"}</p>
+              </div>
+            </div>
+
+            <div className={styles.previewGrid}>
+              <div className={styles.previewItem}>
+                <span>Email Address</span>
+                <strong>{candidatePreview.candidateEmail || "-"}</strong>
+              </div>
+              <div className={styles.previewItem}>
+                <span>Recruiter Name</span>
+                <strong>{candidatePreview.recruiterName || "-"}</strong>
+              </div>
+              <div className={styles.previewItem}>
+                <span>Source</span>
+                <strong>{candidatePreview.source || "-"}</strong>
+              </div>
+              <div className={styles.previewItem}>
+                <span>Rating</span>
+                <strong>{candidatePreview.rating || "-"}</strong>
+              </div>
+              <div className={styles.previewItem}>
+                <span>Matching Score</span>
+                <strong>
+                  {candidatePreview.matchingScore !== null && candidatePreview.matchingScore !== undefined
+                    ? `${candidatePreview.matchingScore}%`
+                    : "-"}
+                </strong>
+              </div>
+              <div className={styles.previewItem}>
+                <span>Stage</span>
+                <strong>{candidatePreview.stage || "-"}</strong>
+              </div>
+              <div className={styles.previewItem}>
+                <span>Status</span>
+                <strong>{candidatePreview.status || "-"}</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {preScreeningModal?.open ? (
         <div className={styles.preScreenOverlay} onClick={closePreScreeningModal}>

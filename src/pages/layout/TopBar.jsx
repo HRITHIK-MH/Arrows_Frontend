@@ -29,32 +29,49 @@ function useDashboardFirstCrumbs() {
 
   return useMemo(() => {
     // "/users" -> ["users"]; "/dashboard/users" -> ["dashboard", "users"]
-    const parts = location.pathname
+    const rawParts = location.pathname
       .replace(/^\/+|\/+$/g, "")
       .split("/")
       .filter(Boolean);
 
-
-    // Prepend "dashboard" if not the first segment
-    if (parts[0] !== "dashboard") {
-      parts.unshift("dashboard");
+    // Root path fallback
+    if (rawParts.length === 0) {
+      return [
+        {
+          label: labelMap.dashboard || "Dashboard",
+          path: "/dashboard",
+          isLast: true,
+        },
+      ];
     }
 
+    // Always show Dashboard first, but keep real URL paths for the rest
+    const crumbs = [
+      {
+        label: labelMap.dashboard || "Dashboard",
+        path: "/dashboard",
+      },
+    ];
 
-    const crumbs = [];
-    let accPath = "";
-    parts.forEach((seg, idx) => {
+    const hasDashboardPrefix = rawParts[0] === "dashboard";
+    const parts = hasDashboardPrefix ? rawParts.slice(1) : rawParts;
+    let accPath = hasDashboardPrefix ? "/dashboard" : "";
+
+    parts.forEach((seg) => {
       accPath += `/${seg}`;
       const label = labelMap[seg] || seg.charAt(0).toUpperCase() + seg.slice(1);
       crumbs.push({
         label,
         path: accPath,
-        isLast: idx === parts.length - 1,
       });
     });
 
+    const finalCrumbs = crumbs.map((crumb, idx) => ({
+      ...crumb,
+      isLast: idx === crumbs.length - 1,
+    }));
 
-    return crumbs;
+    return finalCrumbs;
   }, [location.pathname, labelMap]);
 }
 

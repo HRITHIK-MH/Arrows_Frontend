@@ -600,6 +600,127 @@
   font-weight: 600;
 }
 
+.previewOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1180;
+  background: rgba(15, 23, 42, 0.42);
+  display: flex;
+  align-items: stretch;
+  justify-content: flex-end;
+  padding: 0;
+}
+
+.previewModal {
+  width: min(820px, 92vw);
+  height: 100%;
+  border-radius: 0;
+  background: #ffffff;
+  border: none;
+  border-left: 1px solid #e2e8f0;
+  box-shadow: -10px 0 30px rgba(15, 23, 42, 0.18);
+  padding: 20px 20px 16px;
+  overflow-y: auto;
+}
+
+.previewHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.previewTitle {
+  margin: 0;
+  font-size: 22px;
+  line-height: 1.15;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.previewClose {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #94a3b8;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.previewClose:hover {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.previewIdentity {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #f8fbff;
+}
+
+.previewAvatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #f97316;
+  color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 18px;
+  flex: 0 0 auto;
+}
+
+.previewIdentity h4 {
+  margin: 0;
+  font-size: 17px;
+  color: #0f172a;
+}
+
+.previewIdentity p {
+  margin: 2px 0 0;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.previewGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.previewItem {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 10px 11px;
+  background: #ffffff;
+}
+
+.previewItem span {
+  font-size: 11px;
+  color: #64748b;
+}
+
+.previewItem strong {
+  font-size: 14px;
+  line-height: 1.3;
+  color: #0f172a;
+  font-weight: 600;
+}
+
 .preScreenOverlay {
   position: fixed;
   inset: 0;
@@ -1069,6 +1190,25 @@
     left: 12px;
   }
 
+  .previewOverlay {
+    padding: 0;
+    justify-content: flex-end;
+  }
+
+  .previewModal {
+    width: min(720px, 100vw);
+    border-radius: 0;
+    padding: 14px 12px;
+  }
+
+  .previewTitle {
+    font-size: 18px;
+  }
+
+  .previewGrid {
+    grid-template-columns: 1fr;
+  }
+
   .preScreenOverlay {
     padding: 10px;
   }
@@ -1148,6 +1288,11 @@
   .candidateTableMapped {
     min-width: 100% !important;
     table-layout: fixed;
+  }
+
+  .previewModal {
+    width: 100vw;
+    border-radius: 0;
   }
 
   .checkboxHead,
