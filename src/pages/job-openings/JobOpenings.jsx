@@ -1,6 +1,18 @@
 
 import * as React from "react";
-import { FiEdit2, FiEye, FiFilter, FiMoreHorizontal, FiPlus, FiSearch, FiTrash2 } from "react-icons/fi";
+import {
+  FiEdit2,
+  FiEye,
+  FiFileText,
+  FiFilter,
+  FiMapPin,
+  FiMoreHorizontal,
+  FiPhone,
+  FiPlus,
+  FiSearch,
+  FiTrash2,
+  FiX,
+} from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
 import { jobOpeningConfig } from "../../components/forms/formConfigs";
 import ReusableForm from "../../components/forms/ReusableForm";
@@ -291,6 +303,9 @@ export default function JobOpenings() {
   const [filterJobStatus, setFilterJobStatus] = React.useState('');
   const [filterHiringManager, setFilterHiringManager] = React.useState('');
   const [expandedRows, setExpandedRows] = React.useState({});
+  const [isViewDrawerOpen, setIsViewDrawerOpen] = React.useState(false);
+  const [selectedJobOpening, setSelectedJobOpening] = React.useState(null);
+  const [drawerTab, setDrawerTab] = React.useState("Job Information");
 
   // Debounced search handler - reduces filter recalculations by 99%
   const debouncedSearch = React.useMemo(
@@ -426,6 +441,15 @@ export default function JobOpenings() {
 
   const handleViewJobOpening = React.useCallback((row, index) => {
     console.log('View job opening:', row);
+    setSelectedJobOpening({
+      ...row,
+      openingJobId: row.openingJobId || row.jobPositionId || String(index),
+    });
+    setDrawerTab("Job Information");
+    setIsViewDrawerOpen(true);
+  }, []);
+
+  const handleOpenJobDescription = React.useCallback((row, index) => {
     navigate(`/job-openings/${row.openingJobId || row.jobPositionId || index}`, { state: { job: row } });
   }, [navigate]);
 
@@ -470,6 +494,74 @@ export default function JobOpenings() {
     }, 3000);
     // Here you would typically send the data to your backend API
   }, [editingIndex]);
+
+  const formatInrAmount = React.useCallback((value) => {
+    const numericValue = Number(value);
+    if (Number.isNaN(numericValue) || numericValue <= 0) return "-";
+    return numericValue.toLocaleString("en-IN");
+  }, []);
+
+  const formatDateDDMMYYYY = React.useCallback((value) => {
+    if (!value) return "-";
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return String(value);
+    const day = String(parsed.getDate()).padStart(2, "0");
+    const month = String(parsed.getMonth() + 1).padStart(2, "0");
+    const year = parsed.getFullYear();
+    return `${day}/${month}/${year}`;
+  }, []);
+
+  const formatLabelCase = React.useCallback((value) => {
+    const raw = String(value || "").trim();
+    if (!raw) return "-";
+    return raw
+      .replace(/[-_]/g, " ")
+      .split(" ")
+      .filter(Boolean)
+      .map((token) => token.charAt(0).toUpperCase() + token.slice(1).toLowerCase())
+      .join(" ");
+  }, []);
+
+  const formatSkills = React.useCallback((skills) => {
+    if (!Array.isArray(skills) || skills.length === 0) return "-";
+    return skills
+      .map((skill) => {
+        const token = String(skill || "").trim();
+        if (!token) return "";
+        if (token.toUpperCase() === "AWS") return "AWS";
+        if (token.toLowerCase() === "javascript") return "Javascript";
+        return token
+          .replace(/[-_]/g, " ")
+          .split(" ")
+          .filter(Boolean)
+          .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+          .join(" ");
+      })
+      .filter(Boolean)
+      .join(", ");
+  }, []);
+
+  const closeViewDrawer = React.useCallback(() => {
+    setIsViewDrawerOpen(false);
+  }, []);
+
+  React.useEffect(() => {
+    if (!isViewDrawerOpen) return undefined;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isViewDrawerOpen]);
+
+  React.useEffect(() => {
+    if (!isViewDrawerOpen) return undefined;
+    const onEsc = (event) => {
+      if (event.key === "Escape") setIsViewDrawerOpen(false);
+    };
+    document.addEventListener("keydown", onEsc);
+    return () => document.removeEventListener("keydown", onEsc);
+  }, [isViewDrawerOpen]);
 
   return (
     <div className={styles.page}>
@@ -555,6 +647,7 @@ export default function JobOpenings() {
                   <col />
                   <col className={styles.colCity} />
                   <col />
+                  <col />
                   <col className={styles.colActions} />
                 </colgroup>
                 <thead>
@@ -565,6 +658,7 @@ export default function JobOpenings() {
                     <th>Assigned Recruiter(s)</th>
                     <th>Target Date</th>
                     <th>Job Opening Status</th>
+                    <th>City</th>
                     <th>Account Manager</th>
                     <th>Hiring Manager</th>
                     <th className={styles.actionsCol}>Actions</th>
@@ -599,6 +693,7 @@ export default function JobOpenings() {
                               </span>
                             ) : "-"}
                           </td>
+                          <td>{row.city || "-"}</td>
                           <td>{row.accountManager}</td>
                           <td>{row.hiringManager}</td>
                           <td className={styles.actionsCol}>
@@ -610,6 +705,14 @@ export default function JobOpenings() {
                                 aria-label="View"
                               >
                                 <FiEye size={16} />
+                              </button>
+                              <button
+                                type="button"
+                                className={styles.actionBtn}
+                                onClick={() => handleOpenJobDescription(row, index)}
+                                aria-label="Open job description"
+                              >
+                                <FiFileText size={16} />
                               </button>
                               <button
                                 type="button"
@@ -717,6 +820,151 @@ export default function JobOpenings() {
           </div>
         )}
       </div>
+
+      {isViewDrawerOpen && selectedJobOpening ? (
+        <div className={styles.viewDrawerOverlay} onClick={closeViewDrawer}>
+          <aside className={styles.viewDrawer} onClick={(event) => event.stopPropagation()}>
+            <div className={styles.drawerHead}>
+              <div className={styles.drawerIdentity}>
+                <div className={styles.drawerAvatar}>
+                  {selectedJobOpening.postingTitle?.charAt(0)?.toUpperCase() || "J"}
+                </div>
+                <div className={styles.drawerTitleWrap}>
+                  <h3>{selectedJobOpening.openingJobId || "-"}</h3>
+                  <p>{selectedJobOpening.postingTitle || "-"}</p>
+                  <div className={styles.drawerMeta}>
+                    <span>{selectedJobOpening.contactPersonEmail || "hr@email.com"}</span>
+                    <span><FiMapPin size={11} /> {selectedJobOpening.city || "Bangalore, India"}</span>
+                    <span><FiPhone size={11} /> 9876543210</span>
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                className={styles.drawerClose}
+                onClick={closeViewDrawer}
+                aria-label="Close panel"
+              >
+                <FiX size={18} />
+              </button>
+            </div>
+
+            <div className={styles.drawerTabs}>
+              {["Job Information", "Client Details", "Client Requirement", "Team Members"].map((tab) => (
+                <button
+                  key={tab}
+                  type="button"
+                  className={`${styles.drawerTab}${drawerTab === tab ? ` ${styles.drawerTabActive}` : ""}`}
+                  onClick={() => setDrawerTab(tab)}
+                >
+                  {tab}
+                </button>
+              ))}
+            </div>
+
+            <div className={styles.drawerBody}>
+              <div className={styles.drawerGrid}>
+                <div className={styles.drawerField}>
+                  <span>JD id</span>
+                  <strong>{selectedJobOpening.openingJobId || "-"}</strong>
+                </div>
+                <div className={styles.drawerField}>
+                  <span>Position Name</span>
+                  <strong>{selectedJobOpening.postingTitle || "-"}</strong>
+                </div>
+                <div className={styles.drawerField}>
+                  <span>Experience</span>
+                  <strong>
+                    Min {selectedJobOpening.minExperience || 0} to max {selectedJobOpening.maxExperience || 0}
+                  </strong>
+                </div>
+                <div className={styles.drawerField}>
+                  <span>Job Description Link</span>
+                  {selectedJobOpening.jobDescriptionLink ? (
+                    <strong>
+                      <a
+                        href={selectedJobOpening.jobDescriptionLink}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        link
+                      </a>
+                    </strong>
+                  ) : (
+                    <strong>link</strong>
+                  )}
+                </div>
+                <div className={styles.drawerField}>
+                  <span>Position Level</span>
+                  <strong>{formatLabelCase(selectedJobOpening.positionLevel)}</strong>
+                </div>
+                <div className={styles.drawerField}>
+                  <span>Location</span>
+                  <strong>{selectedJobOpening.city || "-"}</strong>
+                </div>
+                <div className={styles.drawerField}>
+                  <span>No of Position</span>
+                  <strong>{selectedJobOpening.noOfPositions || "-"}</strong>
+                </div>
+                <div className={styles.drawerField}>
+                  <span>Job Received Date:</span>
+                  <strong>{formatDateDDMMYYYY(selectedJobOpening.jobReceivedDate)}</strong>
+                </div>
+                <div className={styles.drawerField}>
+                  <span>Hiring Type</span>
+                  <strong>{formatLabelCase(selectedJobOpening.hiringType)}</strong>
+                </div>
+                <div className={styles.drawerField}>
+                  <span>Salary in CTC</span>
+                  <strong>
+                    Min: {formatInrAmount(selectedJobOpening.minSalary)} Max: {formatInrAmount(selectedJobOpening.maxSalary)}
+                  </strong>
+                </div>
+                <div className={styles.drawerField}>
+                  <span>Job Type</span>
+                  <strong>{formatLabelCase(selectedJobOpening.jobType)}</strong>
+                </div>
+                <div className={styles.drawerField}>
+                  <span>JD Attachment</span>
+                  <strong>
+                    <a
+                      href={selectedJobOpening.jobDescriptionLink || "#"}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Link
+                    </a>
+                  </strong>
+                </div>
+                <div className={styles.drawerField}>
+                  <span>Technical Skill</span>
+                  <strong>{formatSkills(selectedJobOpening.technicalSkills)}</strong>
+                </div>
+                <div className={styles.drawerField}>
+                  <span>Soft Skill</span>
+                  <strong>{formatSkills(selectedJobOpening.softSkills)}</strong>
+                </div>
+                <div className={styles.drawerField}>
+                  <span>Additional Skill</span>
+                  <strong>{selectedJobOpening.additionalSkills || "-"}</strong>
+                </div>
+                <div className={styles.drawerField}>
+                  <span>Target Date</span>
+                  <strong>{formatDateDDMMYYYY(selectedJobOpening.targetDate)}</strong>
+                </div>
+                <div className={styles.drawerField}>
+                  <span>Soft Skill</span>
+                  <strong>{formatSkills(selectedJobOpening.softSkills)}</strong>
+                </div>
+                <div className={styles.drawerField}>
+                  <span>Additional Skill</span>
+                  <strong>{selectedJobOpening.additionalSkills || "-"}</strong>
+                </div>
+              </div>
+            </div>
+          </aside>
+        </div>
+      ) : null}
     </div>
   );
 }

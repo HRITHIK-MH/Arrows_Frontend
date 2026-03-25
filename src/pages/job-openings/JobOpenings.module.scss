@@ -297,7 +297,7 @@
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
-  min-width: 980px;
+  min-width: 900px;
   table-layout: auto;
 }
 
@@ -308,7 +308,7 @@
   color: #64748b;
   border-bottom: 1px solid #e2e8f0;
   text-align: left;
-  padding: 12px 16px;
+  padding: 10px 12px;
   min-height: 44px;
   vertical-align: top;
   line-height: 1.35;
@@ -318,7 +318,7 @@
   font-size: 14px;
   color: #2c3135;
   border-bottom: 1px dashed #e2e8f0;
-  padding: 12px 16px;
+  padding: 10px 12px;
   line-height: 22.8px;
   min-height: 60px;
   vertical-align: top;
@@ -327,13 +327,15 @@
 .jobTable th,
 .jobTable td {
   box-sizing: border-box;
-  overflow-wrap: anywhere;
+  overflow-wrap: normal;
+  word-break: normal;
+  hyphens: none;
 }
 
-.colOpeningJobId { width: 140px; }
-.colClientId { width: 120px; }
-.colTargetDate { width: 130px; }
-.colCity { width: 120px; }
+.colOpeningJobId { width: 128px; }
+.colClientId { width: 110px; }
+.colTargetDate { width: 118px; }
+.colCity { width: 98px; }
 .colActions { width: 108px; }
 
 .jobTable th.actionsCol,
@@ -352,6 +354,23 @@
   white-space: nowrap;
   overflow-wrap: normal;
   word-break: keep-all;
+}
+
+.jobTable th:nth-child(4),
+.jobTable td:nth-child(4) {
+  min-width: 116px;
+}
+
+.jobTable th:nth-child(6),
+.jobTable td:nth-child(6) {
+  min-width: 120px;
+}
+
+.jobTable th:nth-child(8),
+.jobTable td:nth-child(8),
+.jobTable th:nth-child(9),
+.jobTable td:nth-child(9) {
+  min-width: 110px;
 }
 
 .actionsCol {
@@ -449,6 +468,20 @@
   word-break: break-word;
   overflow-wrap: break-word;
   max-width: 200px;
+}
+
+.innerTable th:nth-child(6),
+.innerTable td:nth-child(6) {
+  width: 88px;
+  min-width: 88px;
+  white-space: nowrap;
+}
+
+.innerTable th:nth-child(7),
+.innerTable td:nth-child(7) {
+  width: 150px;
+  min-width: 150px;
+  white-space: nowrap;
 }
 
 .innerTable tr:last-child td {
@@ -577,6 +610,164 @@
 .stageOffer { background: #dbeafe; color: #1d4ed8; border: 1px solid #93c5fd; }
 .stageRejected { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
 .stageNeutral { background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; }
+
+.viewDrawerOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  background: rgba(15, 23, 42, 0.42);
+  display: flex;
+  justify-content: flex-end;
+  align-items: stretch;
+}
+
+.viewDrawer {
+  width: min(980px, 92vw);
+  height: 100%;
+  background: #ffffff;
+  border-left: 1px solid #dbe3ee;
+  box-shadow: -14px 0 30px rgba(15, 23, 42, 0.14);
+  padding: 14px 18px 16px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.drawerHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 2px 2px 10px;
+  border-bottom: 1px solid #dbe3ee;
+}
+
+.drawerIdentity {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.drawerAvatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #f97316;
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+.drawerTitleWrap h3 {
+  margin: 0;
+  font-size: 22px;
+  line-height: 1.2;
+  color: #1f2937;
+}
+
+.drawerTitleWrap p {
+  margin: 2px 0 4px;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.drawerMeta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  color: #64748b;
+  font-size: 11px;
+}
+
+.drawerMeta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.drawerClose {
+  border: none;
+  background: transparent;
+  color: #475569;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.drawerClose:hover {
+  background: #edf2f7;
+}
+
+.drawerTabs {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border-bottom: 1px solid #dbe3ee;
+  padding: 10px 2px 0;
+}
+
+.drawerTab {
+  border: none;
+  background: transparent;
+  color: #475569;
+  font-size: 13px;
+  padding: 0 0 8px;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+}
+
+.drawerTabActive {
+  color: #f97316;
+  border-bottom-color: #f97316;
+  font-weight: 600;
+}
+
+.drawerBody {
+  padding: 12px 2px 4px;
+}
+
+.drawerGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px 26px;
+}
+
+.drawerField {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.drawerField span {
+  color: #94a3b8;
+  font-size: 11px;
+}
+
+.drawerField strong {
+  color: #1f2937;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.drawerField a {
+  color: #2563eb;
+  text-decoration: none;
+}
+
+.drawerField a:hover {
+  text-decoration: underline;
+}
 
 // Recruitment Pipeline Styles
 .pipelineCard {
@@ -1054,7 +1245,7 @@
   }
 
   .jobTable {
-    min-width: 980px;
+    min-width: 900px;
   }
 
   .innerTable {
@@ -1129,7 +1320,7 @@
   }
 
   .jobTable {
-    min-width: 980px;
+    min-width: 900px;
   }
 
   .tableWrap {
@@ -1150,6 +1341,16 @@
 
   .pagination {
     justify-content: flex-end;
+  }
+
+  .viewDrawer {
+    width: min(860px, 100vw);
+    padding: 12px 12px 14px;
+  }
+
+  .drawerGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px 14px;
   }
 }
 
@@ -1309,6 +1510,21 @@
     width: 26px;
     height: 26px;
   }
+
+  .viewDrawer {
+    width: 100vw;
+    padding: 10px;
+  }
+
+  .drawerTabs {
+    gap: 10px;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  .drawerGrid {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media only screen and (max-width: 480px) {
@@ -1408,6 +1624,7 @@
     background: #f5f7fa;
   }
 }
+
 
 
 
