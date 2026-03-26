@@ -371,6 +371,24 @@
   cursor: pointer;
 }
 
+.multiselect-chevron {
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid #64748b;
+  border-bottom: 2px solid #64748b;
+  transform: rotate(45deg);
+  margin-left: auto;
+  margin-top: 4px;
+  margin-right: 2px;
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.multiselect-chevron.open {
+  transform: rotate(-135deg);
+  margin-top: 8px;
+}
+
 .selected-item {
   display: inline-flex;
   align-items: center;
@@ -448,7 +466,7 @@
 .multiselect-options {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 0;
   max-height: 200px;
   overflow-y: auto;
   padding-right: 4px;
@@ -457,19 +475,50 @@
 .multiselect-option {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   font-size: 13px;
   color: #1f2937;
-  padding: 8px 6px;
-  line-height: 1.4;
+  padding: 1px 6px;
+  line-height: 1.2;
+  margin-bottom: 0;
+}
+
+.form-field label.multiselect-option {
+  display: flex;
+  margin-bottom: 0;
+  font-weight: 500;
 }
 
 .multiselect-option input {
+  appearance: none;
+  -webkit-appearance: none;
   width: 16px;
   height: 16px;
   margin: 0;
   flex: 0 0 auto;
   vertical-align: middle;
+  border: 1px solid #565d64;
+  border-radius: 4px;
+  background: #eff1f4;
+  cursor: pointer;
+  position: relative;
+}
+
+.multiselect-option input:checked {
+  background: #1f6ad7;
+  border-color: #1f6ad7;
+}
+
+.multiselect-option input:checked::after {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 1px;
+  width: 5px;
+  height: 9px;
+  border: solid #ffffff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
 }
 
 .multiselect-option span {

@@ -1,4 +1,5 @@
 import React, { useEffect } from "react";
+import FormField from "./FormField";
 
 const JOB_ACTIVATION_OPTIONS = [
   { value: "validity-upto", label: "Validity Upto" },
@@ -6,13 +7,25 @@ const JOB_ACTIVATION_OPTIONS = [
   { value: "hold", label: "Hold" },
   { value: "inactive", label: "In Active" },
   { value: "closed", label: "Closed" },
-  { value: "target-date", label: "Target date" },
 ];
 
 const FOCUS_LOCATION_OPTIONS = [
   { value: "base", label: "Base" },
   { value: "any", label: "Any" },
   { value: "others", label: "Others" },
+];
+
+const FOCUS_LOCATION_VALUE_OPTIONS = [
+  { value: "chennai", label: "Chennai" },
+  { value: "bangalore", label: "Bangalore" },
+  { value: "hyderabad", label: "Hyderabad" },
+  { value: "pune", label: "Pune" },
+  { value: "mumbai", label: "Mumbai" },
+  { value: "delhi", label: "Delhi" },
+  { value: "noida", label: "Noida" },
+  { value: "gurgaon", label: "Gurgaon" },
+  { value: "coimbatore", label: "Coimbatore" },
+  { value: "kolkata", label: "Kolkata" },
 ];
 
 const AVAILABILITY_OPTIONS = [
@@ -43,7 +56,7 @@ const PermissionStep = ({ formData, onChange, onSetStepFields }) => {
       onChange("focusLocationType", "base");
     }
     if (formData.focusLocationValue === undefined) {
-      onChange("focusLocationValue", "Chennai");
+      onChange("focusLocationValue", ["chennai"]);
     }
     if (formData.availabilityOptions === undefined) {
       onChange("availabilityOptions", ["immediate", "1month"]);
@@ -151,13 +164,18 @@ const PermissionStep = ({ formData, onChange, onSetStepFields }) => {
               </label>
             ))}
           </div>
-          <input
-            type="text"
-            className="permission-input"
-            placeholder="Location"
-            value={formData.focusLocationValue || ""}
-            onChange={(event) => onChange("focusLocationValue", event.target.value)}
+          <FormField
+            label="Location"
+            type="multiselect"
+            name="focusLocationValue"
+            value={Array.isArray(formData.focusLocationValue) ? formData.focusLocationValue : []}
+            onChange={onChange}
+            required={false}
+            options={FOCUS_LOCATION_VALUE_OPTIONS}
+            placeholder="Select locations"
+            formData={formData}
             disabled={focusLocationType === "any"}
+            hideLabel
           />
         </section>
 

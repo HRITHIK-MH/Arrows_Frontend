@@ -507,9 +507,9 @@ export const jobOpeningConfig = {
           cssClass: "grid-col-1 grid-row-1",
           placeholder: "Select Client Id",
           options: [
-            { value: "C1292938", label: "C1292938" },
-            { value: "C1292432", label: "C1292432" },
-            { value: "C1292921", label: "C1292921" }
+            { value: "C1292938", label: "C1292938", clientName: "MethodHub" },
+            { value: "C1292432", label: "C1292432", clientName: "Arrows Inc" },
+            { value: "C1292921", label: "C1292921", clientName: "NovaLabs" }
           ]
         },
         {

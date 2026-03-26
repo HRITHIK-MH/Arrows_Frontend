@@ -22,9 +22,7 @@ const TeamMembersStep = ({
   validationErrors = {},
 }) => {
   const [isModalOpen, setModalOpen] = useState(false);
-  const [selectedRecruiterId, setSelectedRecruiterId] = useState(
-    TEAM_MEMBERS[0]?.id || ""
-  );
+  const [selectedRecruiterId, setSelectedRecruiterId] = useState("");
   const [recruiterRole, setRecruiterRole] = useState("");
   const selectedMembers = Array.isArray(formData.teamMembers)
     ? formData.teamMembers
@@ -60,10 +58,8 @@ const TeamMembersStep = ({
   };
 
   const openAssignModal = () => {
-    const fallbackId = TEAM_MEMBERS[0]?.id || "";
-    const nextId = selectedRecruiterId || fallbackId;
-    setSelectedRecruiterId(nextId);
-    setRecruiterRole(memberRoles[nextId] || "");
+    setSelectedRecruiterId("");
+    setRecruiterRole("");
     setModalOpen(true);
   };
 
@@ -76,7 +72,6 @@ const TeamMembersStep = ({
       event.preventDefault();
     }
     if (!selectedRecruiterId) {
-      closeAssignModal();
       return;
     }
     if (!selectedMembers.includes(selectedRecruiterId)) {
@@ -89,6 +84,13 @@ const TeamMembersStep = ({
       });
     }
     closeAssignModal();
+  };
+
+  const resolveRecruiterRole = (recruiterId) => {
+    if (!recruiterId) return "";
+    if (memberRoles[recruiterId]) return memberRoles[recruiterId];
+    const matchedRecruiter = TEAM_MEMBERS.find((member) => member.id === recruiterId);
+    return matchedRecruiter?.role || "";
   };
 
   return (
@@ -167,9 +169,12 @@ const TeamMembersStep = ({
                   onChange={(event) => {
                     const nextId = event.target.value;
                     setSelectedRecruiterId(nextId);
-                    setRecruiterRole(memberRoles[nextId] || "");
+                    setRecruiterRole(resolveRecruiterRole(nextId));
                   }}
                 >
+                  <option value="" disabled>
+                    Select recruiter
+                  </option>
                   {TEAM_MEMBERS.map((member) => (
                     <option key={member.id} value={member.id}>
                       {member.name}
@@ -197,6 +202,7 @@ const TeamMembersStep = ({
                   type="button"
                   className="modal-btn primary"
                   onClick={handleAssignSubmit}
+                  disabled={!selectedRecruiterId}
                 >
                   Submit
                 </button>
