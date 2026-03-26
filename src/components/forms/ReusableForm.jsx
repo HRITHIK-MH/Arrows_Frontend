@@ -88,7 +88,7 @@ const FormStep = ({ formData, onChange, fields, title, onSetStepFields, validati
         multiple={field.multiple}
         prefix={field.prefix}
         formData={formData}
-        disabled={disabled}
+        disabled={disabled || Boolean(field.disabled)}
         showBrowseButton={field.showBrowseButton}
       />
     );
