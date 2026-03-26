@@ -701,16 +701,16 @@ export default function JobOpenings() {
                               <button
                                 type="button"
                                 className={styles.actionBtn}
-                                onClick={() => handleViewJobOpening(row, index)}
-                                aria-label="View"
+                                onClick={() => handleOpenJobDescription(row, index)}
+                                aria-label="Open job description"
                               >
                                 <FiEye size={16} />
                               </button>
                               <button
                                 type="button"
                                 className={styles.actionBtn}
-                                onClick={() => handleOpenJobDescription(row, index)}
-                                aria-label="Open job description"
+                                onClick={() => handleViewJobOpening(row, index)}
+                                aria-label="View job opening details"
                               >
                                 <FiFileText size={16} />
                               </button>

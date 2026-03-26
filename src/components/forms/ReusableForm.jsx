@@ -49,6 +49,25 @@ const FormStep = ({ formData, onChange, fields, title, onSetStepFields, validati
     }
   }, [fields, onSetStepFields, isJobBasicInfo]);
 
+  React.useEffect(() => {
+    if (!isJobBasicInfo) return;
+
+    const clientIdField = fields.find((field) => field.name === "clientId");
+    const selectedClientId = formData.clientId;
+    if (!clientIdField || !Array.isArray(clientIdField.options) || !selectedClientId) {
+      return;
+    }
+
+    const matchedClient = clientIdField.options.find(
+      (option) => String(option.value) === String(selectedClientId)
+    );
+    const mappedClientName = matchedClient?.clientName || matchedClient?.name || "";
+
+    if (mappedClientName && mappedClientName !== formData.clientName) {
+      onChange("clientName", mappedClientName);
+    }
+  }, [fields, formData.clientId, formData.clientName, isJobBasicInfo, onChange]);
+
   const renderField = (field) => {
     return (
       <FormField
@@ -445,7 +464,9 @@ const ReusableForm = ({ config, onSubmit, initialData, readOnly = false }) => {
     const stepFields = config.steps[stepIndex]?.fields || [];
     const updatedErrors = { ...validationErrors };
     const missingFields = [];
+    const missingNames = [];
     const invalidFields = [];
+    const invalidNames = [];
 
     const isEmptyValue = (value) =>
       value === undefined ||
@@ -481,8 +502,10 @@ const ReusableForm = ({ config, onSubmit, initialData, readOnly = false }) => {
 
         if (field.required && isEmptyValue(value)) {
           missingFields.push(fieldLabel);
+          missingNames.push(field.name);
         } else {
           invalidFields.push(fieldLabel);
+          invalidNames.push(field.name);
         }
       } else if (updatedErrors[field.name]) {
         delete updatedErrors[field.name];
@@ -498,7 +521,9 @@ const ReusableForm = ({ config, onSubmit, initialData, readOnly = false }) => {
       isValid: missingFields.length === 0 && invalidFields.length === 0,
       errors: updatedErrors,
       missingFields,
-      invalidFields
+      missingNames,
+      invalidFields,
+      invalidNames
     };
   };
 

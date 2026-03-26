@@ -1,5 +1,5 @@
 import * as React from "react";
-import { FiArrowLeft, FiCheck, FiEye, FiPlus, FiSearch, FiX } from "react-icons/fi";
+import { FiArrowLeft, FiCheck, FiEye, FiFileText, FiPlus, FiSearch, FiTrash2, FiX } from "react-icons/fi";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import styles from "./JobDescription.module.scss";
 
@@ -103,12 +103,60 @@ const getPreScreeningInitialState = (rowId) => ({
   sendInvite: true,
 });
 
+const toTitleCase = (value) =>
+  String(value || "")
+    .trim()
+    .toLowerCase()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+
+const deriveCandidateFromFile = (file, existingRows, recruiterName) => {
+  const baseName = String(file?.name || "")
+    .replace(/\.[^/.]+$/, "")
+    .replace(/[_\-]+/g, " ")
+    .trim();
+
+  const tokens = baseName.split(/\s+/).filter(Boolean);
+  const fullName = toTitleCase(tokens.slice(0, 2).join(" ")) || "Uploaded Candidate";
+  const emailToken = fullName
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, "")
+    .trim()
+    .replace(/\s+/g, ".");
+
+  const numericIds = existingRows
+    .map((row) => {
+      const matched = String(row.candidateId || "").match(/\d+/);
+      return matched ? Number(matched[0]) : 0;
+    })
+    .filter((value) => Number.isFinite(value));
+  const nextNumericId = (numericIds.length ? Math.max(...numericIds) : 0) + 1;
+  const candidateId = `C${String(nextNumericId).padStart(6, "0")}`;
+
+  const matchingScore = Math.max(65, Math.min(95, 60 + Math.round((file?.size || 0) / 100000)));
+
+  return {
+    rowId: `${candidateId}-${Date.now()}`,
+    candidateId,
+    candidateName: fullName,
+    candidateEmail: emailToken ? `${emailToken}@example.com` : "candidate@example.com",
+    recruiterName: recruiterName || "Parthiban",
+    source: "Uploaded Document",
+    rating: "0/5",
+    matchingScore,
+    stage: "Map Candidates",
+    status: "In Progress",
+  };
+};
+
 const JobDescription = () => {
   const navigate = useNavigate();
   const { state } = useLocation();
   const { jobId } = useParams();
   const job = state?.job || fallbackJob;
-  const uploadInputRef = React.useRef(null);
+  const uploadModalInputRef = React.useRef(null);
 
   const preparedRows = React.useMemo(() => {
     const normalizedRows = (job.candidates || []).map((row, index) => ({
@@ -139,7 +187,9 @@ const JobDescription = () => {
   const [searchTerm, setSearchTerm] = React.useState("");
   const [candidateRows, setCandidateRows] = React.useState(preparedRows);
   const [selectedRowIds, setSelectedRowIds] = React.useState([]);
-  const [uploadedCandidateFileName, setUploadedCandidateFileName] = React.useState("");
+  const [isUploadModalOpen, setIsUploadModalOpen] = React.useState(false);
+  const [uploadCandidateFile, setUploadCandidateFile] = React.useState(null);
+  const [uploadProgress, setUploadProgress] = React.useState(0);
   const [candidatePreview, setCandidatePreview] = React.useState(null);
   const [preScreeningModal, setPreScreeningModal] = React.useState(null);
   const [stageMoveToast, setStageMoveToast] = React.useState("");
@@ -302,13 +352,46 @@ const JobDescription = () => {
   };
 
   const handleUploadClick = () => {
-    uploadInputRef.current?.click();
+    setIsUploadModalOpen(true);
+  };
+
+  const handleUploadModalClose = () => {
+    setIsUploadModalOpen(false);
   };
 
   const handleUploadFileChange = (event) => {
     const [file] = event.target.files || [];
     if (!file) return;
-    setUploadedCandidateFileName(file.name);
+    setUploadCandidateFile(file);
+    setUploadProgress(72);
+  };
+
+  const handleUploadFilePickerOpen = () => {
+    uploadModalInputRef.current?.click();
+  };
+
+  const handleRemoveUploadFile = () => {
+    setUploadCandidateFile(null);
+    setUploadProgress(0);
+    if (uploadModalInputRef.current) {
+      uploadModalInputRef.current.value = "";
+    }
+  };
+
+  const handleUploadSubmit = () => {
+    if (!uploadCandidateFile) return;
+    setCandidateRows((prev) => [
+      ...prev,
+      deriveCandidateFromFile(uploadCandidateFile, prev, job.hiringManager || "Parthiban"),
+    ]);
+    setActiveStage("Map Candidates");
+    setSearchTerm("");
+    setUploadCandidateFile(null);
+    setUploadProgress(0);
+    if (uploadModalInputRef.current) {
+      uploadModalInputRef.current.value = "";
+    }
+    setIsUploadModalOpen(false);
   };
 
   const getScoreCircleStyle = (score) => {
@@ -414,18 +497,6 @@ const JobDescription = () => {
               <button type="button" className={styles.uploadBtn} onClick={handleUploadClick}>
                 Upload Candidate
               </button>
-              <input
-                ref={uploadInputRef}
-                type="file"
-                className={styles.hiddenFileInput}
-                accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt"
-                onChange={handleUploadFileChange}
-              />
-              {uploadedCandidateFileName ? (
-                <span className={styles.uploadedFileName} title={uploadedCandidateFileName}>
-                  {uploadedCandidateFileName}
-                </span>
-              ) : null}
             </div>
           </div>
 
@@ -888,6 +959,93 @@ const JobDescription = () => {
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      ) : null}
+
+      {isUploadModalOpen ? (
+        <div className={styles.uploadModalOverlay} onClick={handleUploadModalClose}>
+          <div className={styles.uploadModal} onClick={(event) => event.stopPropagation()}>
+            <div className={styles.uploadModalHeader}>
+              <h3 className={styles.uploadModalTitle}>Upload Candidates</h3>
+              <button
+                type="button"
+                className={styles.uploadModalClose}
+                onClick={handleUploadModalClose}
+                aria-label="Close upload candidates modal"
+              >
+                <FiX size={20} />
+              </button>
+            </div>
+
+            <div className={styles.uploadModalFieldLabel}>Upload Document</div>
+
+            <div className={styles.uploadDropzone}>
+              <span className={styles.uploadDropzoneIcon}>
+                <FiFileText size={16} />
+              </span>
+              <div className={styles.uploadDropzoneText}>
+                <button
+                  type="button"
+                  className={styles.uploadDropzoneLink}
+                  onClick={handleUploadFilePickerOpen}
+                >
+                  Click Here
+                </button>
+                <span> to upload your Documents or drag.</span>
+              </div>
+              <div className={styles.uploadDropzoneHint}>Supported Format. PDF (20 mb)</div>
+              <input
+                ref={uploadModalInputRef}
+                type="file"
+                className={styles.hiddenFileInput}
+                accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt"
+                onChange={handleUploadFileChange}
+              />
+            </div>
+
+            {uploadCandidateFile ? (
+              <div className={styles.uploadFileCard}>
+                <div className={styles.uploadFileIconWrap}>
+                  <FiFileText size={16} />
+                </div>
+                <div className={styles.uploadFileMeta}>
+                  <div className={styles.uploadFileName}>{uploadCandidateFile.name}</div>
+                  <div className={styles.uploadFileProgressTrack}>
+                    <div
+                      className={styles.uploadFileProgressFill}
+                      style={{ width: `${uploadProgress}%` }}
+                    />
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  className={styles.uploadFileDeleteBtn}
+                  onClick={handleRemoveUploadFile}
+                  aria-label="Remove uploaded file"
+                >
+                  <FiTrash2 size={16} />
+                </button>
+              </div>
+            ) : null}
+
+            <div className={styles.uploadModalActions}>
+              <button
+                type="button"
+                className={styles.uploadModalSubmitBtn}
+                onClick={handleUploadSubmit}
+                disabled={!uploadCandidateFile}
+              >
+                Submit
+              </button>
+              <button
+                type="button"
+                className={styles.uploadModalCancelBtn}
+                onClick={handleUploadModalClose}
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         </div>
       ) : null}

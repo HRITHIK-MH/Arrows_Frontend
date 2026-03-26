@@ -324,6 +324,7 @@ const FormField = ({
             ) : (
               <span className="selected-placeholder">{selectionPlaceholder}</span>
             )}
+            <span className={`multiselect-chevron${isDropdownOpen ? ' open' : ''}`} aria-hidden="true" />
           </div>
 
           {isDropdownOpen && (

@@ -257,11 +257,57 @@
 }
 
 .reusable-form-page.job-opening-form .multiselect-options {
-  gap: 16px;
+  gap: 8px;
 }
 
 .reusable-form-page.job-opening-form .multiselect-option {
   font-size: 14px;
+  padding: 2px 4px;
+  line-height: 1.2;
+  margin-bottom: 0;
+}
+
+.reusable-form-page.job-opening-form label.multiselect-option {
+  display: flex;
+  margin-bottom: 0;
+}
+
+.reusable-form-page.job-opening-form .multiselect-option input {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 16px;
+  min-width: 16px;
+  height: 16px;
+  min-height: 16px;
+  padding: 0;
+  margin: 0;
+  flex: 0 0 16px;
+  border: 1px solid #565d64;
+  border-radius: 4px;
+  background: #eff1f4;
+  cursor: pointer;
+  position: relative;
+}
+
+.reusable-form-page.job-opening-form .multiselect-option input:checked {
+  background: #1f6ad7;
+  border-color: #1f6ad7;
+}
+
+.reusable-form-page.job-opening-form .multiselect-option input:checked::after {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 1px;
+  width: 5px;
+  height: 9px;
+  border: solid #ffffff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.reusable-form-page.job-opening-form .multiselect-option span {
+  line-height: 1.2;
 }
 
 .reusable-form-page.job-opening-form .multiselect-add input {

@@ -288,6 +288,229 @@
   text-overflow: ellipsis;
 }
 
+.uploadModalOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1250;
+  background: rgba(15, 23, 42, 0.36);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.uploadModal {
+  width: min(560px, 100%);
+  border-radius: 34px;
+  background: #ffffff;
+  border: 1px solid #eef2f7;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.22);
+  padding: 22px 26px 24px;
+}
+
+.uploadModalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.uploadModalTitle {
+  margin: 0;
+  font-size: 32px;
+  line-height: 1.05;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.uploadModalClose {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #9ca3af;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.uploadModalClose:hover {
+  background: #f1f5f9;
+  color: #4b5563;
+}
+
+.uploadModalFieldLabel {
+  font-size: 26px;
+  line-height: 1.08;
+  font-weight: 500;
+  color: #1f2937;
+  margin-bottom: 10px;
+}
+
+.uploadDropzone {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f2f5fa;
+  padding: 26px 18px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.uploadDropzoneIcon {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #e2e8f0;
+  color: #64748b;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.uploadDropzoneText {
+  font-size: 20px;
+  line-height: 1.15;
+  color: #94a3b8;
+  text-align: center;
+}
+
+.uploadDropzoneLink {
+  border: none;
+  background: transparent;
+  color: #145eab;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+  font-size: inherit;
+}
+
+.uploadDropzoneHint {
+  font-size: 16px;
+  line-height: 1.2;
+  color: #9ca3af;
+}
+
+.uploadFileCard {
+  margin-top: 10px;
+  border-radius: 8px;
+  background: #eef2fc;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.uploadFileIconWrap {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #1d4ed8;
+  color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+.uploadFileMeta {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.uploadFileName {
+  font-size: 16px;
+  font-weight: 600;
+  color: #0f172a;
+  margin-bottom: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.uploadFileProgressTrack {
+  width: 100%;
+  height: 6px;
+  border-radius: 999px;
+  background: #d8deee;
+  overflow: hidden;
+}
+
+.uploadFileProgressFill {
+  height: 100%;
+  border-radius: 999px;
+  background: repeating-linear-gradient(
+    135deg,
+    #0b5fb6 0,
+    #0b5fb6 6px,
+    #2c75bf 6px,
+    #2c75bf 12px
+  );
+}
+
+.uploadFileDeleteBtn {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #1f2937;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.uploadFileDeleteBtn:hover {
+  background: #e2e8f0;
+}
+
+.uploadModalActions {
+  margin-top: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.uploadModalSubmitBtn,
+.uploadModalCancelBtn {
+  border-radius: 8px;
+  font-size: 14px;
+  line-height: 1.1;
+  padding: 10px 18px;
+  min-width: 120px;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.uploadModalSubmitBtn {
+  background: #2f79d2;
+  color: #ffffff;
+}
+
+.uploadModalSubmitBtn:hover {
+  background: #2366b8;
+}
+
+.uploadModalSubmitBtn:disabled {
+  background: #a8c4e7;
+  cursor: not-allowed;
+}
+
+.uploadModalCancelBtn {
+  background: #eef4ff;
+  color: #1d66c9;
+  border-color: #b7cef2;
+}
+
+.uploadModalCancelBtn:hover {
+  background: #e0ebff;
+}
+
 .tableWrap {
   margin-top: 12px;
   background: #fff;
