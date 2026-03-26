@@ -262,7 +262,8 @@ export const jobOpeningConfig = {
           required: true,
           cssClass: "grid-col-1 grid-row-1",
           validationRule: "requiredField",
-          placeholder: "Enter Job Position Id"
+          placeholder: "Auto Generated",
+          disabled: true
         },
         {
           name: "positionName",

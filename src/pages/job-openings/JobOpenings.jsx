@@ -431,13 +431,26 @@ export default function JobOpenings() {
     setExpandedRows((prev) => ({ ...prev, [rowKey]: !prev[rowKey] }));
   }, []);
 
+  const nextJobPositionId = React.useMemo(() => {
+    const maxSequence = submittedData.reduce((maxValue, item) => {
+      const candidateId = item?.jobPositionId || item?.openingJobId || "";
+      const matchedDigits = String(candidateId).match(/(\d+)/);
+      if (!matchedDigits) return maxValue;
+      const parsed = Number(matchedDigits[1]);
+      if (Number.isNaN(parsed)) return maxValue;
+      return Math.max(maxValue, parsed);
+    }, 0);
+
+    return `JOP-${String(maxSequence + 1).padStart(3, "0")}`;
+  }, [submittedData]);
+
   const handleCreateJobOpening = React.useCallback(() => {
     setShowJobOpeningForm(true);
     setShowDataTable(false);
     setEditingIndex(null);
-    setEditingData(null);
+    setEditingData({ jobPositionId: nextJobPositionId });
     setEditLocked(false);
-  }, []);
+  }, [nextJobPositionId]);
 
   const handleViewJobOpening = React.useCallback((row, index) => {
     console.log('View job opening:', row);
