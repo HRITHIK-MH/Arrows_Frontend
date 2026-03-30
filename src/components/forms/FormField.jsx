@@ -82,6 +82,7 @@ const FormField = ({
     }
 
     onChange(name, newValue);
+    triggerFieldValidation(newValue);
   };
 
   const resolvedInputType = type === 'number' ? 'text' : type;
@@ -214,7 +215,9 @@ const FormField = ({
     try {
       // If custom validation function is provided, use it
       if (validate) {
-        const validationResult = await validate(value, name);
+        const currentFormData = formData || {};
+        const updatedFormData = { ...currentFormData, [name]: value };
+        const validationResult = await validate(value, name, updatedFormData);
         handleValidationResult(validationResult);
       }
       // For required fields without custom validation, validate that field has value

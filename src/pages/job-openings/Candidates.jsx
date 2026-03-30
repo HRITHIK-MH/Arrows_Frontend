@@ -18,7 +18,6 @@ import {
 } from "react-icons/fi";
 import ReusableForm from "../../components/forms/ReusableForm";
 import { candidateConfig } from "../../components/forms/formConfigs";
-import { debounce } from "../../utils/debounce";
 import styles from "./Candidates.module.scss";
 
 
@@ -204,6 +203,8 @@ const SECONDARY_SKILL_OPTIONS = [
 const EXPERIENCE_OPTIONS = ["1 Year", "2 Years", "3 Years", "4 Years", "5 Years"];
 
 const LAST_USED_OPTIONS = ["2025", "2024", "2023", "2022", "2021"];
+const CANDIDATE_DRAFT_STORAGE_KEY = "candidates:add-draft:v1";
+const createDraftId = () => `draft-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
 const createSkillDraft = () => ({
   name: "",
@@ -260,12 +261,14 @@ export default function Candidates() {
   ]);
   const [editingIndex, setEditingIndex] = React.useState(null);
   const [editingData, setEditingData] = React.useState(null);
-  const [showSuccessMessage, setShowSuccessMessage] = React.useState(false);
+  const [successMessage, setSuccessMessage] = React.useState("");
   const [searchTerm, setSearchTerm] = React.useState('');
   const [filterSource, setFilterSource] = React.useState('');
   const [filterRating, setFilterRating] = React.useState('');
   const [filterStage, setFilterStage] = React.useState('');
   const [filterStatus, setFilterStatus] = React.useState('');
+  const [entriesPerPage, setEntriesPerPage] = React.useState(10);
+  const [currentPage, setCurrentPage] = React.useState(1);
   const [isMoreMenuOpen, setIsMoreMenuOpen] = React.useState(false);
   const [isViewDrawerOpen, setIsViewDrawerOpen] = React.useState(false);
   const [activeProfileTab, setActiveProfileTab] = React.useState("Basic Info");
@@ -276,34 +279,145 @@ export default function Candidates() {
   const [mapJobValue, setMapJobValue] = React.useState("");
   const [mapQuery, setMapQuery] = React.useState("");
   const [isMapDropdownOpen, setIsMapDropdownOpen] = React.useState(false);
+  const [isAddCandidateMenuOpen, setIsAddCandidateMenuOpen] = React.useState(false);
+  const [candidateDrafts, setCandidateDrafts] = React.useState([]);
+  const [activeDraftId, setActiveDraftId] = React.useState(null);
+  const [candidateFormKey, setCandidateFormKey] = React.useState(0);
   const mapDropdownRef = React.useRef(null);
   const moreMenuRef = React.useRef(null);
+  const addCandidateMenuRef = React.useRef(null);
 
-  // Debounced search handler - reduces filter recalculations by 99%
-  const debouncedSearch = React.useMemo(
-    () => debounce((term) => setSearchTerm(term), 300),
-    []
-  );
+  const showTransientMessage = React.useCallback((message) => {
+    setSuccessMessage(message);
+    window.setTimeout(() => {
+      setSuccessMessage("");
+    }, 3000);
+  }, []);
+
+  const sanitizeDraftValue = React.useCallback((value) => {
+    if (value === null || value === undefined) return value;
+    if (Array.isArray(value)) return value.map((item) => sanitizeDraftValue(item));
+    if (typeof value !== "object") return value;
+    if (value instanceof Date) return value.toISOString();
+    if (typeof File !== "undefined" && value instanceof File) return value.name;
+    if (typeof Blob !== "undefined" && value instanceof Blob) return "blob";
+
+    return Object.entries(value).reduce((acc, [key, nestedValue]) => {
+      acc[key] = sanitizeDraftValue(nestedValue);
+      return acc;
+    }, {});
+  }, []);
+
+  const persistCandidateDrafts = React.useCallback((drafts) => {
+    localStorage.setItem(CANDIDATE_DRAFT_STORAGE_KEY, JSON.stringify(drafts));
+  }, []);
+
+  const getCandidateDrafts = React.useCallback(() => {
+    try {
+      const rawDrafts = localStorage.getItem(CANDIDATE_DRAFT_STORAGE_KEY);
+      if (!rawDrafts) return [];
+      const parsedDrafts = JSON.parse(rawDrafts);
+      if (!Array.isArray(parsedDrafts)) return [];
+      return parsedDrafts
+        .filter((draft) => draft && typeof draft === "object" && draft.id)
+        .sort((a, b) => new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0));
+    } catch (error) {
+      console.error("Failed to read candidate drafts:", error);
+      return [];
+    }
+  }, []);
+
+  React.useEffect(() => {
+    setCandidateDrafts(getCandidateDrafts());
+  }, [getCandidateDrafts]);
+
+  const getDraftTitle = React.useCallback((formData, fallbackCount) => {
+    const name = `${String(formData?.firstName || "").trim()} ${String(formData?.lastName || "").trim()}`.trim();
+    if (name) return name;
+    if (formData?.candidateId) return `Candidate ${formData.candidateId}`;
+    if (formData?.primaryEmail) return String(formData.primaryEmail);
+    return `Untitled Draft ${fallbackCount}`;
+  }, []);
+
+  const saveCandidateDraft = React.useCallback((formData) => {
+    try {
+      const sanitizedData = sanitizeDraftValue(formData);
+      const now = new Date().toISOString();
+      let didUpdateExistingDraft = false;
+      let savedDraftId = activeDraftId;
+
+      setCandidateDrafts((prevDrafts) => {
+        const hasActiveDraft = Boolean(savedDraftId) && prevDrafts.some((draft) => draft.id === savedDraftId);
+        let nextDrafts;
+
+        if (hasActiveDraft) {
+          didUpdateExistingDraft = true;
+          nextDrafts = prevDrafts.map((draft) =>
+            draft.id === savedDraftId
+              ? {
+                ...draft,
+                title: getDraftTitle(sanitizedData, prevDrafts.length),
+                updatedAt: now,
+                data: sanitizedData,
+              }
+              : draft
+          );
+        } else {
+          savedDraftId = createDraftId();
+          nextDrafts = [
+            {
+              id: savedDraftId,
+              title: getDraftTitle(sanitizedData, prevDrafts.length + 1),
+              createdAt: now,
+              updatedAt: now,
+              data: sanitizedData,
+            },
+            ...prevDrafts,
+          ];
+        }
+
+        persistCandidateDrafts(nextDrafts);
+        return nextDrafts;
+      });
+
+      setActiveDraftId(savedDraftId);
+      showTransientMessage(didUpdateExistingDraft ? "Draft updated successfully" : "Draft saved successfully");
+    } catch (error) {
+      console.error("Failed to save candidate draft:", error);
+      alert("Unable to save draft right now. Please try again.");
+    }
+  }, [activeDraftId, getDraftTitle, persistCandidateDrafts, sanitizeDraftValue, showTransientMessage]);
+
+  const candidateFormWithDraft = React.useMemo(() => ({
+    ...candidateConfig,
+    showDraftAction: editingIndex === null,
+    onSaveDraft: saveCandidateDraft,
+  }), [editingIndex, saveCandidateDraft]);
 
   const handleSearchChange = React.useCallback((e) => {
-    debouncedSearch(e.target.value);
-  }, [debouncedSearch]);
+    setSearchTerm(e.target.value);
+    setCurrentPage(1);
+  }, []);
 
   // useCallback for filter handlers - prevents unnecessary re-renders
   const handleFilterSourceChange = React.useCallback((e) => {
     setFilterSource(e.target.value);
+    setCurrentPage(1);
   }, []);
 
   const handleFilterRatingChange = React.useCallback((e) => {
     setFilterRating(e.target.value);
+    setCurrentPage(1);
   }, []);
 
   const handleFilterStageChange = React.useCallback((e) => {
     setFilterStage(e.target.value);
+    setCurrentPage(1);
   }, []);
 
   const handleFilterStatusChange = React.useCallback((e) => {
     setFilterStatus(e.target.value);
+    setCurrentPage(1);
   }, []);
 
   // Get unique values for filter dropdowns - memoized to avoid recalculations
@@ -329,22 +443,44 @@ export default function Candidates() {
 
   // Memoized filter logic - only recalculates when dependencies change
   const filteredData = React.useMemo(() =>
-    submittedData.filter(item => {
-      const matchesSearch = 
-        !searchTerm || 
-        Object.values(item).some(value => 
-          String(value).toLowerCase().includes(searchTerm.toLowerCase())
-        );
-      
-      const matchesSource = !filterSource || item.source === filterSource;
-      const matchesRating = !filterRating || item.rating === filterRating;
-      const matchesStage = !filterStage || item.stage === filterStage;
-      const matchesStatus = !filterStatus || item.status === filterStatus;
+    submittedData
+      .map((item, sourceIndex) => ({ item, sourceIndex }))
+      .filter(({ item }) => {
+        const matchesSearch =
+          !searchTerm ||
+          Object.values(item).some((value) =>
+            String(value).toLowerCase().includes(searchTerm.toLowerCase())
+          );
 
-      return matchesSearch && matchesSource && matchesRating && matchesStage && matchesStatus;
-    }),
+        const matchesSource = !filterSource || item.source === filterSource;
+        const matchesRating = !filterRating || item.rating === filterRating;
+        const matchesStage = !filterStage || item.stage === filterStage;
+        const matchesStatus = !filterStatus || item.status === filterStatus;
+
+        return matchesSearch && matchesSource && matchesRating && matchesStage && matchesStatus;
+      }),
     [submittedData, searchTerm, filterSource, filterRating, filterStage, filterStatus]
   );
+
+  const totalRecords = filteredData.length;
+  const totalPages = Math.max(1, Math.ceil(totalRecords / entriesPerPage));
+
+  React.useEffect(() => {
+    setCurrentPage((prevPage) => Math.min(prevPage, totalPages));
+  }, [totalPages]);
+
+  const paginatedData = React.useMemo(() => {
+    const startIndex = (currentPage - 1) * entriesPerPage;
+    return filteredData.slice(startIndex, startIndex + entriesPerPage);
+  }, [filteredData, currentPage, entriesPerPage]);
+
+  const pageNumbers = React.useMemo(
+    () => Array.from({ length: totalPages }, (_, index) => index + 1),
+    [totalPages]
+  );
+
+  const startEntry = totalRecords === 0 ? 0 : (currentPage - 1) * entriesPerPage + 1;
+  const endEntry = Math.min(currentPage * entriesPerPage, totalRecords);
 
   const hasFilters = Boolean(
     searchTerm ||
@@ -360,18 +496,38 @@ export default function Candidates() {
     setFilterRating('');
     setFilterStage('');
     setFilterStatus('');
+    setCurrentPage(1);
     setIsMoreMenuOpen(false);
   }, []);
 
   const handleQuickFilterStatus = React.useCallback((status) => {
     setFilterStatus(status);
+    setCurrentPage(1);
     setIsMoreMenuOpen(false);
   }, []);
 
   const handleQuickFilterStage = React.useCallback((stage) => {
     setFilterStage(stage);
+    setCurrentPage(1);
     setIsMoreMenuOpen(false);
   }, []);
+
+  const handleEntriesPerPageChange = React.useCallback((event) => {
+    setEntriesPerPage(Number(event.target.value));
+    setCurrentPage(1);
+  }, []);
+
+  const handlePageChange = React.useCallback((page) => {
+    setCurrentPage(page);
+  }, []);
+
+  const handlePreviousPage = React.useCallback(() => {
+    setCurrentPage((prevPage) => Math.max(prevPage - 1, 1));
+  }, []);
+
+  const handleNextPage = React.useCallback(() => {
+    setCurrentPage((prevPage) => Math.min(prevPage + 1, totalPages));
+  }, [totalPages]);
 
   const getStageClass = React.useCallback((stage) => {
     const normalized = String(stage || '').toLowerCase();
@@ -697,12 +853,58 @@ export default function Candidates() {
     return () => document.removeEventListener("mousedown", handleOutsideClick);
   }, [isMoreMenuOpen]);
 
-  const handleAddCandidate = React.useCallback(() => {
+  React.useEffect(() => {
+    if (!isAddCandidateMenuOpen) return undefined;
+    const handleOutsideClick = (event) => {
+      if (addCandidateMenuRef.current && !addCandidateMenuRef.current.contains(event.target)) {
+        setIsAddCandidateMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, [isAddCandidateMenuOpen]);
+
+  const openAddCandidateForm = React.useCallback((draftData = null, draftId = null) => {
     setShowCandidateForm(true);
     setShowDataTable(false);
     setEditingIndex(null);
-    setEditingData(null);
+    setActiveDraftId(draftId);
+    setEditingData(draftData ? { ...draftData } : null);
+    setCandidateFormKey((prev) => prev + 1);
+    setIsAddCandidateMenuOpen(false);
   }, []);
+
+  const handleAddCandidate = React.useCallback(() => {
+    setCandidateDrafts(getCandidateDrafts());
+    setIsAddCandidateMenuOpen((prev) => !prev);
+  }, [getCandidateDrafts]);
+
+  const handleStartFreshCandidate = React.useCallback(() => {
+    openAddCandidateForm(null, null);
+  }, [openAddCandidateForm]);
+
+  const handleUseCandidateDraft = React.useCallback((draftId) => {
+    const selectedDraft = candidateDrafts.find((draft) => draft.id === draftId);
+    if (!selectedDraft) return;
+    openAddCandidateForm(selectedDraft.data || {}, selectedDraft.id);
+    showTransientMessage(`Loaded draft: ${selectedDraft.title}`);
+  }, [candidateDrafts, openAddCandidateForm, showTransientMessage]);
+
+  const handleDeleteCandidateDraft = React.useCallback((draftId) => {
+    setCandidateDrafts((prevDrafts) => {
+      const nextDrafts = prevDrafts.filter((draft) => draft.id !== draftId);
+      persistCandidateDrafts(nextDrafts);
+      return nextDrafts;
+    });
+
+    if (activeDraftId === draftId) {
+      setActiveDraftId(null);
+      setEditingData(null);
+      setCandidateFormKey((prev) => prev + 1);
+    }
+
+    showTransientMessage("Draft deleted successfully");
+  }, [activeDraftId, persistCandidateDrafts, showTransientMessage]);
 
   const getPipelineStep = React.useCallback((candidate) => {
     const normalizedStatus = String(candidate?.status || "").toLowerCase();
@@ -765,6 +967,9 @@ export default function Candidates() {
     });
     setShowCandidateForm(true);
     setShowDataTable(false);
+    setIsAddCandidateMenuOpen(false);
+    setActiveDraftId(null);
+    setCandidateFormKey((prev) => prev + 1);
   }, []);
 
   const handleDeleteCandidate = React.useCallback((row, index) => {
@@ -798,15 +1003,12 @@ export default function Candidates() {
     }
     setShowCandidateForm(false);
     setShowDataTable(true);
-    setShowSuccessMessage(true);
+    showTransientMessage(editingIndex !== null ? "Candidate updated successfully" : "Candidate added successfully");
     setEditingIndex(null);
+    setActiveDraftId(null);
     setEditingData(null);
-    // Auto-hide success message after 3 seconds
-    setTimeout(() => {
-      setShowSuccessMessage(false);
-    }, 3000);
     // Here you would typically send the data to your backend API
-  }, [formatTimestamp, editingIndex]);
+  }, [formatTimestamp, editingIndex, showTransientMessage]);
 
   const closeViewDrawer = React.useCallback(() => {
     setIsViewDrawerOpen(false);
@@ -1333,9 +1535,9 @@ export default function Candidates() {
 
   return (
     <div className={styles.page}>
-      {showSuccessMessage && (
+      {successMessage && (
         <div className={styles.successMessage}>
-          ✓ {editingIndex !== null ? 'Candidate updated successfully' : 'Candidate added successfully'}
+          ✓ {successMessage}
         </div>
       )}
 
@@ -1364,19 +1566,101 @@ export default function Candidates() {
                 ))}
               </div>
             </div>
-            <button className={styles.addButton} onClick={handleAddCandidate}>
-              <span className={styles.addIcon}>
-                <FiPlus size={14} />
-              </span>
-              Add Candidate
-            </button>
+            <div ref={addCandidateMenuRef} style={{ position: "relative" }}>
+              <button className={styles.addButton} onClick={handleAddCandidate}>
+                <span className={styles.addIcon}>
+                  <FiPlus size={14} />
+                </span>
+                Add Candidate
+              </button>
+
+              {isAddCandidateMenuOpen && (
+                <div
+                  style={{
+                    position: "absolute",
+                    right: 0,
+                    top: "calc(100% + 8px)",
+                    width: "320px",
+                    maxHeight: "360px",
+                    overflowY: "auto",
+                    background: "#fff",
+                    border: "1px solid #E5E7EB",
+                    borderRadius: "10px",
+                    boxShadow: "0 10px 30px rgba(0, 0, 0, 0.12)",
+                    zIndex: 50,
+                    padding: "10px",
+                  }}
+                >
+                  <button
+                    type="button"
+                    className={styles.clearButton}
+                    onClick={handleStartFreshCandidate}
+                    style={{ width: "100%", marginBottom: "8px" }}
+                  >
+                    Add Candidate
+                  </button>
+
+                  <div style={{ fontSize: "12px", color: "#6B7280", marginBottom: "6px", fontWeight: 600 }}>
+                    Saved Drafts
+                  </div>
+
+                  {candidateDrafts.length === 0 ? (
+                    <div style={{ fontSize: "13px", color: "#6B7280" }}>
+                      No saved drafts available.
+                    </div>
+                  ) : (
+                    <div style={{ display: "grid", gap: "8px" }}>
+                      {candidateDrafts.map((draft) => (
+                        <div
+                          key={draft.id}
+                          style={{
+                            border: "1px solid #E5E7EB",
+                            borderRadius: "8px",
+                            padding: "8px",
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            gap: "8px",
+                          }}
+                        >
+                          <div>
+                            <div style={{ fontSize: "13px", fontWeight: 600 }}>{draft.title || "Untitled Draft"}</div>
+                            <div style={{ fontSize: "12px", color: "#6B7280" }}>
+                              {new Date(draft.updatedAt || draft.createdAt || Date.now()).toLocaleString()}
+                            </div>
+                          </div>
+                          <div style={{ display: "flex", gap: "6px" }}>
+                            <button
+                              type="button"
+                              className={styles.actionBtn}
+                              onClick={() => handleUseCandidateDraft(draft.id)}
+                            >
+                              Use
+                            </button>
+                            <button
+                              type="button"
+                              className={styles.actionBtn}
+                              onClick={() => handleDeleteCandidateDraft(draft.id)}
+                              aria-label="Delete draft"
+                            >
+                              <FiTrash2 size={14} />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         )}
 
         {showCandidateForm && (
           <div className={styles.formWrap}>
             <ReusableForm
-              config={candidateConfig}
+              key={`candidate-form-${candidateFormKey}`}
+              config={candidateFormWithDraft}
               onSubmit={handleCandidateSubmit}
               initialData={editingData}
             />
@@ -1425,8 +1709,8 @@ export default function Candidates() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredData.map((row, index) => (
-                    <tr key={`${row.candidateId}-${index}`}>
+                  {paginatedData.map(({ item: row, sourceIndex }) => (
+                    <tr key={`${row.candidateId}-${sourceIndex}`}>
                       <td>{row.candidateId}</td>
                       <td>{row.candidateName}</td>
                       <td>{row.candidateEmail}</td>
@@ -1462,7 +1746,7 @@ export default function Candidates() {
                           <button
                             type="button"
                             className={styles.actionBtn}
-                            onClick={() => handleEditCandidate(row, index)}
+                            onClick={() => handleEditCandidate(row, sourceIndex)}
                             aria-label="Edit"
                           >
                             <FiEdit2 size={16} />
@@ -1470,7 +1754,7 @@ export default function Candidates() {
                           <button
                             type="button"
                             className={styles.actionBtn}
-                            onClick={() => handleDeleteCandidate(row, index)}
+                            onClick={() => handleDeleteCandidate(row, sourceIndex)}
                             aria-label="Delete"
                           >
                             <FiTrash2 size={16} />
@@ -1486,28 +1770,50 @@ export default function Candidates() {
             <div className={styles.tableFooter}>
               <div className={styles.footerLeft}>
                 <span>Show</span>
-                <select className={styles.entriesSelect} defaultValue="10">
+                <select
+                  className={styles.entriesSelect}
+                  value={entriesPerPage}
+                  onChange={handleEntriesPerPageChange}
+                >
                   <option value="10">10</option>
                   <option value="25">25</option>
                   <option value="50">50</option>
                 </select>
                 <span>entries</span>
+                <span>
+                  ({startEntry}-{endEntry} of {totalRecords})
+                </span>
               </div>
               <div className={styles.pagination}>
-                <button type="button" className={styles.pageBtn} aria-label="Previous page">
-                  ‹
+                <button
+                  type="button"
+                  className={styles.pageBtn}
+                  aria-label="Previous page"
+                  onClick={handlePreviousPage}
+                  disabled={currentPage === 1}
+                >
+                  {"<"}
                 </button>
-                <button type="button" className={`${styles.pageBtn} ${styles.pageBtnActive}`}>
-                  1
-                </button>
-                <button type="button" className={styles.pageBtn}>
-                  2
-                </button>
-                <button type="button" className={styles.pageBtn}>
-                  3
-                </button>
-                <button type="button" className={styles.pageBtn} aria-label="Next page">
-                  ›
+                {pageNumbers.map((pageNumber) => (
+                  <button
+                    key={pageNumber}
+                    type="button"
+                    className={`${styles.pageBtn}${currentPage === pageNumber ? ` ${styles.pageBtnActive}` : ""}`}
+                    onClick={() => handlePageChange(pageNumber)}
+                    aria-label={`Page ${pageNumber}`}
+                    aria-current={currentPage === pageNumber ? "page" : undefined}
+                  >
+                    {pageNumber}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  className={styles.pageBtn}
+                  aria-label="Next page"
+                  onClick={handleNextPage}
+                  disabled={currentPage === totalPages}
+                >
+                  {">"}
                 </button>
               </div>
             </div>
@@ -1623,3 +1929,4 @@ export default function Candidates() {
     </div>
   );
 }
+
