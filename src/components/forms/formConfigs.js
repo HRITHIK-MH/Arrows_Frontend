@@ -61,13 +61,13 @@ const RECRUITER_DIRECTORY = [
 
 const SOURCE_ID_OPTIONS = SOURCE_DIRECTORY.map(({ id, name }) => ({
   value: id,
-  label: `${id} - ${name}`,
+  label: id,
   sourceName: name,
 }));
 
 const SOURCE_NAME_OPTIONS = SOURCE_DIRECTORY.map(({ id, name }) => ({
   value: name,
-  label: `${name} (${id})`,
+  label: name,
   sourceId: id,
 }));
 
@@ -1130,6 +1130,20 @@ export const candidateConfig = {
           return {
             isValid: false,
             message: `${fieldLabel} should only contain letters, spaces, dots or hyphens`
+          };
+        }
+
+        const normalizedFirstName = String(
+          fieldName === "firstName" ? value : formData?.firstName || ""
+        ).trim().toLowerCase();
+        const normalizedLastName = String(
+          fieldName === "lastName" ? value : formData?.lastName || ""
+        ).trim().toLowerCase();
+
+        if (normalizedFirstName && normalizedLastName && normalizedFirstName === normalizedLastName) {
+          return {
+            isValid: false,
+            message: "First Name and Last Name cannot be the same"
           };
         }
       }

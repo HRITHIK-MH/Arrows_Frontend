@@ -1,5 +1,7 @@
 import React, { useMemo } from "react";
 
+const ALLOWED_EXTENSIONS = new Set(["pdf", "doc", "docx"]);
+
 const formatBytes = (bytes) => {
   if (!bytes && bytes !== 0) return "";
   const units = ["B", "KB", "MB", "GB"];
@@ -17,14 +19,21 @@ const CandidateDocumentsStep = ({ formData, onChange, onSetStepFields }) => {
     ? formData.candidateDocuments
     : [];
 
+  const isAllowedDocument = (file) => {
+    const extension = file?.name?.split(".").pop()?.toLowerCase();
+    return Boolean(extension && ALLOWED_EXTENSIONS.has(extension));
+  };
+
   const addFiles = (fileList) => {
-    const files = Array.from(fileList || []).map((file) => ({
-      id: `${file.name}-${file.lastModified}-${file.size}`,
-      name: file.name,
-      size: file.size,
-      type: file.type,
-      file,
-    }));
+    const files = Array.from(fileList || [])
+      .filter(isAllowedDocument)
+      .map((file) => ({
+        id: `${file.name}-${file.lastModified}-${file.size}`,
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        file,
+      }));
     if (files.length === 0) return;
     const nextDocs = [...documents, ...files];
     onChange("candidateDocuments", nextDocs);
@@ -77,7 +86,7 @@ const CandidateDocumentsStep = ({ formData, onChange, onSetStepFields }) => {
         <div className="document-dropzone-text">
           <span className="dropzone-link">Click Here</span> to upload your Documents or drag.
         </div>
-        <div className="document-dropzone-subtext">Supported Format: PDF (20 mb)</div>
+        <div className="document-dropzone-subtext">Supported Formats: PDF, DOC, DOCX (20 MB)</div>
         <input
           id={inputId}
           type="file"
