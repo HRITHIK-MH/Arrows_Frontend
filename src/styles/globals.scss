@@ -854,6 +854,7 @@ $gutter: 1rem;
     padding: 8px var(--space-3);
     max-width: 100%;
     overflow-x: hidden;
+    z-index: 1001;
   }
 
 
@@ -886,6 +887,7 @@ $gutter: 1rem;
     transition: transform 220ms ease;
     pointer-events: none;            /* disabled when hidden */
     box-shadow: 2px 0 16px rgba(0,0,0,0.08);
+    z-index: 1200;                   /* keep menu above sticky header */
   }
 
 
@@ -893,6 +895,10 @@ $gutter: 1rem;
   .sidebar.open {
     transform: translateX(0);
     pointer-events: auto;
+  }
+
+  .overlay {
+    z-index: 1100;                   /* below sidebar, above header/content */
   }
 
 

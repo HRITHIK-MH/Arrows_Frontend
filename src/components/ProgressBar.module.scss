@@ -123,3 +123,33 @@
   min-width: 45px;
   text-align: right;
 }
+
+@media (max-width: 768px) {
+  .meterWrapper {
+    gap: 10px;
+  }
+
+  .percentage {
+    font-size: 13px;
+    min-width: 40px;
+  }
+}
+
+@media (max-width: 480px) {
+  .meterWrapper {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .meter {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .percentage {
+    width: 100%;
+    min-width: 0;
+    text-align: left;
+    font-size: 12px;
+  }
+}

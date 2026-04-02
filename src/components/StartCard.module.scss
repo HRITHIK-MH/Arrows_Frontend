@@ -37,6 +37,46 @@
   border-left-color: #d32f2f; /* MUI error */
 }
 
+@media (max-width: 1024px) {
+  .root {
+    padding: 14px;
+  }
+
+  .value {
+    font-size: 22px;
+  }
+}
+
+@media (max-width: 768px) {
+  .root {
+    padding: 12px;
+    border-radius: 10px;
+  }
+
+  .title {
+    font-size: 11px;
+  }
+
+  .value {
+    margin-top: 6px;
+    font-size: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .root {
+    padding: 10px;
+  }
+
+  .title {
+    font-size: 10px;
+  }
+
+  .value {
+    font-size: 18px;
+  }
+}
+
 
 
 

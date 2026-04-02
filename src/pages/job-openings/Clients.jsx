@@ -116,6 +116,8 @@ export default function Clients() {
   const [showClientForm, setShowClientForm] = React.useState(false);
   const [showDataTable, setShowDataTable] = React.useState(true);
   const [submittedData, setSubmittedData] = React.useState(initialClients);
+  const [entriesPerPage, setEntriesPerPage] = React.useState(10);
+  const [currentPage, setCurrentPage] = React.useState(1);
   const [editingIndex, setEditingIndex] = React.useState(null);
   const [editingData, setEditingData] = React.useState(null);
   const [showSuccessMessage, setShowSuccessMessage] = React.useState(false);
@@ -227,6 +229,46 @@ export default function Clients() {
     [formatDate, formatPhoneNumber, getStatusClass]
   );
 
+  const totalRecords = submittedData.length;
+  const totalPages = Math.max(1, Math.ceil(totalRecords / entriesPerPage));
+
+  React.useEffect(() => {
+    setCurrentPage((previousPage) => Math.min(previousPage, totalPages));
+  }, [totalPages]);
+
+  const paginatedData = React.useMemo(() => {
+    const startIndex = (currentPage - 1) * entriesPerPage;
+    return submittedData.slice(startIndex, startIndex + entriesPerPage).map((item, offset) => ({
+      ...item,
+      _sourceIndex: startIndex + offset,
+    }));
+  }, [currentPage, entriesPerPage, submittedData]);
+
+  const pageNumbers = React.useMemo(
+    () => Array.from({ length: totalPages }, (_, index) => index + 1),
+    [totalPages]
+  );
+
+  const startEntry = totalRecords === 0 ? 0 : (currentPage - 1) * entriesPerPage + 1;
+  const endEntry = Math.min(currentPage * entriesPerPage, totalRecords);
+
+  const handleEntriesPerPageChange = React.useCallback((event) => {
+    setEntriesPerPage(Number(event.target.value));
+    setCurrentPage(1);
+  }, []);
+
+  const handlePageChange = React.useCallback((page) => {
+    setCurrentPage(page);
+  }, []);
+
+  const handlePreviousPage = React.useCallback(() => {
+    setCurrentPage((previousPage) => Math.max(previousPage - 1, 1));
+  }, []);
+
+  const handleNextPage = React.useCallback(() => {
+    setCurrentPage((previousPage) => Math.min(previousPage + 1, totalPages));
+  }, [totalPages]);
+
   const handleAddClient = React.useCallback(() => {
     setShowClientForm(true);
     setShowDataTable(false);
@@ -244,7 +286,8 @@ export default function Clients() {
 
   const handleEditClient = React.useCallback(
     (row, index) => {
-      setEditingIndex(index);
+      const resolvedIndex = Number.isInteger(row?._sourceIndex) ? row._sourceIndex : index;
+      setEditingIndex(resolvedIndex);
       setEditingData(mapClientToFormData(row));
       setShowClientForm(true);
       setShowDataTable(false);
@@ -252,9 +295,10 @@ export default function Clients() {
     [mapClientToFormData]
   );
 
-  const handleDeleteClient = React.useCallback((_, index) => {
+  const handleDeleteClient = React.useCallback((row, index) => {
+    const resolvedIndex = Number.isInteger(row?._sourceIndex) ? row._sourceIndex : index;
     if (window.confirm("Are you sure you want to delete this client?")) {
-      setSubmittedData((prev) => prev.filter((item, itemIndex) => itemIndex !== index));
+      setSubmittedData((prev) => prev.filter((item, itemIndex) => itemIndex !== resolvedIndex));
     }
   }, []);
 
@@ -291,7 +335,7 @@ export default function Clients() {
     <div className={styles.page}>
       {showSuccessMessage && <div className={styles.successMessage}>{successMessageText}</div>}
 
-      <div className={styles.card}>
+      <div className={`${styles.card}${showDataTable ? ` ${styles.cardAutoHeight}` : ""}`}>
         {!showClientForm && (
           <div className={styles.infoRow}>
             <p className={styles.description}>
@@ -316,12 +360,62 @@ export default function Clients() {
           <div className={styles.tableSection}>
             <div className={styles.tableWrap}>
               <DataTable
-                data={submittedData}
+                data={paginatedData}
                 columns={tableColumns}
                 onView={handleViewClient}
                 onEdit={handleEditClient}
                 onDelete={handleDeleteClient}
               />
+            </div>
+            <div className={styles.tableFooter}>
+              <div className={styles.footerLeft}>
+                <span>Show</span>
+                <select
+                  className={styles.entriesSelect}
+                  value={entriesPerPage}
+                  onChange={handleEntriesPerPageChange}
+                >
+                  <option value="10">10</option>
+                  <option value="25">25</option>
+                  <option value="50">50</option>
+                </select>
+                <span>entries</span>
+                <span>
+                  ({startEntry}-{endEntry} of {totalRecords})
+                </span>
+              </div>
+              <div className={styles.pagination}>
+                <button
+                  type="button"
+                  className={styles.pageBtn}
+                  aria-label="Previous page"
+                  onClick={handlePreviousPage}
+                  disabled={currentPage === 1}
+                >
+                  {"<"}
+                </button>
+                {pageNumbers.map((pageNumber) => (
+                  <button
+                    key={pageNumber}
+                    type="button"
+                    className={`${styles.pageBtn}${currentPage === pageNumber ? ` ${styles.pageBtnActive}` : ""}`}
+                    onClick={() => handlePageChange(pageNumber)}
+                    aria-label={`Page ${pageNumber}`}
+                    aria-current={currentPage === pageNumber ? "page" : undefined}
+                  >
+                    {pageNumber}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  className={styles.pageBtn}
+                  aria-label="Next page"
+                  onClick={handleNextPage}
+                  disabled={currentPage === totalPages}
+                >
+                  {">"}
+                </button>
+              </div>
             </div>
           </div>
         )}
