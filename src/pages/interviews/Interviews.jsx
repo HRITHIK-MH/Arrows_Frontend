@@ -1203,7 +1203,7 @@ export default function Interviews() {
                 <FiSearch className={styles.searchIcon} aria-hidden="true" />
                 <input
                   type="text"
-                  placeholder="Search"
+                  placeholder="Search here..."
                   value={searchTerm}
                   onChange={handleSearchChange}
                   className={styles.searchInput}
@@ -1274,15 +1274,16 @@ export default function Interviews() {
               >
                 Clear
               </button>
-              <button type="button" className={styles.applyButton} disabled={!hasFilters}>
-                Apply
-              </button>
             </div>
           </div>
         )}
 
         {/* Content Area */}
-        <div className={styles.contentAreaLayout}>
+        <div
+          className={`${styles.contentAreaLayout} ${
+            activeTab === "list" ? styles.contentAreaLayoutList : ""
+          }`}
+        >
         {activeTab === "list" ? (
           loading ? (
             <div className={styles.loadingState}>
@@ -1316,14 +1317,14 @@ export default function Interviews() {
                   <tbody>
                     {filteredInterviews.map((row, index) => (
                       <tr key={`${row.candidateId}-${index}`}>
-                        <td>{row.candidateId}</td>
-                        <td>{row.candidateName}</td>
-                        <td>{row.roleJobTitle}</td>
-                        <td>{row.dateTime}</td>
-                        <td>{row.company}</td>
-                        <td>{row.interviewType}</td>
-                        <td>{row.mode}</td>
-                        <td>
+                        <td data-label="Candidate ID">{row.candidateId}</td>
+                        <td data-label="Candidate Name">{row.candidateName}</td>
+                        <td data-label="Role / Job Title">{row.roleJobTitle}</td>
+                        <td data-label="Date & Time">{row.dateTime}</td>
+                        <td data-label="Company">{row.company}</td>
+                        <td data-label="Interview Type">{row.interviewType}</td>
+                        <td data-label="Mode">{row.mode}</td>
+                        <td data-label="Status">
                           <span
                             className={`${styles.statusPill} ${
                               row.status === "Rescheduled"
@@ -1334,7 +1335,7 @@ export default function Interviews() {
                             {row.status}
                           </span>
                         </td>
-                        <td className={styles.actionsCol}>
+                        <td data-label="Actions" className={styles.actionsCol}>
                           <div className={styles.actionIcons}>
                             <button
                               type="button"
@@ -1530,15 +1531,15 @@ export default function Interviews() {
                       <tbody>
                         {groups.find(g => g.id === selectedGroup)?.teamMembers.map((member, idx) => (
                           <tr key={idx}>
-                            <td>{member.name}</td>
-                            <td>{member.email}</td>
-                            <td>{member.mobile}</td>
-                            <td>
+                            <td data-label="Name">{member.name}</td>
+                            <td data-label="Email">{member.email}</td>
+                            <td data-label="Mobile">{member.mobile}</td>
+                            <td data-label="Round">
                               <span className={styles.roundBadge}>{member.round}</span>
                             </td>
-                            <td>{member.designation}</td>
-                            <td>{member.availability}</td>
-                            <td>
+                            <td data-label="Designation">{member.designation}</td>
+                            <td data-label="Availability">{member.availability}</td>
+                            <td data-label="Action">
                               <button 
                                 className={styles.deleteBtn}
                                 onClick={() => handleDeleteGroup(member.name)}

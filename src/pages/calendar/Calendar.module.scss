@@ -644,6 +644,20 @@
     align-items: flex-start;
   }
 
+  .controlsLeft {
+    width: 100%;
+    gap: 6px;
+  }
+
+  .todayBtn,
+  .viewSelect {
+    flex: 1 1 140px;
+  }
+
+  .navBtn {
+    flex: 0 0 auto;
+  }
+
   .controlsRight {
     width: 100%;
     flex-direction: column;
@@ -664,14 +678,11 @@
     width: 100%;
     margin-left: 0;
     font-size: 20px;
+    line-height: 1.2;
   }
 
-  .monthGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .monthHeaderCell {
-    display: none;
+  .microsoftMeta {
+    align-items: flex-start;
   }
 }
 
@@ -688,8 +699,7 @@
   }
 
   .calendarCard {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
+    overflow-x: hidden;
   }
 
   .controlsLeft,
@@ -699,15 +709,84 @@
     width: 100%;
   }
 
+  .monthGrid,
   .weekTimeline,
   .dayTimeline {
-    min-width: 720px;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .monthHeaderCell {
+    padding: 8px 2px;
+    font-size: 10px;
+  }
+
+  .monthCell {
+    min-height: 92px;
+    padding: 6px;
+    gap: 4px;
+  }
+
+  .monthCellDay {
+    display: none;
+  }
+
+  .monthEvent {
+    font-size: 10px;
+    padding: 3px 6px;
+  }
+
+  .monthMore {
+    font-size: 10px;
+  }
+
+  .weekTimelineHeader {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+  }
+
+  .weekTimelineTimeSpacer {
+    display: none;
+  }
+
+  .weekTimelineBody {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .weekHours {
+    display: none;
+  }
+
+  .weekDayHeader {
+    padding: 5px 2px;
+  }
+
+  .weekDayName {
+    font-size: 10px;
+  }
+
+  .weekDayDate {
+    font-size: 13px;
+  }
+
+  .weekEvent,
+  .dayEvent {
+    left: 2px;
+    right: 2px;
+    font-size: 9px;
+    padding: 3px 4px;
   }
 }
 
 @media (max-width: 480px) {
-  .weekTimeline,
-  .dayTimeline {
-    min-width: 640px;
+  .card {
+    padding: 10px;
+  }
+
+  .monthCell {
+    min-height: 84px;
+  }
+
+  .rangeLabel {
+    font-size: 18px;
   }
 }

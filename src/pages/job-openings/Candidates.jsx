@@ -1566,86 +1566,64 @@ export default function Candidates() {
                 ))}
               </div>
             </div>
-            <div ref={addCandidateMenuRef} style={{ position: "relative" }}>
-              <button className={styles.addButton} onClick={handleAddCandidate}>
-                <span className={styles.addIcon}>
-                  <FiPlus size={14} />
-                </span>
-                Add Candidate
-              </button>
+            <div ref={addCandidateMenuRef} className={styles.addCandidateMenuAnchor}>
+              <div className={styles.addCandidateSplit}>
+                <button
+                  type="button"
+                  className={styles.addButton}
+                  onClick={handleStartFreshCandidate}
+                >
+                  <span className={styles.addIcon}>
+                    <FiPlus size={14} />
+                  </span>
+                  Add Candidate
+                </button>
+                <button
+                  type="button"
+                  className={`${styles.addButtonDropdownTrigger}${isAddCandidateMenuOpen ? ` ${styles.addButtonDropdownTriggerOpen}` : ""}`}
+                  onClick={handleAddCandidate}
+                  aria-label="Open add candidate options"
+                  aria-haspopup="menu"
+                  aria-expanded={isAddCandidateMenuOpen}
+                >
+                  <FiChevronDown size={14} />
+                </button>
+              </div>
 
               {isAddCandidateMenuOpen && (
-                <div
-                  style={{
-                    position: "absolute",
-                    right: 0,
-                    top: "calc(100% + 8px)",
-                    width: "320px",
-                    maxHeight: "360px",
-                    overflowY: "auto",
-                    background: "#fff",
-                    border: "1px solid #E5E7EB",
-                    borderRadius: "10px",
-                    boxShadow: "0 10px 30px rgba(0, 0, 0, 0.12)",
-                    zIndex: 50,
-                    padding: "10px",
-                  }}
-                >
-                  <button
-                    type="button"
-                    className={styles.clearButton}
-                    onClick={handleStartFreshCandidate}
-                    style={{ width: "100%", marginBottom: "8px" }}
-                  >
-                    Add Candidate
-                  </button>
-
-                  <div style={{ fontSize: "12px", color: "#6B7280", marginBottom: "6px", fontWeight: 600 }}>
-                    Saved Drafts
-                  </div>
+                <div className={styles.addCandidateMenu} role="menu" aria-label="Add candidate options">
+                  <div className={styles.addCandidateMenuTitle}>Saved Drafts</div>
 
                   {candidateDrafts.length === 0 ? (
-                    <div style={{ fontSize: "13px", color: "#6B7280" }}>
+                    <div className={styles.addCandidateMenuEmpty}>
                       No saved drafts available.
                     </div>
                   ) : (
-                    <div style={{ display: "grid", gap: "8px" }}>
+                    <div className={styles.addCandidateDraftList} role="none">
                       {candidateDrafts.map((draft) => (
                         <div
                           key={draft.id}
-                          style={{
-                            border: "1px solid #E5E7EB",
-                            borderRadius: "8px",
-                            padding: "8px",
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "center",
-                            gap: "8px",
-                          }}
+                          className={styles.addCandidateDraftRow}
                         >
-                          <div>
-                            <div style={{ fontSize: "13px", fontWeight: 600 }}>{draft.title || "Untitled Draft"}</div>
-                            <div style={{ fontSize: "12px", color: "#6B7280" }}>
+                          <button
+                            type="button"
+                            className={styles.addCandidateMenuOption}
+                            onClick={() => handleUseCandidateDraft(draft.id)}
+                            title={draft.title || "Untitled Draft"}
+                          >
+                            <span className={styles.addCandidateDraftTitle}>{draft.title || "Untitled Draft"}</span>
+                            <span className={styles.addCandidateDraftMeta}>
                               {new Date(draft.updatedAt || draft.createdAt || Date.now()).toLocaleString()}
-                            </div>
-                          </div>
-                          <div style={{ display: "flex", gap: "6px" }}>
-                            <button
-                              type="button"
-                              className={styles.actionBtn}
-                              onClick={() => handleUseCandidateDraft(draft.id)}
-                            >
-                              Use
-                            </button>
-                            <button
-                              type="button"
-                              className={styles.actionBtn}
-                              onClick={() => handleDeleteCandidateDraft(draft.id)}
-                              aria-label="Delete draft"
-                            >
-                              <FiTrash2 size={14} />
-                            </button>
-                          </div>
+                            </span>
+                          </button>
+                          <button
+                            type="button"
+                            className={styles.addCandidateDraftDelete}
+                            onClick={() => handleDeleteCandidateDraft(draft.id)}
+                            aria-label="Delete draft"
+                          >
+                            <FiTrash2 size={14} />
+                          </button>
                         </div>
                       ))}
                     </div>
