@@ -876,104 +876,149 @@ export default function JobOpenings() {
             </div>
 
             <div className={styles.drawerBody}>
-              <div className={styles.drawerGrid}>
-                <div className={styles.drawerField}>
-                  <span>JD id</span>
-                  <strong>{selectedJobOpening.openingJobId || "-"}</strong>
-                </div>
-                <div className={styles.drawerField}>
-                  <span>Position Name</span>
-                  <strong>{selectedJobOpening.postingTitle || "-"}</strong>
-                </div>
-                <div className={styles.drawerField}>
-                  <span>Experience</span>
-                  <strong>
-                    Min {selectedJobOpening.minExperience || 0} to max {selectedJobOpening.maxExperience || 0}
-                  </strong>
-                </div>
-                <div className={styles.drawerField}>
-                  <span>Job Description Link</span>
-                  {selectedJobOpening.jobDescriptionLink ? (
+              {drawerTab === "Job Information" && (
+                <div className={styles.drawerGrid}>
+                  <div className={styles.drawerField}>
+                    <span>JD id</span>
+                    <strong>{selectedJobOpening.openingJobId || "-"}</strong>
+                  </div>
+                  <div className={styles.drawerField}>
+                    <span>Position Name</span>
+                    <strong>{selectedJobOpening.postingTitle || "-"}</strong>
+                  </div>
+                  <div className={styles.drawerField}>
+                    <span>Experience</span>
                     <strong>
-                      <a
-                        href={selectedJobOpening.jobDescriptionLink}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        link
-                      </a>
+                      Min {selectedJobOpening.minExperience || 0} to max {selectedJobOpening.maxExperience || 0}
                     </strong>
-                  ) : (
-                    <strong>link</strong>
-                  )}
+                  </div>
+                  <div className={styles.drawerField}>
+                    <span>Job Description Link</span>
+                    {selectedJobOpening.jobDescriptionLink ? (
+                      <strong>
+                        <a
+                          href={selectedJobOpening.jobDescriptionLink}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          link
+                        </a>
+                      </strong>
+                    ) : (
+                      <strong>link</strong>
+                    )}
+                  </div>
+                  <div className={styles.drawerField}>
+                    <span>Position Level</span>
+                    <strong>{formatLabelCase(selectedJobOpening.positionLevel)}</strong>
+                  </div>
+                  <div className={styles.drawerField}>
+                    <span>Location</span>
+                    <strong>{selectedJobOpening.city || "-"}</strong>
+                  </div>
+                  <div className={styles.drawerField}>
+                    <span>No of Position</span>
+                    <strong>{selectedJobOpening.noOfPositions || "-"}</strong>
+                  </div>
+                  <div className={styles.drawerField}>
+                    <span>Job Received Date:</span>
+                    <strong>{formatDateDDMMYYYY(selectedJobOpening.jobReceivedDate)}</strong>
+                  </div>
+                  <div className={styles.drawerField}>
+                    <span>Hiring Type</span>
+                    <strong>{formatLabelCase(selectedJobOpening.hiringType)}</strong>
+                  </div>
+                  <div className={styles.drawerField}>
+                    <span>Salary in CTC</span>
+                    <strong>
+                      Min: {formatInrAmount(selectedJobOpening.minSalary)} Max: {formatInrAmount(selectedJobOpening.maxSalary)}
+                    </strong>
+                  </div>
+                  <div className={styles.drawerField}>
+                    <span>Job Type</span>
+                    <strong>{formatLabelCase(selectedJobOpening.jobType)}</strong>
+                  </div>
                 </div>
-                <div className={styles.drawerField}>
-                  <span>Position Level</span>
-                  <strong>{formatLabelCase(selectedJobOpening.positionLevel)}</strong>
+              )}
+
+              {drawerTab === "Client Details" && (
+                <div className={styles.drawerGrid}>
+                  <div className={styles.drawerField}>
+                    <span>Client ID</span>
+                    <strong>{selectedJobOpening.clientId || "-"}</strong>
+                  </div>
+                  <div className={styles.drawerField}>
+                    <span>Client Name</span>
+                    <strong>{selectedJobOpening.clientName || "-"}</strong>
+                  </div>
+                  <div className={styles.drawerField}>
+                    <span>Contact Person</span>
+                    <strong>{selectedJobOpening.contactPersonName || "-"}</strong>
+                  </div>
+                  <div className={styles.drawerField}>
+                    <span>Contact Email</span>
+                    <strong>{selectedJobOpening.contactPersonEmail || "-"}</strong>
+                  </div>
+                  <div className={styles.drawerField}>
+                    <span>Hiring Manager</span>
+                    <strong>{selectedJobOpening.hiringManager || "-"}</strong>
+                  </div>
+                  <div className={styles.drawerField}>
+                    <span>Assigned Recruiters</span>
+                    <strong>{selectedJobOpening.assignedRecruiters || "-"}</strong>
+                  </div>
                 </div>
-                <div className={styles.drawerField}>
-                  <span>Location</span>
-                  <strong>{selectedJobOpening.city || "-"}</strong>
+              )}
+
+              {drawerTab === "Client Requirement" && (
+                <div className={styles.drawerGrid}>
+                  <div className={styles.drawerField}>
+                    <span>Technical Skill</span>
+                    <strong>{formatSkills(selectedJobOpening.technicalSkills)}</strong>
+                  </div>
+                  <div className={styles.drawerField}>
+                    <span>Soft Skill</span>
+                    <strong>{formatSkills(selectedJobOpening.softSkills)}</strong>
+                  </div>
+                  <div className={styles.drawerField}>
+                    <span>Additional Skill</span>
+                    <strong>{selectedJobOpening.additionalSkills || "-"}</strong>
+                  </div>
+                  <div className={styles.drawerField}>
+                    <span>Target Date</span>
+                    <strong>{formatDateDDMMYYYY(selectedJobOpening.targetDate)}</strong>
+                  </div>
+                  <div className={styles.drawerField}>
+                    <span>Job Type</span>
+                    <strong>{formatLabelCase(selectedJobOpening.jobType)}</strong>
+                  </div>
                 </div>
-                <div className={styles.drawerField}>
-                  <span>No of Position</span>
-                  <strong>{selectedJobOpening.noOfPositions || "-"}</strong>
+              )}
+
+              {drawerTab === "Team Members" && (
+                <div className={styles.drawerGrid}>
+                  <div className={styles.drawerField}>
+                    <span>Hiring Manager</span>
+                    <strong>{selectedJobOpening.hiringManager || "-"}</strong>
+                  </div>
+                  <div className={styles.drawerField}>
+                    <span>Assigned Recruiters</span>
+                    <strong>{selectedJobOpening.assignedRecruiters || "-"}</strong>
+                  </div>
+                  <div className={styles.drawerField}>
+                    <span>Contact Person</span>
+                    <strong>{selectedJobOpening.contactPersonName || "-"}</strong>
+                  </div>
+                  <div className={styles.drawerField}>
+                    <span>Contact Email</span>
+                    <strong>{selectedJobOpening.contactPersonEmail || "-"}</strong>
+                  </div>
+                  <div className={styles.drawerField}>
+                    <span>Candidate Count</span>
+                    <strong>{selectedJobOpening.candidates?.length ?? 0}</strong>
+                  </div>
                 </div>
-                <div className={styles.drawerField}>
-                  <span>Job Received Date:</span>
-                  <strong>{formatDateDDMMYYYY(selectedJobOpening.jobReceivedDate)}</strong>
-                </div>
-                <div className={styles.drawerField}>
-                  <span>Hiring Type</span>
-                  <strong>{formatLabelCase(selectedJobOpening.hiringType)}</strong>
-                </div>
-                <div className={styles.drawerField}>
-                  <span>Salary in CTC</span>
-                  <strong>
-                    Min: {formatInrAmount(selectedJobOpening.minSalary)} Max: {formatInrAmount(selectedJobOpening.maxSalary)}
-                  </strong>
-                </div>
-                <div className={styles.drawerField}>
-                  <span>Job Type</span>
-                  <strong>{formatLabelCase(selectedJobOpening.jobType)}</strong>
-                </div>
-                <div className={styles.drawerField}>
-                  <span>JD Attachment</span>
-                  <strong>
-                    <a
-                      href={selectedJobOpening.jobDescriptionLink || "#"}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      Link
-                    </a>
-                  </strong>
-                </div>
-                <div className={styles.drawerField}>
-                  <span>Technical Skill</span>
-                  <strong>{formatSkills(selectedJobOpening.technicalSkills)}</strong>
-                </div>
-                <div className={styles.drawerField}>
-                  <span>Soft Skill</span>
-                  <strong>{formatSkills(selectedJobOpening.softSkills)}</strong>
-                </div>
-                <div className={styles.drawerField}>
-                  <span>Additional Skill</span>
-                  <strong>{selectedJobOpening.additionalSkills || "-"}</strong>
-                </div>
-                <div className={styles.drawerField}>
-                  <span>Target Date</span>
-                  <strong>{formatDateDDMMYYYY(selectedJobOpening.targetDate)}</strong>
-                </div>
-                <div className={styles.drawerField}>
-                  <span>Soft Skill</span>
-                  <strong>{formatSkills(selectedJobOpening.softSkills)}</strong>
-                </div>
-                <div className={styles.drawerField}>
-                  <span>Additional Skill</span>
-                  <strong>{selectedJobOpening.additionalSkills || "-"}</strong>
-                </div>
-              </div>
+              )}
             </div>
           </aside>
         </div>
