@@ -1402,26 +1402,13 @@
   }
 
   .tableWrap {
-    overflow-x: hidden;
+    overflow-x: auto;
   }
 
   .jobTable {
-    min-width: 100%;
-    width: 100%;
+    min-width: 900px;
+    width: max-content;
     table-layout: auto;
-  }
-
-  .jobTable th:nth-child(3),
-  .jobTable td:nth-child(3),
-  .jobTable th:nth-child(4),
-  .jobTable td:nth-child(4),
-  .jobTable th:nth-child(5),
-  .jobTable td:nth-child(5),
-  .jobTable th:nth-child(7),
-  .jobTable td:nth-child(7),
-  .jobTable th:nth-child(8),
-  .jobTable td:nth-child(8) {
-    display: none;
   }
 
   .actionsCol {
@@ -1442,8 +1429,8 @@
   }
 
   .innerTable {
-    min-width: 100%;
-    width: 100%;
+    min-width: 760px;
+    width: max-content;
     table-layout: auto;
   }
 
@@ -1452,17 +1439,6 @@
     white-space: normal;
     word-break: normal;
     overflow-wrap: anywhere;
-  }
-
-  .innerTable th:nth-child(3),
-  .innerTable td:nth-child(3),
-  .innerTable th:nth-child(4),
-  .innerTable td:nth-child(4),
-  .innerTable th:nth-child(7),
-  .innerTable td:nth-child(7),
-  .innerTable th:nth-child(8),
-  .innerTable td:nth-child(8) {
-    display: none;
   }
 
   .actionIcons {

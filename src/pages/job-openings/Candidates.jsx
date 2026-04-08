@@ -96,7 +96,7 @@ const CandidateFilterBar = React.memo(({
           aria-expanded={isMoreMenuOpen}
           onClick={onToggleMoreMenu}
         >
-          <FiMoreHorizontal size={16} />
+          <FiMoreHorizontal size={14} />
         </button>
         {isMoreMenuOpen && (
           <div className={styles.moreMenu} role="menu">
@@ -269,6 +269,7 @@ export default function Candidates() {
   const [filterStatus, setFilterStatus] = React.useState('');
   const [entriesPerPage, setEntriesPerPage] = React.useState(10);
   const [currentPage, setCurrentPage] = React.useState(1);
+  const [sortConfig, setSortConfig] = React.useState({ key: null, direction: 'asc' });
   const [isMoreMenuOpen, setIsMoreMenuOpen] = React.useState(false);
   const [isViewDrawerOpen, setIsViewDrawerOpen] = React.useState(false);
   const [activeProfileTab, setActiveProfileTab] = React.useState("Basic Info");
@@ -442,8 +443,8 @@ export default function Candidates() {
   );
 
   // Memoized filter logic - only recalculates when dependencies change
-  const filteredData = React.useMemo(() =>
-    submittedData
+  const filteredData = React.useMemo(() => {
+    let result = submittedData
       .map((item, sourceIndex) => ({ item, sourceIndex }))
       .filter(({ item }) => {
         const matchesSearch =
@@ -458,9 +459,56 @@ export default function Candidates() {
         const matchesStatus = !filterStatus || item.status === filterStatus;
 
         return matchesSearch && matchesSource && matchesRating && matchesStage && matchesStatus;
-      }),
-    [submittedData, searchTerm, filterSource, filterRating, filterStage, filterStatus]
-  );
+      });
+
+    if (sortConfig.key) {
+      result.sort((a, b) => {
+        const aValue = a.item[sortConfig.key] || "";
+        const bValue = b.item[sortConfig.key] || "";
+
+        const aStr = String(aValue).toLowerCase();
+        const bStr = String(bValue).toLowerCase();
+
+        if (aStr < bStr) {
+          return sortConfig.direction === 'asc' ? -1 : 1;
+        }
+        if (aStr > bStr) {
+          return sortConfig.direction === 'asc' ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+
+    return result;
+  }, [submittedData, searchTerm, filterSource, filterRating, filterStage, filterStatus, sortConfig]);
+
+  const handleSort = React.useCallback((key) => {
+    setSortConfig((prev) => {
+      let direction = 'asc';
+      if (prev.key === key && prev.direction === 'asc') {
+        direction = 'desc';
+      }
+      return { key, direction };
+    });
+  }, []);
+
+  const getSortArrow = React.useCallback((columnKey) => {
+    if (sortConfig.key !== columnKey) {
+      return (
+        <span style={{ marginLeft: '6px', fontSize: '10px', verticalAlign: 'middle', opacity: 0.5 }}>
+          <span style={{ display: 'inline-block', lineHeight: '0.8' }}>
+            <span style={{ display: 'block', fontSize: '10px' }}>▲</span>
+            <span style={{ display: 'block', fontSize: '10px' }}>▼</span>
+          </span>
+        </span>
+      );
+    }
+    return sortConfig.direction === 'asc' ? (
+      <span style={{ marginLeft: '6px', fontSize: '12px', verticalAlign: 'middle' }}>▲</span>
+    ) : (
+      <span style={{ marginLeft: '6px', fontSize: '12px', verticalAlign: 'middle' }}>▼</span>
+    );
+  }, [sortConfig]);
 
   const totalRecords = filteredData.length;
   const totalPages = Math.max(1, Math.ceil(totalRecords / entriesPerPage));
@@ -1058,6 +1106,20 @@ export default function Candidates() {
   const activeSkillKey = activeSkillType === "primary" ? "primarySkills" : "secondarySkills";
   const skillOptions = activeSkillType === "primary" ? PRIMARY_SKILL_OPTIONS : SECONDARY_SKILL_OPTIONS;
   const currentSkills = selectedCandidate?.[activeSkillKey] || [];
+  const normalizedCurrentSkillNames = React.useMemo(
+    () =>
+      new Set(
+        (currentSkills || [])
+          .map((skill) => String(skill?.name || "").trim().toLowerCase())
+          .filter(Boolean)
+      ),
+    [currentSkills]
+  );
+  const availableSkillOptions = React.useMemo(
+    () => skillOptions.filter((skill) => !normalizedCurrentSkillNames.has(String(skill).trim().toLowerCase())),
+    [normalizedCurrentSkillNames, skillOptions]
+  );
+  const isDuplicateSkillDraft = normalizedCurrentSkillNames.has(String(skillDraft.name || "").trim().toLowerCase());
 
   const handleSkillDraftChange = React.useCallback((key, value) => {
     setSkillDraft((prev) => ({ ...prev, [key]: value }));
@@ -1069,7 +1131,7 @@ export default function Candidates() {
   }, []);
 
   const handleSaveSkill = React.useCallback(() => {
-    if (!selectedCandidate || !skillDraft.name || skillDraft.rating === 0) {
+    if (!selectedCandidate || !skillDraft.name || skillDraft.rating === 0 || isDuplicateSkillDraft) {
       return;
     }
     const newSkill = {
@@ -1089,7 +1151,7 @@ export default function Candidates() {
     });
     setIsAddingSkill(false);
     setSkillDraft(createSkillDraft());
-  }, [activeSkillKey, selectedCandidate, skillDraft]);
+  }, [activeSkillKey, isDuplicateSkillDraft, selectedCandidate, skillDraft]);
 
   const handleResumeDelete = React.useCallback((fileId) => {
     setSelectedCandidate((prev) => {
@@ -1254,7 +1316,7 @@ export default function Candidates() {
                 type="button"
                 className={styles.skillSaveBtn}
                 onClick={handleSaveSkill}
-                disabled={!isAddingSkill || !skillDraft.name || skillDraft.rating === 0}
+                disabled={!isAddingSkill || !skillDraft.name || skillDraft.rating === 0 || isDuplicateSkillDraft}
               >
                 Save
               </button>
@@ -1290,7 +1352,7 @@ export default function Candidates() {
                         onChange={(event) => handleSkillDraftChange("name", event.target.value)}
                       >
                         <option value="">Skill</option>
-                        {skillOptions.map((skill) => (
+                        {availableSkillOptions.map((skill) => (
                           <option key={skill} value={skill}>
                             {skill}
                           </option>
@@ -1675,14 +1737,14 @@ export default function Candidates() {
               <table className={styles.candidateTable}>
                 <thead>
                   <tr>
-                    <th>Candidate Id</th>
-                    <th>Candidate Name</th>
-                    <th>Email Address</th>
-                    <th>Modified Time</th>
-                    <th>Source</th>
-                    <th>Rating</th>
-                    <th>Stage</th>
-                    <th>Status</th>
+                    <th onClick={() => handleSort('candidateId')} style={{ cursor: 'pointer', userSelect: 'none', position: 'relative' }}>Candidate Id <span style={{ position: 'absolute', right: '8px' }}>{getSortArrow('candidateId')}</span></th>
+                    <th onClick={() => handleSort('candidateName')} style={{ cursor: 'pointer', userSelect: 'none', position: 'relative' }}>Candidate Name <span style={{ position: 'absolute', right: '8px' }}>{getSortArrow('candidateName')}</span></th>
+                    <th onClick={() => handleSort('candidateEmail')} style={{ cursor: 'pointer', userSelect: 'none', position: 'relative' }}>Email Address <span style={{ position: 'absolute', right: '8px' }}>{getSortArrow('candidateEmail')}</span></th>
+                    <th onClick={() => handleSort('modifiedTime')} style={{ cursor: 'pointer', userSelect: 'none', position: 'relative' }}>Modified Time <span style={{ position: 'absolute', right: '8px' }}>{getSortArrow('modifiedTime')}</span></th>
+                    <th onClick={() => handleSort('source')} style={{ cursor: 'pointer', userSelect: 'none', position: 'relative' }}>Source <span style={{ position: 'absolute', right: '8px' }}>{getSortArrow('source')}</span></th>
+                    <th onClick={() => handleSort('rating')} style={{ cursor: 'pointer', userSelect: 'none', position: 'relative' }}>Rating <span style={{ position: 'absolute', right: '8px' }}>{getSortArrow('rating')}</span></th>
+                    <th onClick={() => handleSort('stage')} style={{ cursor: 'pointer', userSelect: 'none', position: 'relative' }}>Stage <span style={{ position: 'absolute', right: '8px' }}>{getSortArrow('stage')}</span></th>
+                    <th onClick={() => handleSort('status')} style={{ cursor: 'pointer', userSelect: 'none', position: 'relative' }}>Status <span style={{ position: 'absolute', right: '8px' }}>{getSortArrow('status')}</span></th>
                     <th className={styles.actionsCol}>Actions</th>
                   </tr>
                 </thead>

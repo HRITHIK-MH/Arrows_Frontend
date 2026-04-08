@@ -24,6 +24,7 @@
   color: #374151;
   font-weight: bold;
   white-space: nowrap;
+  padding-right: 28px;
 }
 
 .data-table tr:hover {

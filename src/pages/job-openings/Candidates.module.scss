@@ -55,6 +55,7 @@
     opacity: 0;
     transform: translateY(-10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -130,21 +131,61 @@
   background: #cbd5e1;
 }
 
-.dotAdded { background: #ec4899; }
-.dotSourced { background: #8b5cf6; }
-.dotScreening { background: #f97316; }
-.dotAssessment { background: #16a34a; }
-.dotInterview { background: #64748b; }
-.dotOffer { background: #2563eb; }
-.dotRejected { background: #dc2626; }
+.dotAdded {
+  background: #ec4899;
+}
 
-.legendTextAdded { color: #ec4899; }
-.legendTextSourced { color: #8b5cf6; }
-.legendTextScreening { color: #f97316; }
-.legendTextAssessment { color: #16a34a; }
-.legendTextInterview { color: #64748b; }
-.legendTextOffer { color: #2563eb; }
-.legendTextRejected { color: #dc2626; }
+.dotSourced {
+  background: #8b5cf6;
+}
+
+.dotScreening {
+  background: #f97316;
+}
+
+.dotAssessment {
+  background: #16a34a;
+}
+
+.dotInterview {
+  background: #64748b;
+}
+
+.dotOffer {
+  background: #2563eb;
+}
+
+.dotRejected {
+  background: #dc2626;
+}
+
+.legendTextAdded {
+  color: #ec4899;
+}
+
+.legendTextSourced {
+  color: #8b5cf6;
+}
+
+.legendTextScreening {
+  color: #f97316;
+}
+
+.legendTextAssessment {
+  color: #16a34a;
+}
+
+.legendTextInterview {
+  color: #64748b;
+}
+
+.legendTextOffer {
+  color: #2563eb;
+}
+
+.legendTextRejected {
+  color: #dc2626;
+}
 
 .addButton {
   display: inline-flex;
@@ -215,7 +256,8 @@
   position: absolute;
   right: 0;
   top: calc(100% + 8px);
-  width: min(320px, calc(100vw - 48px));
+  width: min(320px, calc(100dvw - 32px));
+  max-width: calc(100dvw - 32px);
   max-height: 360px;
   overflow-y: auto;
   background: #fff;
@@ -500,7 +542,7 @@
   color: #374151;
   border-bottom: 1px solid #e2e8f0;
   text-align: left;
-  padding: 0 12px;
+  padding: 0 28px 0 12px;
   height: 44px;
   vertical-align: middle;
 }
@@ -671,14 +713,53 @@
   font-weight: 400;
 }
 
-.stageAdded { background: #fde2f1; color: #be185d; border: 1px solid #f9a8d4; }
-.stageSourced { background: #ede9fe; color: #6d28d9; border: 1px solid #c4b5fd; }
-.stageScreening { background: #ffedd5; color: #c2410c; border: 1px solid #fdba74; }
-.stageAssessment { background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
-.stageInterview { background: #e2e8f0; color: #475569; border: 1px solid #cbd5e1; }
-.stageOffer { background: #dbeafe; color: #1d4ed8; border: 1px solid #93c5fd; }
-.stageRejected { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
-.stageNeutral { background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; }
+.stageAdded {
+  background: #fde2f1;
+  color: #be185d;
+  border: 1px solid #f9a8d4;
+}
+
+.stageSourced {
+  background: #ede9fe;
+  color: #6d28d9;
+  border: 1px solid #c4b5fd;
+}
+
+.stageScreening {
+  background: #ffedd5;
+  color: #c2410c;
+  border: 1px solid #fdba74;
+}
+
+.stageAssessment {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #86efac;
+}
+
+.stageInterview {
+  background: #e2e8f0;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+}
+
+.stageOffer {
+  background: #dbeafe;
+  color: #1d4ed8;
+  border: 1px solid #93c5fd;
+}
+
+.stageRejected {
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+.stageNeutral {
+  background: #f1f5f9;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+}
 
 .rating {
   display: inline-flex;
@@ -718,6 +799,7 @@
     transform: translateX(24px);
     opacity: 0.75;
   }
+
   to {
     transform: translateX(0);
     opacity: 1;
@@ -1310,10 +1392,21 @@
   margin-top: 4px;
 }
 
-.timelineMarkerPurple { background: #8b5cf6; }
-.timelineMarkerSlate { background: #94a3b8; }
-.timelineMarkerGreen { background: #6bbf7f; }
-.timelineMarkerOrange { background: #d97745; }
+.timelineMarkerPurple {
+  background: #8b5cf6;
+}
+
+.timelineMarkerSlate {
+  background: #94a3b8;
+}
+
+.timelineMarkerGreen {
+  background: #6bbf7f;
+}
+
+.timelineMarkerOrange {
+  background: #d97745;
+}
 
 .timelineItemBody {
   flex: 1;
@@ -1403,9 +1496,17 @@
   flex-shrink: 0;
 }
 
-.ratingAvatarPurple { background: #7c3aed; }
-.ratingAvatarOlive { background: #6b5b22; }
-.ratingAvatarRose { background: #9f3050; }
+.ratingAvatarPurple {
+  background: #7c3aed;
+}
+
+.ratingAvatarOlive {
+  background: #6b5b22;
+}
+
+.ratingAvatarRose {
+  background: #9f3050;
+}
 
 .ratingBody {
   flex: 1;
@@ -1465,10 +1566,29 @@
   border: 1px solid transparent;
 }
 
-.ratingTagBlue { background: #dbeafe; border-color: #bfdbfe; color: #2563eb; }
-.ratingTagGray { background: #e2e8f0; border-color: #cbd5e1; color: #475569; }
-.ratingTagGreen { background: #dcfce7; border-color: #86efac; color: #15803d; }
-.ratingTagOrange { background: #ffedd5; border-color: #fdba74; color: #c2410c; }
+.ratingTagBlue {
+  background: #dbeafe;
+  border-color: #bfdbfe;
+  color: #2563eb;
+}
+
+.ratingTagGray {
+  background: #e2e8f0;
+  border-color: #cbd5e1;
+  color: #475569;
+}
+
+.ratingTagGreen {
+  background: #dcfce7;
+  border-color: #86efac;
+  color: #15803d;
+}
+
+.ratingTagOrange {
+  background: #ffedd5;
+  border-color: #fdba74;
+  color: #c2410c;
+}
 
 .jobApplicationTableWrap {
   border: 1px solid #e2e8f0;
@@ -1719,6 +1839,33 @@
     padding: 14px;
     border-radius: 12px;
     overflow: visible;
+  }
+
+  .infoRow {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .addCandidateMenuAnchor,
+  .addCandidateSplit {
+    width: 100%;
+  }
+
+  .addButton {
+    width: auto;
+    flex: 1;
+    justify-content: center;
+  }
+
+  .addButtonDropdownTrigger {
+    width: 42px;
+  }
+
+  .addCandidateMenu {
+    left: 0;
+    right: 0;
+    width: auto;
+    max-width: 100%;
   }
 
   .filtersBar {
@@ -2010,11 +2157,42 @@
     -webkit-overflow-scrolling: touch;
   }
 
-  .candidateTable,
   .skillTable,
   .jobApplicationTable {
     width: max-content;
     min-width: 720px;
+  }
+
+  .tableWrap {
+    overflow-x: hidden;
+  }
+
+  .candidateTable {
+    width: 100%;
+    min-width: 100%;
+    table-layout: auto;
+  }
+
+  .candidateTable th,
+  .candidateTable td {
+    padding: 8px;
+    height: auto;
+    line-height: 1.35;
+    white-space: normal;
+    word-break: normal;
+    overflow-wrap: anywhere;
+    vertical-align: top;
+  }
+
+  .candidateTable th:nth-child(3),
+  .candidateTable td:nth-child(3),
+  .candidateTable th:nth-child(4),
+  .candidateTable td:nth-child(4),
+  .candidateTable th:nth-child(5),
+  .candidateTable td:nth-child(5),
+  .candidateTable th:nth-child(8),
+  .candidateTable td:nth-child(8) {
+    display: none;
   }
 
   .tableFooter {
@@ -2128,7 +2306,10 @@
     min-height: 34px;
   }
 
-  .candidateTable,
+  .candidateTable {
+    min-width: 100%;
+  }
+
   .skillTable,
   .jobApplicationTable {
     min-width: 620px;
@@ -2158,6 +2339,11 @@
   .actionBtn {
     width: 16px;
     height: 16px;
+  }
+
+  .candidateTable th:nth-child(6),
+  .candidateTable td:nth-child(6) {
+    display: none;
   }
 
   .stageMoveToast {

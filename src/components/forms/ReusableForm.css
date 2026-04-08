@@ -786,12 +786,14 @@
 
 .reusable-form-page.candidate-form .step-indicator {
   --step-width: 170px;
+  --step-gap: 28px;
   display: flex;
   justify-content: center;
+  align-items: flex-start;
   width: 100%;
   max-width: calc(var(--step-width) * 2 + 48px);
   margin: 6px auto 26px;
-  gap: 28px;
+  gap: var(--step-gap);
 }
 
 .reusable-form-page.candidate-form .step-indicator::before {
@@ -799,9 +801,11 @@
 }
 
 .reusable-form-page.candidate-form .step {
-  width: var(--step-width);
-  min-width: var(--step-width);
+  flex: 1 1 0;
+  width: min(var(--step-width), 100%);
+  min-width: 0;
   position: relative;
+  text-align: center;
 }
 
 .reusable-form-page.candidate-form .step-circle {
@@ -860,7 +864,7 @@
   top: 14px;
   left: calc(50% + 14px);
   height: 2px;
-  width: calc(var(--step-width) + 4px);
+  width: calc(100% + var(--step-gap) - 28px);
   background-color: #e5e7eb;
   z-index: 0;
 }
@@ -872,7 +876,11 @@
 
 .reusable-form-page.candidate-form .step-label {
   font-size: 12px;
-  white-space: nowrap;
+  margin-top: 12px;
+  white-space: normal;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .candidate-step {
@@ -1555,7 +1563,7 @@
 @media (max-width: 768px) {
   .reusable-form-page.candidate-form .step-indicator {
     --step-width: 120px;
-    gap: 18px;
+    --step-gap: 18px;
   }
 
   .candidate-grid {
@@ -1607,7 +1615,7 @@
   .reusable-form-page.job-opening-form .step-indicator,
   .reusable-form-page.candidate-form .step-indicator {
     --step-width: 96px;
-    gap: 12px;
+    --step-gap: 12px;
     margin-bottom: 18px;
   }
 
