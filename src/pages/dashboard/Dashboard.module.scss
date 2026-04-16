@@ -11,6 +11,61 @@
 .h2 { margin: 0 0 var(--space-3); font-size: 20px; font-weight: 600; }
 .p  { margin: 0; color: #4b5563; font-size: 14px; }
 
+.tokenBox {
+  margin-top: 16px;
+  padding: 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #f9fafb;
+}
+
+.label {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.info {
+  margin: 0;
+  font-size: 13px;
+  color: #1f2937;
+}
+
+.error {
+  margin: 0;
+  font-size: 13px;
+  color: #b91c1c;
+}
+
+.btn {
+  margin-top: 10px;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 12px;
+  background: #111827;
+  color: #ffffff;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.embedWrap {
+  margin-top: 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.embedSurface {
+  min-height: 70vh;
+}
+
 @media (max-width: 768px) {
   .card {
     width: 100%;
@@ -22,3 +77,33 @@
 
 
 
+
+/* Token Status Display */
+.tokenStatusBox {
+  margin-top: 12px;
+  padding: 10px 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #f9fafb;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.success {
+  color: #059669;
+}
+
+.loading {
+  color: #d97706;
+  font-style: italic;
+}
+
+/* Embed Container */
+.embedContainer {
+  margin-top: 20px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #ffffff;
+  min-height: 70vh;
+}

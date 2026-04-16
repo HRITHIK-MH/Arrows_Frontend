@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Create axios instance with default config
 const API = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000/api',
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3001/api',
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
@@ -27,7 +27,9 @@ API.interceptors.request.use(
 API.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    if (!error.response) {
+      console.error('Network error: backend may be unavailable at API base URL', API.defaults.baseURL);
+    } else if (error.response?.status === 401) {
       // Token expired or unauthorized
       localStorage.removeItem('authToken');
       localStorage.removeItem('user');
