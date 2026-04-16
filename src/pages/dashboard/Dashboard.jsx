@@ -4,7 +4,8 @@ import styles from "./Dashboard.module.scss";
 import { fetchDashboardGuestToken } from "../../api/guestToken";
 
 const DASHBOARD_KEY = "default";
-const DASHBOARD_NATIVE_FILTERS_KEY = "g44o7wjzMlc";
+const DASHBOARD_NATIVE_FILTERS_KEY = import.meta.env.VITE_SUPERSET_NATIVE_FILTERS_KEY || "";
+const DASHBOARD_EMBED_ID = import.meta.env.VITE_SUPERSET_EMBED_ID || "";
 
 /**
  * DEVELOPMENT MODE: Paste a Superset guest token here
@@ -26,8 +27,8 @@ const HAS_HARDCODED_GUEST_TOKEN =
  * Update these UUIDs to match your actual Superset dashboards
  */
 const DASHBOARD_UUIDS = {
-  default: "db1d3034-49e5-42ef-b9d3-839bcd814dda",
-  "recruitment-overview": "db1d3034-49e5-42ef-b9d3-839bcd814dda",
+  default: "9460305a-a764-4b91-b0b0-f4728a633e76",
+  "recruitment-overview": "9460305a-a764-4b91-b0b0-f4728a633e76",
 };
 
 export default function Dashboard() {
@@ -35,10 +36,13 @@ export default function Dashboard() {
   const [isLoadingToken, setIsLoadingToken] = React.useState(false);
   const [isEmbedding, setIsEmbedding] = React.useState(false);
   const [tokenError, setTokenError] = React.useState("");
+  const [dashboardId, setDashboardId] = React.useState(DASHBOARD_UUIDS[DASHBOARD_KEY]);
   const embedContainerRef = React.useRef(null);
   const isEmbeddedRef = React.useRef(false);
 
   const selectedDashboardUuid = DASHBOARD_UUIDS[DASHBOARD_KEY];
+  const embedDashboardId = DASHBOARD_EMBED_ID || dashboardId;
+  const supersetDomain = import.meta.env.VITE_SUPERSET_URL || "http://localhost:8088";
 
   const loadGuestToken = React.useCallback(async () => {
     setIsLoadingToken(true);
@@ -47,6 +51,7 @@ export default function Dashboard() {
     // Use hardcoded token if available (development mode)
     if (HAS_HARDCODED_GUEST_TOKEN) {
       setGuestToken(HARDCODED_GUEST_TOKEN);
+      setDashboardId(selectedDashboardUuid);
       isEmbeddedRef.current = false;
       setIsLoadingToken(false);
       return;
@@ -67,6 +72,7 @@ export default function Dashboard() {
       }
 
       setGuestToken(result.token);
+      setDashboardId(result.raw?.dashboardUuid || selectedDashboardUuid);
       isEmbeddedRef.current = false;
     } catch (error) {
       setTokenError(error?.response?.data?.message || error?.message || "Failed to fetch guest token");
@@ -80,26 +86,22 @@ export default function Dashboard() {
   // Embed dashboard when token is available
   React.useEffect(() => {
     const mountPoint = embedContainerRef.current;
-    if (!mountPoint || !guestToken || tokenError || isEmbeddedRef.current) {
+    if (!mountPoint || !guestToken || !embedDashboardId || tokenError || isEmbeddedRef.current) {
       return;
     }
 
     let cancelled = false;
-    const supersetDomain = import.meta.env.VITE_SUPERSET_URL || "http://localhost:8088";
-
     const mountDashboard = async () => {
       setIsEmbedding(true);
       mountPoint.innerHTML = "";
 
       try {
         await embedDashboard({
-          id: selectedDashboardUuid,
+          // Per SDK docs, this must match the dashboard identifier allowed for embedding.
+          id: embedDashboardId,
           supersetDomain,
           mountPoint,
           fetchGuestToken: async () => guestToken,
-          urlParams: {
-            native_filters_key: DASHBOARD_NATIVE_FILTERS_KEY,
-          },
           dashboardUiConfig: {
             hideTitle: false,
             hideChartControls: true,
@@ -108,6 +110,13 @@ export default function Dashboard() {
               visible: true,
               expanded: false,
             },
+            ...(DASHBOARD_NATIVE_FILTERS_KEY
+              ? {
+                urlParams: {
+                  native_filters_key: DASHBOARD_NATIVE_FILTERS_KEY,
+                },
+              }
+              : {}),
           },
         });
 
@@ -116,7 +125,12 @@ export default function Dashboard() {
         }
       } catch (error) {
         if (!cancelled) {
-          setTokenError(error?.message || "Failed to embed dashboard");
+          const embedError = error?.message || "Failed to embed dashboard";
+          if (String(embedError).toLowerCase().includes("not found")) {
+            setTokenError("Superset dashboard not found or not enabled for embedding. Verify dashboard UUID and Superset embed settings.");
+          } else {
+            setTokenError(embedError);
+          }
         }
       } finally {
         if (!cancelled) {
@@ -130,7 +144,7 @@ export default function Dashboard() {
     return () => {
       cancelled = true;
     };
-  }, [guestToken, tokenError, selectedDashboardUuid]);
+  }, [embedDashboardId, guestToken, tokenError]);
 
   // Load token on mount
   React.useEffect(() => {
@@ -151,21 +165,14 @@ export default function Dashboard() {
   };
 
   return (
-    <div className={styles.card}>
-      <h2 className={styles.h2}>Dashboard</h2>
-      <p className={styles.p}>
-        {HAS_HARDCODED_GUEST_TOKEN
-          ? "Using hardcoded guest token (development mode)"
-          : "Fetching guest token from backend API"}
-      </p>
-
-      <div className={styles.tokenStatusBox}>
-        {renderTokenStatus()}
-      </div>
-
-      {isEmbedding && <div className={styles.loading}>Embedding dashboard...</div>}
-
-      <div ref={embedContainerRef} className={styles.embedContainer} />
+    <div className={styles.fullViewWrap}>
+      {isLoadingToken && <div className={styles.loadingOverlay}>Loading dashboard...</div>}
+      {tokenError && (
+        <div className={styles.errorBanner}>
+          <strong>Error:</strong> {tokenError}
+        </div>
+      )}
+      <div ref={embedContainerRef} className={styles.embedFull} />
     </div>
   );
 }
