@@ -448,7 +448,7 @@ export default function JobOpenings() {
     setShowJobOpeningForm(true);
     setShowDataTable(false);
     setEditingIndex(null);
-    setEditingData({ jobPositionId: nextJobPositionId });
+    setEditingData({ jobPositionId: nextJobPositionId, jdTemplateMode: 'manual' });
     setEditLocked(false);
   }, [nextJobPositionId]);
 
@@ -469,7 +469,10 @@ export default function JobOpenings() {
   const handleEditJobOpening = React.useCallback((row, index) => {
     console.log('Edit job opening:', row);
     setEditingIndex(index);
-    setEditingData(row);
+    setEditingData({
+      ...row,
+      jdTemplateMode: row.jdTemplateMode || (row.jdAttachment ? 'template' : 'manual')
+    });
     setShowJobOpeningForm(true);
     setShowDataTable(false);
     setEditLocked(true);
@@ -483,8 +486,10 @@ export default function JobOpenings() {
   }, []);
 
   const handleJobOpeningSubmit = React.useCallback((data) => {
+    const effectiveJdAttachment = data.jdTemplateMode === 'template' ? data.jdAttachment : null;
     const normalized = {
       ...data,
+      jdAttachment: effectiveJdAttachment,
       extraTechnicalSkills: data.extraTechnicalSkills ?? data.addTechnicalSkills ?? [],
       jobOpeningStatus: data.jobOpeningStatus || data.jobStatus || 'Active'
     };

@@ -409,13 +409,25 @@ export const jobOpeningConfig = {
           ]
         },
         {
-          name: "jdAttachment",
-          label: "JD Attachment *",
-          type: "file",
+          name: "jdTemplateMode",
+          label: "Have JD Template? *",
+          type: "radio",
           required: true,
           cssClass: "grid-col-3 grid-row-4",
-          accept: ".pdf",
+          validationRule: "requiredField",
+          options: [
+            { value: "manual", label: "No" },
+            { value: "template", label: "Yes" }
+          ]
+        },
+        {
+          name: "jdAttachment",
+          label: "JD Attachment",
+          type: "file",
+          required: false,
+          accept: ".pdf,.doc,.docx,.txt",
           placeholder: "Attachment",
+          validationRule: "jdAttachmentConditional",
           showBrowseButton: true
         },
         {
@@ -710,6 +722,17 @@ export const jobOpeningConfig = {
           // Return success for client-side validation only
           return { isValid: true };
         }
+      }
+
+      return { isValid: true };
+    },
+    jdAttachmentConditional: (value, _fieldName, formData) => {
+      if (formData?.jdTemplateMode !== "template") {
+        return { isValid: true };
+      }
+
+      if (isEmptyValue(value)) {
+        return { isValid: false, message: "JD Attachment is required when JD Template is Yes" };
       }
 
       return { isValid: true };

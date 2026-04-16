@@ -3,6 +3,7 @@ import React, { useState, useMemo, useCallback } from 'react';
 import { validateMandatoryField } from '../../utils/formValidation';
 import FormField from './FormField';
 import MultiStepForm from './MultiStepForm';
+import API from '../../api/axiosConfig';
 import './ReusableForm.css';
 
 // Reusable form configuration
@@ -26,10 +27,73 @@ const createFormConfig = (config) => {
   };
 };
 
+const normalizeText = (value) => String(value || '').replace(/\s+/g, ' ').trim();
+
+const normalizeToken = (value) => normalizeText(value).toLowerCase();
+
+const toArray = (value) => (Array.isArray(value) ? value : []);
+
+const uniqueValues = (items) => [...new Set(items.filter(Boolean))];
+
+const mergeUnique = (existing, incoming) => uniqueValues([...toArray(existing), ...toArray(incoming)]);
+
+const findMatchingOptionValue = (text, options = []) => {
+  const normalized = normalizeToken(text);
+  if (!normalized) return '';
+
+  const matched = options.find((option) => {
+    const label = normalizeToken(option?.label ?? option?.value);
+    const value = normalizeToken(option?.value);
+    return (label && normalized.includes(label)) || (value && normalized.includes(value));
+  });
+
+  return matched?.value || '';
+};
+
+const collectMatchingOptionValues = (text, options = []) => {
+  const normalized = normalizeToken(text);
+  if (!normalized) return [];
+
+  return uniqueValues(
+    options
+      .filter((option) => {
+        const label = normalizeToken(option?.label ?? option?.value);
+        const value = normalizeToken(option?.value);
+        return (label && normalized.includes(label)) || (value && normalized.includes(value));
+      })
+      .map((option) => option?.value)
+  );
+};
+
+const readDocxText = async (file) => {
+  const mammoth = await import('mammoth/mammoth.browser');
+  const arrayBuffer = await file.arrayBuffer();
+  const result = await mammoth.extractRawText({ arrayBuffer });
+  return normalizeText(result?.value || '');
+};
+
+const readUploadedFileText = async (file) => {
+  const extension = String(file?.name || '').split('.').pop()?.toLowerCase();
+
+  if (extension === 'docx') {
+    return readDocxText(file);
+  }
+
+  if (extension === 'txt' || extension === 'doc') {
+    return normalizeText(await file.text());
+  }
+
+  return '';
+};
+
 // Reusable step component
 const FormStep = ({ formData, onChange, fields, title, onSetStepFields, validationErrors = {}, disabled = false }) => {
   const isJobBasicInfo = title === "Job Basic Information" || title === "Job Information";
   const fieldMetaSignatureRef = React.useRef('');
+  const jdParsedFileRef = React.useRef('');
+  const [jdExtractionStatus, setJdExtractionStatus] = React.useState({ state: 'idle', message: '' });
+  const [jdGenerationLoading, setJdGenerationLoading] = React.useState(false);
+  const [jdGenerationError, setJdGenerationError] = React.useState('');
 
   // Notify parent about fields in this step
   React.useEffect(() => {
@@ -67,6 +131,237 @@ const FormStep = ({ formData, onChange, fields, title, onSetStepFields, validati
       onChange("clientName", mappedClientName);
     }
   }, [fields, formData.clientId, formData.clientName, isJobBasicInfo, onChange]);
+
+  const handleGenerateJD = React.useCallback(async () => {
+    if (!isJobBasicInfo) return;
+
+    const positionName = normalizeText(formData.positionName || '');
+    const minExperience = normalizeText(formData.minExperience || '');
+    const maxExperience = normalizeText(formData.maxExperience || '');
+
+    if (!positionName) {
+      setJdGenerationError('Please enter a position name before generating JD');
+      return;
+    }
+
+    setJdGenerationLoading(true);
+    setJdGenerationError('');
+
+    try {
+      const response = await API.post('/jobs/generate-jd', {
+        positionName,
+        minExperience: minExperience ? parseInt(minExperience, 10) : undefined,
+        maxExperience: maxExperience ? parseInt(maxExperience, 10) : undefined,
+      });
+
+      const generatedJD = response.data?.description || response.data?.jdDescription || '';
+      if (generatedJD) {
+        onChange('jdDescription', generatedJD);
+        setJdGenerationError('');
+      } else {
+        setJdGenerationError('Failed to generate JD: No description returned');
+      }
+    } catch (error) {
+      console.error('Error generating JD:', error);
+      const errorMsg = error.response?.data?.message || error.message || 'Failed to generate JD';
+      setJdGenerationError(errorMsg);
+    } finally {
+      setJdGenerationLoading(false);
+    }
+  }, [formData.positionName, formData.minExperience, formData.maxExperience, isJobBasicInfo, onChange]);
+
+  React.useEffect(() => {
+    if (!isJobBasicInfo) return;
+
+    const jdTemplateMode = formData.jdTemplateMode || 'manual';
+    if (jdTemplateMode === 'manual') {
+      // Clear auto-filled fields when switching to manual mode (No)
+      const fieldsToClear = [
+        'positionName',
+        'minExperience',
+        'maxExperience',
+        'noOfPositions',
+        'location',
+        'positionLevel',
+        'jobType',
+        'hiringType',
+        'technicalSkills',
+        'softSkills',
+        'additionalSkills',
+        'jdAttachment'
+      ];
+
+      fieldsToClear.forEach(field => {
+        const currentValue = formData[field];
+        // Only clear if field has a value
+        if (currentValue) {
+          if (Array.isArray(currentValue)) {
+            onChange(field, []);
+          } else {
+            onChange(field, '');
+          }
+        }
+      });
+
+      setJdExtractionStatus({ state: 'idle', message: '' });
+      jdParsedFileRef.current = '';
+    }
+  }, [formData.jdTemplateMode, isJobBasicInfo, onChange]);
+
+  React.useEffect(() => {
+    if (!isJobBasicInfo) return;
+
+    const jdTemplateMode = formData.jdTemplateMode || 'manual';
+    if (jdTemplateMode !== 'template') {
+      setJdExtractionStatus({ state: 'idle', message: '' });
+      return;
+    }
+
+    const uploadedFile = formData.jdAttachment;
+    if (!uploadedFile || typeof uploadedFile !== 'object') {
+      setJdExtractionStatus({ state: 'idle', message: '' });
+      return;
+    }
+
+    const fileKey = `${uploadedFile.name || ''}-${uploadedFile.size || 0}-${uploadedFile.lastModified || 0}`;
+    if (jdParsedFileRef.current === fileKey) {
+      return;
+    }
+
+    let isCancelled = false;
+
+    const parseAndPopulate = async () => {
+      try {
+        setJdExtractionStatus({ state: 'loading', message: 'Reading JD and extracting fields...' });
+
+        const fileNameWithoutExt = normalizeText(String(uploadedFile.name || '').replace(/\.[^.]+$/, ''));
+        const extractedText = await readUploadedFileText(uploadedFile);
+        const combinedText = normalizeText(`${fileNameWithoutExt} ${extractedText}`);
+        const normalizedText = normalizeToken(combinedText);
+
+        const updates = {};
+
+        let positionMatch = combinedText.match(/(?:position\s*name|job\s*title|role)\s*[:\-]\s*([^:\n\r,]+)/i)?.[1];
+        if (positionMatch) {
+          // Extract only the first 1-4 words and limit to 100 chars
+          positionMatch = positionMatch.trim().split(/\s+/).slice(0, 4).join(' ').substring(0, 100);
+        }
+        positionMatch = positionMatch || fileNameWithoutExt;
+
+        if (positionMatch && !normalizeText(formData.positionName)) {
+          updates.positionName = normalizeText(positionMatch);
+        }
+
+        const rangeMatch = normalizedText.match(/(\d{1,2})\s*(?:to|\-|–)\s*(\d{1,2})\s*(?:years|year|yrs|yr)/i);
+        const minMatch = normalizedText.match(/(?:minimum|min)\s*(?:experience)?\s*[:\-]?\s*(\d{1,2})/i);
+        const maxMatch = normalizedText.match(/(?:maximum|max)\s*(?:experience)?\s*[:\-]?\s*(\d{1,2})/i);
+
+        const minExperience = rangeMatch?.[1] || minMatch?.[1] || '';
+        const maxExperience = rangeMatch?.[2] || maxMatch?.[1] || '';
+
+        if (minExperience && !normalizeText(formData.minExperience)) {
+          updates.minExperience = minExperience;
+        }
+        if (maxExperience && !normalizeText(formData.maxExperience)) {
+          updates.maxExperience = maxExperience;
+        }
+
+        const openingsMatch = normalizedText.match(/(?:positions?|openings?)\s*[:\-]?\s*(\d{1,3})/i);
+        if (openingsMatch?.[1] && !normalizeText(formData.noOfPositions)) {
+          updates.noOfPositions = openingsMatch[1];
+        }
+
+        const locationField = fields.find((field) => field.name === 'location');
+        const locationValue = findMatchingOptionValue(normalizedText, locationField?.options || []);
+        if (locationValue && !normalizeText(formData.location)) {
+          updates.location = locationValue;
+        }
+
+        const positionLevelField = fields.find((field) => field.name === 'positionLevel');
+        const positionLevelValue = findMatchingOptionValue(normalizedText, positionLevelField?.options || []);
+        if (positionLevelValue && !normalizeText(formData.positionLevel)) {
+          updates.positionLevel = positionLevelValue;
+        }
+
+        const jobTypeField = fields.find((field) => field.name === 'jobType');
+        const jobTypeValue = findMatchingOptionValue(normalizedText, jobTypeField?.options || []);
+        if (jobTypeValue && !normalizeText(formData.jobType)) {
+          updates.jobType = jobTypeValue;
+        }
+
+        const hiringTypeField = fields.find((field) => field.name === 'hiringType');
+        const hiringTypeValue = findMatchingOptionValue(normalizedText, hiringTypeField?.options || []);
+        if (hiringTypeValue && !normalizeText(formData.hiringType)) {
+          updates.hiringType = hiringTypeValue;
+        }
+
+        const technicalField = fields.find((field) => field.name === 'technicalSkills');
+        const extractedTechnicalSkills = collectMatchingOptionValues(normalizedText, technicalField?.options || []);
+        if (extractedTechnicalSkills.length > 0) {
+          updates.technicalSkills = mergeUnique(formData.technicalSkills, extractedTechnicalSkills);
+        }
+
+        const softField = fields.find((field) => field.name === 'softSkills');
+        const extractedSoftSkills = collectMatchingOptionValues(normalizedText, softField?.options || []);
+        if (extractedSoftSkills.length > 0) {
+          updates.softSkills = mergeUnique(formData.softSkills, extractedSoftSkills);
+        }
+
+        if (fileNameWithoutExt) {
+          const existingAdditionalSkills = normalizeText(formData.additionalSkills);
+          if (!existingAdditionalSkills) {
+            updates.additionalSkills = `Extracted from ${uploadedFile.name}`;
+          }
+        }
+
+        if (isCancelled) return;
+
+        Object.entries(updates).forEach(([key, value]) => {
+          onChange(key, value);
+        });
+
+        const extension = String(uploadedFile.name || '').split('.').pop()?.toLowerCase();
+        const unsupportedExtraction = extension === 'pdf';
+        const fieldCount = Object.keys(updates).length;
+        if (fieldCount > 0) {
+          const note = unsupportedExtraction ? ' PDF text extraction is limited; mapped what was detectable.' : '';
+          setJdExtractionStatus({ state: 'success', message: `${fieldCount} field(s) auto-filled from uploaded JD.${note}` });
+        } else if (unsupportedExtraction) {
+          setJdExtractionStatus({ state: 'warning', message: 'PDF upload detected. Direct text extraction is limited in current setup.' });
+        } else {
+          setJdExtractionStatus({ state: 'warning', message: 'JD uploaded, but no matching values were detected for form fields.' });
+        }
+
+        jdParsedFileRef.current = fileKey;
+      } catch (error) {
+        if (isCancelled) return;
+        setJdExtractionStatus({ state: 'error', message: 'Unable to parse this file. Try DOCX or TXT format.' });
+      }
+    };
+
+    parseAndPopulate();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [
+    fields,
+    formData.additionalSkills,
+    formData.hiringType,
+    formData.jdAttachment,
+    formData.jdTemplateMode,
+    formData.jobType,
+    formData.location,
+    formData.maxExperience,
+    formData.minExperience,
+    formData.noOfPositions,
+    formData.positionLevel,
+    formData.positionName,
+    formData.softSkills,
+    formData.technicalSkills,
+    isJobBasicInfo,
+    onChange
+  ]);
 
   const renderField = (field) => {
     return (
@@ -184,12 +479,62 @@ const FormStep = ({ formData, onChange, fields, title, onSetStepFields, validati
       placeholder: addTechnicalConfig.placeholder || 'Select skills'
     };
 
+    const jdTemplateMode = formData.jdTemplateMode || 'manual';
+    const showJdAttachmentField = jdTemplateMode === 'template';
+    const jdTemplateModeError = validationErrors.jdTemplateMode;
+
     return (
       <div className="job-basic-info-step">
         <div className="job-section">
           <div className="job-section-header">
             <h3 className="job-section-title">Job Details</h3>
             <div className="job-section-divider" />
+          </div>
+
+          <div className="job-template-row">
+            <div className="job-template-choice">
+              <div className="job-template-choice-label">
+                Have JD Template?
+                <span className="required-star">*</span>
+              </div>
+              <div className="job-template-choice-options" role="radiogroup">
+                <label className="job-template-choice-option" htmlFor="jdTemplateMode">
+                  <input
+                    id="jdTemplateMode"
+                    type="radio"
+                    name="jdTemplateMode"
+                    value="manual"
+                    checked={jdTemplateMode === 'manual'}
+                    onChange={() => onChange('jdTemplateMode', 'manual')}
+                    disabled={disabled}
+                  />
+                  <span>No</span>
+                </label>
+                <label className="job-template-choice-option" htmlFor="jdTemplateMode-template">
+                  <input
+                    id="jdTemplateMode-template"
+                    type="radio"
+                    name="jdTemplateMode"
+                    value="template"
+                    checked={jdTemplateMode === 'template'}
+                    onChange={() => onChange('jdTemplateMode', 'template')}
+                    disabled={disabled}
+                  />
+                  <span>Yes</span>
+                </label>
+              </div>
+              {jdTemplateModeError ? <div className="error-text">{jdTemplateModeError}</div> : null}
+              {showJdAttachmentField ? (
+                <div className="job-template-upload-wrap">
+                  {getField('jdAttachment')}
+                  {jdExtractionStatus.state !== 'idle' ? (
+                    <div className={`jd-extraction-status jd-extraction-status--${jdExtractionStatus.state}`}>
+                      {jdExtractionStatus.message}
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
           </div>
 
           <div className="job-basic-info-grid">
@@ -230,7 +575,33 @@ const FormStep = ({ formData, onChange, fields, title, onSetStepFields, validati
               {getField('jobType')}
             </div>
             <div className="grid-cell grid-col-3 grid-row-4">
-              {getField('jdAttachment')}
+              <div className="jd-description-wrapper">
+                <label className="form-label">
+                  JD Description
+                </label>
+                <textarea
+                  className="jd-description-textarea"
+                  name="jdDescription"
+                  value={formData.jdDescription || ''}
+                  onChange={(e) => onChange('jdDescription', e.target.value)}
+                  placeholder="Enter or generate JD description"
+                  rows="4"
+                  disabled={disabled}
+                />
+                <button
+                  type="button"
+                  className="generate-jd-button"
+                  onClick={() => {}}
+                  disabled={disabled}
+                >
+                  Generate JD
+                </button>
+                {jdGenerationError && (
+                  <div className="jd-generation-error">
+                    {jdGenerationError}
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="grid-cell grid-col-1 grid-row-5">
