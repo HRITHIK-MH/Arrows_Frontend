@@ -169,6 +169,7 @@ export default function Interviews() {
             interviewType: "Technical",
             mode: "Online",
             status: "Upcoming",
+            finalReview: "Selected",
           },
           {
             candidateId: "C002",
@@ -179,6 +180,7 @@ export default function Interviews() {
             interviewType: "HR",
             mode: "In-Person",
             status: "Upcoming",
+            finalReview: "Not Selected",
           },
           {
             candidateId: "C003",
@@ -189,6 +191,7 @@ export default function Interviews() {
             interviewType: "Managerial",
             mode: "Online",
             status: "Rescheduled",
+            finalReview: "Pending",
           },
           {
             candidateId: "C004",
@@ -199,6 +202,7 @@ export default function Interviews() {
             interviewType: "Technical",
             mode: "Online",
             status: "Upcoming",
+            finalReview: "Selected",
           },
           {
             candidateId: "C005",
@@ -209,6 +213,7 @@ export default function Interviews() {
             interviewType: "Technical",
             mode: "In-Person",
             status: "Upcoming",
+            finalReview: "Pending",
           },
           {
             candidateId: "C006",
@@ -219,6 +224,7 @@ export default function Interviews() {
             interviewType: "HR",
             mode: "Online",
             status: "Upcoming",
+            finalReview: "Not Selected",
           },
           {
             candidateId: "C007",
@@ -229,6 +235,7 @@ export default function Interviews() {
             interviewType: "Technical",
             mode: "Online",
             status: "Rescheduled",
+            finalReview: "Pending",
           },
           {
             candidateId: "C008",
@@ -239,6 +246,7 @@ export default function Interviews() {
             interviewType: "HR",
             mode: "Online",
             status: "Rescheduled",
+            finalReview: "Selected",
           },
           {
             candidateId: "C009",
@@ -249,6 +257,7 @@ export default function Interviews() {
             interviewType: "Technical",
             mode: "Online",
             status: "Upcoming",
+            finalReview: "Pending",
           },
           {
             candidateId: "C0010",
@@ -259,6 +268,7 @@ export default function Interviews() {
             interviewType: "Managerial",
             mode: "In-Person",
             status: "Upcoming",
+            finalReview: "Selected",
           },
         ]);
       } catch (error) {
@@ -1114,7 +1124,8 @@ export default function Interviews() {
     { key: "company", label: "Company" },
     { key: "interviewType", label: "Interview Type" },
     { key: "mode", label: "Mode" },
-    { key: "status", label: "Status" }
+    { key: "status", label: "Status" },
+    { key: "finalReview", label: "Final Review" }
   ];
 
   // Get unique values for filters
@@ -1333,6 +1344,19 @@ export default function Interviews() {
                             }`}
                           >
                             {row.status}
+                          </span>
+                        </td>
+                        <td data-label="Final Review">
+                          <span
+                            className={`${styles.statusPill} ${
+                              row.finalReview === "Selected"
+                                ? styles.finalSelected
+                                : row.finalReview === "Not Selected"
+                                ? styles.finalNotSelected
+                                : styles.finalPending
+                            }`}
+                          >
+                            {row.finalReview || "Pending"}
                           </span>
                         </td>
                         <td data-label="Actions" className={styles.actionsCol}>

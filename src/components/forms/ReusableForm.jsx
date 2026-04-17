@@ -243,8 +243,11 @@ const FormStep = ({ formData, onChange, fields, title, onSetStepFields, validati
 
         let positionMatch = combinedText.match(/(?:position\s*name|job\s*title|role)\s*[:\-]\s*([^:\n\r,]+)/i)?.[1];
         if (positionMatch) {
-          // Extract only the first 1-4 words and limit to 100 chars
-          positionMatch = positionMatch.trim().split(/\s+/).slice(0, 4).join(' ').substring(0, 100);
+          // Stop at common adjacent field labels (e.g. "Min Experience", "Max Experience", "Experience")
+          positionMatch = positionMatch.replace(/\s*(?:min(?:imum)?|max(?:imum)?)\s*(?:experience|exp)?.*$/i, '').trim();
+          positionMatch = positionMatch.replace(/\s*experience\b.*$/i, '').trim();
+          // Limit to first 4 words and 100 chars
+          positionMatch = positionMatch.split(/\s+/).slice(0, 4).join(' ').substring(0, 100);
         }
         positionMatch = positionMatch || fileNameWithoutExt;
 
@@ -269,6 +272,14 @@ const FormStep = ({ formData, onChange, fields, title, onSetStepFields, validati
         const openingsMatch = normalizedText.match(/(?:positions?|openings?)\s*[:\-]?\s*(\d{1,3})/i);
         if (openingsMatch?.[1] && !normalizeText(formData.noOfPositions)) {
           updates.noOfPositions = openingsMatch[1];
+        }
+
+        if (!normalizeText(formData.jobReceivedDate)) {
+          const today = new Date();
+          const yyyy = today.getFullYear();
+          const mm = String(today.getMonth() + 1).padStart(2, '0');
+          const dd = String(today.getDate()).padStart(2, '0');
+          updates.jobReceivedDate = `${yyyy}-${mm}-${dd}`;
         }
 
         const locationField = fields.find((field) => field.name === 'location');
