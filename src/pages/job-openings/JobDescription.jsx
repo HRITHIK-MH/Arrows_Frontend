@@ -1,5 +1,5 @@
 import * as React from "react";
-import { FiArrowLeft, FiCheck, FiEye, FiFileText, FiPlus, FiSearch, FiTrash2, FiX } from "react-icons/fi";
+import { FiArrowLeft, FiCheck, FiEye, FiFileText, FiSearch, FiTrash2, FiX } from "react-icons/fi";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import styles from "./JobDescription.module.scss";
 
@@ -48,16 +48,14 @@ import styles from "./JobDescription.module.scss";
     ],
   };
 
-const stageTabs = [
+const DEFAULT_STAGE_TABS = [
   "Map Candidates",
   "Sourced",
   "Pre-Screening",
   "Assessment",
-  "Client interview",
+  "Client Interview",
   "Offer",
 ];
-
-const pipelineStages = stageTabs.filter((tab) => tab !== "Map Candidates");
 const TEAM_OPTIONS = ["Java Team", "JD 1", "Python Team"];
 const DURATION_OPTIONS = ["15 minutes", "30 minutes", "45 minutes", "60 minutes"];
 const PANEL_OPTIONS = ["Panel Name 1", "Panel Name 2", "Panel Name 3"];
@@ -75,15 +73,84 @@ const DUMMY_SOURCED_CANDIDATE = {
   status: "In Progress",
 };
 
-const normalizeStage = (stage) => {
+const normalizeLegacyStageLabel = (stage) => {
   const safeStage = String(stage || "").trim();
-  if (!safeStage) return "Sourced";
+  if (!safeStage) return "";
 
-  const matchedStage = pipelineStages.find(
-    (tab) => tab.toLowerCase() === safeStage.toLowerCase()
-  );
+  const normalized = safeStage.toLowerCase();
+  if (normalized === "client interview") return "Client Interview";
+  return safeStage;
+};
 
-  return matchedStage || safeStage;
+const formatHiringStageLabel = (value) => {
+  const safeValue = String(value || "").trim();
+  if (!safeValue) return "";
+
+  const matchedInterview = safeValue.match(/^interview-(\d+)$/i);
+  if (matchedInterview?.[1]) {
+    return `Interview ${matchedInterview[1]}`;
+  }
+
+  const normalized = safeValue.toLowerCase();
+  if (normalized === "client-interview") return "Client Interview";
+  if (normalized === "hr-interview") return "HR Interview";
+  if (normalized === "preboarding") return "Preboarding";
+
+  return safeValue
+    .replace(/[-_]/g, " ")
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join(" ");
+};
+
+const buildStageTabsFromJob = (job) => {
+  const hasHiringProcessConfig =
+    Array.isArray(job?.interviewStages) ||
+    Array.isArray(job?.finalStages) ||
+    (job?.interviewCount !== undefined && job?.interviewCount !== null && job?.interviewCount !== "");
+
+  if (!hasHiringProcessConfig) {
+    return DEFAULT_STAGE_TABS;
+  }
+
+  const interviewStages = Array.isArray(job?.interviewStages)
+    ? job.interviewStages
+    : [];
+  const interviewCount = Number.parseInt(job?.interviewCount, 10);
+  const generatedInterviewStages = Number.isFinite(interviewCount) && interviewCount > 0
+    ? Array.from({ length: interviewCount }, (_, index) => `interview-${index + 1}`)
+    : [];
+
+  const normalizedInterviewStageLabels = [
+    ...new Set([...interviewStages, ...generatedInterviewStages])
+  ]
+    .map((stage) => formatHiringStageLabel(stage))
+    .filter(Boolean);
+
+  const defaultFinalStages = ["preboarding"];
+  const selectedFinalStages = Array.isArray(job?.finalStages) && job.finalStages.length > 0
+    ? job.finalStages
+    : defaultFinalStages;
+
+  const finalStageLabels = selectedFinalStages
+    .map((stage) => formatHiringStageLabel(stage))
+    .filter(Boolean);
+
+  const dynamicTabs = [
+    "Map Candidates",
+    "Sourced",
+    "Pre-Screening",
+    ...normalizedInterviewStageLabels,
+    ...finalStageLabels,
+  ];
+
+  const uniqueDynamicTabs = [...new Set(dynamicTabs)];
+  if (uniqueDynamicTabs.length <= 2) {
+    return DEFAULT_STAGE_TABS;
+  }
+
+  return uniqueDynamicTabs;
 };
 
 const getPreScreeningInitialState = (rowId) => ({
@@ -158,6 +225,23 @@ const JobDescription = () => {
   const job = state?.job || fallbackJob;
   const uploadModalInputRef = React.useRef(null);
 
+  const stageTabs = React.useMemo(() => buildStageTabsFromJob(job), [job]);
+  const pipelineStages = React.useMemo(
+    () => stageTabs.filter((tab) => tab !== "Map Candidates"),
+    [stageTabs]
+  );
+
+  const normalizeStage = React.useCallback((stage) => {
+    const safeStage = normalizeLegacyStageLabel(stage);
+    if (!safeStage) return "Sourced";
+
+    const matchedStage = pipelineStages.find(
+      (tab) => tab.toLowerCase() === safeStage.toLowerCase()
+    );
+
+    return matchedStage || safeStage;
+  }, [pipelineStages]);
+
   const preparedRows = React.useMemo(() => {
     const normalizedRows = (job.candidates || []).map((row, index) => ({
       ...row,
@@ -181,7 +265,7 @@ const JobDescription = () => {
     return hasSourcedCandidate
       ? normalizedRows
       : [...normalizedRows, { ...DUMMY_SOURCED_CANDIDATE }];
-  }, [job.candidates, job.hiringManager]);
+  }, [job.candidates, job.hiringManager, normalizeStage]);
 
   const [activeStage, setActiveStage] = React.useState("Map Candidates");
   const [searchTerm, setSearchTerm] = React.useState("");
@@ -193,6 +277,12 @@ const JobDescription = () => {
   const [candidatePreview, setCandidatePreview] = React.useState(null);
   const [preScreeningModal, setPreScreeningModal] = React.useState(null);
   const [stageMoveToast, setStageMoveToast] = React.useState("");
+
+  React.useEffect(() => {
+    if (!stageTabs.includes(activeStage)) {
+      setActiveStage("Map Candidates");
+    }
+  }, [activeStage, stageTabs]);
 
   const displayedRows = React.useMemo(() => {
     return candidateRows.filter((row) => {
@@ -226,7 +316,7 @@ const JobDescription = () => {
     if (normalized === "sourced") return styles.stageSourced;
     if (normalized === "pre-screening") return styles.stageScreening;
     if (normalized === "assessment") return styles.stageAssessment;
-    if (normalized === "client interview") return styles.stageInterview;
+    if (normalized.includes("interview")) return styles.stageInterview;
     if (normalized === "offer") return styles.stageOffer;
     if (normalized === "rejected") return styles.stageRejected;
     return styles.stageNeutral;
@@ -477,9 +567,6 @@ const JobDescription = () => {
                   {tab}
                 </button>
               ))}
-              <button type="button" className={styles.addStageBtn} aria-label="Add stage">
-                <FiPlus size={12} />
-              </button>
             </div>
             <div className={styles.stageActions}>
               <div className={styles.searchBox}>

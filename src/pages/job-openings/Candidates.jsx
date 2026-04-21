@@ -206,6 +206,20 @@ const LAST_USED_OPTIONS = ["2025", "2024", "2023", "2022", "2021"];
 const CANDIDATE_DRAFT_STORAGE_KEY = "candidates:add-draft:v1";
 const createDraftId = () => `draft-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
+const PRIMARY_SKILL_LABELS = {
+  java: "Core Java",
+  python: "Python",
+  react: "React",
+  node: "Node.js",
+  aws: "AWS",
+};
+
+const EXPERIENCE_LEVEL_LABELS = {
+  beginner: "Beginner",
+  intermediate: "Intermediate",
+  expert: "Expert",
+};
+
 const createSkillDraft = () => ({
   name: "",
   experience: EXPERIENCE_OPTIONS[0],
@@ -213,6 +227,24 @@ const createSkillDraft = () => ({
   lastUsed: LAST_USED_OPTIONS[0],
   comments: "",
 });
+
+const formatFileSize = (bytes) => {
+  if (typeof bytes !== "number" || Number.isNaN(bytes)) return "";
+  const units = ["B", "KB", "MB", "GB"];
+  let size = bytes;
+  let unitIndex = 0;
+  while (size >= 1024 && unitIndex < units.length - 1) {
+    size /= 1024;
+    unitIndex += 1;
+  }
+  const rounded = size >= 10 || unitIndex === 0 ? Math.round(size) : Number(size.toFixed(1));
+  return `${rounded} ${units[unitIndex]}`;
+};
+
+const getFileExtension = (fileName = "") => {
+  const parts = String(fileName).split(".");
+  return parts.length > 1 ? String(parts.pop()).toLowerCase() : "file";
+};
 
 export default function Candidates() {
   const [showCandidateForm, setShowCandidateForm] = React.useState(false);
@@ -611,6 +643,37 @@ export default function Candidates() {
     const [firstName = "", lastName = ""] = String(row.candidateName || "").split(" ");
     const normalizedFirstName = row.firstName || firstName || "Rahul";
     const normalizedLastName = row.lastName || lastName || "Mehta";
+    const mappedPrimarySkills = Array.isArray(row.skills)
+      ? row.skills
+        .filter((skill) => skill && skill.primarySkill)
+        .map((skill, index) => {
+          const rawSkillName = String(skill.primarySkill || "").trim();
+          const normalizedSkillName = rawSkillName.toLowerCase();
+          const displaySkillName =
+            PRIMARY_SKILL_LABELS[normalizedSkillName] ||
+            PRIMARY_SKILL_OPTIONS.find(
+              (option) => option.toLowerCase() === normalizedSkillName
+            ) ||
+            rawSkillName;
+
+          const rawExperienceLevel = String(skill.skillExperienceLevel || "").trim();
+          const normalizedExperienceLevel = rawExperienceLevel.toLowerCase();
+          const displayExperienceLevel =
+            EXPERIENCE_LEVEL_LABELS[normalizedExperienceLevel] ||
+            rawExperienceLevel;
+
+          return {
+            id: `primary-form-${index + 1}`,
+            name: displaySkillName,
+            experience: displayExperienceLevel || "-",
+            rating: 3,
+            lastUsed: skill.skillLastUsed || "-",
+            comments: "",
+          };
+        })
+      : [];
+
+    const hasMappedPrimarySkills = mappedPrimarySkills.length > 0;
     const defaultPrimarySkills = [
       {
         id: "primary-1",
@@ -689,22 +752,32 @@ export default function Candidates() {
       },
     ];
 
-    const defaultResumeFiles = [
-      {
-        id: "resume-1",
-        name: "Rahul Metan Resume",
-        type: "zip",
-        size: "9.19 MB",
-        tone: "blue",
-      },
-      {
-        id: "resume-2",
-        name: "UG Degree Certificate",
-        type: "zip",
-        size: "13.43 MB",
-        tone: "peach",
-      },
-    ];
+    const normalizedCandidateDocuments = Array.isArray(row.candidateDocuments)
+      ? row.candidateDocuments
+        .filter((doc) => doc && (doc.name || doc.file?.name || doc.id))
+        .map((doc, index) => {
+          const fileName = doc.name || doc.file?.name || `Document ${index + 1}`;
+          const extensionFromType = String(doc.type || doc.file?.type || "")
+            .replace("application/", "")
+            .trim();
+          const extensionFromName = getFileExtension(fileName);
+          const displayType = extensionFromType || extensionFromName || "file";
+          const fileSize =
+            typeof doc.size === "number"
+              ? formatFileSize(doc.size)
+              : typeof doc.file?.size === "number"
+                ? formatFileSize(doc.file.size)
+                : "";
+
+          return {
+            id: doc.id || `${fileName}-${index}`,
+            name: fileName,
+            type: displayType,
+            size: fileSize || "-",
+            tone: index % 2 === 0 ? "blue" : "peach",
+          };
+        })
+      : [];
 
     const defaultTimeline = [
       {
@@ -837,10 +910,10 @@ export default function Candidates() {
       offersInHand: row.offersInHand || "No",
       currentCtc: row.currentCtc || "25,000,00 LPA",
       expectedCtc: row.expectedCtc || "30,000,00 LPA",
-      primarySkills: row.primarySkills || defaultPrimarySkills,
-      secondarySkills: row.secondarySkills || defaultSecondarySkills,
-      resumeFiles: row.resumeFiles || defaultResumeFiles,
-      attachments: row.attachments || defaultResumeFiles,
+      primarySkills: row.primarySkills || (hasMappedPrimarySkills ? mappedPrimarySkills : defaultPrimarySkills),
+      secondarySkills: row.secondarySkills || (hasMappedPrimarySkills ? [] : defaultSecondarySkills),
+      resumeFiles: Array.isArray(row.resumeFiles) ? row.resumeFiles : normalizedCandidateDocuments,
+      attachments: Array.isArray(row.attachments) ? row.attachments : normalizedCandidateDocuments,
       timeline: row.timeline || defaultTimeline,
       rating: row.rating || "4/5",
       ratingRounds: row.ratingRounds || defaultRatingRounds,
@@ -1008,6 +1081,7 @@ export default function Candidates() {
       noticePeriod: row.noticePeriod || "",
       currentCtc: row.currentCtc || "",
       expectedCtc: row.expectedCtc || "",
+      skills: Array.isArray(row.skills) ? row.skills : [],
       sourceId: row.sourceId || "",
       recruiterId: row.recruiterId || "",
       sourceName: row.sourceName || row.source || "",
@@ -1036,6 +1110,7 @@ export default function Candidates() {
       candidateId: data.candidateId || data.candidateCode || "",
       candidateName,
       candidateEmail: data.primaryEmail || data.candidateEmail || "",
+      candidateDocuments: Array.isArray(data.candidateDocuments) ? data.candidateDocuments : [],
       modifiedTime: data.modifiedTime || formatTimestamp(new Date()),
       source: data.sourceName || data.sourceId || data.source || "",
       rating: data.rating || "3/5",
@@ -1423,6 +1498,9 @@ export default function Candidates() {
     if (activeProfileTab === "Resume") {
       return (
         <div className={styles.resumeList}>
+          {(selectedCandidate.resumeFiles || []).length === 0 && (
+            <div className={styles.emptyCell}>No documents attached.</div>
+          )}
           {(selectedCandidate.resumeFiles || []).map((file) => (
             <div
               key={file.id}
@@ -1517,6 +1595,9 @@ export default function Candidates() {
     if (activeProfileTab === "Attachment") {
       return (
         <div className={styles.resumeList}>
+          {(selectedCandidate.attachments || []).length === 0 && (
+            <div className={styles.emptyCell}>No documents attached.</div>
+          )}
           {(selectedCandidate.attachments || []).map((file) => {
             const fileData =
               typeof file === "string"

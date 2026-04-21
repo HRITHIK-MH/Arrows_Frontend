@@ -148,13 +148,36 @@ const FormStep = ({ formData, onChange, fields, title, onSetStepFields, validati
     setJdGenerationError('');
 
     try {
-      const response = await API.post('/jobs/generate-jd', {
+      const payload = {
         positionName,
         minExperience: minExperience ? parseInt(minExperience, 10) : undefined,
         maxExperience: maxExperience ? parseInt(maxExperience, 10) : undefined,
-      });
+      };
 
-      const generatedJD = response.data?.description || response.data?.jdDescription || '';
+      const candidateEndpoints = ['/extendedb-ai/generate-jd', '/jobs/generate-jd'];
+      let response = null;
+
+      for (const endpoint of candidateEndpoints) {
+        try {
+          response = await API.post(endpoint, payload, {
+            skipAuthRedirect: true,
+          });
+          break;
+        } catch (requestError) {
+          const statusCode = requestError?.response?.status;
+          const isRecoverable = statusCode === 404 || statusCode === 405;
+          if (!isRecoverable || endpoint === candidateEndpoints[candidateEndpoints.length - 1]) {
+            throw requestError;
+          }
+        }
+      }
+
+      const generatedJD =
+        response?.data?.description ||
+        response?.data?.jdDescription ||
+        response?.data?.jobDescription ||
+        response?.data?.content ||
+        '';
       if (generatedJD) {
         onChange('jdDescription', generatedJD);
         setJdGenerationError('');
@@ -602,10 +625,10 @@ const FormStep = ({ formData, onChange, fields, title, onSetStepFields, validati
                 <button
                   type="button"
                   className="generate-jd-button"
-                  onClick={() => {}}
-                  disabled={disabled}
+                  onClick={handleGenerateJD}
+                  disabled={disabled || jdGenerationLoading}
                 >
-                  Generate JD
+                  {jdGenerationLoading ? 'Generating...' : 'Generate JD'}
                 </button>
                 {jdGenerationError && (
                   <div className="jd-generation-error">

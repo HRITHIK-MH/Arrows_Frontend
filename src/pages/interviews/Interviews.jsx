@@ -202,7 +202,7 @@ export default function Interviews() {
             interviewType: "Technical",
             mode: "Online",
             status: "Upcoming",
-            finalReview: "Selected",
+            finalReview: "Pending",
           },
           {
             candidateId: "C005",
@@ -224,7 +224,7 @@ export default function Interviews() {
             interviewType: "HR",
             mode: "Online",
             status: "Upcoming",
-            finalReview: "Not Selected",
+            finalReview: "Pending",
           },
           {
             candidateId: "C007",
@@ -246,7 +246,7 @@ export default function Interviews() {
             interviewType: "HR",
             mode: "Online",
             status: "Rescheduled",
-            finalReview: "Selected",
+            finalReview: "Pending",
           },
           {
             candidateId: "C009",
@@ -268,7 +268,7 @@ export default function Interviews() {
             interviewType: "Managerial",
             mode: "In-Person",
             status: "Upcoming",
-            finalReview: "Selected",
+            finalReview: "Pending",
           },
         ]);
       } catch (error) {

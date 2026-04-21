@@ -12,8 +12,9 @@ const API = axios.create({
 // Request interceptor to add auth token
 API.interceptors.request.use(
   (config) => {
+    const skipAuth = Boolean(config?.skipAuth);
     const token = localStorage.getItem('authToken');
-    if (token) {
+    if (token && !skipAuth) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
@@ -27,9 +28,10 @@ API.interceptors.request.use(
 API.interceptors.response.use(
   (response) => response,
   (error) => {
+    const skipAuthRedirect = Boolean(error?.config?.skipAuthRedirect);
     if (!error.response) {
       console.error('Network error: backend may be unavailable at API base URL', API.defaults.baseURL);
-    } else if (error.response?.status === 401) {
+    } else if (error.response?.status === 401 && !skipAuthRedirect) {
       // Token expired or unauthorized
       localStorage.removeItem('authToken');
       localStorage.removeItem('user');

@@ -815,9 +815,176 @@
   color: #94a3b8;
 }
 
+.reusable-form-page.job-opening-form .permission-panel--hiring-process {
+  grid-column: 2 / span 2;
+  min-height: 0;
+}
+
+.reusable-form-page.job-opening-form .permission-panel--availability {
+  grid-column: 1 / span 1;
+}
+
+.reusable-form-page.job-opening-form .hiring-process-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.reusable-form-page.job-opening-form .hiring-process-add-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid #93b3d3;
+  background: #f4f9ff;
+  color: #1d4f81;
+  font-size: 20px;
+  line-height: 1;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.reusable-form-page.job-opening-form .hiring-process-add-btn:hover {
+  background: #e7f1fb;
+}
+
+.reusable-form-page.job-opening-form .hiring-process-count-text {
+  font-size: 12px;
+  color: #41576d;
+}
+
+.reusable-form-page.job-opening-form .hiring-flow-widget {
+  border: 1px solid #20364a;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #20364a;
+}
+
+.reusable-form-page.job-opening-form .hiring-flow-header {
+  background: #223a4f;
+  color: #dbe7f5;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 8px 12px;
+  border-bottom: 1px solid rgba(207, 225, 245, 0.12);
+}
+
+.reusable-form-page.job-opening-form .hiring-flow-track {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px;
+  background: #1f3447;
+}
+
+.reusable-form-page.job-opening-form .hiring-flow-stage {
+  min-width: 120px;
+  background: #274157;
+  color: #f8fbff;
+  border: 1px solid rgba(213, 229, 247, 0.2);
+  border-radius: 6px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.reusable-form-page.job-opening-form .hiring-flow-stage-title {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.reusable-form-page.job-opening-form .hiring-flow-stage-meta {
+  font-size: 11px;
+  color: #d2dfed;
+  line-height: 1.1;
+}
+
+.reusable-form-page.job-opening-form .hiring-process-popup-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.32);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2200;
+}
+
+.reusable-form-page.job-opening-form .hiring-process-popup {
+  width: min(360px, 92vw);
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 16px;
+  box-shadow: 0 24px 44px rgba(15, 23, 42, 0.22);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.reusable-form-page.job-opening-form .hiring-process-popup-title {
+  margin: 0;
+  font-size: 15px;
+  color: #0f172a;
+}
+
+.reusable-form-page.job-opening-form .hiring-process-popup-label {
+  font-size: 12px;
+  color: #475569;
+}
+
+.reusable-form-page.job-opening-form .hiring-process-popup-input {
+  width: 100%;
+  border: 1px solid #d8e2ed;
+  border-radius: 8px;
+  padding: 9px 10px;
+  font-size: 13px;
+}
+
+.reusable-form-page.job-opening-form .hiring-process-popup-input:focus {
+  outline: none;
+  border-color: #93c5fd;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+}
+
+.reusable-form-page.job-opening-form .hiring-process-popup-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.reusable-form-page.job-opening-form .hiring-process-popup-btn {
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 7px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.reusable-form-page.job-opening-form .hiring-process-popup-btn.secondary {
+  background: #ffffff;
+  border-color: #cbd5e1;
+  color: #334155;
+}
+
+.reusable-form-page.job-opening-form .hiring-process-popup-btn.primary {
+  background: #2563eb;
+  color: #ffffff;
+}
+
 @media (max-width: 1100px) {
   .reusable-form-page.job-opening-form .permission-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .reusable-form-page.job-opening-form .permission-panel--availability,
+  .reusable-form-page.job-opening-form .permission-panel--hiring-process {
+    grid-column: auto;
+  }
+
+  .reusable-form-page.job-opening-form .hiring-flow-stage {
+    min-width: 108px;
   }
 }
 
