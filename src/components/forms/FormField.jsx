@@ -1,3 +1,4 @@
+import { FiTrash2 } from 'react-icons/fi';
 import { useEffect, useRef, useState } from 'react';
 import { validateMandatoryField } from '../../utils/formValidation';
 import './FormField.css';
@@ -153,7 +154,15 @@ const FormField = ({
 
   const removeMultiSelectItem = (itemToRemove) => {
     const newValue = value.filter(item => item !== itemToRemove);
+    setCustomOptions((prev) => prev.filter((item) => item.value !== itemToRemove));
     handleMultiSelectChange(newValue);
+  };
+
+  const removeCustomOption = (optionValue) => {
+    setCustomOptions((prev) => prev.filter((item) => item.value !== optionValue));
+    if (Array.isArray(value) && value.includes(optionValue)) {
+      handleMultiSelectChange(value.filter((item) => item !== optionValue));
+    }
   };
 
   const toggleMultiSelectItem = (optionValue) => {
@@ -256,6 +265,33 @@ const FormField = ({
     };
   }, [isDropdownOpen]);
 
+  useEffect(() => {
+    if (type !== 'multiselect' || !Array.isArray(value) || value.length === 0) {
+      return;
+    }
+
+    const baseOptionValues = new Set(
+      safeOptions.map((option) =>
+        option && typeof option === 'object' ? String(option.value) : String(option)
+      )
+    );
+
+    const customValuesToAdd = value
+      .filter((selectedValue) => !baseOptionValues.has(String(selectedValue)))
+      .filter(
+        (selectedValue) =>
+          !customOptions.some((option) => String(option.value) === String(selectedValue))
+      )
+      .map((selectedValue) => ({
+        value: selectedValue,
+        label: String(selectedValue),
+      }));
+
+    if (customValuesToAdd.length > 0) {
+      setCustomOptions((prev) => [...prev, ...customValuesToAdd]);
+    }
+  }, [customOptions, safeOptions, type, value]);
+
   const searchPlaceholder = safeLabel.toLowerCase().includes('skill')
     ? 'Search skills'
     : 'Search';
@@ -270,6 +306,7 @@ const FormField = ({
     (option, index, self) =>
       self.findIndex((item) => item.value === option.value) === index
   );
+  const customOptionValues = new Set(customOptions.map((option) => String(option.value)));
   const filteredOptions = mergedOptions.filter((option) => {
     if (!searchTerm.trim()) return true;
     const term = searchTerm.toLowerCase();
@@ -344,16 +381,31 @@ const FormField = ({
                 {filteredOptions.length === 0 && (
                   <div className="multiselect-empty">No results found</div>
                 )}
-                {filteredOptions.map((option) => (
-                  <label key={option.value} className="multiselect-option">
-                    <input
-                      type="checkbox"
-                      checked={Array.isArray(value) && value.includes(option.value)}
-                      onChange={() => toggleMultiSelectItem(option.value)}
-                    />
-                    <span>{option.label}</span>
-                  </label>
-                ))}
+                {filteredOptions.map((option) => {
+                  const isCustomOption = customOptionValues.has(String(option.value));
+                  return (
+                    <div key={option.value} className="multiselect-option-row">
+                      <label className="multiselect-option">
+                        <input
+                          type="checkbox"
+                          checked={Array.isArray(value) && value.includes(option.value)}
+                          onChange={() => toggleMultiSelectItem(option.value)}
+                        />
+                        <span>{option.label}</span>
+                      </label>
+                      {isCustomOption && (
+                        <button
+                          type="button"
+                          className="multiselect-option-delete"
+                          onClick={() => removeCustomOption(option.value)}
+                          aria-label={`Delete ${option.label}`}
+                        >
+                          <FiTrash2 size={14} aria-hidden="true" />
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
 
               <div className="multiselect-add">

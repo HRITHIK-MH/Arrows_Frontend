@@ -7,6 +7,7 @@ const MultiStepForm = ({
   onSubmit,
   validationErrors = {},
   onValidateStep,
+  onFieldChange,
   showDraftAction = false,
   draftLabel = "Save as Draft",
   onSaveDraft,
@@ -148,8 +149,12 @@ const MultiStepForm = ({
   };
 
   const handleChange = useCallback((field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  }, []);
+    setFormData(prev => {
+      const nextFormData = { ...prev, [field]: value };
+      void onFieldChange?.(field, value, nextFormData);
+      return nextFormData;
+    });
+  }, [onFieldChange]);
 
   const handleSetStepFields = useCallback((fields) => {
     setStepFields(prev => ({

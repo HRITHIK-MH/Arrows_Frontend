@@ -398,6 +398,8 @@ const FormStep = ({ formData, onChange, fields, title, onSetStepFields, validati
   ]);
 
   const renderField = (field) => {
+    const isAutoMappedClientName = isJobBasicInfo && field.name === "clientName";
+
     return (
       <FormField
         key={field.name}
@@ -417,8 +419,9 @@ const FormStep = ({ formData, onChange, fields, title, onSetStepFields, validati
         multiple={field.multiple}
         prefix={field.prefix}
         formData={formData}
-        disabled={disabled || Boolean(field.disabled)}
+        disabled={disabled || Boolean(field.disabled) || isAutoMappedClientName}
         showBrowseButton={field.showBrowseButton}
+        useParentValidation
       />
     );
   };
@@ -813,6 +816,31 @@ const ReusableForm = ({ config, onSubmit, initialData, readOnly = false }) => {
     return { isValid: Object.keys(errors).length === 0, errors };
   };
 
+  const validateFieldOnChange = useCallback(async (fieldName, value, formData) => {
+    const allFields = config.steps.flatMap((step) => step.fields || []);
+    const field = allFields.find((item) => item.name === fieldName);
+
+    if (!field || (!field.required && !field.validationRule)) {
+      return;
+    }
+
+    let result = null;
+
+    if (field.validationRule) {
+      const validateFn = createValidationFunction(field.validationRule);
+      if (validateFn) {
+        result = await validateFn(value, fieldName, formData);
+      }
+    } else if (field.required) {
+      const fieldLabel = field.label ? field.label.replace('*', '').trim() : field.name;
+      result = await validateMandatoryField(value, field.name, fieldLabel);
+    }
+
+    if (result) {
+      handleValidation(fieldName, result);
+    }
+  }, [config.steps, createValidationFunction, handleValidation]);
+
   const handleSubmit = async (formData) => {
     const itemLabel = String(config.itemName || 'Form').toLowerCase();
 
@@ -942,6 +970,7 @@ const ReusableForm = ({ config, onSubmit, initialData, readOnly = false }) => {
         onSubmit={handleSubmit}
         validationErrors={validationErrors}
         onValidateStep={validateStepFields}
+        onFieldChange={validateFieldOnChange}
         hideStepper={config.hideStepper}
         showDraftAction={config.showDraftAction}
         draftLabel={config.draftLabel}

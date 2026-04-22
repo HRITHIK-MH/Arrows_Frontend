@@ -8,7 +8,6 @@ import {
   FiFilter,
   FiMail,
   FiMapPin,
-  FiMoreHorizontal,
   FiPhone,
   FiPlus,
   FiSearch,
@@ -39,11 +38,6 @@ const CandidateFilterBar = React.memo(({
   uniqueStatuses,
   hasFilters,
   onClearFilters,
-  isMoreMenuOpen,
-  moreMenuRef,
-  onToggleMoreMenu,
-  onQuickFilterStatus,
-  onQuickFilterStage,
 }) => (
   <div className={styles.filtersBar}>
     <div className={styles.filtersLeft}>
@@ -86,27 +80,6 @@ const CandidateFilterBar = React.memo(({
           <option key={status} value={status}>{status}</option>
         ))}
       </select>
-
-      <div className={styles.moreMenuWrap} ref={moreMenuRef}>
-        <button
-          className={styles.moreButton}
-          type="button"
-          aria-label="More filters"
-          aria-haspopup="menu"
-          aria-expanded={isMoreMenuOpen}
-          onClick={onToggleMoreMenu}
-        >
-          <FiMoreHorizontal size={14} />
-        </button>
-        {isMoreMenuOpen && (
-          <div className={styles.moreMenu} role="menu">
-            <button type="button" className={styles.moreMenuItem} onClick={() => onQuickFilterStatus("In Progress")}>Only In Progress</button>
-            <button type="button" className={styles.moreMenuItem} onClick={() => onQuickFilterStatus("Completed")}>Only Completed</button>
-            <button type="button" className={styles.moreMenuItem} onClick={() => onQuickFilterStage("Sourced")}>Only Sourced</button>
-            <button type="button" className={styles.moreMenuItem} onClick={onClearFilters}>Reset Filters</button>
-          </div>
-        )}
-      </div>
     </div>
 
     <div className={styles.filtersRight}>
@@ -302,7 +275,6 @@ export default function Candidates() {
   const [entriesPerPage, setEntriesPerPage] = React.useState(10);
   const [currentPage, setCurrentPage] = React.useState(1);
   const [sortConfig, setSortConfig] = React.useState({ key: null, direction: 'asc' });
-  const [isMoreMenuOpen, setIsMoreMenuOpen] = React.useState(false);
   const [isViewDrawerOpen, setIsViewDrawerOpen] = React.useState(false);
   const [activeProfileTab, setActiveProfileTab] = React.useState("Basic Info");
   const [selectedCandidate, setSelectedCandidate] = React.useState(null);
@@ -317,7 +289,6 @@ export default function Candidates() {
   const [activeDraftId, setActiveDraftId] = React.useState(null);
   const [candidateFormKey, setCandidateFormKey] = React.useState(0);
   const mapDropdownRef = React.useRef(null);
-  const moreMenuRef = React.useRef(null);
   const addCandidateMenuRef = React.useRef(null);
 
   const showTransientMessage = React.useCallback((message) => {
@@ -577,19 +548,6 @@ export default function Candidates() {
     setFilterStage('');
     setFilterStatus('');
     setCurrentPage(1);
-    setIsMoreMenuOpen(false);
-  }, []);
-
-  const handleQuickFilterStatus = React.useCallback((status) => {
-    setFilterStatus(status);
-    setCurrentPage(1);
-    setIsMoreMenuOpen(false);
-  }, []);
-
-  const handleQuickFilterStage = React.useCallback((stage) => {
-    setFilterStage(stage);
-    setCurrentPage(1);
-    setIsMoreMenuOpen(false);
   }, []);
 
   const handleEntriesPerPageChange = React.useCallback((event) => {
@@ -962,17 +920,6 @@ export default function Candidates() {
     document.addEventListener("mousedown", handleOutsideClick);
     return () => document.removeEventListener("mousedown", handleOutsideClick);
   }, [isMapDropdownOpen]);
-
-  React.useEffect(() => {
-    if (!isMoreMenuOpen) return undefined;
-    const handleOutsideClick = (event) => {
-      if (moreMenuRef.current && !moreMenuRef.current.contains(event.target)) {
-        setIsMoreMenuOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleOutsideClick);
-    return () => document.removeEventListener("mousedown", handleOutsideClick);
-  }, [isMoreMenuOpen]);
 
   React.useEffect(() => {
     if (!isAddCandidateMenuOpen) return undefined;
@@ -1807,11 +1754,6 @@ export default function Candidates() {
               uniqueStatuses={uniqueStatuses}
               hasFilters={hasFilters}
               onClearFilters={clearFilters}
-              isMoreMenuOpen={isMoreMenuOpen}
-              moreMenuRef={moreMenuRef}
-              onToggleMoreMenu={() => setIsMoreMenuOpen((prev) => !prev)}
-              onQuickFilterStatus={handleQuickFilterStatus}
-              onQuickFilterStage={handleQuickFilterStage}
             />
 
             <div className={styles.tableWrap}>

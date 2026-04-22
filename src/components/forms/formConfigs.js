@@ -538,6 +538,7 @@ export const jobOpeningConfig = {
           label: "Contact Person Name",
           type: "text",
           required: false,
+          validationRule: "contactPersonName",
           cssClass: "grid-col-3 grid-row-1",
           placeholder: "Enter Contact Person Name"
         },
@@ -772,6 +773,30 @@ export const jobOpeningConfig = {
 
       if (!isValidEmail(value)) {
         return { isValid: false, message: "Please enter a valid email address" };
+      }
+
+      return { isValid: true };
+    },
+    contactPersonName: (value) => {
+      if (isEmptyValue(value)) {
+        return { isValid: true };
+      }
+
+      const trimmedValue = String(value).trim();
+
+      if (!/^[A-Za-z\s]+$/.test(trimmedValue)) {
+        return {
+          isValid: false,
+          message: "Contact Person Name should only contain alphabetic characters"
+        };
+      }
+
+      const letterCount = (trimmedValue.match(/[A-Za-z]/g) || []).length;
+      if (letterCount < 3) {
+        return {
+          isValid: false,
+          message: "Contact Person Name should contain at least 3 letters"
+        };
       }
 
       return { isValid: true };

@@ -255,18 +255,6 @@
   flex: 0 0 auto;
 }
 
-.moreButton {
-  border: 1px solid #bfc8d1;
-  background: #fff;
-  color: #64748b;
-  padding: 4px 8px;
-  border-radius: 8px;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
 .clearButton {
   border: 1px solid #bfc8d1;
   background: #f8fafc;
@@ -1289,8 +1277,7 @@
 
   .searchField,
   .selectField,
-  .dateField,
-  .moreButton {
+  .dateField {
     width: 100%;
     min-width: 0;
     flex: 0 0 auto;
@@ -1303,11 +1290,6 @@
     min-height: 38px;
   }
 
-  .moreButton {
-    height: 36px;
-    min-height: 36px;
-  }
-
   .filtersRight {
     width: 100%;
     justify-content: stretch;
@@ -1317,6 +1299,8 @@
 
   .clearButton {
     width: 100%;
+    display: block;
+    max-width: 100%;
   }
 
   .jobTable {
@@ -1388,6 +1372,8 @@
 
   .clearButton {
     width: 100%;
+    display: block;
+    max-width: 100%;
   }
 
   .jobTable th,
@@ -1450,6 +1436,7 @@
     width: 20px;
     height: 20px;
   }
+
 }
 
 @media only screen and (max-width: 600px) {
@@ -1541,7 +1528,6 @@
   .searchField,
   .selectField,
   .dateField,
-  .moreButton,
   .clearButton {
     width: 100%;
     min-width: 0;
@@ -1608,39 +1594,6 @@
   }
 }
 
-.moreButtonWrapper {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-}
-
-.moreMenu {
-  position: absolute;
-  top: calc(100% + 4px);
-  right: 0;
-  background: #fff;
-  border: 1px solid #d9d9d9;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-  min-width: 180px;
-  z-index: 1000;
-}
-
-.moreMenuItem {
-  padding: 10px 14px;
-  font-size: 13px;
-  color: #4b5563;
-  cursor: pointer;
-  border-bottom: 1px solid #f0f0f0;
-
-  &:last-child {
-    border-bottom: none;
-  }
-
-  &:hover {
-    background: #f5f7fa;
-  }
-}
 
 
 

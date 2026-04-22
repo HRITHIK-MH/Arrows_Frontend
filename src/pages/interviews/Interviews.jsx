@@ -9,7 +9,6 @@ import {
   FiFilter,
   FiMail,
   FiMapPin,
-  FiMoreHorizontal,
   FiPhone,
   FiPlus,
   FiSearch,
@@ -101,6 +100,8 @@ export default function Interviews() {
   const [filterInterviewType, setFilterInterviewType] = React.useState("");
   const [filterStatus, setFilterStatus] = React.useState("");
   const [filterDateRange, setFilterDateRange] = React.useState("");
+  const [entriesPerPage, setEntriesPerPage] = React.useState(10);
+  const [currentPage, setCurrentPage] = React.useState(1);
   const [interviews, setInterviews] = React.useState([]);
   const [loading, setLoading] = React.useState(false);
   const [expandedGroups, setExpandedGroups] = React.useState(["JD1"]);
@@ -1163,6 +1164,30 @@ export default function Interviews() {
     filterDateRange,
   ]);
 
+  const totalRecords = filteredInterviews.length;
+  const totalPages = Math.max(1, Math.ceil(totalRecords / entriesPerPage));
+
+  React.useEffect(() => {
+    setCurrentPage((prevPage) => Math.min(prevPage, totalPages));
+  }, [totalPages]);
+
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterRole, filterInterviewType, filterStatus, filterDateRange]);
+
+  const paginatedInterviews = React.useMemo(() => {
+    const startIndex = (currentPage - 1) * entriesPerPage;
+    return filteredInterviews.slice(startIndex, startIndex + entriesPerPage);
+  }, [filteredInterviews, currentPage, entriesPerPage]);
+
+  const pageNumbers = React.useMemo(
+    () => Array.from({ length: totalPages }, (_, index) => index + 1),
+    [totalPages]
+  );
+
+  const startEntry = totalRecords === 0 ? 0 : (currentPage - 1) * entriesPerPage + 1;
+  const endEntry = Math.min(currentPage * entriesPerPage, totalRecords);
+
   const hasFilters =
     Boolean(searchTerm) ||
     Boolean(filterRole) ||
@@ -1177,6 +1202,23 @@ export default function Interviews() {
     setFilterStatus("");
     setFilterDateRange("");
   }, []);
+
+  const handleEntriesPerPageChange = React.useCallback((event) => {
+    setEntriesPerPage(Number(event.target.value));
+    setCurrentPage(1);
+  }, []);
+
+  const handlePageChange = React.useCallback((page) => {
+    setCurrentPage(page);
+  }, []);
+
+  const handlePreviousPage = React.useCallback(() => {
+    setCurrentPage((prevPage) => Math.max(prevPage - 1, 1));
+  }, []);
+
+  const handleNextPage = React.useCallback(() => {
+    setCurrentPage((prevPage) => Math.min(prevPage + 1, totalPages));
+  }, [totalPages]);
 
   return (
     <div className={styles.page}>
@@ -1270,10 +1312,6 @@ export default function Interviews() {
                 <option value="week">This Week</option>
                 <option value="month">This Month</option>
               </select>
-
-              <button className={styles.moreButton} aria-label="More options">
-                <FiMoreHorizontal />
-              </button>
             </div>
 
             <div className={styles.filtersRight}>
@@ -1326,7 +1364,7 @@ export default function Interviews() {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredInterviews.map((row, index) => (
+                    {paginatedInterviews.map((row, index) => (
                       <tr key={`${row.candidateId}-${index}`}>
                         <td data-label="Candidate ID">{row.candidateId}</td>
                         <td data-label="Candidate Name">{row.candidateName}</td>
@@ -1395,28 +1433,50 @@ export default function Interviews() {
               <div className={styles.tableFooter}>
                 <div className={styles.footerLeft}>
                   <span>Show</span>
-                  <select className={styles.entriesSelect} defaultValue="10">
+                  <select
+                    className={styles.entriesSelect}
+                    value={entriesPerPage}
+                    onChange={handleEntriesPerPageChange}
+                  >
                     <option value="10">10</option>
                     <option value="25">25</option>
                     <option value="50">50</option>
                   </select>
                   <span>entries</span>
+                  <span>
+                    ({startEntry}-{endEntry} of {totalRecords})
+                  </span>
                 </div>
                 <div className={styles.pagination}>
-                  <button type="button" className={styles.pageBtn} aria-label="Previous page">
-                    ‹
+                  <button
+                    type="button"
+                    className={styles.pageBtn}
+                    aria-label="Previous page"
+                    onClick={handlePreviousPage}
+                    disabled={currentPage === 1}
+                  >
+                    {"<"}
                   </button>
-                  <button type="button" className={`${styles.pageBtn} ${styles.pageBtnActive}`}>
-                    1
-                  </button>
-                  <button type="button" className={styles.pageBtn}>
-                    2
-                  </button>
-                  <button type="button" className={styles.pageBtn}>
-                    3
-                  </button>
-                  <button type="button" className={styles.pageBtn} aria-label="Next page">
-                    ›
+                  {pageNumbers.map((pageNumber) => (
+                    <button
+                      key={pageNumber}
+                      type="button"
+                      className={`${styles.pageBtn}${currentPage === pageNumber ? ` ${styles.pageBtnActive}` : ""}`}
+                      onClick={() => handlePageChange(pageNumber)}
+                      aria-label={`Page ${pageNumber}`}
+                      aria-current={currentPage === pageNumber ? "page" : undefined}
+                    >
+                      {pageNumber}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    className={styles.pageBtn}
+                    aria-label="Next page"
+                    onClick={handleNextPage}
+                    disabled={currentPage === totalPages}
+                  >
+                    {">"}
                   </button>
                 </div>
               </div>

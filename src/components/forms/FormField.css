@@ -483,6 +483,20 @@
   margin-bottom: 0;
 }
 
+.multiselect-option-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 1px 6px;
+}
+
+.multiselect-option-row .multiselect-option {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+}
+
 .form-field label.multiselect-option {
   display: flex;
   margin-bottom: 0;
@@ -525,6 +539,26 @@
   display: inline-flex;
   align-items: center;
   line-height: 1.2;
+}
+
+.multiselect-option-delete {
+  border: 1px solid #d0d9e5;
+  background: #f8fafc;
+  color: #2563eb;
+  border-radius: 999px;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+.multiselect-option-delete:hover {
+  background: #eff6ff;
+  border-color: #93c5fd;
 }
 
 .multiselect-empty {
