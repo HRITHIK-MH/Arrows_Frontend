@@ -1,4 +1,3 @@
-
 import * as React from "react";
 import {
   FiEdit2,
@@ -6,7 +5,6 @@ import {
   FiFileText,
   FiFilter,
   FiMapPin,
-  FiMoreHorizontal,
   FiPhone,
   FiPlus,
   FiSearch,
@@ -16,8 +14,21 @@ import {
 import { useNavigate } from "react-router-dom";
 import { jobOpeningConfig } from "../../components/forms/formConfigs";
 import ReusableForm from "../../components/forms/ReusableForm";
-import { debounce } from "../../utils/debounce";
 import styles from "./JobOpenings.module.scss";
+
+const DEFAULT_TEAM_MEMBERS = [
+  { id: "A83261", name: "Rahul Mehta" },
+  { id: "A83233", name: "Priya Sharma" },
+];
+
+const resolveAssignedRecruiterNames = (teamMemberIds = [], customTeamMembers = []) => {
+  const teamDirectory = [...DEFAULT_TEAM_MEMBERS, ...(Array.isArray(customTeamMembers) ? customTeamMembers : [])];
+
+  return teamMemberIds
+    .map((memberId) => teamDirectory.find((member) => member.id === memberId)?.name)
+    .filter(Boolean)
+    .join(", ");
+};
 // Memoized filter bar component to prevent unnecessary re-renders
 const FilterBar = React.memo(({
   searchTerm,
@@ -36,19 +47,6 @@ const FilterBar = React.memo(({
   hasFilters,
   onClearFilters
 }) => {
-  const [showMoreMenu, setShowMoreMenu] = React.useState(false);
-  const moreMenuRef = React.useRef(null);
-
-  React.useEffect(() => {
-    function onDocClick(e) {
-      if (moreMenuRef.current && !moreMenuRef.current.contains(e.target)) {
-        setShowMoreMenu(false);
-      }
-    }
-    document.addEventListener('mousedown', onDocClick);
-    return () => document.removeEventListener('mousedown', onDocClick);
-  }, []);
-
   return (
   <div className={styles.filtersBar}>
     <div className={styles.filtersLeft}>
@@ -103,24 +101,6 @@ const FilterBar = React.memo(({
           <option key={manager} value={manager}>{manager}</option>
         ))}
       </select>
-      <div ref={moreMenuRef} className={styles.moreButtonWrapper}>
-        <button
-          className={styles.moreButton}
-          type="button"
-          aria-label="More filters"
-          onClick={() => setShowMoreMenu(v => !v)}
-          aria-expanded={showMoreMenu}
-        >
-          <FiMoreHorizontal size={16} />
-        </button>
-        {showMoreMenu && (
-          <div className={styles.moreMenu} role="menu">
-            <div className={styles.moreMenuItem} role="menuitem">Client ID</div>
-            <div className={styles.moreMenuItem} role="menuitem">Client Name</div>
-            <div className={styles.moreMenuItem} role="menuitem">Account Manager</div>
-          </div>
-        )}
-      </div>
 
     </div>
 
@@ -302,41 +282,45 @@ export default function JobOpenings() {
   const [filterTargetDate, setFilterTargetDate] = React.useState('');
   const [filterJobStatus, setFilterJobStatus] = React.useState('');
   const [filterHiringManager, setFilterHiringManager] = React.useState('');
+  const [entriesPerPage, setEntriesPerPage] = React.useState(10);
+  const [currentPage, setCurrentPage] = React.useState(1);
   const [expandedRows, setExpandedRows] = React.useState({});
   const [isViewDrawerOpen, setIsViewDrawerOpen] = React.useState(false);
   const [selectedJobOpening, setSelectedJobOpening] = React.useState(null);
   const [drawerTab, setDrawerTab] = React.useState("Job Information");
 
-  // Debounced search handler - reduces filter recalculations by 99%
-  const debouncedSearch = React.useMemo(
-    () => debounce((term) => setSearchTerm(term), 300),
-    []
-  );
+  const deferredSearchTerm = React.useDeferredValue(searchTerm);
 
   const handleSearchChange = React.useCallback((e) => {
-    debouncedSearch(e.target.value);
-  }, [debouncedSearch]);
+    setSearchTerm(e.target.value);
+    setCurrentPage(1);
+  }, []);
 
   // useCallback for filter handlers - prevents unnecessary re-renders
   const handleFilterPostingTitleChange = React.useCallback((e) => {
     setFilterPostingTitle(e.target.value);
+    setCurrentPage(1);
   }, []);
 
   const handleFilterTargetDateChange = React.useCallback((e) => {
     setFilterTargetDate(e.target.value);
+    setCurrentPage(1);
   }, []);
 
   const handleFilterJobStatusChange = React.useCallback((e) => {
     setFilterJobStatus(e.target.value);
+    setCurrentPage(1);
   }, []);
 
   const handleFilterHiringManagerChange = React.useCallback((e) => {
     setFilterHiringManager(e.target.value);
+    setCurrentPage(1);
   }, []);
 
   const normalizedData = React.useMemo(() => (
-    submittedData.map((item) => ({
+    submittedData.map((item, sourceIndex) => ({
       ...item,
+      _sourceIndex: sourceIndex,
       openingJobId: item.openingJobId ?? item.jobPositionId ?? item.jobId ?? "",
       postingTitle: item.postingTitle ?? item.positionName ?? item.jobTitle ?? "",
       clientId: item.clientId ?? item.clientID ?? "",
@@ -370,9 +354,9 @@ export default function JobOpenings() {
   const filteredData = React.useMemo(() =>
     normalizedData.filter(item => {
       const matchesSearch = 
-        !searchTerm || 
+        !deferredSearchTerm || 
         Object.values(item).some(value => 
-          String(value).toLowerCase().includes(searchTerm.toLowerCase())
+          String(value).toLowerCase().includes(deferredSearchTerm.toLowerCase())
         );
       
       const matchesPostingTitle = !filterPostingTitle || item.postingTitle === filterPostingTitle;
@@ -388,7 +372,7 @@ export default function JobOpenings() {
         matchesHiringManager
       );
     }),
-    [normalizedData, searchTerm, filterPostingTitle, filterTargetDate, filterJobStatus, filterHiringManager]
+    [normalizedData, deferredSearchTerm, filterPostingTitle, filterTargetDate, filterJobStatus, filterHiringManager]
   );
 
   const hasFilters = Boolean(
@@ -405,7 +389,45 @@ export default function JobOpenings() {
     setFilterTargetDate('');
     setFilterJobStatus('');
     setFilterHiringManager('');
+    setCurrentPage(1);
   }, []);
+
+  const totalRecords = filteredData.length;
+  const totalPages = Math.max(1, Math.ceil(totalRecords / entriesPerPage));
+
+  React.useEffect(() => {
+    setCurrentPage((prevPage) => Math.min(prevPage, totalPages));
+  }, [totalPages]);
+
+  const paginatedData = React.useMemo(() => {
+    const startIndex = (currentPage - 1) * entriesPerPage;
+    return filteredData.slice(startIndex, startIndex + entriesPerPage);
+  }, [filteredData, currentPage, entriesPerPage]);
+
+  const pageNumbers = React.useMemo(
+    () => Array.from({ length: totalPages }, (_, index) => index + 1),
+    [totalPages]
+  );
+
+  const startEntry = totalRecords === 0 ? 0 : (currentPage - 1) * entriesPerPage + 1;
+  const endEntry = Math.min(currentPage * entriesPerPage, totalRecords);
+
+  const handleEntriesPerPageChange = React.useCallback((event) => {
+    setEntriesPerPage(Number(event.target.value));
+    setCurrentPage(1);
+  }, []);
+
+  const handlePageChange = React.useCallback((page) => {
+    setCurrentPage(page);
+  }, []);
+
+  const handlePreviousPage = React.useCallback(() => {
+    setCurrentPage((prevPage) => Math.max(prevPage - 1, 1));
+  }, []);
+
+  const handleNextPage = React.useCallback(() => {
+    setCurrentPage((prevPage) => Math.min(prevPage + 1, totalPages));
+  }, [totalPages]);
 
   const getStatusClass = React.useCallback((status) => {
     const normalized = String(status || '').toLowerCase();
@@ -491,7 +513,8 @@ export default function JobOpenings() {
       ...data,
       jdAttachment: effectiveJdAttachment,
       extraTechnicalSkills: data.extraTechnicalSkills ?? data.addTechnicalSkills ?? [],
-      jobOpeningStatus: data.jobOpeningStatus || data.jobStatus || 'Active'
+      jobOpeningStatus: data.jobOpeningStatus || data.jobStatus || 'Active',
+      assignedRecruiters: data.assignedRecruiters || assignedRecruiters
     };
     if (editingIndex !== null) {
       console.log('Job opening updated:', normalized);
@@ -683,8 +706,9 @@ export default function JobOpenings() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredData.map((row, index) => {
-                    const rowKey = row.openingJobId || row.jobPositionId || String(index);
+                  {paginatedData.map((row, index) => {
+                    const sourceIndex = Number.isInteger(row?._sourceIndex) ? row._sourceIndex : index;
+                    const rowKey = row.openingJobId || row.jobPositionId || String(sourceIndex);
                     const isExpanded = Boolean(expandedRows[rowKey]);
                     return (
                       <React.Fragment key={rowKey}>
@@ -719,7 +743,7 @@ export default function JobOpenings() {
                               <button
                                 type="button"
                                 className={styles.actionBtn}
-                                onClick={() => handleOpenJobDescription(row, index)}
+                                onClick={() => handleOpenJobDescription(row, sourceIndex)}
                                 aria-label="Open job description"
                               >
                                 <FiEye size={16} />
@@ -727,7 +751,7 @@ export default function JobOpenings() {
                               <button
                                 type="button"
                                 className={styles.actionBtn}
-                                onClick={() => handleViewJobOpening(row, index)}
+                                onClick={() => handleViewJobOpening(row, sourceIndex)}
                                 aria-label="View job opening details"
                               >
                                 <FiFileText size={16} />
@@ -735,7 +759,7 @@ export default function JobOpenings() {
                               <button
                                 type="button"
                                 className={styles.actionBtn}
-                                onClick={() => handleEditJobOpening(row, index)}
+                                onClick={() => handleEditJobOpening(row, sourceIndex)}
                                 aria-label="Edit"
                               >
                                 <FiEdit2 size={16} />
@@ -743,7 +767,7 @@ export default function JobOpenings() {
                               <button
                                 type="button"
                                 className={styles.actionBtn}
-                                onClick={() => handleDeleteJobOpening(row, index)}
+                                onClick={() => handleDeleteJobOpening(row, sourceIndex)}
                                 aria-label="Delete"
                               >
                                 <FiTrash2 size={16} />
@@ -810,14 +834,54 @@ export default function JobOpenings() {
             <div className={styles.tableFooter}>
               <div className={styles.footerLeft}>
                 <span>Show</span>
-                <select className={styles.entriesSelect} defaultValue="10">
+                <select
+                  className={styles.entriesSelect}
+                  value={entriesPerPage}
+                  onChange={handleEntriesPerPageChange}
+                >
                   <option value="10">10</option>
                   <option value="25">25</option>
                   <option value="50">50</option>
                 </select>
                 <span>entries</span>
+                <span>
+                  ({startEntry}-{endEntry} of {totalRecords})
+                </span>
               </div>
-              <div className={styles.pagination}>
+              <>
+                <div className={styles.pagination}>
+                  <button
+                    type="button"
+                    className={styles.pageBtn}
+                    aria-label="Previous page"
+                    onClick={handlePreviousPage}
+                    disabled={currentPage === 1}
+                  >
+                    {"<"}
+                  </button>
+                  {pageNumbers.map((pageNumber) => (
+                    <button
+                      key={pageNumber}
+                      type="button"
+                      className={`${styles.pageBtn}${currentPage === pageNumber ? ` ${styles.pageBtnActive}` : ""}`}
+                      onClick={() => handlePageChange(pageNumber)}
+                      aria-label={`Page ${pageNumber}`}
+                      aria-current={currentPage === pageNumber ? "page" : undefined}
+                    >
+                      {pageNumber}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    className={styles.pageBtn}
+                    aria-label="Next page"
+                    onClick={handleNextPage}
+                    disabled={currentPage === totalPages}
+                  >
+                    {">"}
+                  </button>
+                </div>
+                <div className={styles.pagination} style={{ display: "none" }}>
                 <button type="button" className={styles.pageBtn} aria-label="Previous page">
                   ‹
                 </button>
@@ -834,6 +898,7 @@ export default function JobOpenings() {
                   ›
                 </button>
               </div>
+              </>
             </div>
           </div>
         )}

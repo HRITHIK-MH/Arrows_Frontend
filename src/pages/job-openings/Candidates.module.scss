@@ -445,59 +445,6 @@
   }
 }
 
-.moreButton {
-  border: 1px solid #bfc8d1;
-  background: #fff;
-  color: #64748b;
-  padding: 4px 8px;
-  border-radius: 8px;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-  flex-shrink: 0;
-
-  &:hover {
-    background: #f8fafc;
-    color: #475569;
-  }
-}
-
-.moreMenuWrap {
-  position: relative;
-  flex-shrink: 0;
-}
-
-.moreMenu {
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
-  min-width: 180px;
-  padding: 6px;
-  border-radius: 10px;
-  border: 1px solid #dbe3ee;
-  background: #fff;
-  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.12);
-  z-index: 5;
-}
-
-.moreMenuItem {
-  width: 100%;
-  border: none;
-  background: transparent;
-  color: #334155;
-  text-align: left;
-  border-radius: 8px;
-  padding: 8px 10px;
-  font-size: 13px;
-  cursor: pointer;
-}
-
-.moreMenuItem:hover {
-  background: #f8fafc;
-}
-
 .clearButton {
   border: 1px solid #bfc8d1;
   background: #f8fafc;
@@ -532,7 +479,7 @@
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
-  min-width: 980px;
+  min-width: 900px;
 }
 
 .candidateTable th {
@@ -542,38 +489,79 @@
   color: #374151;
   border-bottom: 1px solid #e2e8f0;
   text-align: left;
-  padding: 0 28px 0 12px;
+  padding: 0 36px 0 12px;
   height: 44px;
   vertical-align: middle;
+  white-space: nowrap;
 }
 
 .candidateTable td {
-  font-size: 14px;
+  font-size: 13px;
   color: #2c3135;
   border-bottom: 1px dashed #e2e8f0;
-  padding: 0 12px;
-  height: 60px;
+  padding: 0 10px;
+  height: 46px;
   vertical-align: middle;
-  line-height: 22.8px;
+  line-height: 1.4;
 }
 
 .candidateTable tr:hover {
   background-color: #f8fafc;
 }
 
+.candidateTable th:nth-child(1),
+.candidateTable td:nth-child(1) {
+  min-width: 104px;
+}
+
+.candidateTable th:nth-child(2),
+.candidateTable td:nth-child(2) {
+  min-width: 140px;
+}
+
+.candidateTable th:nth-child(3),
+.candidateTable td:nth-child(3) {
+  min-width: 170px;
+}
+
+.candidateTable th:nth-child(4),
+.candidateTable td:nth-child(4) {
+  min-width: 152px;
+}
+
+.candidateTable th:nth-child(5),
+.candidateTable td:nth-child(5) {
+  min-width: 88px;
+}
+
+.candidateTable th:nth-child(6),
+.candidateTable td:nth-child(6) {
+  min-width: 84px;
+}
+
+.candidateTable th:nth-child(7),
+.candidateTable td:nth-child(7) {
+  min-width: 108px;
+}
+
+.candidateTable th:nth-child(8),
+.candidateTable td:nth-child(8) {
+  min-width: 104px;
+}
+
 .actionsCol {
   text-align: center;
-  width: 120px;
+  width: 92px;
 }
 
 .actionIcons {
   display: inline-flex;
-  gap: 8px;
+  gap: 4px;
   align-items: center;
-  padding: 4px 6px;
+  padding: 2px 4px;
   border: none;
   border-radius: 8px;
-  height: 30px;
+  height: 26px;
   background: transparent;
 }
 
@@ -581,8 +569,8 @@
   border: none;
   background: transparent;
   color: #475569;
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
   border-radius: 6px;
   display: inline-flex;
   align-items: center;
@@ -1880,12 +1868,14 @@
 
   .filtersRight {
     width: 100%;
-    justify-content: flex-end;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    justify-content: stretch;
+    gap: 8px;
   }
 
   .searchField,
-  .selectField,
-  .moreButton {
+  .selectField {
     width: 100%;
     min-width: 0;
     max-width: 100%;
@@ -1893,9 +1883,15 @@
 
   /* Prevent desktop flex-basis from inflating control heights in stacked mobile layout */
   .searchField,
-  .selectField,
-  .moreMenuWrap {
+  .selectField {
     flex: 0 0 auto;
+  }
+
+  .clearButton {
+    width: 100%;
+    display: block;
+    max-width: 100%;
+    justify-self: stretch;
   }
 
   .tableFooter {
@@ -1965,13 +1961,14 @@
 
   .filtersRight {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1fr);
     gap: 8px;
   }
 
-  .applyButton,
   .clearButton {
     width: 100%;
+    display: block;
+    max-width: 100%;
   }
 
   .candidateTable {
@@ -2131,21 +2128,29 @@
   }
 
   .filtersRight {
+    display: grid;
     grid-template-columns: minmax(0, 1fr);
+    justify-content: stretch;
+    gap: 8px;
   }
 
   .searchField,
   .selectField,
-  .moreButton,
   .clearButton {
     width: 100%;
     min-width: 0;
     max-width: 100%;
   }
 
+  .clearButton {
+    width: 100%;
+    display: block;
+    justify-self: stretch;
+    align-self: stretch;
+  }
+
   .searchField,
-  .selectField,
-  .moreMenuWrap {
+  .selectField {
     flex: 0 0 auto;
   }
 
@@ -2164,12 +2169,12 @@
   }
 
   .tableWrap {
-    overflow-x: hidden;
+    overflow-x: auto;
   }
 
   .candidateTable {
-    width: 100%;
-    min-width: 100%;
+    width: max-content;
+    min-width: 980px;
     table-layout: auto;
   }
 
@@ -2182,17 +2187,6 @@
     word-break: normal;
     overflow-wrap: anywhere;
     vertical-align: top;
-  }
-
-  .candidateTable th:nth-child(3),
-  .candidateTable td:nth-child(3),
-  .candidateTable th:nth-child(4),
-  .candidateTable td:nth-child(4),
-  .candidateTable th:nth-child(5),
-  .candidateTable td:nth-child(5),
-  .candidateTable th:nth-child(8),
-  .candidateTable td:nth-child(8) {
-    display: none;
   }
 
   .tableFooter {
@@ -2300,14 +2294,24 @@
 
   .searchField,
   .selectField,
-  .moreButton,
   .clearButton {
     height: 34px;
     min-height: 34px;
   }
 
+  .filtersRight {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    justify-content: stretch;
+  }
+
+  .clearButton {
+    width: 100%;
+    justify-self: stretch;
+  }
+
   .candidateTable {
-    min-width: 100%;
+    min-width: 980px;
   }
 
   .skillTable,
@@ -2339,11 +2343,6 @@
   .actionBtn {
     width: 16px;
     height: 16px;
-  }
-
-  .candidateTable th:nth-child(6),
-  .candidateTable td:nth-child(6) {
-    display: none;
   }
 
   .stageMoveToast {
