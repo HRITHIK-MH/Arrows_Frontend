@@ -315,10 +315,10 @@ export const jobOpeningConfig = {
         {
           name: "location",
           label: "Location *",
-          type: "select",
+          type: "multiselect",
           required: true,
           cssClass: "grid-col-3 grid-row-2",
-          placeholder: "Select",
+          placeholder: "Select locations",
           options: [
             { value: "chennai", label: "Chennai" },
             { value: "bangalore", label: "Bangalore" },
@@ -841,12 +841,29 @@ export const candidateConfig = {
       component: CandidateBasicInfoStep,
       fields: [
         {
+          name: "candidateTemplateMode",
+          label: "Candidate Template",
+          type: "text",
+          required: false,
+          placeholder: "No"
+        },
+        {
+          name: "candidateTemplateFile",
+          label: "Candidate Attachment",
+          type: "file",
+          required: false,
+          accept: ".pdf,.doc,.docx,.txt",
+          placeholder: "Attachment",
+          showBrowseButton: true
+        },
+        {
           name: "candidateId",
           label: "Candidate Id *",
           type: "text",
           required: true,
           validationRule: "requiredField",
-          placeholder: "CS342415"
+          placeholder: "Auto Generated",
+          disabled: true
         },
         {
           name: "namePrefix",
@@ -886,14 +903,6 @@ export const candidateConfig = {
           type: "email",
           required: true,
           validationRule: "emailRequired",
-          placeholder: "Enter Email Address"
-        },
-        {
-          name: "secondaryEmail",
-          label: "Secondary Email Address",
-          type: "email",
-          required: false,
-          validationRule: "emailOptional",
           placeholder: "Enter Email Address"
         },
         {
@@ -980,7 +989,6 @@ export const candidateConfig = {
           placeholder: "Select Employment Type",
           options: [
             { value: "full-time", label: "Full Time" },
-            { value: "part-time", label: "Part Time" },
             { value: "contract", label: "Contract" },
             { value: "internship", label: "Internship" }
           ]
@@ -1038,19 +1046,29 @@ export const candidateConfig = {
           ]
         },
         {
-          name: "skillLastUsed",
-          label: "Last Used *",
+          name: "skillRating",
+          label: "Ratings *",
           type: "select",
           required: true,
           validationRule: "requiredField",
-          placeholder: "Select Year",
+          placeholder: "Select Rating",
           options: [
-            { value: "2025", label: "2025" },
-            { value: "2024", label: "2024" },
-            { value: "2023", label: "2023" },
-            { value: "2022", label: "2022" },
-            { value: "2021", label: "2021" }
+            { value: "0", label: "0" },
+            { value: "1", label: "1" },
+            { value: "2", label: "2" },
+            { value: "3", label: "3" },
+            { value: "4", label: "4" },
+            { value: "5", label: "5" }
           ]
+        },
+        {
+          name: "skillExperienceYears",
+          label: "Experience (Years) *",
+          type: "number",
+          required: true,
+          validationRule: "requiredField",
+          allowDecimal: true,
+          placeholder: "Enter years"
         },
         {
           name: "sourceId",
@@ -1151,7 +1169,8 @@ export const candidateConfig = {
           expectedCtc: 'Expected CTC',
           primarySkill: 'Primary Skill',
           skillExperienceLevel: 'Experience Level',
-          skillLastUsed: 'Last Used',
+          skillRating: 'Ratings',
+          skillExperienceYears: 'Experience (Years)',
           sourceId: 'Source Id',
           sourcedDate: 'Sourced Date',
           candidateResume: 'Resume'

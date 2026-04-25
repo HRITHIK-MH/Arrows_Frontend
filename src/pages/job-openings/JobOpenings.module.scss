@@ -121,6 +121,7 @@
 .formHeader {
   display: flex;
   justify-content: flex-end;
+  gap: 8px;
   margin-bottom: 12px;
 }
 
@@ -141,6 +142,27 @@
 }
 
 .editCta:hover {
+  background: #eaf2ff;
+  box-shadow: 0 8px 16px rgba(37, 99, 235, 0.18);
+  transform: translateY(-1px);
+}
+
+.closeCta {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #c7dbff;
+  background: #f5f9ff;
+  color: #2563eb;
+  border-radius: 10px;
+  cursor: pointer;
+  box-shadow: 0 6px 12px rgba(37, 99, 235, 0.12);
+  transition: background-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.closeCta:hover {
   background: #eaf2ff;
   box-shadow: 0 8px 16px rgba(37, 99, 235, 0.18);
   transform: translateY(-1px);

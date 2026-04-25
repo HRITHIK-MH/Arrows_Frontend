@@ -6,12 +6,14 @@ const TEAM_MEMBERS = [
     name: "Rahul Mehta",
     email: "rahul.mehta@email.com",
     role: "Team Lead",
+    reportingManager: "Arun Kumar",
   },
   {
     id: "A83233",
     name: "Priya Sharma",
     email: "priya.sharma@email.com",
     role: "Team Lead",
+    reportingManager: "Divya Nair",
   },
 ];
 
@@ -176,6 +178,12 @@ const TeamMembersStep = ({
     return matchedRecruiter?.role || "";
   };
 
+  const resolveReportingManager = (member) => {
+    if (!member) return "-";
+    if (member.reportingManager) return member.reportingManager;
+    return "Karthik Raman";
+  };
+
   return (
     <div className="team-members-step">
       <div className="team-members-toolbar">
@@ -192,6 +200,7 @@ const TeamMembersStep = ({
               <th>Recruiter Name</th>
               <th>Email Address</th>
               <th>Role</th>
+              <th>Reporting Manager</th>
               <th>Action</th>
             </tr>
           </thead>
@@ -205,6 +214,7 @@ const TeamMembersStep = ({
                   <td>{member.name}</td>
                   <td>{member.email}</td>
                   <td>{memberRoles[member.id] || member.role}</td>
+                  <td>{resolveReportingManager(member)}</td>
                   <td className="action-col">
                     <button
                       type="button"

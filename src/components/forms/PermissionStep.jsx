@@ -102,7 +102,13 @@ const PermissionStep = ({ formData, onChange, onSetStepFields, fields = [], vali
 
   const jobActivationStatus = formData.jobActivationStatus || "validity-upto";
   const focusLocationType = formData.focusLocationType || "base";
-  const selectedJobLocation = String(formData.location || "").toLowerCase();
+  const selectedJobLocations = (Array.isArray(formData.location)
+    ? formData.location
+    : formData.location
+      ? [formData.location]
+      : [])
+    .map((item) => String(item || "").toLowerCase())
+    .filter((item) => FOCUS_LOCATION_VALUES.has(item));
   const availabilityOptions = Array.isArray(formData.availabilityOptions)
     ? formData.availabilityOptions
     : [];
@@ -132,11 +138,8 @@ const PermissionStep = ({ formData, onChange, onSetStepFields, fields = [], vali
       onChange("focusLocationType", "base");
     }
     if (formData.focusLocationValue === undefined) {
-      const fallbackLocation =
-        selectedJobLocation && FOCUS_LOCATION_VALUES.has(selectedJobLocation)
-          ? selectedJobLocation
-          : "chennai";
-      onChange("focusLocationValue", fallbackLocation);
+      const fallbackLocations = selectedJobLocations.length ? selectedJobLocations : ["chennai"];
+      onChange("focusLocationValue", fallbackLocations);
     }
     if (formData.availabilityOptions === undefined) {
       onChange("availabilityOptions", ["immediate", "1month"]);
@@ -160,7 +163,7 @@ const PermissionStep = ({ formData, onChange, onSetStepFields, fields = [], vali
     formData.jobActivationStatus,
     formData.focusLocationType,
     formData.focusLocationValue,
-    selectedJobLocation,
+    selectedJobLocations,
     formData.availabilityOptions,
     formData.interviewStages,
     formData.clientInterviewStages,
@@ -171,53 +174,42 @@ const PermissionStep = ({ formData, onChange, onSetStepFields, fields = [], vali
   ]);
 
   useEffect(() => {
-    if (!selectedJobLocation || !FOCUS_LOCATION_VALUES.has(selectedJobLocation)) {
-      return;
-    }
-
-    if (focusLocationType === "base") {
-      if (formData.focusLocationValue !== selectedJobLocation) {
-        onChange("focusLocationValue", selectedJobLocation);
-      }
-      return;
-    }
-
     const currentValues = Array.isArray(formData.focusLocationValue)
       ? formData.focusLocationValue
       : formData.focusLocationValue
         ? [formData.focusLocationValue]
         : [];
-    if (currentValues.length === 0) {
-      onChange("focusLocationValue", [selectedJobLocation]);
+
+    if (focusLocationType === "base") {
+      const nextBaseValues = selectedJobLocations.length ? selectedJobLocations : ["chennai"];
+      const normalizedCurrent = currentValues.map((item) => String(item || "").toLowerCase());
+      const isSame =
+        normalizedCurrent.length === nextBaseValues.length &&
+        normalizedCurrent.every((item, index) => item === nextBaseValues[index]);
+      if (!isSame) {
+        onChange("focusLocationValue", nextBaseValues);
+      }
+      return;
     }
-  }, [focusLocationType, formData.focusLocationValue, selectedJobLocation, onChange]);
+  }, [focusLocationType, formData.focusLocationValue, selectedJobLocations, onChange]);
 
   const handleFocusLocationTypeChange = (nextType) => {
     onChange("focusLocationType", nextType);
 
-    const fallbackLocation =
-      selectedJobLocation && FOCUS_LOCATION_VALUES.has(selectedJobLocation)
-        ? selectedJobLocation
-        : "chennai";
-
-    if (nextType === "base") {
-      onChange("focusLocationValue", fallbackLocation);
-      return;
-    }
-
     const currentValues = Array.isArray(formData.focusLocationValue)
       ? formData.focusLocationValue
       : formData.focusLocationValue
         ? [formData.focusLocationValue]
         : [];
 
-    const normalizedValues = [...new Set(
-      (currentValues.length ? currentValues : [fallbackLocation]).filter((item) =>
-        FOCUS_LOCATION_VALUES.has(String(item || "").toLowerCase())
-      )
-    )];
+    const fallbackValues = selectedJobLocations.length ? selectedJobLocations : ["chennai"];
 
-    onChange("focusLocationValue", normalizedValues);
+    if (nextType === "base") {
+      onChange("focusLocationValue", fallbackValues);
+      return;
+    }
+
+    onChange("focusLocationValue", []);
   };
 
   useEffect(() => {
@@ -486,21 +478,13 @@ const PermissionStep = ({ formData, onChange, onSetStepFields, fields = [], vali
           </div>
           <FormField
             label="Location"
-            type={focusLocationType === "base" ? "select" : "multiselect"}
+            type="multiselect"
             name="focusLocationValue"
-            value={
-              focusLocationType === "base"
-                ? (Array.isArray(formData.focusLocationValue)
-                  ? (formData.focusLocationValue[0] || "")
-                  : (formData.focusLocationValue || ""))
-                : (Array.isArray(formData.focusLocationValue)
-                  ? formData.focusLocationValue
-                  : (formData.focusLocationValue ? [formData.focusLocationValue] : []))
-            }
+            value={Array.isArray(formData.focusLocationValue) ? formData.focusLocationValue : (formData.focusLocationValue ? [formData.focusLocationValue] : [])}
             onChange={onChange}
             required={false}
             options={FOCUS_LOCATION_VALUE_OPTIONS}
-            placeholder={focusLocationType === "base" ? "Select location" : "Select locations"}
+            placeholder="Select locations"
             formData={formData}
             disabled={disabled}
             hideLabel

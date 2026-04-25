@@ -1,6 +1,108 @@
 import React, { useEffect, useMemo } from "react";
 import FormField from "./FormField";
 
+const normalizeText = (value) => String(value || "").replace(/\s+/g, " ").trim();
+
+const toLower = (value) => normalizeText(value).toLowerCase();
+
+const getFileLike = (value) => {
+  if (!value) return null;
+  if (typeof File !== "undefined" && value instanceof File) return value;
+  if (value?.file && typeof File !== "undefined" && value.file instanceof File) return value.file;
+  if (value?.file && typeof value.file === "object") return value.file;
+  if (typeof value === "object" && typeof value.name === "string") return value;
+  return null;
+};
+
+const readDocxText = async (file) => {
+  const mammoth = await import("mammoth/mammoth.browser");
+  const arrayBuffer = await file.arrayBuffer();
+  const result = await mammoth.extractRawText({ arrayBuffer });
+  return normalizeText(result?.value || "");
+};
+
+const readResumeText = async (file) => {
+  const extension = String(file?.name || "").split(".").pop()?.toLowerCase();
+
+  if (!extension) return "";
+  if (extension === "docx") return readDocxText(file);
+  if (extension === "doc" || extension === "txt") return normalizeText(await file.text());
+
+  return "";
+};
+
+const mapYearsToBucket = (yearsNumber) => {
+  if (!Number.isFinite(yearsNumber) || yearsNumber < 0) return "";
+  if (yearsNumber <= 1) return "0-1";
+  if (yearsNumber <= 3) return "1-3";
+  if (yearsNumber <= 5) return "3-5";
+  if (yearsNumber <= 8) return "5-8";
+  if (yearsNumber <= 12) return "8-12";
+  return "12+";
+};
+
+const cleanResumeValue = (value) =>
+  normalizeText(String(value || "").replace(/[|•]/g, " ").replace(/\s+/g, " ")).slice(0, 120);
+
+const extractCompanyAndRole = (text) => {
+  const normalized = normalizeText(text);
+  if (!normalized) return { company: "", role: "" };
+
+  const companyMatch = normalized.match(
+    /(?:current\s+company|company|organization|employer)\s*[:\-]\s*([^\n\r,|]+)/i
+  );
+  const roleMatch = normalized.match(
+    /(?:current\s+(?:designation|role)|designation|job\s*title|title|role)\s*[:\-]\s*([^\n\r,|]+)/i
+  );
+
+  let company = cleanResumeValue(companyMatch?.[1] || "");
+  let role = cleanResumeValue(roleMatch?.[1] || "");
+
+  if (!company || !role) {
+    const lineWithAt = normalized
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .find((line) => /\s+at\s+/i.test(line) && !/mailto:|http/i.test(line));
+
+    if (lineWithAt) {
+      const [left = "", right = ""] = lineWithAt.split(/\s+at\s+/i);
+      if (!role) role = cleanResumeValue(left);
+      if (!company) company = cleanResumeValue(right);
+    }
+  }
+
+  return { company, role };
+};
+
+const extractExperienceYears = (text) => {
+  const normalized = normalizeText(text);
+  if (!normalized) return null;
+
+  const explicitRangeMatch = normalized.match(/(\d+(?:\.\d+)?)\s*(?:to|\-|–)\s*(\d+(?:\.\d+)?)\s*(?:years?|yrs?)/i);
+  if (explicitRangeMatch?.[2]) {
+    return Number.parseFloat(explicitRangeMatch[2]);
+  }
+
+  const yearsMonthsMatch = normalized.match(/(\d+(?:\.\d+)?)\s*(?:years?|yrs?)\s*(\d{1,2})\s*(?:months?|mos?)/i);
+  if (yearsMonthsMatch?.[1]) {
+    const years = Number.parseFloat(yearsMonthsMatch[1]);
+    const months = Number.parseFloat(yearsMonthsMatch[2] || "0");
+    return years + months / 12;
+  }
+
+  const standardMatch = normalized.match(/(\d+(?:\.\d+)?)\s*\+?\s*(?:years?|yrs?)(?:\s+of\s+experience)?/i);
+  if (standardMatch?.[1]) {
+    return Number.parseFloat(standardMatch[1]);
+  }
+
+  const labelledMatch = normalized.match(/(?:total\s+)?experience\s*[:\-]?\s*(\d+(?:\.\d+)?)/i);
+  if (labelledMatch?.[1]) {
+    return Number.parseFloat(labelledMatch[1]);
+  }
+
+  return null;
+};
+
 const CandidateBasicInfoStep = ({
   formData,
   onChange,
@@ -9,6 +111,7 @@ const CandidateBasicInfoStep = ({
   validationErrors = {},
 }) => {
   const isFresher = formData.candidateType === "fresher";
+  const parsedResumeRef = React.useRef("");
 
 
   const fieldMap = useMemo(() => {
@@ -72,6 +175,161 @@ const CandidateBasicInfoStep = ({
     }
   }, [fieldMap, formData.sourceId, formData.sourceName, onChange]);
 
+  useEffect(() => {
+    if (formData.candidateTemplateMode === undefined || formData.candidateTemplateMode === null || formData.candidateTemplateMode === "") {
+      onChange("candidateTemplateMode", "no");
+    }
+  }, [formData.candidateTemplateMode, onChange]);
+
+  useEffect(() => {
+    const resumeFromDocs = Array.isArray(formData.candidateDocuments)
+      ? getFileLike(formData.candidateDocuments[0])
+      : null;
+
+    const sourceFile =
+      getFileLike(formData.candidateTemplateFile) ||
+      getFileLike(formData.candidateResume) ||
+      resumeFromDocs;
+    if (!sourceFile || typeof sourceFile !== "object") return;
+
+    const fileKey = `${sourceFile.name || ""}-${sourceFile.size || 0}-${sourceFile.lastModified || 0}`;
+    if (!fileKey || parsedResumeRef.current === fileKey) return;
+
+    let isCancelled = false;
+
+    const parseAndMapResume = async () => {
+      try {
+        const extractedText = await readResumeText(sourceFile);
+        if (isCancelled) return;
+
+        parsedResumeRef.current = fileKey;
+        if (!extractedText) return;
+
+        const normalized = normalizeText(extractedText);
+        const normalizedLower = toLower(normalized);
+        const updates = {};
+
+        const emailMatch = normalized.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
+        const phoneMatch = normalized.match(/(?:\+?\d{1,3}[\s-]?)?(?:\(?\d{3,5}\)?[\s-]?)?\d{3,5}[\s-]?\d{4,6}/);
+
+      if (!normalizeText(formData.primaryEmail) && emailMatch?.[0]) {
+        updates.primaryEmail = emailMatch[0];
+      }
+
+      if (!normalizeText(formData.phoneNumber) && phoneMatch?.[0]) {
+        const digits = phoneMatch[0].replace(/\D/g, "");
+        if (digits.length >= 10) {
+          updates.phoneNumber = digits.slice(-10);
+        }
+      }
+
+        if (!normalizeText(formData.yearsExperience)) {
+          const yearsNumber = extractExperienceYears(normalized);
+          const mappedExperience = mapYearsToBucket(yearsNumber ?? Number.NaN);
+          if (mappedExperience) {
+            updates.yearsExperience = mappedExperience;
+            if (!normalizeText(formData.candidateType)) {
+              updates.candidateType = (yearsNumber || 0) > 0 ? "experienced" : "fresher";
+            }
+          }
+        }
+
+        const nameLine = extractedText.split(/\r?\n/).map((line) => line.trim()).find(Boolean);
+        if (nameLine && !normalizeText(formData.firstName) && !normalizeText(formData.lastName)) {
+          const cleanedName = nameLine.replace(/[^A-Za-z\s.-]/g, " ").replace(/\s+/g, " ").trim();
+          const parts = cleanedName.split(" ").filter(Boolean);
+          if (parts.length >= 2) {
+            updates.firstName = parts[0];
+            updates.lastName = parts.slice(1).join(" ");
+          }
+        }
+
+        if (!normalizeText(formData.primarySkill) && Array.isArray(fieldMap.primarySkill?.options)) {
+          const matchedPrimarySkill = fieldMap.primarySkill.options.find((option) => {
+            const label = toLower(option?.label || option?.value);
+            const value = toLower(option?.value);
+            return (label && normalizedLower.includes(label)) || (value && normalizedLower.includes(value));
+          });
+
+          if (matchedPrimarySkill?.value) {
+            updates.primarySkill = matchedPrimarySkill.value;
+          }
+        }
+
+        if (!normalizeText(formData.skillRating) && normalizeText(updates.yearsExperience || formData.yearsExperience)) {
+          const yearsValue = updates.yearsExperience || formData.yearsExperience;
+          if (!normalizeText(formData.skillExperienceLevel)) {
+            if (yearsValue === "0-1" || yearsValue === "1-3") {
+              updates.skillExperienceLevel = "beginner";
+            } else if (yearsValue === "3-5" || yearsValue === "5-8") {
+              updates.skillExperienceLevel = "intermediate";
+            } else {
+              updates.skillExperienceLevel = "expert";
+            }
+          }
+          if (yearsValue === "0-1") {
+            updates.skillRating = "1";
+          } else if (yearsValue === "1-3") {
+            updates.skillRating = "2";
+          } else if (yearsValue === "3-5") {
+            updates.skillRating = "3";
+          } else if (yearsValue === "5-8") {
+            updates.skillRating = "4";
+          } else {
+            updates.skillRating = "5";
+          }
+        }
+
+        const { company, role } = extractCompanyAndRole(extractedText);
+        if (!normalizeText(formData.currentCompanyName) && company) {
+          updates.currentCompanyName = company;
+        }
+        if (!normalizeText(formData.jobTitleRole) && role) {
+          updates.jobTitleRole = role;
+        }
+
+        if (!normalizeText(formData.employmentType)) {
+          if (normalizedLower.includes("full time") || normalizedLower.includes("full-time")) {
+            updates.employmentType = "full-time";
+          } else if (normalizedLower.includes("contract")) {
+            updates.employmentType = "contract";
+          } else if (normalizedLower.includes("intern") || normalizedLower.includes("internship")) {
+            updates.employmentType = "internship";
+          }
+        }
+
+        Object.entries(updates).forEach(([fieldName, fieldValue]) => {
+          if (fieldValue !== undefined && fieldValue !== null && fieldValue !== "") {
+            onChange(fieldName, fieldValue);
+          }
+        });
+      } catch (error) {
+        console.error("Resume parsing failed:", error);
+      }
+    };
+
+    void parseAndMapResume();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [
+    fieldMap.primarySkill?.options,
+    formData.candidateDocuments,
+    formData.candidateResume,
+    formData.candidateTemplateFile,
+    formData.candidateType,
+    formData.firstName,
+    formData.lastName,
+    formData.phoneNumber,
+    formData.primaryEmail,
+    formData.primarySkill,
+    formData.skillExperienceLevel,
+    formData.skillRating,
+    formData.yearsExperience,
+    onChange,
+  ]);
+
   const renderField = (name, extraClass = "", overrides = {}) => {
     const field = fieldMap[name];
     if (!field) return null;
@@ -97,19 +355,22 @@ const CandidateBasicInfoStep = ({
           hideLabel={fieldProps.hideLabel}
           accept={fieldProps.accept}
           multiple={fieldProps.multiple}
+          showBrowseButton={fieldProps.showBrowseButton}
+          allowDecimal={fieldProps.allowDecimal}
           prefix={fieldProps.prefix}
           formData={formData}
+          disabled={fieldProps.disabled}
         />
       </div>
     );
   };
 
   const skills = formData.skills || [
-    { primarySkill: "", skillExperienceLevel: "", skillLastUsed: "" }
+    { primarySkill: "", skillExperienceLevel: "", skillExperienceYears: "", skillRating: "" }
   ];
 
   const handleAddField = () => {
-    const newSkills = [...skills, { primarySkill: "", skillExperienceLevel: "", skillLastUsed: "" }];
+    const newSkills = [...skills, { primarySkill: "", skillExperienceLevel: "", skillExperienceYears: "", skillRating: "" }];
     onChange("skills", newSkills);
   };
 
@@ -125,7 +386,7 @@ const CandidateBasicInfoStep = ({
   };
 
   const isAddButtonDisabled = skills.some(
-    skill => !skill.primarySkill || !skill.skillExperienceLevel || !skill.skillLastUsed
+    skill => !skill.primarySkill || !skill.skillExperienceLevel || !skill.skillExperienceYears || !skill.skillRating
   );
 
   return (
@@ -136,6 +397,46 @@ const CandidateBasicInfoStep = ({
           <div className="candidate-section-divider" />
         </div>
         <div className="candidate-grid">
+          <div className="candidate-cell">
+            <div className="job-template-choice">
+              <div className="job-template-choice-label">
+                Have Candidate Template?
+                <span className="required-star">*</span>
+              </div>
+              <div className="job-template-choice-options" role="radiogroup" aria-label="Have Candidate Template">
+                <label className="job-template-choice-option" htmlFor="candidateTemplateMode-no">
+                  <input
+                    id="candidateTemplateMode-no"
+                    type="radio"
+                    name="candidateTemplateMode"
+                    value="no"
+                    checked={formData.candidateTemplateMode !== "yes"}
+                    onChange={() => {
+                      onChange("candidateTemplateMode", "no");
+                      onChange("candidateTemplateFile", "");
+                    }}
+                  />
+                  <span>No</span>
+                </label>
+                <label className="job-template-choice-option" htmlFor="candidateTemplateMode-yes">
+                  <input
+                    id="candidateTemplateMode-yes"
+                    type="radio"
+                    name="candidateTemplateMode"
+                    value="yes"
+                    checked={formData.candidateTemplateMode === "yes"}
+                    onChange={() => onChange("candidateTemplateMode", "yes")}
+                  />
+                  <span>Yes</span>
+                </label>
+              </div>
+              {formData.candidateTemplateMode === "yes" && (
+                <div className="job-template-upload-wrap">
+                  {renderField("candidateTemplateFile")}
+                </div>
+              )}
+            </div>
+          </div>
           {renderField("candidateId")}
           <div className="candidate-cell">
             <div className="name-prefix-group">
@@ -206,7 +507,6 @@ const CandidateBasicInfoStep = ({
           </div>
           {renderField("lastName")}
           {renderField("primaryEmail")}
-          {renderField("secondaryEmail")}
           {renderField("phoneNumber")}
           {renderField("gender")}
           {renderField("yearsExperience")}
@@ -281,14 +581,23 @@ const CandidateBasicInfoStep = ({
                   hideLabel={index > 0}
                 />
               </div>
-              <div className="candidate-cell skill-last-used-cell">
-                <FormField
-                  {...fieldMap.skillLastUsed}
-                  value={skill.skillLastUsed}
-                  onChange={(_, value) => handleSkillChange(index, "skillLastUsed", value)}
-                  formData={formData}
-                  hideLabel={index > 0}
-                />
+              <div className="candidate-cell skill-split-cell">
+                <div className="skill-split-fields">
+                  <FormField
+                    {...fieldMap.skillExperienceYears}
+                    value={skill.skillExperienceYears}
+                    onChange={(_, value) => handleSkillChange(index, "skillExperienceYears", value)}
+                    formData={formData}
+                    hideLabel={index > 0}
+                  />
+                  <FormField
+                    {...fieldMap.skillRating}
+                    value={skill.skillRating}
+                    onChange={(_, value) => handleSkillChange(index, "skillRating", value)}
+                    formData={formData}
+                    hideLabel={index > 0}
+                  />
+                </div>
                 {skills.length > 1 && (
                   <button
                     type="button"

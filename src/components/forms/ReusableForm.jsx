@@ -290,6 +290,34 @@ const FormStep = ({ formData, onChange, fields, title, onSetStepFields, validati
           updates.maxExperience = maxExperience;
         }
 
+        const normalizeSalaryNumber = (value) => {
+          const raw = String(value || '').replace(/,/g, '').trim();
+          if (!raw) return '';
+          const parsed = Number.parseFloat(raw);
+          if (!Number.isFinite(parsed)) return '';
+          return String(Math.round(parsed));
+        };
+
+        const salaryRangeMatch = combinedText.match(
+          /(?:salary|ctc|compensation|package)\s*(?:range)?\s*[:\-]?\s*(\d[\d,]*(?:\.\d+)?)\s*(?:to|\-|–)\s*(\d[\d,]*(?:\.\d+)?)/i
+        );
+        const minSalaryMatch = combinedText.match(
+          /(?:min(?:imum)?\s*(?:salary|ctc|compensation|package)|(?:salary|ctc)\s*min)\s*[:\-]?\s*(\d[\d,]*(?:\.\d+)?)/i
+        );
+        const maxSalaryMatch = combinedText.match(
+          /(?:max(?:imum)?\s*(?:salary|ctc|compensation|package)|(?:salary|ctc)\s*max)\s*[:\-]?\s*(\d[\d,]*(?:\.\d+)?)/i
+        );
+
+        const minSalary = normalizeSalaryNumber(salaryRangeMatch?.[1] || minSalaryMatch?.[1]);
+        const maxSalary = normalizeSalaryNumber(salaryRangeMatch?.[2] || maxSalaryMatch?.[1]);
+
+        if (minSalary && !normalizeText(formData.minSalary)) {
+          updates.minSalary = minSalary;
+        }
+        if (maxSalary && !normalizeText(formData.maxSalary)) {
+          updates.maxSalary = maxSalary;
+        }
+
         const openingsMatch = normalizedText.match(/(?:positions?|openings?)\s*[:\-]?\s*(\d{1,3})/i);
         if (openingsMatch?.[1] && !normalizeText(formData.noOfPositions)) {
           updates.noOfPositions = openingsMatch[1];
@@ -306,7 +334,7 @@ const FormStep = ({ formData, onChange, fields, title, onSetStepFields, validati
         const locationField = fields.find((field) => field.name === 'location');
         const locationValue = findMatchingOptionValue(normalizedText, locationField?.options || []);
         if (locationValue && !normalizeText(formData.location)) {
-          updates.location = locationValue;
+          updates.location = [locationValue];
         }
 
         const positionLevelField = fields.find((field) => field.name === 'positionLevel');
@@ -737,7 +765,7 @@ const ReusableForm = ({ config, onSubmit, initialData, readOnly = false }) => {
       return data[fieldName];
     }
 
-    if (["primarySkill", "skillExperienceLevel", "skillLastUsed"].includes(fieldName)) {
+    if (["primarySkill", "skillExperienceYears", "skillRating", "skillExperienceLevel"].includes(fieldName)) {
       return data?.skills?.[0]?.[fieldName];
     }
 
@@ -945,6 +973,9 @@ const ReusableForm = ({ config, onSubmit, initialData, readOnly = false }) => {
         draftLabel={config.draftLabel}
         onSaveDraft={config.onSaveDraft}
         submitLabel={config.submitLabel}
+        showCancelAction={config.showCancelAction}
+        cancelLabel={config.cancelLabel}
+        onCancel={config.onCancel}
         initialData={initialData}
         readOnly={readOnly}
       />

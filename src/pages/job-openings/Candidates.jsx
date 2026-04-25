@@ -291,6 +291,18 @@ export default function Candidates() {
   const mapDropdownRef = React.useRef(null);
   const addCandidateMenuRef = React.useRef(null);
 
+  const generateNextCandidateId = React.useCallback(() => {
+    const maxNumericId = submittedData.reduce((maxValue, item) => {
+      const matched = String(item?.candidateId || "").match(/(\d+)/);
+      const parsed = matched ? Number.parseInt(matched[1], 10) : Number.NaN;
+      if (!Number.isFinite(parsed)) return maxValue;
+      return parsed > maxValue ? parsed : maxValue;
+    }, 0);
+
+    const nextNumericId = maxNumericId + 1;
+    return `C${String(nextNumericId).padStart(3, "0")}`;
+  }, [submittedData]);
+
   const showTransientMessage = React.useCallback((message) => {
     setSuccessMessage(message);
     window.setTimeout(() => {
@@ -395,6 +407,16 @@ export default function Candidates() {
   const candidateFormWithDraft = React.useMemo(() => ({
     ...candidateConfig,
     showDraftAction: editingIndex === null,
+    showCancelAction: editingIndex === null,
+    cancelLabel: "Cancel",
+    onCancel: () => {
+      setShowCandidateForm(false);
+      setShowDataTable(true);
+      setEditingIndex(null);
+      setActiveDraftId(null);
+      setEditingData(null);
+      setIsAddCandidateMenuOpen(false);
+    },
     onSaveDraft: saveCandidateDraft,
   }), [editingIndex, saveCandidateDraft]);
 
@@ -614,17 +636,16 @@ export default function Candidates() {
             ) ||
             rawSkillName;
 
-          const rawExperienceLevel = String(skill.skillExperienceLevel || "").trim();
-          const normalizedExperienceLevel = rawExperienceLevel.toLowerCase();
-          const displayExperienceLevel =
-            EXPERIENCE_LEVEL_LABELS[normalizedExperienceLevel] ||
-            rawExperienceLevel;
+          const yearsValue = String(skill.skillExperienceYears || "").trim();
+          const displayExperience = yearsValue ? `${yearsValue} Years` : "-";
+          const parsedRating = Number.parseInt(String(skill.skillRating || ""), 10);
+          const ratingValue = Number.isFinite(parsedRating) ? Math.max(0, Math.min(5, parsedRating)) : 3;
 
           return {
             id: `primary-form-${index + 1}`,
             name: displaySkillName,
-            experience: displayExperienceLevel || "-",
-            rating: 3,
+            experience: displayExperience || "-",
+            rating: ratingValue,
             lastUsed: skill.skillLastUsed || "-",
             comments: "",
           };
@@ -933,14 +954,20 @@ export default function Candidates() {
   }, [isAddCandidateMenuOpen]);
 
   const openAddCandidateForm = React.useCallback((draftData = null, draftId = null) => {
+    const generatedCandidateId = generateNextCandidateId();
+    const nextInitialData = {
+      ...(draftData ? { ...draftData } : {}),
+      candidateId: String(draftData?.candidateId || "").trim() || generatedCandidateId,
+    };
+
     setShowCandidateForm(true);
     setShowDataTable(false);
     setEditingIndex(null);
     setActiveDraftId(draftId);
-    setEditingData(draftData ? { ...draftData } : null);
+    setEditingData(nextInitialData);
     setCandidateFormKey((prev) => prev + 1);
     setIsAddCandidateMenuOpen(false);
-  }, []);
+  }, [generateNextCandidateId]);
 
   const handleAddCandidate = React.useCallback(() => {
     setCandidateDrafts(getCandidateDrafts());
@@ -1049,12 +1076,13 @@ export default function Candidates() {
   }, []);
 
   const handleCandidateSubmit = React.useCallback((data) => {
+    const generatedCandidateId = generateNextCandidateId();
     const firstName = data.firstName || "";
     const lastName = data.lastName || "";
     const candidateName = data.candidateName || `${firstName} ${lastName}`.trim();
     const normalized = {
       ...data,
-      candidateId: data.candidateId || data.candidateCode || "",
+      candidateId: String(data.candidateId || data.candidateCode || "").trim() || generatedCandidateId,
       candidateName,
       candidateEmail: data.primaryEmail || data.candidateEmail || "",
       candidateDocuments: Array.isArray(data.candidateDocuments) ? data.candidateDocuments : [],
@@ -1078,7 +1106,7 @@ export default function Candidates() {
     setActiveDraftId(null);
     setEditingData(null);
     // Here you would typically send the data to your backend API
-  }, [formatTimestamp, editingIndex, showTransientMessage]);
+  }, [formatTimestamp, editingIndex, showTransientMessage, generateNextCandidateId]);
 
   const closeViewDrawer = React.useCallback(() => {
     setIsViewDrawerOpen(false);
@@ -1127,7 +1155,10 @@ export default function Candidates() {
 
   const activeSkillKey = activeSkillType === "primary" ? "primarySkills" : "secondarySkills";
   const skillOptions = activeSkillType === "primary" ? PRIMARY_SKILL_OPTIONS : SECONDARY_SKILL_OPTIONS;
-  const currentSkills = selectedCandidate?.[activeSkillKey] || [];
+  const currentSkills = React.useMemo(
+    () => selectedCandidate?.[activeSkillKey] || [],
+    [selectedCandidate, activeSkillKey]
+  );
   const normalizedCurrentSkillNames = React.useMemo(
     () =>
       new Set(
@@ -1258,10 +1289,6 @@ export default function Candidates() {
           <div className={styles.profileItem}>
             <span className={styles.profileLabel}>Primary Email Address</span>
             <span className={styles.profileLink}>{selectedCandidate.email}</span>
-          </div>
-          <div className={styles.profileItem}>
-            <span className={styles.profileLabel}>Secondary Email Address</span>
-            <span className={styles.profileLink}>{selectedCandidate.secondaryEmail}</span>
           </div>
           <div className={styles.profileItem}>
             <span className={styles.profileLabel}>Phone Number</span>

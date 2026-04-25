@@ -12,6 +12,9 @@ const MultiStepForm = ({
   draftLabel = "Save as Draft",
   onSaveDraft,
   submitLabel = "Submit",
+  showCancelAction = false,
+  cancelLabel = "Cancel",
+  onCancel,
   hideStepper = false,
   initialData = null,
   readOnly = false
@@ -218,6 +221,10 @@ const MultiStepForm = ({
     }
   };
 
+  const handleCancel = () => {
+    onCancel?.(formData);
+  };
+
 
   return (
     <div className="multi-step-form">
@@ -272,6 +279,16 @@ const MultiStepForm = ({
                 disabled={readOnly}
               >
                 Previous
+              </button>
+            )}
+            {showCancelAction && (
+              <button
+                type="button"
+                className="form-btn secondary"
+                onClick={handleCancel}
+                disabled={readOnly}
+              >
+                {cancelLabel}
               </button>
             )}
             {currentStep < steps.length - 1 ? (

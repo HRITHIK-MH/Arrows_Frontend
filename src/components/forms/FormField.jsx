@@ -22,6 +22,7 @@ const FormField = ({
   formData,
   disabled,
   showBrowseButton,
+  allowDecimal,
   suppressError,
   maxLength
 }) => {
@@ -75,7 +76,11 @@ const FormField = ({
       : e.target.value;
 
     if (type === 'number' && typeof newValue === 'string') {
-      const sanitized = newValue.replace(/[^\d]/g, '');
+      const sanitized = allowDecimal
+        ? newValue
+          .replace(/[^\d.]/g, '')
+          .replace(/(\..*)\./g, '$1')
+        : newValue.replace(/[^\d]/g, '');
       newValue = sanitized;
       if (sanitized !== e.target.value) {
         e.target.value = sanitized;
@@ -90,8 +95,18 @@ const FormField = ({
 
   const handleNumberKeyDown = (event) => {
     if (type !== 'number') return;
-    if (['e', 'E', '+', '-', '.'].includes(event.key)) {
+    if (['e', 'E', '+', '-'].includes(event.key)) {
       event.preventDefault();
+    }
+    if (event.key === '.') {
+      if (!allowDecimal) {
+        event.preventDefault();
+        return;
+      }
+      const currentValue = String(event.currentTarget?.value || '');
+      if (currentValue.includes('.')) {
+        event.preventDefault();
+      }
     }
   };
 
@@ -547,11 +562,17 @@ const FormField = ({
                 onPaste={(event) => {
                   if (type !== 'number') return;
                   const pastedText = event.clipboardData?.getData('text') || '';
-                  if (/[^\d]/.test(pastedText)) {
+                  if ((allowDecimal && /[^\d.]/.test(pastedText)) || (!allowDecimal && /[^\d]/.test(pastedText))) {
                     event.preventDefault();
-                    const digitsOnly = pastedText.replace(/[^\d]/g, '');
-                    if (digitsOnly) {
-                      const nextValue = `${event.currentTarget.value || ''}${digitsOnly}`;
+                    const sanitizedPaste = allowDecimal
+                      ? pastedText.replace(/[^\d.]/g, '')
+                      : pastedText.replace(/[^\d]/g, '');
+                    const currentValue = String(event.currentTarget.value || '');
+                    const combinedValue = `${currentValue}${sanitizedPaste}`;
+                    const nextValue = allowDecimal
+                      ? combinedValue.replace(/(\..*)\./g, '$1')
+                      : combinedValue.replace(/[^\d]/g, '');
+                    if (nextValue) {
                       onChange(name, nextValue);
                       triggerFieldValidation(nextValue);
                     }
@@ -559,8 +580,8 @@ const FormField = ({
                 }}
                 required={required}
                 min={type === 'number' ? '0' : undefined}
-                inputMode={type === 'number' ? 'numeric' : undefined}
-                pattern={type === 'number' ? '[0-9]*' : undefined}
+                inputMode={type === 'number' ? (allowDecimal ? 'decimal' : 'numeric') : undefined}
+                pattern={type === 'number' ? (allowDecimal ? '[0-9]*[.]?[0-9]*' : '[0-9]*') : undefined}
                 className={error ? 'error' : ''}
                 placeholder={placeholder}
                 maxLength={maxLength}

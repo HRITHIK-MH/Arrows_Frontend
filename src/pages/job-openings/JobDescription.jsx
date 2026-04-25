@@ -1,5 +1,5 @@
 import * as React from "react";
-import { FiArrowLeft, FiCheck, FiEye, FiFileText, FiSearch, FiTrash2, FiX } from "react-icons/fi";
+import { FiArrowLeft, FiCheck, FiEye, FiFileText, FiTrash2, FiX } from "react-icons/fi";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import styles from "./JobDescription.module.scss";
 
@@ -107,7 +107,9 @@ const formatHiringStageLabel = (value) => {
 const buildStageTabsFromJob = (job) => {
   const hasHiringProcessConfig =
     Array.isArray(job?.interviewStages) ||
+    Array.isArray(job?.clientInterviewStages) ||
     Array.isArray(job?.finalStages) ||
+    (job?.interviewStageNames && typeof job.interviewStageNames === "object") ||
     (job?.interviewCount !== undefined && job?.interviewCount !== null && job?.interviewCount !== "");
 
   if (!hasHiringProcessConfig) {
@@ -117,15 +119,25 @@ const buildStageTabsFromJob = (job) => {
   const interviewStages = Array.isArray(job?.interviewStages)
     ? job.interviewStages
     : [];
+  const clientInterviewStages = Array.isArray(job?.clientInterviewStages)
+    ? job.clientInterviewStages
+    : [];
+  const stageNames =
+    job?.interviewStageNames && typeof job.interviewStageNames === "object"
+      ? job.interviewStageNames
+      : {};
   const interviewCount = Number.parseInt(job?.interviewCount, 10);
   const generatedInterviewStages = Number.isFinite(interviewCount) && interviewCount > 0
     ? Array.from({ length: interviewCount }, (_, index) => `interview-${index + 1}`)
     : [];
 
   const normalizedInterviewStageLabels = [
-    ...new Set([...interviewStages, ...generatedInterviewStages])
+    ...new Set([...interviewStages, ...generatedInterviewStages, ...clientInterviewStages])
   ]
-    .map((stage) => formatHiringStageLabel(stage))
+    .map((stage) => {
+      const customName = String(stageNames?.[stage] || "").trim();
+      return customName || formatHiringStageLabel(stage);
+    })
     .filter(Boolean);
 
   const defaultFinalStages = ["preboarding"];
@@ -134,7 +146,10 @@ const buildStageTabsFromJob = (job) => {
     : defaultFinalStages;
 
   const finalStageLabels = selectedFinalStages
-    .map((stage) => formatHiringStageLabel(stage))
+    .map((stage) => {
+      const customName = String(stageNames?.[stage] || "").trim();
+      return customName || formatHiringStageLabel(stage);
+    })
     .filter(Boolean);
 
   const dynamicTabs = [
@@ -285,6 +300,7 @@ const JobDescription = () => {
   }, [activeStage, stageTabs]);
 
   const displayedRows = React.useMemo(() => {
+    const normalizedSearch = searchTerm.trim().toLowerCase();
     return candidateRows.filter((row) => {
         const rowStage = normalizeStage(row.stage);
         const matchesStage =
@@ -293,14 +309,19 @@ const JobDescription = () => {
             : activeStage === "Sourced"
             ? rowStage === "Sourced"
             : rowStage.toLowerCase() === activeStage.toLowerCase();
+        const searchableNameFields = [
+          row.candidateName,
+          row.recruiterName,
+          row.candidateEmail,
+        ]
+          .map((value) => String(value || "").toLowerCase())
+          .filter(Boolean);
         const matchesSearch =
-          !searchTerm ||
-          Object.values(row).some((value) =>
-            String(value).toLowerCase().includes(searchTerm.toLowerCase())
-          );
+          !normalizedSearch ||
+          searchableNameFields.some((value) => value.includes(normalizedSearch));
         return matchesStage && matchesSearch;
       });
-  }, [candidateRows, activeStage, searchTerm]);
+  }, [candidateRows, activeStage, searchTerm, normalizeStage]);
 
   const isMapStage = activeStage === "Map Candidates";
   const isSourcedStage = activeStage === "Sourced";
@@ -569,15 +590,6 @@ const JobDescription = () => {
               ))}
             </div>
             <div className={styles.stageActions}>
-              <div className={styles.searchBox}>
-                <FiSearch className={styles.searchIcon} />
-                <input
-                  type="text"
-                  placeholder="Search Candidate to Map"
-                  value={searchTerm}
-                  onChange={(event) => setSearchTerm(event.target.value)}
-                />
-              </div>
               <button type="button" className={styles.mapBtn} disabled={!isMapStage}>
                 Map Job
               </button>

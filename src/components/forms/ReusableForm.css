@@ -582,7 +582,7 @@
   border-collapse: separate;
   border-spacing: 0;
   font-size: 13px;
-  min-width: 720px;
+  min-width: 860px;
 }
 
 .reusable-form-page.job-opening-form .team-members-table th {
@@ -1415,6 +1415,24 @@
   flex: 1;
 }
 
+.skill-split-cell {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.skill-split-fields {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.skill-split-fields .form-field {
+  width: 100%;
+}
+
 .remove-skill-button {
   background: transparent;
   border: none;
@@ -1652,6 +1670,81 @@
   padding: 0 12px;
   min-width: 48px;
   justify-content: center;
+}
+
+.reusable-form-page.candidate-form .job-template-choice {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.reusable-form-page.candidate-form .job-template-choice-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #111827;
+}
+
+.reusable-form-page.candidate-form .job-template-choice-options {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 38px;
+  padding: 8px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f1f5f9;
+}
+
+.reusable-form-page.candidate-form .job-template-choice-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 0;
+  font-size: 12px;
+  color: #111827;
+  cursor: pointer;
+}
+
+.reusable-form-page.candidate-form .job-template-choice-option input[type="radio"] {
+  margin: 0;
+}
+
+.reusable-form-page.candidate-form .job-template-upload-wrap {
+  margin-top: 2px;
+}
+
+.reusable-form-page.candidate-form .file-input-display.with-button {
+  background: #edf2f7;
+  border: 1px solid #dbe3ee;
+  border-radius: 10px;
+  padding: 5px;
+  min-height: 44px;
+  gap: 8px;
+}
+
+.reusable-form-page.candidate-form .file-browse-btn {
+  background: #e8eef5;
+  border: 1px solid #cfd8e3;
+  color: #2f4a67;
+  border-radius: 10px;
+  min-height: 34px;
+  padding: 7px 16px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.reusable-form-page.candidate-form .file-browse-btn:hover {
+  background: #e2e9f1;
+  border-color: #c5d0dd;
+}
+
+.reusable-form-page.candidate-form .file-input-display.with-button .file-visual-input {
+  background: #eef3f8;
+  border: 1px solid #d8e1ec;
+  border-radius: 10px;
+  min-height: 34px;
+  padding: 0 12px;
+  color: #94a3b8;
 }
 
 .reusable-form-page.candidate-form .form-buttons {
