@@ -45,6 +45,8 @@ const TeamMembersStep = ({
   const [selectedRecruiterId, setSelectedRecruiterId] = useState("");
   const [recruiterRole, setRecruiterRole] = useState("");
   const [newTeamMemberName, setNewTeamMemberName] = useState("");
+  const [isDeleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [memberToDelete, setMemberToDelete] = useState(null);
   const customTeamMembers = Array.isArray(formData.customTeamMembers)
     ? formData.customTeamMembers
     : [];
@@ -78,11 +80,40 @@ const TeamMembersStep = ({
     }
   }, [onSetStepFields]);
 
-  const toggleMember = (memberId) => {
-    const nextSelection = selectedMembers.includes(memberId)
-      ? selectedMembers.filter((id) => id !== memberId)
-      : [...selectedMembers, memberId];
+  const confirmDeleteMember = (memberId) => {
+    setMemberToDelete(memberId);
+    setDeleteConfirmOpen(true);
+  };
+
+  const executeDelete = () => {
+    if (!memberToDelete) return;
+
+    // Remove from selected members
+    const nextSelection = selectedMembers.filter((id) => id !== memberToDelete);
     onChange("teamMembers", nextSelection);
+    
+    // Remove custom member if it's a custom member
+    const isCustomMember = customTeamMembers.some((m) => m.id === memberToDelete);
+    if (isCustomMember) {
+      const updatedCustomMembers = customTeamMembers.filter((m) => m.id !== memberToDelete);
+      onChange("customTeamMembers", updatedCustomMembers);
+    }
+
+    // Also remove from roles if exists
+    const updatedRoles = { ...memberRoles };
+    if (updatedRoles[memberToDelete]) {
+      delete updatedRoles[memberToDelete];
+      onChange("teamMemberRoles", updatedRoles);
+    }
+
+    // Close modal and reset state
+    setDeleteConfirmOpen(false);
+    setMemberToDelete(null);
+  };
+
+  const cancelDelete = () => {
+    setDeleteConfirmOpen(false);
+    setMemberToDelete(null);
   };
 
   const openAssignModal = () => {
@@ -157,30 +188,37 @@ const TeamMembersStep = ({
         <table>
           <thead>
             <tr>
-              <th className="select-col" />
               <th>Recruiter Id</th>
               <th>Recruiter Name</th>
               <th>Email Address</th>
               <th>Role</th>
+              <th>Action</th>
             </tr>
           </thead>
           <tbody>
-            {allTeamMembers.map((member) => (
-              <tr key={member.id}>
-                <td className="select-col">
-                  <input
-                    type="checkbox"
-                    checked={selectedMembers.includes(member.id)}
-                    onChange={() => toggleMember(member.id)}
-                    aria-label={`Select ${member.name}`}
-                  />
-                </td>
-                <td>{member.id}</td>
-                <td>{member.name}</td>
-                <td>{member.email}</td>
-                <td>{memberRoles[member.id] || member.role}</td>
-              </tr>
-            ))}
+            {selectedMembers.map((memberId) => {
+              const member = allTeamMembers.find((m) => m.id === memberId);
+              if (!member) return null;
+              return (
+                <tr key={member.id}>
+                  <td>{member.id}</td>
+                  <td>{member.name}</td>
+                  <td>{member.email}</td>
+                  <td>{memberRoles[member.id] || member.role}</td>
+                  <td className="action-col">
+                    <button
+                      type="button"
+                      className="delete-icon-btn"
+                      onClick={() => confirmDeleteMember(member.id)}
+                      aria-label={`Delete ${member.name}`}
+                      title="Delete member"
+                    >
+                      🗑️
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -285,6 +323,41 @@ const TeamMembersStep = ({
                   Cancel
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isDeleteConfirmOpen && (
+        <div className="delete-confirm-backdrop" onClick={cancelDelete}>
+          <div
+            className="delete-confirm-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Confirm deletion"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="confirm-modal-header">
+              <h3 className="confirm-modal-title">Confirm Delete</h3>
+            </div>
+            <div className="confirm-modal-body">
+              <p>Are you sure you want to delete this assigned team member?</p>
+            </div>
+            <div className="confirm-modal-actions">
+              <button
+                type="button"
+                className="confirm-btn yes"
+                onClick={executeDelete}
+              >
+                Yes
+              </button>
+              <button
+                type="button"
+                className="confirm-btn no"
+                onClick={cancelDelete}
+              >
+                No
+              </button>
             </div>
           </div>
         </div>

@@ -114,8 +114,6 @@ const FormStep = ({ formData, onChange, fields, title, onSetStepFields, validati
   }, [fields, onSetStepFields, isJobBasicInfo]);
 
   React.useEffect(() => {
-    if (!isJobBasicInfo) return;
-
     const clientIdField = fields.find((field) => field.name === "clientId");
     const selectedClientId = formData.clientId;
     if (!clientIdField || !Array.isArray(clientIdField.options) || !selectedClientId) {
@@ -130,7 +128,7 @@ const FormStep = ({ formData, onChange, fields, title, onSetStepFields, validati
     if (mappedClientName && mappedClientName !== formData.clientName) {
       onChange("clientName", mappedClientName);
     }
-  }, [fields, formData.clientId, formData.clientName, isJobBasicInfo, onChange]);
+  }, [fields, formData.clientId, formData.clientName, onChange]);
 
   const handleGenerateJD = React.useCallback(async () => {
     if (!isJobBasicInfo) return;
@@ -341,11 +339,12 @@ const FormStep = ({ formData, onChange, fields, title, onSetStepFields, validati
           updates.softSkills = mergeUnique(formData.softSkills, extractedSoftSkills);
         }
 
-        if (fileNameWithoutExt) {
-          const existingAdditionalSkills = normalizeText(formData.additionalSkills);
-          if (!existingAdditionalSkills) {
-            updates.additionalSkills = `Extracted from ${uploadedFile.name}`;
-          }
+        const additionalSkillsMatch = combinedText.match(
+          /(?:additional\s*skills?|additional\s*skill)\s*[:\-]\s*(.+?)(?=(?:technical\s*skills?|soft\s*skills?|job\s*type|hiring\s*type|location|position\s*level|positions?|openings?|minimum\s*experience|maximum\s*experience|min\s*experience|max\s*experience|job\s*description|responsibilities|qualifications|$))/i
+        )?.[1];
+        const extractedAdditionalSkills = normalizeText(additionalSkillsMatch);
+        if (extractedAdditionalSkills && !normalizeText(formData.additionalSkills)) {
+          updates.additionalSkills = extractedAdditionalSkills;
         }
 
         if (isCancelled) return;
@@ -528,65 +527,60 @@ const FormStep = ({ formData, onChange, fields, title, onSetStepFields, validati
             <div className="job-section-divider" />
           </div>
 
-          <div className="job-template-row">
-            <div className="job-template-choice">
-              <div className="job-template-choice-label">
-                Have JD Template?
-                <span className="required-star">*</span>
-              </div>
-              <div className="job-template-choice-options" role="radiogroup">
-                <label className="job-template-choice-option" htmlFor="jdTemplateMode">
-                  <input
-                    id="jdTemplateMode"
-                    type="radio"
-                    name="jdTemplateMode"
-                    value="manual"
-                    checked={jdTemplateMode === 'manual'}
-                    onChange={() => onChange('jdTemplateMode', 'manual')}
-                    disabled={disabled}
-                  />
-                  <span>No</span>
-                </label>
-                <label className="job-template-choice-option" htmlFor="jdTemplateMode-template">
-                  <input
-                    id="jdTemplateMode-template"
-                    type="radio"
-                    name="jdTemplateMode"
-                    value="template"
-                    checked={jdTemplateMode === 'template'}
-                    onChange={() => onChange('jdTemplateMode', 'template')}
-                    disabled={disabled}
-                  />
-                  <span>Yes</span>
-                </label>
-              </div>
-              {jdTemplateModeError ? <div className="error-text">{jdTemplateModeError}</div> : null}
-              {showJdAttachmentField ? (
-                <div className="job-template-upload-wrap">
-                  {getField('jdAttachment')}
-                  {jdExtractionStatus.state !== 'idle' ? (
-                    <div className={`jd-extraction-status jd-extraction-status--${jdExtractionStatus.state}`}>
-                      {jdExtractionStatus.message}
-                    </div>
-                  ) : null}
-                </div>
-              ) : null}
-            </div>
-          </div>
-
           <div className="job-basic-info-grid">
             <div className="grid-cell grid-col-1 grid-row-1">
-              {getField('jobPositionId')}
+              <div className="job-template-choice">
+                <div className="job-template-choice-label">
+                  Have JD Template?
+                  <span className="required-star">*</span>
+                </div>
+                <div className="job-template-choice-options" role="radiogroup">
+                  <label className="job-template-choice-option" htmlFor="jdTemplateMode">
+                    <input
+                      id="jdTemplateMode"
+                      type="radio"
+                      name="jdTemplateMode"
+                      value="manual"
+                      checked={jdTemplateMode === 'manual'}
+                      onChange={() => onChange('jdTemplateMode', 'manual')}
+                      disabled={disabled}
+                    />
+                    <span>No</span>
+                  </label>
+                  <label className="job-template-choice-option" htmlFor="jdTemplateMode-template">
+                    <input
+                      id="jdTemplateMode-template"
+                      type="radio"
+                      name="jdTemplateMode"
+                      value="template"
+                      checked={jdTemplateMode === 'template'}
+                      onChange={() => onChange('jdTemplateMode', 'template')}
+                      disabled={disabled}
+                    />
+                    <span>Yes</span>
+                  </label>
+                </div>
+                {jdTemplateModeError ? <div className="error-text">{jdTemplateModeError}</div> : null}
+                {showJdAttachmentField ? (
+                  <div className="job-template-upload-wrap">
+                    {getField('jdAttachment')}
+                    {jdExtractionStatus.state !== 'idle' ? (
+                      <div className={`jd-extraction-status jd-extraction-status--${jdExtractionStatus.state}`}>
+                        {jdExtractionStatus.message}
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
+              </div>
             </div>
             <div className="grid-cell grid-col-2 grid-row-1">
-              {getField('positionName')}
+              {getField('jobPositionId')}
             </div>
             <div className="grid-cell grid-col-3 grid-row-1">
-              {renderGroup('Experience', true, 'minExperience', 'maxExperience')}
+              {getField('positionName')}
             </div>
-
             <div className="grid-cell grid-col-1 grid-row-2">
-              {getField('jobDescriptionLink')}
+              {renderGroup('Experience', true, 'minExperience', 'maxExperience')}
             </div>
             <div className="grid-cell grid-col-2 grid-row-2">
               {getField('positionLevel')}
@@ -602,16 +596,26 @@ const FormStep = ({ formData, onChange, fields, title, onSetStepFields, validati
               {getField('jobReceivedDate')}
             </div>
             <div className="grid-cell grid-col-3 grid-row-3">
-              {getField('hiringType')}
+              {renderGroup('Salary In CTC', true, 'minSalary', 'maxSalary')}
             </div>
 
             <div className="grid-cell grid-col-1 grid-row-4">
-              {renderGroup('Salary In CTC', true, 'minSalary', 'maxSalary')}
-            </div>
-            <div className="grid-cell grid-col-2 grid-row-4">
               {getField('jobType')}
             </div>
+            <div className="grid-cell grid-col-2 grid-row-4">
+              {getField('softSkills')}
+            </div>
             <div className="grid-cell grid-col-3 grid-row-4">
+              {getField('technicalSkills')}
+            </div>
+
+            <div className="grid-cell grid-col-1 grid-row-5">
+              {renderField(normalizedAddTechnicalConfig)}
+            </div>
+            <div className="grid-cell grid-col-2 grid-row-5">
+              {getField('additionalSkills')}
+            </div>
+            <div className="grid-cell grid-col-3 grid-row-5">
               <div className="jd-description-wrapper">
                 <label className="form-label">
                   JD Description
@@ -640,44 +644,9 @@ const FormStep = ({ formData, onChange, fields, title, onSetStepFields, validati
                 )}
               </div>
             </div>
-
-            <div className="grid-cell grid-col-1 grid-row-5">
-              {getField('technicalSkills')}
-              <div className="stacked-field-below">
-
-                {renderField(normalizedAddTechnicalConfig)}
-              </div>
-            </div>
-            <div className="grid-cell grid-col-2 grid-row-5">
-              {getField('softSkills')}
-            </div>
-            <div className="grid-cell grid-col-3 grid-row-5">
-              {getField('additionalSkills')}
-            </div>
           </div>
         </div>
 
-        <div className="job-section">
-          <div className="job-section-header">
-            <h3 className="job-section-title">Client Details</h3>
-            <div className="job-section-divider" />
-          </div>
-
-          <div className="job-basic-info-grid job-basic-info-grid--client">
-            <div className="grid-cell grid-col-1 grid-row-1">
-              {getField('clientId')}
-            </div>
-            <div className="grid-cell grid-col-2 grid-row-1">
-              {getField('clientName')}
-            </div>
-            <div className="grid-cell grid-col-3 grid-row-1">
-              {getField('contactPersonName')}
-            </div>
-            <div className="grid-cell grid-col-1 grid-row-2">
-              {getField('contactPersonEmail')}
-            </div>
-          </div>
-        </div>
       </div>
     );
   }

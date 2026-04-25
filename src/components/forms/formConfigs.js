@@ -279,7 +279,7 @@ export const jobOpeningConfig = {
           label: "Experience Min",
           type: "number",
           required: true,
-          cssClass: "grid-col-3 grid-row-1",
+          cssClass: "grid-col-1 grid-row-2",
           validationRule: "experience",
           hideLabel: true,
           prefix: "Min"
@@ -289,18 +289,10 @@ export const jobOpeningConfig = {
           label: "Experience Max",
           type: "number",
           required: true,
-          cssClass: "grid-col-3 grid-row-1",
+          cssClass: "grid-col-1 grid-row-2",
           validationRule: "experience",
           hideLabel: true,
           prefix: "Max"
-        },
-        {
-          name: "jobDescriptionLink",
-          label: "Job Description Link",
-          type: "text",
-          required: false,
-          cssClass: "grid-col-1 grid-row-2",
-          placeholder: "JD link"
         },
         {
           name: "positionLevel",
@@ -328,18 +320,16 @@ export const jobOpeningConfig = {
           cssClass: "grid-col-3 grid-row-2",
           placeholder: "Select",
           options: [
-            { value: "remote", label: "Remote" },
-            { value: "onsite", label: "On-site" },
-            { value: "hybrid", label: "Hybrid" },
-            { value: "new-york", label: "New York, NY" },
-            { value: "san-francisco", label: "San Francisco, CA" },
-            { value: "austin", label: "Austin, TX" },
-            { value: "seattle", label: "Seattle, WA" },
-            { value: "boston", label: "Boston, MA" },
-            { value: "chicago", label: "Chicago, IL" },
-            { value: "los-angeles", label: "Los Angeles, CA" },
-            { value: "miami", label: "Miami, FL" },
-            { value: "denver", label: "Denver, CO" }
+            { value: "chennai", label: "Chennai" },
+            { value: "bangalore", label: "Bangalore" },
+            { value: "hyderabad", label: "Hyderabad" },
+            { value: "pune", label: "Pune" },
+            { value: "mumbai", label: "Mumbai" },
+            { value: "delhi", label: "Delhi" },
+            { value: "noida", label: "Noida" },
+            { value: "gurgaon", label: "Gurgaon" },
+            { value: "coimbatore", label: "Coimbatore" },
+            { value: "kolkata", label: "Kolkata" }
           ]
         },
         {
@@ -359,19 +349,15 @@ export const jobOpeningConfig = {
           cssClass: "grid-col-2 grid-row-3"
         },
         {
-          name: "hiringType",
-          label: "Hiring Type *",
-          type: "select",
+          name: "jdTemplateMode",
+          label: "Have JD Template? *",
+          type: "radio",
           required: true,
-          cssClass: "grid-col-3 grid-row-3",
-          placeholder: "Select",
+          cssClass: "grid-col-1 grid-row-4",
+          validationRule: "requiredField",
           options: [
-            { value: "direct", label: "Direct Hire" },
-            { value: "contract", label: "Contract" },
-            { value: "temp", label: "Temporary" },
-            { value: "contract-to-hire", label: "Contract to Hire" },
-            { value: "internship", label: "Internship" },
-            { value: "freelance", label: "Freelance" }
+            { value: "manual", label: "No" },
+            { value: "template", label: "Yes" }
           ]
         },
         {
@@ -379,7 +365,7 @@ export const jobOpeningConfig = {
           label: "Salary Min",
           type: "number",
           required: true,
-          cssClass: "grid-col-1 grid-row-4",
+          cssClass: "grid-col-3 grid-row-3",
           validationRule: "salary",
           hideLabel: true,
           prefix: "Min"
@@ -389,7 +375,7 @@ export const jobOpeningConfig = {
           label: "Salary Max",
           type: "number",
           required: true,
-          cssClass: "grid-col-1 grid-row-4",
+          cssClass: "grid-col-3 grid-row-3",
           validationRule: "salary",
           hideLabel: true,
           prefix: "Max"
@@ -402,22 +388,9 @@ export const jobOpeningConfig = {
           cssClass: "grid-col-2 grid-row-4",
           placeholder: "Select",
           options: [
-            { value: "full-time", label: "Full Time Employment" },
-            { value: "part-time", label: "Part Time" },
-            { value: "contract", label: "Contract" },
-            { value: "internship", label: "Internship" }
-          ]
-        },
-        {
-          name: "jdTemplateMode",
-          label: "Have JD Template? *",
-          type: "radio",
-          required: true,
-          cssClass: "grid-col-3 grid-row-4",
-          validationRule: "requiredField",
-          options: [
-            { value: "manual", label: "No" },
-            { value: "template", label: "Yes" }
+            { value: "onsite", label: "On-site" },
+            { value: "hybrid", label: "Hybrid" },
+            { value: "remote", label: "Remote" }
           ]
         },
         {
@@ -428,7 +401,8 @@ export const jobOpeningConfig = {
           accept: ".pdf,.doc,.docx,.txt",
           placeholder: "Attachment",
           validationRule: "jdAttachmentConditional",
-          showBrowseButton: true
+          showBrowseButton: true,
+          cssClass: "grid-col-3 grid-row-4"
         },
         {
           name: "technicalSkills",
@@ -511,7 +485,13 @@ export const jobOpeningConfig = {
             { value: "azure", label: "Microsoft Azure" },
             { value: "gcp", label: "Google Cloud Platform" }
           ]
-        },
+        }
+      ]
+    },
+    {
+      title: "Client Details and Requirement",
+      component: PermissionStep,
+      fields: [
         {
           name: "clientId",
           label: "Client Id *",
@@ -550,13 +530,7 @@ export const jobOpeningConfig = {
           validationRule: "emailOptional",
           cssClass: "grid-col-1 grid-row-2",
           placeholder: "Enter Contact Person Email"
-        }
-      ]
-    },
-    {
-      title: "Client Requirement",
-      component: PermissionStep,
-      fields: [
+        },
         {
           name: "permissionVisibility",
           label: "Visibility",
