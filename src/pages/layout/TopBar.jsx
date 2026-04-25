@@ -3,7 +3,6 @@
 // src/pages/layout/TopBar.jsx
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { FiSearch } from "react-icons/fi";
 import NotificationBell from "../notification/NotificationBell";
 import { LINKS } from "./routesConfig";
 
@@ -79,17 +78,8 @@ function useDashboardFirstCrumbs() {
 export default function TopBar({ isSidebarOpen, setSidebarOpen }) {
   const crumbs = useDashboardFirstCrumbs();
   const pageTitle = crumbs.length ? crumbs[crumbs.length - 1].label : "Dashboard";
+  const isDashboardOnly = crumbs.length === 1 && crumbs[0]?.path === "/dashboard";
   const navigate = useNavigate();
-
-
-  /** Search bar state */
-  const [query, setQuery] = useState("");
-  const searchInputRef = useRef(null);
-  const onSearchSubmit = (e) => {
-    e.preventDefault();
-    searchInputRef.current?.blur();
-    // TODO: navigate to /search?query=... or trigger page-level filter
-  };
 
 
   /** Profile menu state */
@@ -134,46 +124,28 @@ export default function TopBar({ isSidebarOpen, setSidebarOpen }) {
         <h1 className="topTitle" aria-live="polite">{pageTitle}</h1>
 
 
-        <nav className="breadcrumb" aria-label="Breadcrumb">
-          <ol className="breadcrumbList">
-            {crumbs.map((c, i) => (
-              <li key={c.path} className="breadcrumbItem">
-                {/* Separator only between items */}
-                {i > 0 && <span className="breadcrumbSep" aria-hidden="true">/</span>}
+        {!isDashboardOnly && (
+          <nav className="breadcrumb" aria-label="Breadcrumb">
+            <ol className="breadcrumbList">
+              {crumbs.map((c, i) => (
+                <li key={c.path} className="breadcrumbItem">
+                  {/* Separator only between items */}
+                  {i > 0 && <span className="breadcrumbSep" aria-hidden="true">/</span>}
 
 
-                {c.isLast ? (
-                  <span className="breadcrumbCurrent" aria-current="page">{c.label}</span>
-                ) : (
-                  <Link to={c.path} className="breadcrumbLink">{c.label}</Link>
-                )}
-              </li>
-            ))}
-          </ol>
-        </nav>
+                  {c.isLast ? (
+                    <span className="breadcrumbCurrent" aria-current="page">{c.label}</span>
+                  ) : (
+                    <Link to={c.path} className="breadcrumbLink">{c.label}</Link>
+                  )}
+                </li>
+              ))}
+            </ol>
+          </nav>
+        )}
       </div>
-
-
-      {/* Right-side actions: Search + Profile */}
+      {/* Right-side actions: Notification + Profile */}
       <div className="topActions">
-        {/* Search */}
-           
-        <form className="search" role="search" aria-label="Search" onSubmit={onSearchSubmit}>
-          <input
-            ref={searchInputRef}
-            type="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search Here…"
-            aria-label="Search input"
-            className="searchInput"
-          />
-          {/* Icon on the right, loaded from assets */}
-          <button type="submit" className="searchBtn" aria-label="Submit search">
-            <FiSearch className="searchIcon" aria-hidden />
-          </button>
-        </form>
-       
         <NotificationBell/>
 
 

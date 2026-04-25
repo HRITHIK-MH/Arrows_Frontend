@@ -21,14 +21,24 @@ const DEFAULT_TEAM_MEMBERS = [
   { id: "A83233", name: "Priya Sharma" },
 ];
 
-const resolveAssignedRecruiterNames = (teamMemberIds = [], customTeamMembers = []) => {
-  const teamDirectory = [...DEFAULT_TEAM_MEMBERS, ...(Array.isArray(customTeamMembers) ? customTeamMembers : [])];
+const formatAssignedRecruiters = (assignedRecruiters, customTeamMembers = []) => {
+  const teamDirectory = [
+    ...DEFAULT_TEAM_MEMBERS,
+    ...(Array.isArray(customTeamMembers) ? customTeamMembers : []),
+  ];
+  const memberNameById = new Map(teamDirectory.map((member) => [member.id, member.name]));
 
-  return teamMemberIds
-    .map((memberId) => teamDirectory.find((member) => member.id === memberId)?.name)
-    .filter(Boolean)
-    .join(", ");
+  if (Array.isArray(assignedRecruiters)) {
+    const names = assignedRecruiters
+      .map((memberId) => memberNameById.get(memberId) || String(memberId || "").trim())
+      .filter(Boolean);
+    return names.length ? names.join(", ") : "-";
+  }
+
+  const textValue = String(assignedRecruiters || "").trim();
+  return textValue || "-";
 };
+
 // Memoized filter bar component to prevent unnecessary re-renders
 const FilterBar = React.memo(({
   searchTerm,
@@ -325,7 +335,10 @@ export default function JobOpenings() {
       postingTitle: item.postingTitle ?? item.positionName ?? item.jobTitle ?? "",
       clientId: item.clientId ?? item.clientID ?? "",
       clientName: item.clientName ?? "",
-      assignedRecruiters: item.assignedRecruiters ?? item.assignedRecruiter ?? item.recruiters ?? "",
+      assignedRecruiters: formatAssignedRecruiters(
+        item.assignedRecruiters ?? item.assignedRecruiter ?? item.recruiters ?? item.teamMembers ?? "",
+        item.customTeamMembers
+      ),
       targetDate: item.targetDate ?? item.jobReceivedDate ?? "",
       jobOpeningStatus: item.jobOpeningStatus ?? item.jobStatus ?? "",
       city: item.city ?? item.location ?? "",
@@ -514,7 +527,7 @@ export default function JobOpenings() {
       jdAttachment: effectiveJdAttachment,
       extraTechnicalSkills: data.extraTechnicalSkills ?? data.addTechnicalSkills ?? [],
       jobOpeningStatus: data.jobOpeningStatus || data.jobStatus || 'Active',
-      assignedRecruiters: data.assignedRecruiters || assignedRecruiters
+      assignedRecruiters: data.teamMembers || []
     };
     if (editingIndex !== null) {
       console.log('Job opening updated:', normalized);
@@ -637,6 +650,21 @@ export default function JobOpenings() {
                   onClick={() => setEditLocked(false)}
                 >
                   Edit JD
+                </button>
+                <button
+                  type="button"
+                  className={styles.closeCta}
+                  onClick={() => {
+                    setShowJobOpeningForm(false);
+                    setShowDataTable(true);
+                    setEditingIndex(null);
+                    setEditingData(null);
+                    setEditLocked(false);
+                  }}
+                  aria-label="Close and return to job listing"
+                  title="Close"
+                >
+                  <FiX size={14} />
                 </button>
               </div>
             )}
@@ -961,22 +989,6 @@ export default function JobOpenings() {
                     <strong>
                       Min {selectedJobOpening.minExperience || 0} to max {selectedJobOpening.maxExperience || 0}
                     </strong>
-                  </div>
-                  <div className={styles.drawerField}>
-                    <span>Job Description Link</span>
-                    {selectedJobOpening.jobDescriptionLink ? (
-                      <strong>
-                        <a
-                          href={selectedJobOpening.jobDescriptionLink}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          link
-                        </a>
-                      </strong>
-                    ) : (
-                      <strong>link</strong>
-                    )}
                   </div>
                   <div className={styles.drawerField}>
                     <span>Position Level</span>
