@@ -1429,8 +1429,53 @@
   gap: 10px;
 }
 
+.skill-rating-comments-fields {
+  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+}
+
 .skill-split-fields .form-field {
   width: 100%;
+}
+
+.skill-split-cell > .form-field {
+  flex: 1;
+}
+
+.skill-rating-field {
+  margin-bottom: 0;
+}
+
+.skill-rating-stars {
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 2px;
+}
+
+.skill-rating-star {
+  border: none;
+  background: transparent;
+  color: #cbd5e1;
+  font-size: 28px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.15s ease, transform 0.15s ease;
+}
+
+.skill-rating-star.active {
+  color: #f4c23a;
+}
+
+.skill-rating-star:hover {
+  transform: translateY(-1px);
+}
+
+.skill-rating-star:focus-visible {
+  outline: 2px solid #93c5fd;
+  outline-offset: 2px;
+  border-radius: 3px;
 }
 
 .remove-skill-button {

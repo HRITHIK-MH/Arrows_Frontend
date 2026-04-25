@@ -927,6 +927,12 @@ export const candidateConfig = {
           ]
         },
         {
+          name: "dateOfBirth",
+          label: "Date Of Birth",
+          type: "date",
+          required: false
+        },
+        {
           name: "yearsExperience",
           label: "Years of Experience *",
           type: "select",
@@ -1060,6 +1066,13 @@ export const candidateConfig = {
             { value: "4", label: "4" },
             { value: "5", label: "5" }
           ]
+        },
+        {
+          name: "skillComments",
+          label: "Comments",
+          type: "text",
+          required: false,
+          placeholder: "Add comments"
         },
         {
           name: "skillExperienceYears",

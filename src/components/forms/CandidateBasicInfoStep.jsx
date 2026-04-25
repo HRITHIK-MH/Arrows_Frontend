@@ -366,11 +366,11 @@ const CandidateBasicInfoStep = ({
   };
 
   const skills = formData.skills || [
-    { primarySkill: "", skillExperienceLevel: "", skillExperienceYears: "", skillRating: "" }
+    { primarySkill: "", skillExperienceLevel: "", skillExperienceYears: "", skillRating: "", skillComments: "" }
   ];
 
   const handleAddField = () => {
-    const newSkills = [...skills, { primarySkill: "", skillExperienceLevel: "", skillExperienceYears: "", skillRating: "" }];
+    const newSkills = [...skills, { primarySkill: "", skillExperienceLevel: "", skillExperienceYears: "", skillRating: "", skillComments: "" }];
     onChange("skills", newSkills);
   };
 
@@ -509,6 +509,7 @@ const CandidateBasicInfoStep = ({
           {renderField("primaryEmail")}
           {renderField("phoneNumber")}
           {renderField("gender")}
+          {renderField("dateOfBirth")}
           {renderField("yearsExperience")}
           {renderField("offersInHand")}
           {renderField("comments", "candidate-span-2")}
@@ -572,17 +573,15 @@ const CandidateBasicInfoStep = ({
                   hideLabel={index > 0}
                 />
               </div>
-              <div className="candidate-cell">
-                <FormField
-                  {...fieldMap.skillExperienceLevel}
-                  value={skill.skillExperienceLevel}
-                  onChange={(_, value) => handleSkillChange(index, "skillExperienceLevel", value)}
-                  formData={formData}
-                  hideLabel={index > 0}
-                />
-              </div>
               <div className="candidate-cell skill-split-cell">
                 <div className="skill-split-fields">
+                  <FormField
+                    {...fieldMap.skillExperienceLevel}
+                    value={skill.skillExperienceLevel}
+                    onChange={(_, value) => handleSkillChange(index, "skillExperienceLevel", value)}
+                    formData={formData}
+                    hideLabel={index > 0}
+                  />
                   <FormField
                     {...fieldMap.skillExperienceYears}
                     value={skill.skillExperienceYears}
@@ -590,10 +589,44 @@ const CandidateBasicInfoStep = ({
                     formData={formData}
                     hideLabel={index > 0}
                   />
+                </div>
+              </div>
+              <div className="candidate-cell skill-split-cell">
+                <div className="skill-split-fields skill-rating-comments-fields">
+                  <div className="form-field skill-rating-field">
+                    {index === 0 && (
+                      <label>
+                        {fieldMap.skillRating?.label || "Ratings *"}
+                      </label>
+                    )}
+                    <div className="skill-rating-stars" role="radiogroup" aria-label="Skill rating">
+                      {[1, 2, 3, 4, 5].map((starValue) => {
+                        const currentRating = Number.parseInt(String(skill.skillRating || "0"), 10);
+                        const isActive = Number.isFinite(currentRating) && starValue <= currentRating;
+
+                        return (
+                          <button
+                            key={starValue}
+                            type="button"
+                            className={`skill-rating-star${isActive ? " active" : ""}`}
+                            onClick={() => handleSkillChange(index, "skillRating", String(starValue))}
+                            aria-label={`Set rating ${starValue}`}
+                            aria-pressed={isActive}
+                            title={`${starValue} star${starValue > 1 ? "s" : ""}`}
+                          >
+                            ★
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {index === 0 && validationErrors.skillRating && (
+                      <div className="error-message">{validationErrors.skillRating}</div>
+                    )}
+                  </div>
                   <FormField
-                    {...fieldMap.skillRating}
-                    value={skill.skillRating}
-                    onChange={(_, value) => handleSkillChange(index, "skillRating", value)}
+                    {...fieldMap.skillComments}
+                    value={skill.skillComments}
+                    onChange={(_, value) => handleSkillChange(index, "skillComments", value)}
                     formData={formData}
                     hideLabel={index > 0}
                   />

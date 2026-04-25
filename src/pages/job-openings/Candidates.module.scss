@@ -804,10 +804,27 @@
   gap: 16px;
 }
 
+.drawerTopMain {
+  display: grid;
+  grid-template-columns: minmax(300px, 360px) minmax(0, 1fr);
+  align-items: flex-start;
+  gap: 18px;
+  flex: 1;
+  min-width: 0;
+}
+
 .drawerProfile {
   display: flex;
   align-items: flex-start;
   gap: 14px;
+  min-width: 0;
+}
+
+.pipelineHeaderCol {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  min-width: 0;
 }
 
 .drawerAvatar {
@@ -855,69 +872,174 @@
 }
 
 .drawerClose {
-  border: none;
-  background: transparent;
-  color: #1f2937;
-  width: 30px;
-  height: 30px;
+  border: 1px solid #ffffff;
+  background: #f97316;
+  color: #ffffff;
+  width: 34px;
+  height: 34px;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 6px;
+  border-radius: 50%;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.12);
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
 }
 
 .drawerClose:hover {
-  background: #e8eef8;
+  background: #ea580c;
+  border-color: #ffffff;
+  color: #ffffff;
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.16);
+}
+
+.drawerClose:active {
+  transform: translateY(1px) scale(0.98);
+}
+
+.drawerClose:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 1px;
 }
 
 .pipelineRow {
-  display: inline-flex;
-  align-items: center;
+  display: flex;
+  align-items: flex-start;
   gap: 0;
-  padding: 10px 26px 12px;
-  background: #f6f8fc;
-  border-bottom: 1px solid #dbe3ee;
+  width: min(780px, 100%);
+  margin: 54px auto 0;
+  padding: 4px 0 0;
+  background: transparent;
+  border-bottom: none;
   overflow-x: auto;
+  overflow-y: hidden;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.pipelineRow::-webkit-scrollbar {
+  display: none;
 }
 
 .pipelineStep {
-  --arrow-size: 16px;
-  border: 1px solid #cbd5e1;
-  background: #fff;
-  color: #2f3742;
-  font-size: 13px;
-  font-weight: 500;
-  padding: 7px 22px 7px 24px;
+  border: none;
+  background: transparent;
+  color: #5f6f83;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 16px 0 0;
   cursor: default;
   position: relative;
-  min-width: 108px;
+  min-width: 94px;
   white-space: nowrap;
-  clip-path: polygon(0 0, calc(100% - var(--arrow-size)) 0, 100% 50%, calc(100% - var(--arrow-size)) 100%, 0 100%, var(--arrow-size) 50%);
-  margin-left: -9px;
-  line-height: 1;
+  line-height: 1.2;
+  text-align: center;
+  flex: 1 1 0;
+  z-index: 1;
+  transition: color 0.25s ease;
 }
 
-.pipelineStep:disabled {
-  opacity: 1;
+.pipelineStep::before {
+  content: "";
+  position: absolute;
+  top: 1px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #d7dee9;
+  border: 2px solid #d7dee9;
+  z-index: 2;
+  transition: background-color 0.3s ease, border-color 0.3s ease, transform 0.3s ease;
 }
 
-.pipelineStep:first-child {
-  margin-left: 0;
-  clip-path: polygon(0 0, calc(100% - var(--arrow-size)) 0, 100% 50%, calc(100% - var(--arrow-size)) 100%, 0 100%);
-  padding-left: 16px;
+.pipelineStep::after {
+  content: "";
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  width: calc(100% + 1px);
+  height: 2px;
+  background: #d6dfeb;
+  z-index: 1;
+  transition: background-color 0.3s ease;
 }
 
-.pipelineStep:last-child {
-  clip-path: polygon(0 0, 100% 0, 100% 50%, 100% 100%, 0 100%, var(--arrow-size) 50%);
-  padding-right: 14px;
+.pipelineStep:first-child::after {
+  left: 50%;
+}
+
+.pipelineStep:last-child::after {
+  width: 50%;
+}
+
+.pipelineStepDone {
+  color: #1f2937;
+}
+
+.pipelineStepDone::before {
+  background: #3f90f6;
+  border-color: #3f90f6;
+  animation: pipelineDotPop 0.35s ease;
+}
+
+.pipelineStepDone::after {
+  background: #3f90f6;
+  animation: pipelineConnectorGrow 0.35s ease;
 }
 
 .pipelineStepActive {
-  background: #555f6d;
-  color: #fff;
-  border-color: #555f6d;
-  z-index: 1;
+  color: #1f2937;
+}
+
+.pipelineStepActive::before {
+  background: #3f90f6;
+  border-color: #3f90f6;
+  animation: pipelineActivePulse 1.8s ease-in-out infinite;
+}
+
+.pipelineStepLabel {
+  display: inline-block;
+  transition: color 0.25s ease, transform 0.25s ease;
+}
+
+.pipelineStepActive .pipelineStepLabel {
+  color: #0f2d77;
+  transform: translateY(1px);
+}
+
+@keyframes pipelineDotPop {
+  0% {
+    transform: translateX(-50%) scale(0.78);
+  }
+  100% {
+    transform: translateX(-50%) scale(1);
+  }
+}
+
+@keyframes pipelineConnectorGrow {
+  0% {
+    transform: scaleX(0.2);
+  }
+  100% {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes pipelineActivePulse {
+  0% {
+    transform: translateX(-50%) scale(1);
+    box-shadow: 0 0 0 0 rgba(63, 144, 246, 0.22);
+  }
+  70% {
+    transform: translateX(-50%) scale(1.03);
+    box-shadow: 0 0 0 4px rgba(63, 144, 246, 0);
+  }
+  100% {
+    transform: translateX(-50%) scale(1);
+    box-shadow: 0 0 0 0 rgba(63, 144, 246, 0);
+  }
 }
 
 .profileTabsRow {
@@ -1625,10 +1747,15 @@
   }
 
   .pipelineStep {
-    font-size: 12px;
-    min-width: 100px;
-    padding: 8px 16px 8px 18px;
+    font-size: 11px;
+    min-width: 82px;
+    padding: 16px 0 0;
   }
+
+  .pipelineRow {
+    margin-top: 46px;
+  }
+
 }
 
 @media (max-width: 1024px) {
@@ -1653,6 +1780,11 @@
     width: min(860px, calc(100vw - 60px));
   }
 
+  .drawerTopMain {
+    grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
+    gap: 14px;
+  }
+
   .drawerIdentity h3 {
     font-size: 24px;
   }
@@ -1663,9 +1795,13 @@
   }
 
   .pipelineStep {
-    min-width: 94px;
-    font-size: 12px;
-    padding: 7px 14px 7px 18px;
+    min-width: 76px;
+    font-size: 10px;
+    padding: 16px 0 0;
+  }
+
+  .pipelineRow {
+    margin-top: 42px;
   }
 
   .jobApplicationTable {
@@ -1707,8 +1843,19 @@
     padding: 14px 16px 10px;
   }
 
+  .drawerTopMain {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .pipelineHeaderCol {
+    justify-content: flex-start;
+  }
+
   .pipelineRow {
-    padding: 10px 16px 12px;
+    width: 100%;
+    margin: 0;
+    padding: 8px 12px 10px;
   }
 
   .profileTab {
@@ -2007,6 +2154,10 @@
     padding: 12px 14px 10px;
   }
 
+  .drawerTopMain {
+    gap: 8px;
+  }
+
   .drawerAvatar {
     width: 46px;
     height: 46px;
@@ -2023,13 +2174,13 @@
   }
 
   .pipelineRow {
-    padding: 8px 12px 10px;
+    padding: 8px 10px 10px;
   }
 
   .pipelineStep {
-    min-width: 88px;
-    font-size: 11px;
-    padding: 7px 12px 7px 14px;
+    min-width: 72px;
+    font-size: 9px;
+    padding: 15px 0 0;
   }
 
   .profileContent {

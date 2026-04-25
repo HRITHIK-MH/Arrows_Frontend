@@ -156,6 +156,13 @@ const JOB_MAP_OPTIONS = [
   },
 ];
 
+const CLIENT_NAME_BY_ID = {
+  C1292938: "MethodHub",
+  C1292432: "Arrows Inc",
+  C1292921: "NovaLabs",
+  C1294956: "Verizon",
+};
+
 const PRIMARY_SKILL_OPTIONS = [
   "Core Java",
   "Spring Boot",
@@ -310,6 +317,12 @@ export default function Candidates() {
     }, 3000);
   }, []);
 
+  const getClientNameById = React.useCallback((clientId) => {
+    const normalizedClientId = String(clientId || "").trim();
+    if (!normalizedClientId) return "-";
+    return CLIENT_NAME_BY_ID[normalizedClientId] || normalizedClientId;
+  }, []);
+
   const sanitizeDraftValue = React.useCallback((value) => {
     if (value === null || value === undefined) return value;
     if (Array.isArray(value)) return value.map((item) => sanitizeDraftValue(item));
@@ -407,7 +420,7 @@ export default function Candidates() {
   const candidateFormWithDraft = React.useMemo(() => ({
     ...candidateConfig,
     showDraftAction: editingIndex === null,
-    showCancelAction: editingIndex === null,
+    showCancelAction: true,
     cancelLabel: "Cancel",
     onCancel: () => {
       setShowCandidateForm(false);
@@ -647,7 +660,7 @@ export default function Candidates() {
             experience: displayExperience || "-",
             rating: ratingValue,
             lastUsed: skill.skillLastUsed || "-",
-            comments: "",
+            comments: String(skill.skillComments || "").trim(),
           };
         })
       : [];
@@ -1019,6 +1032,11 @@ export default function Candidates() {
     [getPipelineStep, selectedCandidate]
   );
 
+  const activePipelineStepIndex = React.useMemo(
+    () => PIPELINE_STEPS.indexOf(activePipelineStep),
+    [activePipelineStep]
+  );
+
   const handleViewCandidate = React.useCallback((row) => {
     console.log('View candidate:', row);
     const profile = buildCandidateProfile(row);
@@ -1172,39 +1190,10 @@ export default function Candidates() {
     () => skillOptions.filter((skill) => !normalizedCurrentSkillNames.has(String(skill).trim().toLowerCase())),
     [normalizedCurrentSkillNames, skillOptions]
   );
-  const isDuplicateSkillDraft = normalizedCurrentSkillNames.has(String(skillDraft.name || "").trim().toLowerCase());
 
   const handleSkillDraftChange = React.useCallback((key, value) => {
     setSkillDraft((prev) => ({ ...prev, [key]: value }));
   }, []);
-
-  const handleAddSkill = React.useCallback(() => {
-    setIsAddingSkill(true);
-    setSkillDraft(createSkillDraft());
-  }, []);
-
-  const handleSaveSkill = React.useCallback(() => {
-    if (!selectedCandidate || !skillDraft.name || skillDraft.rating === 0 || isDuplicateSkillDraft) {
-      return;
-    }
-    const newSkill = {
-      id: `${activeSkillKey}-${Date.now()}`,
-      name: skillDraft.name,
-      experience: skillDraft.experience,
-      rating: skillDraft.rating,
-      lastUsed: skillDraft.lastUsed,
-      comments: skillDraft.comments,
-    };
-    setSelectedCandidate((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        [activeSkillKey]: [newSkill, ...(prev[activeSkillKey] || [])],
-      };
-    });
-    setIsAddingSkill(false);
-    setSkillDraft(createSkillDraft());
-  }, [activeSkillKey, isDuplicateSkillDraft, selectedCandidate, skillDraft]);
 
   const handleResumeDelete = React.useCallback((fileId) => {
     setSelectedCandidate((prev) => {
@@ -1360,24 +1349,6 @@ export default function Candidates() {
                 <span>Secondary Skill</span>
               </label>
             </div>
-            <div className={styles.skillButtons}>
-              <button
-                type="button"
-                className={styles.skillSaveBtn}
-                onClick={handleSaveSkill}
-                disabled={!isAddingSkill || !skillDraft.name || skillDraft.rating === 0 || isDuplicateSkillDraft}
-              >
-                Save
-              </button>
-              <button
-                type="button"
-                className={styles.skillAddBtn}
-                onClick={handleAddSkill}
-                disabled={isAddingSkill}
-              >
-                Add Skill
-              </button>
-            </div>
           </div>
 
           <div className={styles.skillTableWrap}>
@@ -1387,7 +1358,6 @@ export default function Candidates() {
                   <th>{activeSkillType === "primary" ? "Primary Skill" : "Secondary Skill"}</th>
                   <th>Experience</th>
                   <th>Rating</th>
-                  <th>Last Used</th>
                   <th>Comments</th>
                 </tr>
               </thead>
@@ -1423,19 +1393,6 @@ export default function Candidates() {
                     </td>
                     <td>{renderRatingStars(skillDraft.rating, true, (value) => handleSkillDraftChange("rating", value))}</td>
                     <td>
-                      <select
-                        className={styles.skillInput}
-                        value={skillDraft.lastUsed}
-                        onChange={(event) => handleSkillDraftChange("lastUsed", event.target.value)}
-                      >
-                        {LAST_USED_OPTIONS.map((option) => (
-                          <option key={option} value={option}>
-                            {option}
-                          </option>
-                        ))}
-                      </select>
-                    </td>
-                    <td>
                       <input
                         type="text"
                         className={styles.skillInput}
@@ -1448,7 +1405,7 @@ export default function Candidates() {
                 )}
                 {currentSkills.length === 0 && !isAddingSkill && (
                   <tr>
-                    <td colSpan={5} className={styles.emptyCell}>
+                    <td colSpan={4} className={styles.emptyCell}>
                       No skills added.
                     </td>
                   </tr>
@@ -1458,7 +1415,6 @@ export default function Candidates() {
                     <td>{skill.name}</td>
                     <td>{skill.experience}</td>
                     <td>{renderRatingStars(skill.rating)}</td>
-                    <td>{skill.lastUsed}</td>
                     <td>{skill.comments}</td>
                   </tr>
                 ))}
@@ -1621,11 +1577,11 @@ export default function Candidates() {
             <tr>
               <th>Opening Job Id</th>
               <th>Posting Title</th>
-              <th>Client Id</th>
+              <th>Client Name</th>
               <th>Assigned Recruiter(s)</th>
               <th>Applied Date</th>
-              <th>Job Opening Status</th>
-              <th>Hiring Manager</th>
+              <th>Status</th>
+              <th>Account Manager</th>
             </tr>
           </thead>
           <tbody>
@@ -1633,7 +1589,7 @@ export default function Candidates() {
               <tr key={`${job.openingJobId}-${index}`}>
                 <td>{job.openingJobId}</td>
                 <td>{job.postingTitle}</td>
-                <td>{job.clientId}</td>
+                <td>{job.clientName || getClientNameById(job.clientId)}</td>
                 <td>{job.assignedRecruiter}</td>
                 <td>{job.appliedDate}</td>
                 <td>
@@ -1915,35 +1871,39 @@ export default function Candidates() {
         <div className={styles.viewDrawerOverlay} onClick={closeViewDrawer}>
           <aside className={styles.viewDrawer} onClick={(event) => event.stopPropagation()}>
             <div className={styles.drawerTop}>
-              <div className={styles.drawerProfile}>
-                <div className={styles.drawerAvatar}>{selectedCandidate.firstName?.charAt(0) || "R"}</div>
-                <div className={styles.drawerIdentity}>
-                  <h3>{selectedCandidate.fullName}</h3>
-                  <p>{selectedCandidate.role}</p>
-                  <div className={styles.drawerMeta}>
-                    <span><FiMail size={12} /> {selectedCandidate.email}</span>
-                    <span><FiMapPin size={12} /> {selectedCandidate.location}</span>
-                    <span><FiPhone size={12} /> {selectedCandidate.phoneNumber}</span>
+              <div className={styles.drawerTopMain}>
+                <div className={styles.drawerProfile}>
+                  <div className={styles.drawerAvatar}>{selectedCandidate.firstName?.charAt(0) || "R"}</div>
+                  <div className={styles.drawerIdentity}>
+                    <h3>{selectedCandidate.fullName}</h3>
+                    <p>{selectedCandidate.role}</p>
+                    <div className={styles.drawerMeta}>
+                      <span><FiMail size={12} /> {selectedCandidate.email}</span>
+                      <span><FiMapPin size={12} /> {selectedCandidate.location}</span>
+                      <span><FiPhone size={12} /> {selectedCandidate.phoneNumber}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className={styles.pipelineHeaderCol}>
+                  <div className={styles.pipelineRow}>
+                    {PIPELINE_STEPS.map((step, index) => (
+                      <button
+                        key={step}
+                        type="button"
+                        className={`${styles.pipelineStep}${activePipelineStep === step ? ` ${styles.pipelineStepActive}` : ""}${index <= activePipelineStepIndex && activePipelineStepIndex >= 0 ? ` ${styles.pipelineStepDone}` : ""}`}
+                        aria-current={activePipelineStep === step ? "step" : undefined}
+                        tabIndex={-1}
+                      >
+                        <span className={styles.pipelineStepLabel}>{step}</span>
+                      </button>
+                    ))}
                   </div>
                 </div>
               </div>
               <button type="button" className={styles.drawerClose} onClick={closeViewDrawer} aria-label="Close panel">
                 <FiX size={18} />
               </button>
-            </div>
-
-            <div className={styles.pipelineRow}>
-              {PIPELINE_STEPS.map((step) => (
-                <button
-                  key={step}
-                  type="button"
-                  className={`${styles.pipelineStep}${activePipelineStep === step ? ` ${styles.pipelineStepActive}` : ""}`}
-                  aria-current={activePipelineStep === step ? "step" : undefined}
-                  tabIndex={-1}
-                >
-                  {step}
-                </button>
-              ))}
             </div>
 
             <div className={styles.profileTabsRow}>
