@@ -324,21 +324,33 @@
 }
 
 .uploadModalClose {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  border: 1px solid transparent;
-  background: transparent;
-  color: #9ca3af;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: none;
+  background: #f97316;
+  color: #ffffff;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.2);
+  transition: background-color 0.2s ease, color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
 }
 
 .uploadModalClose:hover {
-  background: #f1f5f9;
-  color: #4b5563;
+  background: #ea580c;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.24);
+  transform: scale(1.04);
+}
+
+.uploadModalClose:active {
+  transform: translateY(1px) scale(0.98);
+}
+
+.uploadModalClose:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
 }
 
 .uploadModalFieldLabel {
@@ -862,21 +874,33 @@
 }
 
 .previewClose {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  border: 1px solid transparent;
-  background: transparent;
-  color: #94a3b8;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: none;
+  background: #f97316;
+  color: #ffffff;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.2);
+  transition: background-color 0.2s ease, color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
 }
 
 .previewClose:hover {
-  background: #f1f5f9;
-  color: #475569;
+  background: #ea580c;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.24);
+  transform: scale(1.04);
+}
+
+.previewClose:active {
+  transform: translateY(1px) scale(0.98);
+}
+
+.previewClose:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
 }
 
 .previewIdentity {
@@ -980,21 +1004,33 @@
 }
 
 .preScreenClose {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  border: 1px solid transparent;
-  background: transparent;
-  color: #94a3b8;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: none;
+  background: #f97316;
+  color: #ffffff;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.2);
+  transition: background-color 0.2s ease, color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
 }
 
 .preScreenClose:hover {
-  background: #f1f5f9;
-  color: #475569;
+  background: #ea580c;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.24);
+  transform: scale(1.04);
+}
+
+.preScreenClose:active {
+  transform: translateY(1px) scale(0.98);
+}
+
+.preScreenClose:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
 }
 
 .preScreenStepper {

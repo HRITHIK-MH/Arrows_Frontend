@@ -805,8 +805,7 @@
 }
 
 .drawerTopMain {
-  display: grid;
-  grid-template-columns: minmax(300px, 360px) minmax(0, 1fr);
+  display: flex;
   align-items: flex-start;
   gap: 18px;
   flex: 1;
@@ -817,13 +816,6 @@
   display: flex;
   align-items: flex-start;
   gap: 14px;
-  min-width: 0;
-}
-
-.pipelineHeaderCol {
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
   min-width: 0;
 }
 
@@ -859,6 +851,7 @@
 .drawerMeta {
   display: flex;
   flex-wrap: wrap;
+  align-items: flex-start;
   gap: 6px 14px;
   font-size: 13px;
   color: #2c3135;
@@ -871,26 +864,31 @@
   line-height: 1.35;
 }
 
+.pipelineMetaItem {
+  flex: 1 1 420px;
+  min-width: min(420px, 100%);
+}
+
 .drawerClose {
-  border: 1px solid #ffffff;
+  border: none;
   background: #f97316;
   color: #ffffff;
-  width: 34px;
-  height: 34px;
+  width: 38px;
+  height: 38px;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.12);
-  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.2);
+  transition: background-color 0.2s ease, color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
 }
 
 .drawerClose:hover {
   background: #ea580c;
-  border-color: #ffffff;
   color: #ffffff;
-  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.16);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.24);
+  transform: scale(1.04);
 }
 
 .drawerClose:active {
@@ -898,17 +896,17 @@
 }
 
 .drawerClose:focus-visible {
-  outline: 2px solid #ffffff;
-  outline-offset: 1px;
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
 }
 
 .pipelineRow {
   display: flex;
   align-items: flex-start;
   gap: 0;
-  width: min(780px, 100%);
-  margin: 54px auto 0;
-  padding: 4px 0 0;
+  width: min(560px, 100%);
+  margin: 0;
+  padding: 2px 0 0;
   background: transparent;
   border-bottom: none;
   overflow-x: auto;
@@ -1752,8 +1750,9 @@
     padding: 16px 0 0;
   }
 
-  .pipelineRow {
-    margin-top: 46px;
+  .pipelineMetaItem {
+    flex-basis: 360px;
+    min-width: min(360px, 100%);
   }
 
 }
@@ -1781,7 +1780,6 @@
   }
 
   .drawerTopMain {
-    grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
     gap: 14px;
   }
 
@@ -1800,8 +1798,9 @@
     padding: 16px 0 0;
   }
 
-  .pipelineRow {
-    margin-top: 42px;
+  .pipelineMetaItem {
+    flex-basis: 320px;
+    min-width: min(320px, 100%);
   }
 
   .jobApplicationTable {
@@ -1844,18 +1843,18 @@
   }
 
   .drawerTopMain {
-    grid-template-columns: 1fr;
     gap: 10px;
   }
 
-  .pipelineHeaderCol {
-    justify-content: flex-start;
+  .pipelineMetaItem {
+    flex: 1 1 100%;
+    min-width: 100%;
   }
 
   .pipelineRow {
     width: 100%;
     margin: 0;
-    padding: 8px 12px 10px;
+    padding: 6px 0 0;
   }
 
   .profileTab {

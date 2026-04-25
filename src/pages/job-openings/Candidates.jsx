@@ -1881,23 +1881,22 @@ export default function Candidates() {
                       <span><FiMail size={12} /> {selectedCandidate.email}</span>
                       <span><FiMapPin size={12} /> {selectedCandidate.location}</span>
                       <span><FiPhone size={12} /> {selectedCandidate.phoneNumber}</span>
+                      <div className={styles.pipelineMetaItem}>
+                        <div className={styles.pipelineRow}>
+                          {PIPELINE_STEPS.map((step, index) => (
+                            <button
+                              key={step}
+                              type="button"
+                              className={`${styles.pipelineStep}${activePipelineStep === step ? ` ${styles.pipelineStepActive}` : ""}${index <= activePipelineStepIndex && activePipelineStepIndex >= 0 ? ` ${styles.pipelineStepDone}` : ""}`}
+                              aria-current={activePipelineStep === step ? "step" : undefined}
+                              tabIndex={-1}
+                            >
+                              <span className={styles.pipelineStepLabel}>{step}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
-
-                <div className={styles.pipelineHeaderCol}>
-                  <div className={styles.pipelineRow}>
-                    {PIPELINE_STEPS.map((step, index) => (
-                      <button
-                        key={step}
-                        type="button"
-                        className={`${styles.pipelineStep}${activePipelineStep === step ? ` ${styles.pipelineStepActive}` : ""}${index <= activePipelineStepIndex && activePipelineStepIndex >= 0 ? ` ${styles.pipelineStepDone}` : ""}`}
-                        aria-current={activePipelineStep === step ? "step" : undefined}
-                        tabIndex={-1}
-                      >
-                        <span className={styles.pipelineStepLabel}>{step}</span>
-                      </button>
-                    ))}
                   </div>
                 </div>
               </div>
@@ -1930,7 +1929,7 @@ export default function Candidates() {
                       setIsMapDropdownOpen((prev) => !prev);
                     }}
                   >
-                    <span>{selectedMapOption ? `${selectedMapOption.id} (${selectedMapOption.company})` : "Search JD to Map"}</span>
+                    <span>{selectedMapOption ? `${selectedMapOption.openingJobId} (${selectedMapOption.company})` : "Search JD to Map"}</span>
                     <FiChevronDown size={16} />
                   </button>
                   {isMapDropdownOpen && (
@@ -1958,7 +1957,7 @@ export default function Candidates() {
                               setIsMapDropdownOpen(false);
                             }}
                           >
-                            {option.id} ({option.company})
+                            {option.openingJobId} ({option.company})
                           </button>
                         ))}
                       </div>

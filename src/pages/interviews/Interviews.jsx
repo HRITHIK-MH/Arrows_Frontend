@@ -29,39 +29,65 @@ const PROFILE_TABS = [
 
 const PIPELINE_STEPS = ["New", "In Review", "Engaged", "Offered", "Hired", "Rejected"];
 
-const JOB_MAP_OPTIONS = [
+const JOB_OPENING_OPTIONS = [
   {
-    id: "C128736",
-    company: "HCL",
     openingJobId: "ZR_4_JOB",
     postingTitle: "Senior Associate",
+    company: "HCL",
     clientId: "C1292938",
-    assignedRecruiter: "Parthiban",
-    appliedDate: "12/10/2025",
-    jobOpeningStatus: "Pre-Screening",
-    hiringManager: "Parthiban",
   },
   {
-    id: "C723722",
-    company: "TCS",
     openingJobId: "ZR_3_JOB",
     postingTitle: "Lead Engineer",
+    company: "TCS",
     clientId: "C1292432",
-    assignedRecruiter: "Parthiban",
-    appliedDate: "12/10/2025",
-    jobOpeningStatus: "Rejected",
-    hiringManager: "Parthiban",
   },
   {
-    id: "C958463",
-    company: "Wipro",
     openingJobId: "ZR_2_JOB",
     postingTitle: "Senior Associate",
+    company: "Wipro",
     clientId: "C1292938",
-    assignedRecruiter: "Parthiban",
-    appliedDate: "12/10/2025",
-    jobOpeningStatus: "Client Interview",
-    hiringManager: "Parthiban",
+  },
+  {
+    openingJobId: "ZR_1_JOB",
+    postingTitle: "Staff Engineer",
+    company: "Verizon",
+    clientId: "C1294956",
+  },
+];
+
+const CANDIDATE_INTERVIEW_SOURCE = [
+  {
+    candidateId: "C001",
+    candidateName: "Raghul Mehta",
+    candidateEmail: "raghul.mehta@email.com",
+    source: "Resume Inbox",
+    rating: "3/5",
+    stage: "Sourced",
+  },
+  {
+    candidateId: "C002",
+    candidateName: "Priya Sharma",
+    candidateEmail: "priya.sharma@email.com",
+    source: "Added by User",
+    rating: "4/5",
+    stage: "Pre-Screening",
+  },
+  {
+    candidateId: "C003",
+    candidateName: "Arjun Rao",
+    candidateEmail: "arjun.rao@email.com",
+    source: "Seek",
+    rating: "4/5",
+    stage: "Assessment",
+  },
+  {
+    candidateId: "C004",
+    candidateName: "Sneha Nair",
+    candidateEmail: "sneha.nair@email.com",
+    source: "Resume Inbox",
+    rating: "2/5",
+    stage: "Client Interview",
   },
 ];
 
@@ -84,6 +110,59 @@ const SECONDARY_SKILL_OPTIONS = [
 
 const EXPERIENCE_OPTIONS = ["1 Year", "2 Years", "3 Years", "4 Years", "5 Years"];
 const LAST_USED_OPTIONS = ["2025", "2024", "2023", "2022", "2021"];
+
+const INTERVIEWER_DIRECTORY = {
+  "Priya Sharma": {
+    email: "priya.sharma@email.com",
+    mobile: "+91770887243",
+    designation: "Panel",
+    availability: "Yes",
+  },
+  "Rahul Mehta": {
+    email: "rahul.mehta@email.com",
+    mobile: "+91770887243",
+    designation: "Panel",
+    availability: "Yes",
+  },
+  "Vikram Singh": {
+    email: "vikram.singh@email.com",
+    mobile: "+91770887243",
+    designation: "Panel",
+    availability: "Yes",
+  },
+  "Neha Verma": {
+    email: "neha.verma@email.com",
+    mobile: "+91770887243",
+    designation: "Panel",
+    availability: "Yes",
+  },
+  "Suresh Nair": {
+    email: "suresh.nair@email.com",
+    mobile: "+91770887243",
+    designation: "Panel",
+    availability: "Yes",
+  },
+  "Interviewer 1": {
+    email: "interviewer1@email.com",
+    mobile: "+910000000001",
+    designation: "Panel",
+    availability: "Yes",
+  },
+  "Interviewer 2": {
+    email: "interviewer2@email.com",
+    mobile: "+910000000002",
+    designation: "Panel",
+    availability: "Yes",
+  },
+  "Interviewer 3": {
+    email: "interviewer3@email.com",
+    mobile: "+910000000003",
+    designation: "Panel",
+    availability: "Yes",
+  },
+};
+
+const INTERVIEWER_OPTIONS = Object.keys(INTERVIEWER_DIRECTORY);
 
 const createSkillDraft = () => ({
   name: "",
@@ -123,10 +202,21 @@ export default function Interviews() {
   const [mapJobValue, setMapJobValue] = React.useState("");
   const [mapQuery, setMapQuery] = React.useState("");
   const [isMapDropdownOpen, setIsMapDropdownOpen] = React.useState(false);
+  const [popupState, setPopupState] = React.useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    mode: "info",
+    confirmLabel: "OK",
+    cancelLabel: "Cancel",
+    onConfirm: null,
+    promptValue: "",
+    promptPlaceholder: "",
+  });
   const mapDropdownRef = React.useRef(null);
 
   // Sample groups data
-  const [groups] = React.useState([
+  const [groups, setGroups] = React.useState([
     {
       id: "JD1",
       name: "JD1",
@@ -159,119 +249,33 @@ export default function Interviews() {
         // const data = await response.json();
         // setInterviews(data);
         
-        // Sample data aligned with design reference
-        setInterviews([
-          {
-            candidateId: "C001",
-            candidateName: "Arun Kumar",
-            roleJobTitle: "UX Designer",
-            dateTime: "29/12/2025 11:00 AM",
-            company: "ABC Tech",
-            interviewType: "Technical",
-            mode: "Online",
-            status: "Upcoming",
-            finalReview: "Selected",
-          },
-          {
-            candidateId: "C002",
-            candidateName: "Priya Sharma",
-            roleJobTitle: "Frontend Developer",
-            dateTime: "29/12/2025 04:00 PM",
-            company: "XYZ Ltd",
-            interviewType: "HR",
-            mode: "In-Person",
-            status: "Upcoming",
-            finalReview: "Not Selected",
-          },
-          {
-            candidateId: "C003",
-            candidateName: "Ravi Patel",
-            roleJobTitle: "Product Manager",
-            dateTime: "29/12/2025 05:30 PM",
-            company: "Nova Corp",
-            interviewType: "Managerial",
-            mode: "Online",
-            status: "Rescheduled",
-            finalReview: "Pending",
-          },
-          {
-            candidateId: "C004",
-            candidateName: "Shend Iyer",
-            roleJobTitle: "UI Designer",
-            dateTime: "02/01/2026 11:30 AM",
-            company: "PixelWorks",
-            interviewType: "Technical",
-            mode: "Online",
-            status: "Upcoming",
-            finalReview: "Pending",
-          },
-          {
-            candidateId: "C005",
-            candidateName: "Vikram Singh",
-            roleJobTitle: "Backend Developer",
-            dateTime: "02/01/2026 02:15 PM",
-            company: "CodeBase",
-            interviewType: "Technical",
-            mode: "In-Person",
-            status: "Upcoming",
-            finalReview: "Pending",
-          },
-          {
-            candidateId: "C006",
-            candidateName: "Ananya Rao",
-            roleJobTitle: "Data Analyst",
-            dateTime: "02/01/2026 04:30 PM",
-            company: "Insight Labs",
-            interviewType: "HR",
-            mode: "Online",
-            status: "Upcoming",
-            finalReview: "Pending",
-          },
-          {
-            candidateId: "C007",
-            candidateName: "Karthik M",
-            roleJobTitle: "QA Engineer",
-            dateTime: "03/01/2026 10:00 AM",
-            company: "TestPro",
-            interviewType: "Technical",
-            mode: "Online",
-            status: "Rescheduled",
-            finalReview: "Pending",
-          },
-          {
-            candidateId: "C008",
-            candidateName: "Neha Verma",
-            roleJobTitle: "Digital Marketer",
-            dateTime: "03/01/2026 11:30 AM",
-            company: "BrandHive",
-            interviewType: "HR",
-            mode: "Online",
-            status: "Rescheduled",
-            finalReview: "Pending",
-          },
-          {
-            candidateId: "C009",
-            candidateName: "Suresh Nair",
-            roleJobTitle: "DevOps Engineer",
-            dateTime: "03/01/2026 02:00 PM",
-            company: "CloudNet",
-            interviewType: "Technical",
-            mode: "Online",
-            status: "Upcoming",
-            finalReview: "Pending",
-          },
-          {
-            candidateId: "C0010",
-            candidateName: "Pooja Mehta",
-            roleJobTitle: "Business Analyst",
-            dateTime: "03/01/2026 04:00 PM",
-            company: "FinEdge",
-            interviewType: "Managerial",
-            mode: "In-Person",
-            status: "Upcoming",
-            finalReview: "Pending",
-          },
-        ]);
+        // Interview list is built from candidate records + job opening interview statuses.
+        const interviewTypeByStatus = {
+          "pre-screening": "HR",
+          "client interview": "Managerial",
+          rejected: "Technical",
+          assessment: "Technical",
+        };
+        const modeCycle = ["Online", "In-Person", "Online", "Online"];
+        const timeSlots = ["11:00 AM", "04:00 PM", "05:30 PM", "11:30 AM"];
+
+        const derivedInterviews = CANDIDATE_INTERVIEW_SOURCE.map((candidate, index) => {
+          const mappedJob = JOB_OPENING_OPTIONS[index % JOB_OPENING_OPTIONS.length];
+          const normalizedInterviewStatus = String(mappedJob?.jobOpeningStatus || "").toLowerCase();
+
+          return {
+            candidateId: candidate.candidateId,
+            candidateName: candidate.candidateName,
+            roleJobTitle: mappedJob?.postingTitle || "-",
+            dateTime: `${mappedJob?.appliedDate || "12/10/2025"} ${timeSlots[index % timeSlots.length]}`,
+            company: mappedJob?.company || "-",
+            interviewType: interviewTypeByStatus[normalizedInterviewStatus] || "Technical",
+            mode: modeCycle[index % modeCycle.length],
+            status: mappedJob?.jobOpeningStatus || candidate.stage || "Upcoming",
+          };
+        });
+
+        setInterviews(derivedInterviews);
       } catch (error) {
         console.error("Error fetching interviews:", error);
       } finally {
@@ -478,7 +482,7 @@ export default function Interviews() {
       stage: row.stage || "Pre-Screening",
       status: row.status,
       source: row.source || "Interview Schedule",
-      jobApplications: row.jobApplications || JOB_MAP_OPTIONS.slice(0, 2),
+      jobApplications: row.jobApplications || JOB_OPENING_OPTIONS.slice(0, 2),
     };
   }, []);
 
@@ -500,13 +504,28 @@ export default function Interviews() {
     setIsViewDrawerOpen(true);
   }, [buildCandidateProfile, getPipelineFromStatus]);
 
-  const handleEdit = (row) => {
-    console.log("Edit:", row);
-  };
+  const getInterviewRowKey = React.useCallback(
+    (row) => `${row.candidateId}::${row.dateTime}::${row.roleJobTitle}::${row.company}`,
+    []
+  );
 
   const handleDelete = (row) => {
-    console.log("Delete:", row);
+    const rowKey = getInterviewRowKey(row);
+
+    showConfirmPopup(
+      "Delete Interview",
+      `Delete interview for ${row.candidateName}?`,
+      () => {
+        setInterviews((prev) => prev.filter((item) => getInterviewRowKey(item) !== rowKey));
+      },
+      "Delete"
+    );
   };
+
+  const activePipelineStepIndex = React.useMemo(
+    () => PIPELINE_STEPS.indexOf(activePipelineStep),
+    [activePipelineStep]
+  );
 
   const closeViewDrawer = React.useCallback(() => {
     setIsViewDrawerOpen(false);
@@ -514,6 +533,72 @@ export default function Interviews() {
     setIsAddingSkill(false);
     setSkillDraft(createSkillDraft());
   }, []);
+
+  const closePopup = React.useCallback(() => {
+    setPopupState((prev) => ({
+      ...prev,
+      isOpen: false,
+      onConfirm: null,
+      promptValue: "",
+      promptPlaceholder: "",
+    }));
+  }, []);
+
+  const showInfoPopup = React.useCallback((message, title = "Notice") => {
+    setPopupState({
+      isOpen: true,
+      title,
+      message,
+      mode: "info",
+      confirmLabel: "OK",
+      cancelLabel: "Cancel",
+      onConfirm: null,
+      promptValue: "",
+      promptPlaceholder: "",
+    });
+  }, []);
+
+  const showConfirmPopup = React.useCallback((title, message, onConfirm, confirmLabel = "Confirm") => {
+    setPopupState({
+      isOpen: true,
+      title,
+      message,
+      mode: "confirm",
+      confirmLabel,
+      cancelLabel: "Cancel",
+      onConfirm,
+      promptValue: "",
+      promptPlaceholder: "",
+    });
+  }, []);
+
+  const showPromptPopup = React.useCallback(
+    (title, message, defaultValue, onConfirm, confirmLabel = "Save") => {
+      setPopupState({
+        isOpen: true,
+        title,
+        message,
+        mode: "prompt",
+        confirmLabel,
+        cancelLabel: "Cancel",
+        onConfirm,
+        promptValue: defaultValue,
+        promptPlaceholder: "Enter value",
+      });
+    },
+    []
+  );
+
+  const handlePopupConfirm = React.useCallback(() => {
+    if (typeof popupState.onConfirm === "function") {
+      if (popupState.mode === "prompt") {
+        popupState.onConfirm(popupState.promptValue);
+      } else {
+        popupState.onConfirm();
+      }
+    }
+    closePopup();
+  }, [closePopup, popupState]);
 
   const toggleGroup = (groupId) => {
     setExpandedGroups(prev => 
@@ -542,35 +627,222 @@ export default function Interviews() {
   };
 
   const handleSubmitCreateGroup = () => {
-    // TODO: Add group creation logic
-    console.log("Create group:", { name: newGroupName, round: newGroupRound, interviewer: newGroupInterviewer });
+    const groupName = newGroupName.trim();
+    const roundName = newGroupRound.trim();
+
+    if (!groupName || !roundName) {
+      return;
+    }
+
+    const duplicateGroup = groups.some(
+      (group) => group.name.toLowerCase() === groupName.toLowerCase()
+    );
+    if (duplicateGroup) {
+      showInfoPopup("Group name already exists.", "Duplicate Group");
+      return;
+    }
+
+    const interviewerMeta = INTERVIEWER_DIRECTORY[newGroupInterviewer] || null;
+    const initialMembers = interviewerMeta
+      ? [
+          {
+            name: newGroupInterviewer,
+            email: interviewerMeta.email,
+            mobile: interviewerMeta.mobile,
+            round: roundName,
+            designation: interviewerMeta.designation,
+            availability: interviewerMeta.availability,
+          },
+        ]
+      : [];
+
+    const newGroupId = `${groupName}-${Date.now()}`;
+    const createdGroup = {
+      id: newGroupId,
+      name: groupName,
+      rounds: [roundName],
+      teamMembers: initialMembers,
+      members: initialMembers.length,
+    };
+
+    setGroups((prev) => [...prev, createdGroup]);
+    setSelectedGroup(newGroupId);
+    setExpandedGroups((prev) => (prev.includes(newGroupId) ? prev : [...prev, newGroupId]));
     handleCloseCreateGroupModal();
   };
 
-  const handleAddMember = () => {
+  const handleAddMember = (groupId) => {
+    if (groupId) {
+      setSelectedGroup(groupId);
+    }
     setShowAddMemberModal(true);
   };
 
   const handleEditGroup = (groupId) => {
-    console.log("Edit group", groupId);
+    const targetGroup = groups.find((group) => group.id === groupId);
+    if (!targetGroup) return;
+
+    showPromptPopup(
+      "Edit Group",
+      "Update group name",
+      targetGroup.name,
+      (nextName) => {
+        const normalizedName = String(nextName || "").trim();
+        if (!normalizedName || normalizedName === targetGroup.name) return;
+
+        const duplicateGroup = groups.some(
+          (group) => group.id !== groupId && group.name.toLowerCase() === normalizedName.toLowerCase()
+        );
+        if (duplicateGroup) {
+          showInfoPopup("Group name already exists.", "Duplicate Group");
+          return;
+        }
+
+        setGroups((prev) =>
+          prev.map((group) => (group.id === groupId ? { ...group, name: normalizedName } : group))
+        );
+      }
+    );
   };
 
   const handleDeleteGroup = (groupId) => {
-    console.log("Delete group", groupId);
+    const targetGroup = groups.find((group) => group.id === groupId);
+    if (!targetGroup) return;
+
+    showConfirmPopup(
+      "Delete Group",
+      `Delete group \"${targetGroup.name}\"?`,
+      () => {
+        setGroups((prev) => {
+          const nextGroups = prev.filter((group) => group.id !== groupId);
+          setExpandedGroups((currentExpanded) => currentExpanded.filter((id) => id !== groupId));
+          setSelectedGroup((prevSelected) => {
+            if (prevSelected !== groupId) return prevSelected;
+            return nextGroups[0]?.id || "";
+          });
+          return nextGroups;
+        });
+      },
+      "Delete"
+    );
   };
 
   const handleEditRound = (groupId, roundName) => {
-    console.log("Edit round:", { groupId, roundName });
+    showPromptPopup(
+      "Edit Round",
+      "Update round name",
+      roundName,
+      (nextRound) => {
+        const normalizedRound = String(nextRound || "").trim();
+        if (!normalizedRound || normalizedRound === roundName) return;
+
+        setGroups((prev) =>
+          prev.map((group) => {
+            if (group.id !== groupId) return group;
+
+            const duplicateRound = group.rounds.some(
+              (round) => round.toLowerCase() === normalizedRound.toLowerCase() && round !== roundName
+            );
+            if (duplicateRound) {
+              showInfoPopup("Round name already exists in this group.", "Duplicate Round");
+              return group;
+            }
+
+            return {
+              ...group,
+              rounds: group.rounds.map((round) => (round === roundName ? normalizedRound : round)),
+              teamMembers: group.teamMembers.map((member) =>
+                member.round === roundName ? { ...member, round: normalizedRound } : member
+              ),
+            };
+          })
+        );
+      }
+    );
   };
 
   const handleDeleteRound = (groupId, roundName) => {
-    console.log("Delete round:", { groupId, roundName });
+    showConfirmPopup(
+      "Delete Round",
+      `Delete round \"${roundName}\"?`,
+      () => {
+        setGroups((prev) =>
+          prev.map((group) => {
+            if (group.id !== groupId) return group;
+            const updatedRounds = group.rounds.filter((round) => round !== roundName);
+            const updatedTeamMembers = group.teamMembers.filter((member) => member.round !== roundName);
+            return {
+              ...group,
+              rounds: updatedRounds,
+              teamMembers: updatedTeamMembers,
+              members: updatedTeamMembers.length,
+            };
+          })
+        );
+      },
+      "Delete"
+    );
   };
 
   const handleCreateMember = () => {
-    // TODO: Add member creation logic
-    console.log("Create member:", { round: newMemberRound, interviewer: newMemberInterviewer });
+    if (!selectedGroup || !newMemberRound || !newMemberInterviewer) {
+      return;
+    }
+
+    const interviewerMeta = INTERVIEWER_DIRECTORY[newMemberInterviewer];
+    if (!interviewerMeta) {
+      return;
+    }
+
+    setGroups((prev) =>
+      prev.map((group) => {
+        if (group.id !== selectedGroup) return group;
+
+        const duplicateMember = group.teamMembers.some(
+          (member) =>
+            member.name.toLowerCase() === newMemberInterviewer.toLowerCase() &&
+            member.round.toLowerCase() === newMemberRound.toLowerCase()
+        );
+        if (duplicateMember) {
+          showInfoPopup("This interviewer already exists for the selected round.", "Duplicate Member");
+          return group;
+        }
+
+        const updatedTeamMembers = [
+          ...group.teamMembers,
+          {
+            name: newMemberInterviewer,
+            email: interviewerMeta.email,
+            mobile: interviewerMeta.mobile,
+            round: newMemberRound,
+            designation: interviewerMeta.designation,
+            availability: interviewerMeta.availability,
+          },
+        ];
+
+        return {
+          ...group,
+          teamMembers: updatedTeamMembers,
+          members: updatedTeamMembers.length,
+        };
+      })
+    );
+
     handleCloseModal();
+  };
+
+  const handleDeleteMember = (groupId, memberIndex) => {
+    setGroups((prev) =>
+      prev.map((group) => {
+        if (group.id !== groupId) return group;
+        const updatedTeamMembers = group.teamMembers.filter((_, index) => index !== memberIndex);
+        return {
+          ...group,
+          teamMembers: updatedTeamMembers,
+          members: updatedTeamMembers.length,
+        };
+      })
+    );
   };
 
   const handleCloseModal = () => {
@@ -580,18 +852,17 @@ export default function Interviews() {
   };
 
   const selectedMapOption = React.useMemo(
-    () => JOB_MAP_OPTIONS.find((option) => option.id === mapJobValue),
+    () => JOB_OPENING_OPTIONS.find((option) => option.openingJobId === mapJobValue),
     [mapJobValue]
   );
 
   const filteredMapOptions = React.useMemo(() => {
     const query = mapQuery.trim().toLowerCase();
-    if (!query) return JOB_MAP_OPTIONS;
-    return JOB_MAP_OPTIONS.filter(
+    if (!query) return JOB_OPENING_OPTIONS;
+    return JOB_OPENING_OPTIONS.filter(
       (option) =>
-        option.id.toLowerCase().includes(query) ||
-        option.company.toLowerCase().includes(query) ||
         option.openingJobId.toLowerCase().includes(query) ||
+        option.company.toLowerCase().includes(query) ||
         option.postingTitle.toLowerCase().includes(query)
     );
   }, [mapQuery]);
@@ -604,36 +875,6 @@ export default function Interviews() {
   const handleSkillDraftChange = React.useCallback((key, value) => {
     setSkillDraft((prev) => ({ ...prev, [key]: value }));
   }, []);
-
-  const handleAddSkill = React.useCallback(() => {
-    setIsAddingSkill(true);
-    setSkillDraft(createSkillDraft());
-  }, []);
-
-  const handleSaveSkill = React.useCallback(() => {
-    if (!selectedCandidate || !skillDraft.name || skillDraft.rating === 0) {
-      return;
-    }
-
-    const newSkill = {
-      id: `${activeSkillKey}-${Date.now()}`,
-      name: skillDraft.name,
-      experience: skillDraft.experience,
-      rating: skillDraft.rating,
-      lastUsed: skillDraft.lastUsed,
-      comments: skillDraft.comments,
-    };
-
-    setSelectedCandidate((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        [activeSkillKey]: [newSkill, ...(prev[activeSkillKey] || [])],
-      };
-    });
-    setIsAddingSkill(false);
-    setSkillDraft(createSkillDraft());
-  }, [activeSkillKey, selectedCandidate, skillDraft]);
 
   const handleResumeDelete = React.useCallback((fileId) => {
     setSelectedCandidate((prev) => {
@@ -672,7 +913,7 @@ export default function Interviews() {
 
   const handleMapJob = React.useCallback(() => {
     if (!mapJobValue) return;
-    const option = JOB_MAP_OPTIONS.find((item) => item.id === mapJobValue);
+    const option = JOB_OPENING_OPTIONS.find((item) => item.openingJobId === mapJobValue);
     if (!option) return;
 
     setSelectedCandidate((prev) => {
@@ -816,24 +1057,6 @@ export default function Interviews() {
                 />
                 <span>Secondary Skill</span>
               </label>
-            </div>
-            <div className={styles.skillButtons}>
-              <button
-                type="button"
-                className={styles.skillSaveBtn}
-                onClick={handleSaveSkill}
-                disabled={!isAddingSkill || !skillDraft.name || skillDraft.rating === 0}
-              >
-                Save
-              </button>
-              <button
-                type="button"
-                className={styles.skillAddBtn}
-                onClick={handleAddSkill}
-                disabled={isAddingSkill}
-              >
-                Add Skill
-              </button>
             </div>
           </div>
 
@@ -1125,8 +1348,7 @@ export default function Interviews() {
     { key: "company", label: "Company" },
     { key: "interviewType", label: "Interview Type" },
     { key: "mode", label: "Mode" },
-    { key: "status", label: "Status" },
-    { key: "finalReview", label: "Final Review" }
+    { key: "status", label: "Status" }
   ];
 
   // Get unique values for filters
@@ -1384,19 +1606,6 @@ export default function Interviews() {
                             {row.status}
                           </span>
                         </td>
-                        <td data-label="Final Review">
-                          <span
-                            className={`${styles.statusPill} ${
-                              row.finalReview === "Selected"
-                                ? styles.finalSelected
-                                : row.finalReview === "Not Selected"
-                                ? styles.finalNotSelected
-                                : styles.finalPending
-                            }`}
-                          >
-                            {row.finalReview || "Pending"}
-                          </span>
-                        </td>
                         <td data-label="Actions" className={styles.actionsCol}>
                           <div className={styles.actionIcons}>
                             <button
@@ -1406,14 +1615,6 @@ export default function Interviews() {
                               aria-label="View"
                             >
                               <FiEye size={16} />
-                            </button>
-                            <button
-                              type="button"
-                              className={styles.actionBtn}
-                              onClick={() => handleEdit(row)}
-                              aria-label="Edit"
-                            >
-                              <FiEdit2 size={16} />
                             </button>
                             <button
                               type="button"
@@ -1626,7 +1827,7 @@ export default function Interviews() {
                             <td data-label="Action">
                               <button 
                                 className={styles.deleteBtn}
-                                onClick={() => handleDeleteGroup(member.name)}
+                                onClick={() => handleDeleteMember(selectedGroup, idx)}
                                 aria-label="Delete member"
                               >
                                 <FiTrash2 size={16} />
@@ -1684,9 +1885,9 @@ export default function Interviews() {
                   onChange={(e) => setNewMemberInterviewer(e.target.value)}
                 >
                   <option value="">Select Round</option>
-                  <option value="Interviewer 1">Interviewer 1</option>
-                  <option value="Interviewer 2">Interviewer 2</option>
-                  <option value="Interviewer 3">Interviewer 3</option>
+                  {INTERVIEWER_OPTIONS.map((interviewer) => (
+                    <option key={interviewer} value={interviewer}>{interviewer}</option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -1748,9 +1949,9 @@ export default function Interviews() {
                   onChange={(e) => setNewGroupInterviewer(e.target.value)}
                 >
                   <option value="">Interviewer Name</option>
-                  <option value="Interviewer 1">Interviewer 1</option>
-                  <option value="Interviewer 2">Interviewer 2</option>
-                  <option value="Interviewer 3">Interviewer 3</option>
+                  {INTERVIEWER_OPTIONS.map((interviewer) => (
+                    <option key={interviewer} value={interviewer}>{interviewer}</option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -1766,21 +1967,81 @@ export default function Interviews() {
           </div>
         </div>
       )}
+
+      {popupState.isOpen && (
+        <div className={styles.modalOverlay} onClick={closePopup}>
+          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h2 className={styles.modalTitle}>{popupState.title || "Notice"}</h2>
+              <button className={styles.closeBtn} onClick={closePopup} aria-label="Close">
+                <FiX size={24} />
+              </button>
+            </div>
+
+            <div className={styles.modalBody}>
+              <p className={styles.pageDescription}>{popupState.message}</p>
+              {popupState.mode === "prompt" && (
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>Value</label>
+                  <input
+                    type="text"
+                    className={styles.formInput}
+                    value={popupState.promptValue}
+                    placeholder={popupState.promptPlaceholder}
+                    onChange={(event) =>
+                      setPopupState((prev) => ({ ...prev, promptValue: event.target.value }))
+                    }
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className={styles.modalFooter}>
+              {(popupState.mode === "confirm" || popupState.mode === "prompt") && (
+                <button className={styles.cancelBtn} onClick={closePopup}>
+                  {popupState.cancelLabel || "Cancel"}
+                </button>
+              )}
+              <button className={styles.createBtn} onClick={handlePopupConfirm}>
+                {popupState.confirmLabel || "OK"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {isViewDrawerOpen && selectedCandidate && (
         <div className={styles.viewDrawerOverlay} onClick={closeViewDrawer}>
           <aside className={styles.viewDrawer} onClick={(event) => event.stopPropagation()}>
             <div className={styles.drawerTop}>
-              <div className={styles.drawerProfile}>
-                <div className={styles.drawerAvatar}>
-                  {selectedCandidate.firstName?.charAt(0) || selectedCandidate.fullName?.charAt(0)}
+              <div className={styles.drawerTopMain}>
+                <div className={styles.drawerProfile}>
+                  <div className={styles.drawerAvatar}>
+                    {selectedCandidate.firstName?.charAt(0) || selectedCandidate.fullName?.charAt(0)}
+                  </div>
+                  <div className={styles.drawerIdentity}>
+                    <h3>{selectedCandidate.fullName}</h3>
+                    <p>{selectedCandidate.role}</p>
+                    <div className={styles.drawerMeta}>
+                      <span><FiMail size={12} /> {selectedCandidate.email}</span>
+                      <span><FiMapPin size={12} /> {selectedCandidate.location}</span>
+                      <span><FiPhone size={12} /> {selectedCandidate.phoneNumber}</span>
+                    </div>
+                  </div>
                 </div>
-                <div className={styles.drawerIdentity}>
-                  <h3>{selectedCandidate.fullName}</h3>
-                  <p>{selectedCandidate.role}</p>
-                  <div className={styles.drawerMeta}>
-                    <span><FiMail size={12} /> {selectedCandidate.email}</span>
-                    <span><FiMapPin size={12} /> {selectedCandidate.location}</span>
-                    <span><FiPhone size={12} /> {selectedCandidate.phoneNumber}</span>
+
+                <div className={styles.pipelineHeaderCol}>
+                  <div className={styles.pipelineRow}>
+                    {PIPELINE_STEPS.map((step, index) => (
+                      <button
+                        key={step}
+                        type="button"
+                        className={`${styles.pipelineStep}${activePipelineStep === step ? ` ${styles.pipelineStepActive}` : ""}${index <= activePipelineStepIndex && activePipelineStepIndex >= 0 ? ` ${styles.pipelineStepDone}` : ""}`}
+                        aria-current={activePipelineStep === step ? "step" : undefined}
+                        tabIndex={-1}
+                      >
+                        <span className={styles.pipelineStepLabel}>{step}</span>
+                      </button>
+                    ))}
                   </div>
                 </div>
               </div>
@@ -1793,21 +2054,6 @@ export default function Interviews() {
               >
                 <FiX size={18} />
               </button>
-            </div>
-
-            <div className={styles.pipelineRow}>
-              {PIPELINE_STEPS.map((step) => (
-                <button
-                  key={step}
-                  type="button"
-                  className={`${styles.pipelineStep}${
-                    activePipelineStep === step ? ` ${styles.pipelineStepActive}` : ""
-                  }`}
-                  onClick={() => setActivePipelineStep(step)}
-                >
-                  {step}
-                </button>
-              ))}
             </div>
 
             <div className={styles.profileTabsRow}>
@@ -1838,7 +2084,7 @@ export default function Interviews() {
                   >
                     <span>
                       {selectedMapOption
-                        ? `${selectedMapOption.id} (${selectedMapOption.company})`
+                        ? `${selectedMapOption.openingJobId} (${selectedMapOption.company})`
                         : "Search JD to Map"}
                     </span>
                     <FiChevronDown size={16} />
@@ -1860,15 +2106,15 @@ export default function Interviews() {
                         )}
                         {filteredMapOptions.map((option) => (
                           <button
-                            key={option.id}
+                            key={option.openingJobId}
                             type="button"
                             className={styles.mapDropdownItem}
                             onClick={() => {
-                              setMapJobValue(option.id);
+                              setMapJobValue(option.openingJobId);
                               setIsMapDropdownOpen(false);
                             }}
                           >
-                            {option.id} ({option.company})
+                            {option.openingJobId} ({option.company})
                           </button>
                         ))}
                       </div>
