@@ -1,5 +1,5 @@
 import * as React from "react";
-import { FiPlus, FiEdit2, FiTrash2, FiEye } from "react-icons/fi";
+import { FiPlus, FiEdit2, FiTrash2, FiEye, FiMail, FiMapPin, FiPhone, FiX } from "react-icons/fi";
 import styles from "./UserRoles.module.scss";
 import DataTable from "../../components/forms/DataTable.jsx";
 
@@ -178,6 +178,9 @@ export default function UserRoles() {
   const [showForm, setShowForm] = React.useState(false);
   const [editingId, setEditingId] = React.useState(null);
   const [viewMode, setViewMode] = React.useState("chart");
+  const [viewUser, setViewUser] = React.useState(null);
+  const [showDeleteConfirmModal, setShowDeleteConfirmModal] = React.useState(false);
+  const [pendingDeleteUser, setPendingDeleteUser] = React.useState(null);
   const [showWarningModal, setShowWarningModal] = React.useState(false);
   const [warningMessage, setWarningMessage] = React.useState("");
   const [formData, setFormData] = React.useState({
@@ -202,7 +205,14 @@ export default function UserRoles() {
   };
 
   const generateUserId = () => {
-    return `C${Math.floor(1000000 + Math.random() * 9000000)}`;
+    const maxNumericId = users.reduce((maxValue, user) => {
+      const matched = String(user?.userId || "").match(/(\d+)/);
+      const parsed = matched ? Number.parseInt(matched[1], 10) : Number.NaN;
+      if (!Number.isFinite(parsed)) return maxValue;
+      return parsed > maxValue ? parsed : maxValue;
+    }, 0);
+
+    return `C${maxNumericId + 1}`;
   };
 
   const handleInputChange = (e) => {
@@ -247,28 +257,35 @@ export default function UserRoles() {
     setShowForm(true);
   };
 
-  const handleDeleteUser = (id) => {
-    const userToDelete = users.find(user => user.id === id);
+  const handleDeleteUser = (userOrId) => {
+    const deleteId = typeof userOrId === "string" ? userOrId : userOrId?.id;
+    const userToDelete = users.find(user => user.id === deleteId);
     
     if (!userToDelete) return;
-    
-    // Check if this user is a manager with recruiters
-    const reportingUsers = users.filter(user => user.manager === userToDelete.fullName);
-    
-    if (reportingUsers.length > 0) {
-      const reportingList = reportingUsers.map(u => `${u.fullName} (${u.userRole})`).join(', ');
-      setWarningMessage(`Cannot delete ${userToDelete.fullName}! The following users report to this manager: ${reportingList}. Please reassign these users to another manager before deleting.`);
-      setShowWarningModal(true);
-      return;
-    }
-    
-    if (window.confirm(`Are you sure you want to delete ${userToDelete.fullName}?`)) {
-      setUsers(prev => prev.filter(user => user.id !== id));
-    }
+
+    setPendingDeleteUser(userToDelete);
+    setShowDeleteConfirmModal(true);
+  };
+
+  const handleCancelDelete = () => {
+    setShowDeleteConfirmModal(false);
+    setPendingDeleteUser(null);
+  };
+
+  const handleConfirmDelete = () => {
+    if (!pendingDeleteUser?.id) return;
+
+    setUsers(prev => prev.filter(user => user.id !== pendingDeleteUser.id));
+    setShowDeleteConfirmModal(false);
+    setPendingDeleteUser(null);
   };
 
   const handleViewUser = (user) => {
-    alert(`User Details:\n\nName: ${user.fullName}\nRole: ${user.userRole}\nDepartment: ${user.department}\nEmail: ${user.email}\nPhone: ${user.mobileNumber}`);
+    setViewUser(user);
+  };
+
+  const handleCloseViewUser = () => {
+    setViewUser(null);
   };
 
   const handleSubmit = (e) => {
@@ -572,11 +589,11 @@ export default function UserRoles() {
                   <input
                     type="text"
                     className={styles.formInput}
-                    placeholder="C5342415"
+                    placeholder="Auto Generated"
                     name="userId"
                     value={formData.userId}
                     onChange={handleInputChange}
-                    disabled={!!editingId}
+                    disabled
                     required
                   />
                 </div>
@@ -736,6 +753,79 @@ export default function UserRoles() {
         </div>
       )}
 
+      {viewUser && (
+        <div className={`${styles.modalOverlay} ${styles.viewDrawerOverlay}`} onClick={handleCloseViewUser}>
+          <div className={styles.viewModalContent} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.viewHeader}>
+              <div className={styles.viewProfileRow}>
+                <div className={styles.viewAvatarWrap}>
+                  {viewUser.avatar ? (
+                    <img src={viewUser.avatar} alt={viewUser.fullName} className={styles.viewAvatar} />
+                  ) : (
+                    <span className={styles.viewAvatarFallback}>{viewUser.fullName?.charAt(0)?.toUpperCase() || "U"}</span>
+                  )}
+                </div>
+
+                <div className={styles.viewProfileInfo}>
+                  <h2 className={styles.viewName}>{viewUser.fullName}</h2>
+                  <p className={styles.viewRole}>{viewUser.userRole}</p>
+                  <div className={styles.viewMetaRow}>
+                    <span className={styles.viewMetaItem}><FiMail /> {viewUser.email}</span>
+                    <span className={styles.viewMetaItem}><FiMapPin /> {viewUser.department}, India</span>
+                    <span className={styles.viewMetaItem}><FiPhone /> {`${viewUser.countryCode || "+91"} ${viewUser.mobileNumber}`}</span>
+                  </div>
+                </div>
+              </div>
+
+              <button className={styles.viewCloseBtn} onClick={handleCloseViewUser} aria-label="Close view">
+                <FiX />
+              </button>
+            </div>
+
+            <div className={styles.viewBody}>
+              <div className={styles.viewInfoGrid}>
+                <div className={styles.viewInfoItem}>
+                  <span className={styles.viewInfoLabel}>User ID</span>
+                  <span className={styles.viewInfoValue}>{viewUser.userId}</span>
+                </div>
+                <div className={styles.viewInfoItem}>
+                  <span className={styles.viewInfoLabel}>Full Name</span>
+                  <span className={styles.viewInfoValue}>{viewUser.fullName}</span>
+                </div>
+                <div className={styles.viewInfoItem}>
+                  <span className={styles.viewInfoLabel}>User Role</span>
+                  <span className={styles.viewInfoValue}>{viewUser.userRole}</span>
+                </div>
+                <div className={styles.viewInfoItem}>
+                  <span className={styles.viewInfoLabel}>Primary Email Address</span>
+                  <span className={styles.viewInfoValueLink}>{viewUser.email}</span>
+                </div>
+                <div className={styles.viewInfoItem}>
+                  <span className={styles.viewInfoLabel}>Phone Number</span>
+                  <span className={styles.viewInfoValue}>{viewUser.mobileNumber}</span>
+                </div>
+                <div className={styles.viewInfoItem}>
+                  <span className={styles.viewInfoLabel}>Manager</span>
+                  <span className={styles.viewInfoValue}>{viewUser.manager}</span>
+                </div>
+                <div className={styles.viewInfoItem}>
+                  <span className={styles.viewInfoLabel}>Department</span>
+                  <span className={styles.viewInfoValue}>{viewUser.department}</span>
+                </div>
+                <div className={styles.viewInfoItem}>
+                  <span className={styles.viewInfoLabel}>Country Code</span>
+                  <span className={styles.viewInfoValue}>{viewUser.countryCode || "+91"}</span>
+                </div>
+                <div className={styles.viewInfoItem}>
+                  <span className={styles.viewInfoLabel}>Comments / Remarks</span>
+                  <span className={styles.viewInfoValue}>{viewUser.comments || "-"}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showWarningModal && (
         <div className={styles.modalOverlay} onClick={() => setShowWarningModal(false)}>
           <div className={styles.warningModal} onClick={(e) => e.stopPropagation()}>
@@ -751,6 +841,37 @@ export default function UserRoles() {
                 onClick={() => setShowWarningModal(false)}
               >
                 Okay, Got It
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showDeleteConfirmModal && (
+        <div className={styles.modalOverlay} onClick={handleCancelDelete}>
+          <div className={styles.deleteConfirmModal} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.deleteConfirmHeader}>
+              <h2 className={styles.deleteConfirmTitle}>Delete User</h2>
+            </div>
+            <div className={styles.deleteConfirmBody}>
+              <p className={styles.deleteConfirmText}>
+                Are you sure you want to delete {pendingDeleteUser?.fullName}?
+              </p>
+            </div>
+            <div className={styles.deleteConfirmFooter}>
+              <button
+                type="button"
+                className={styles.deleteConfirmCancelBtn}
+                onClick={handleCancelDelete}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className={styles.deleteConfirmDeleteBtn}
+                onClick={handleConfirmDelete}
+              >
+                Delete
               </button>
             </div>
           </div>

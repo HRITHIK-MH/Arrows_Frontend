@@ -1,5 +1,6 @@
 import * as React from "react";
 import {
+  FiChevronDown,
   FiEdit2,
   FiEye,
   FiFileText,
@@ -20,6 +21,9 @@ const DEFAULT_TEAM_MEMBERS = [
   { id: "A83261", name: "Rahul Mehta" },
   { id: "A83233", name: "Priya Sharma" },
 ];
+
+const JOB_OPENING_DRAFT_STORAGE_KEY = "job-openings:add-draft:v1";
+const createJobOpeningDraftId = () => `draft-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
 const formatAssignedRecruiters = (assignedRecruiters, customTeamMembers = []) => {
   const teamDirectory = [
@@ -284,9 +288,14 @@ export default function JobOpenings() {
     }
   ]);
   const [showSuccessMessage, setShowSuccessMessage] = React.useState(false);
+  const [successMessageText, setSuccessMessageText] = React.useState("Job opening created successfully");
   const [editingIndex, setEditingIndex] = React.useState(null);
   const [editingData, setEditingData] = React.useState(null);
   const [editLocked, setEditLocked] = React.useState(false);
+  const [activeDraftId, setActiveDraftId] = React.useState(null);
+  const [jobOpeningDrafts, setJobOpeningDrafts] = React.useState([]);
+  const [isAddJobOpeningMenuOpen, setIsAddJobOpeningMenuOpen] = React.useState(false);
+  const [jobOpeningFormKey, setJobOpeningFormKey] = React.useState(0);
   const [searchTerm, setSearchTerm] = React.useState('');
   const [filterPostingTitle, setFilterPostingTitle] = React.useState('');
   const [filterTargetDate, setFilterTargetDate] = React.useState('');
@@ -298,8 +307,123 @@ export default function JobOpenings() {
   const [isViewDrawerOpen, setIsViewDrawerOpen] = React.useState(false);
   const [selectedJobOpening, setSelectedJobOpening] = React.useState(null);
   const [drawerTab, setDrawerTab] = React.useState("Job Information");
+  const addJobOpeningMenuRef = React.useRef(null);
 
   const deferredSearchTerm = React.useDeferredValue(searchTerm);
+
+  const showTransientMessage = React.useCallback((message) => {
+    setSuccessMessageText(message);
+    setShowSuccessMessage(true);
+    window.setTimeout(() => {
+      setShowSuccessMessage(false);
+    }, 3000);
+  }, []);
+
+  const sanitizeDraftValue = React.useCallback((value) => {
+    if (value === null || value === undefined) return value;
+    if (Array.isArray(value)) return value.map((item) => sanitizeDraftValue(item));
+    if (typeof value !== "object") return value;
+    if (value instanceof Date) return value.toISOString();
+    if (typeof File !== "undefined" && value instanceof File) return value.name;
+    if (typeof Blob !== "undefined" && value instanceof Blob) return "blob";
+
+    return Object.entries(value).reduce((acc, [key, nestedValue]) => {
+      acc[key] = sanitizeDraftValue(nestedValue);
+      return acc;
+    }, {});
+  }, []);
+
+  const persistJobOpeningDrafts = React.useCallback((drafts) => {
+    localStorage.setItem(JOB_OPENING_DRAFT_STORAGE_KEY, JSON.stringify(drafts));
+  }, []);
+
+  const getJobOpeningDrafts = React.useCallback(() => {
+    try {
+      const rawDrafts = localStorage.getItem(JOB_OPENING_DRAFT_STORAGE_KEY);
+      if (!rawDrafts) return [];
+      const parsedDrafts = JSON.parse(rawDrafts);
+      if (!Array.isArray(parsedDrafts)) return [];
+      return parsedDrafts
+        .filter((draft) => draft && typeof draft === "object" && draft.id)
+        .sort((a, b) => new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0));
+    } catch (error) {
+      console.error("Failed to read job opening drafts:", error);
+      return [];
+    }
+  }, []);
+
+  const getJobOpeningDraftTitle = React.useCallback((formData, fallbackCount) => {
+    if (formData?.positionName) return String(formData.positionName);
+    if (formData?.jobPositionId) return `Job ${formData.jobPositionId}`;
+    return `Untitled Draft ${fallbackCount}`;
+  }, []);
+
+  React.useEffect(() => {
+    setJobOpeningDrafts(getJobOpeningDrafts());
+  }, [getJobOpeningDrafts]);
+
+  const saveJobOpeningDraft = React.useCallback((formData) => {
+    try {
+      const sanitizedData = sanitizeDraftValue({
+        ...formData,
+        jobOpeningStatus: "Draft",
+      });
+      const now = new Date().toISOString();
+      let didUpdateExistingDraft = false;
+      let savedDraftId = activeDraftId;
+
+      setJobOpeningDrafts((prevDrafts) => {
+        const hasActiveDraft = Boolean(savedDraftId) && prevDrafts.some((draft) => draft.id === savedDraftId);
+        let nextDrafts;
+
+        if (hasActiveDraft) {
+          didUpdateExistingDraft = true;
+          nextDrafts = prevDrafts.map((draft) =>
+            draft.id === savedDraftId
+              ? {
+                  ...draft,
+                  title: getJobOpeningDraftTitle(sanitizedData, prevDrafts.length),
+                  updatedAt: now,
+                  data: sanitizedData,
+                }
+              : draft
+          );
+        } else {
+          savedDraftId = createJobOpeningDraftId();
+          nextDrafts = [
+            {
+              id: savedDraftId,
+              title: getJobOpeningDraftTitle(sanitizedData, prevDrafts.length + 1),
+              createdAt: now,
+              updatedAt: now,
+              data: sanitizedData,
+            },
+            ...prevDrafts,
+          ];
+        }
+
+        persistJobOpeningDrafts(nextDrafts);
+        return nextDrafts;
+      });
+
+      setActiveDraftId(savedDraftId);
+      showTransientMessage(didUpdateExistingDraft ? "Draft updated successfully" : "Draft saved successfully");
+    } catch (error) {
+      console.error("Failed to save job opening draft:", error);
+      alert("Unable to save draft right now. Please try again.");
+    }
+  }, [activeDraftId, getJobOpeningDraftTitle, persistJobOpeningDrafts, sanitizeDraftValue, showTransientMessage]);
+
+  React.useEffect(() => {
+    if (!isAddJobOpeningMenuOpen) return undefined;
+    const handleOutsideClick = (event) => {
+      if (addJobOpeningMenuRef.current && !addJobOpeningMenuRef.current.contains(event.target)) {
+        setIsAddJobOpeningMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, [isAddJobOpeningMenuOpen]);
 
   const handleSearchChange = React.useCallback((e) => {
     setSearchTerm(e.target.value);
@@ -479,13 +603,62 @@ export default function JobOpenings() {
     return `JOP-${String(maxSequence + 1).padStart(3, "0")}`;
   }, [submittedData]);
 
-  const handleCreateJobOpening = React.useCallback(() => {
+  const openJobOpeningForm = React.useCallback((draftData = null, draftId = null) => {
     setShowJobOpeningForm(true);
     setShowDataTable(false);
     setEditingIndex(null);
-    setEditingData({ jobPositionId: nextJobPositionId, jdTemplateMode: 'manual' });
+    setEditingData({
+      ...(draftData ? { ...draftData } : {}),
+      jobPositionId: String(draftData?.jobPositionId || "").trim() || nextJobPositionId,
+      jdTemplateMode: draftData?.jdTemplateMode || 'manual',
+    });
     setEditLocked(false);
+    setActiveDraftId(draftId);
+    setJobOpeningFormKey((prev) => prev + 1);
+    setIsAddJobOpeningMenuOpen(false);
   }, [nextJobPositionId]);
+
+  const handleCreateJobOpening = React.useCallback(() => {
+    openJobOpeningForm(null, null);
+  }, [openJobOpeningForm]);
+
+  const handleJobOpeningMenuToggle = React.useCallback(() => {
+    setJobOpeningDrafts(getJobOpeningDrafts());
+    setIsAddJobOpeningMenuOpen((prev) => !prev);
+  }, [getJobOpeningDrafts]);
+
+  const handleUseJobOpeningDraft = React.useCallback((draftId) => {
+    const selectedDraft = jobOpeningDrafts.find((draft) => draft.id === draftId);
+    if (!selectedDraft) return;
+    openJobOpeningForm(selectedDraft.data || {}, selectedDraft.id);
+    showTransientMessage(`Loaded draft: ${selectedDraft.title}`);
+  }, [jobOpeningDrafts, openJobOpeningForm, showTransientMessage]);
+
+  const handleDeleteJobOpeningDraft = React.useCallback((draftId) => {
+    setJobOpeningDrafts((prevDrafts) => {
+      const nextDrafts = prevDrafts.filter((draft) => draft.id !== draftId);
+      persistJobOpeningDrafts(nextDrafts);
+      return nextDrafts;
+    });
+
+    if (activeDraftId === draftId) {
+      setActiveDraftId(null);
+      setEditingData(null);
+      setJobOpeningFormKey((prev) => prev + 1);
+    }
+
+    showTransientMessage("Draft deleted successfully");
+  }, [activeDraftId, persistJobOpeningDrafts, showTransientMessage]);
+
+  const handleCancelJobOpeningForm = React.useCallback(() => {
+    setShowJobOpeningForm(false);
+    setShowDataTable(true);
+    setEditingIndex(null);
+    setEditingData(null);
+    setEditLocked(false);
+    setActiveDraftId(null);
+    setIsAddJobOpeningMenuOpen(false);
+  }, []);
 
   const handleViewJobOpening = React.useCallback((row, index) => {
     console.log('View job opening:', row);
@@ -538,16 +711,14 @@ export default function JobOpenings() {
     }
     setShowJobOpeningForm(false);
     setShowDataTable(true);
-    setShowSuccessMessage(true);
+    showTransientMessage(editingIndex !== null ? "Job opening updated successfully" : "Job opening created successfully");
     setEditingIndex(null);
     setEditingData(null);
     setEditLocked(false);
-    // Auto-hide success message after 3 seconds
-    setTimeout(() => {
-      setShowSuccessMessage(false);
-    }, 3000);
+    setActiveDraftId(null);
+    setIsAddJobOpeningMenuOpen(false);
     // Here you would typically send the data to your backend API
-  }, [editingIndex]);
+  }, [editingIndex, showTransientMessage]);
 
   const formatInrAmount = React.useCallback((value) => {
     const numericValue = Number(value);
@@ -599,6 +770,18 @@ export default function JobOpenings() {
     setIsViewDrawerOpen(false);
   }, []);
 
+  const jobOpeningFormConfig = React.useMemo(
+    () => ({
+      ...jobOpeningConfig,
+      showDraftAction: editingIndex === null,
+      showCancelAction: true,
+      cancelLabel: "Cancel",
+      onCancel: handleCancelJobOpeningForm,
+      onSaveDraft: saveJobOpeningDraft,
+    }),
+    [editingIndex, handleCancelJobOpeningForm, saveJobOpeningDraft]
+  );
+
   React.useEffect(() => {
     if (!isViewDrawerOpen) return undefined;
     const previousOverflow = document.body.style.overflow;
@@ -621,7 +804,7 @@ export default function JobOpenings() {
     <div className={styles.page}>
       {showSuccessMessage && (
         <div className={styles.successMessage}>
-          Job opening created successfully
+          {successMessageText}
         </div>
       )}
 
@@ -633,10 +816,60 @@ export default function JobOpenings() {
               location, required experience, and application status. Quickly track how many candidates
               have applied and manage each opening efficiently.
             </p>
-            <button className={styles.createButton} onClick={handleCreateJobOpening}>
-              <FiPlus size={16} />
-              Create Job Opening
-            </button>
+            <div ref={addJobOpeningMenuRef} className={styles.createJobMenuAnchor}>
+              <div className={styles.createJobSplit}>
+                <button type="button" className={styles.createButton} onClick={handleCreateJobOpening}>
+                  <FiPlus size={16} />
+                  Create Job Opening
+                </button>
+                <button
+                  type="button"
+                  className={`${styles.createButtonDropdownTrigger}${isAddJobOpeningMenuOpen ? ` ${styles.createButtonDropdownTriggerOpen}` : ""}`}
+                  onClick={handleJobOpeningMenuToggle}
+                  aria-label="Open create job opening options"
+                  aria-haspopup="menu"
+                  aria-expanded={isAddJobOpeningMenuOpen}
+                >
+                  <FiChevronDown size={14} />
+                </button>
+              </div>
+
+              {isAddJobOpeningMenuOpen && (
+                <div className={styles.createJobMenu} role="menu" aria-label="Create job opening options">
+                  <div className={styles.createJobMenuTitle}>Saved Drafts</div>
+
+                  {jobOpeningDrafts.length === 0 ? (
+                    <div className={styles.createJobMenuEmpty}>No saved drafts available.</div>
+                  ) : (
+                    <div className={styles.createJobDraftList} role="none">
+                      {jobOpeningDrafts.map((draft) => (
+                        <div key={draft.id} className={styles.createJobDraftRow}>
+                          <button
+                            type="button"
+                            className={styles.createJobMenuOption}
+                            onClick={() => handleUseJobOpeningDraft(draft.id)}
+                            title={draft.title || "Untitled Draft"}
+                          >
+                            <span className={styles.createJobDraftTitle}>{draft.title || "Untitled Draft"}</span>
+                            <span className={styles.createJobDraftMeta}>
+                              {new Date(draft.updatedAt || draft.createdAt || Date.now()).toLocaleString()}
+                            </span>
+                          </button>
+                          <button
+                            type="button"
+                            className={styles.createJobDraftDelete}
+                            onClick={() => handleDeleteJobOpeningDraft(draft.id)}
+                            aria-label="Delete draft"
+                          >
+                            <FiTrash2 size={14} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         )}
 
@@ -669,7 +902,8 @@ export default function JobOpenings() {
               </div>
             )}
             <ReusableForm
-              config={jobOpeningConfig}
+              key={`job-opening-form-${jobOpeningFormKey}`}
+              config={jobOpeningFormConfig}
               initialData={
                 editingData
                   ? {

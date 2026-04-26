@@ -1,9 +1,12 @@
 import * as React from "react";
-import { FiMail, FiMapPin, FiPhone, FiUser, FiX } from "react-icons/fi";
+import { FiChevronDown, FiMail, FiMapPin, FiPhone, FiTrash2, FiUser, FiX } from "react-icons/fi";
 import DataTable from "../../components/forms/DataTable";
 import { clientConfig } from "../../components/forms/formConfigs";
 import ReusableForm from "../../components/forms/ReusableForm";
 import styles from "./Clients.module.scss";
+
+const CLIENT_DRAFT_STORAGE_KEY = "clients:add-draft:v1";
+const createClientDraftId = () => `draft-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
 const initialClients = [
   {
@@ -124,6 +127,19 @@ export default function Clients() {
   const [successMessageText, setSuccessMessageText] = React.useState("Client added successfully");
   const [isViewDrawerOpen, setIsViewDrawerOpen] = React.useState(false);
   const [selectedClient, setSelectedClient] = React.useState(null);
+  const [clientDrafts, setClientDrafts] = React.useState([]);
+  const [activeDraftId, setActiveDraftId] = React.useState(null);
+  const [isAddClientMenuOpen, setIsAddClientMenuOpen] = React.useState(false);
+  const [clientFormKey, setClientFormKey] = React.useState(0);
+  const addClientMenuRef = React.useRef(null);
+
+  const showTransientMessage = React.useCallback((message) => {
+    setSuccessMessageText(message);
+    setShowSuccessMessage(true);
+    window.setTimeout(() => {
+      setShowSuccessMessage(false);
+    }, 3000);
+  }, []);
 
   const formatPhoneNumber = React.useCallback((value) => {
     const raw = String(value || "").replace(/\D/g, "");
@@ -184,6 +200,54 @@ export default function Clients() {
     };
   }, [isViewDrawerOpen]);
 
+  const sanitizeDraftValue = React.useCallback((value) => {
+    if (value === null || value === undefined) return value;
+    if (Array.isArray(value)) return value.map((item) => sanitizeDraftValue(item));
+    if (typeof value !== "object") return value;
+    if (value instanceof Date) return value.toISOString();
+    if (typeof File !== "undefined" && value instanceof File) return value.name;
+    if (typeof Blob !== "undefined" && value instanceof Blob) return "blob";
+
+    return Object.entries(value).reduce((acc, [key, nestedValue]) => {
+      acc[key] = sanitizeDraftValue(nestedValue);
+      return acc;
+    }, {});
+  }, []);
+
+  const persistClientDrafts = React.useCallback((drafts) => {
+    localStorage.setItem(CLIENT_DRAFT_STORAGE_KEY, JSON.stringify(drafts));
+  }, []);
+
+  const getClientDrafts = React.useCallback(() => {
+    try {
+      const rawDrafts = localStorage.getItem(CLIENT_DRAFT_STORAGE_KEY);
+      if (!rawDrafts) return [];
+      const parsedDrafts = JSON.parse(rawDrafts);
+      if (!Array.isArray(parsedDrafts)) return [];
+      return parsedDrafts
+        .filter((draft) => draft && typeof draft === "object" && draft.id)
+        .sort((a, b) => new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0));
+    } catch (error) {
+      console.error("Failed to read client drafts:", error);
+      return [];
+    }
+  }, []);
+
+  React.useEffect(() => {
+    setClientDrafts(getClientDrafts());
+  }, [getClientDrafts]);
+
+  React.useEffect(() => {
+    if (!isAddClientMenuOpen) return undefined;
+    const handleOutsideClick = (event) => {
+      if (addClientMenuRef.current && !addClientMenuRef.current.contains(event.target)) {
+        setIsAddClientMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, [isAddClientMenuOpen]);
+
   React.useEffect(() => {
     if (!isViewDrawerOpen) return undefined;
     const onEsc = (event) => {
@@ -232,6 +296,18 @@ export default function Clients() {
   const totalRecords = submittedData.length;
   const totalPages = Math.max(1, Math.ceil(totalRecords / entriesPerPage));
 
+  const generateNextClientId = React.useCallback(() => {
+    const maxNumericId = submittedData.reduce((maxValue, item) => {
+      const matched = String(item?.clientId || "").match(/(\d+)/);
+      const parsed = matched ? Number.parseInt(matched[1], 10) : Number.NaN;
+      if (!Number.isFinite(parsed)) return maxValue;
+      return parsed > maxValue ? parsed : maxValue;
+    }, 0);
+
+    const nextNumericId = maxNumericId + 1;
+    return `CL${String(nextNumericId).padStart(3, "0")}`;
+  }, [submittedData]);
+
   React.useEffect(() => {
     setCurrentPage((previousPage) => Math.min(previousPage, totalPages));
   }, [totalPages]);
@@ -273,8 +349,117 @@ export default function Clients() {
     setShowClientForm(true);
     setShowDataTable(false);
     setEditingIndex(null);
-    setEditingData(null);
+    setEditingData({ clientId: generateNextClientId() });
+    setActiveDraftId(null);
+    setClientFormKey((prev) => prev + 1);
+    setIsAddClientMenuOpen(false);
+  }, [generateNextClientId]);
+
+  const openClientForm = React.useCallback((draftData = null, draftId = null) => {
+    setShowClientForm(true);
+    setShowDataTable(false);
+    setEditingIndex(null);
+    setEditingData({
+      ...(draftData ? { ...draftData } : {}),
+      clientId: String(draftData?.clientId || "").trim() || generateNextClientId(),
+    });
+    setActiveDraftId(draftId);
+    setClientFormKey((prev) => prev + 1);
+    setIsAddClientMenuOpen(false);
+  }, [generateNextClientId]);
+
+  const handleAddClientMenuToggle = React.useCallback(() => {
+    setClientDrafts(getClientDrafts());
+    setIsAddClientMenuOpen((prev) => !prev);
+  }, [getClientDrafts]);
+
+  const getClientDraftTitle = React.useCallback((formData, fallbackCount) => {
+    if (formData?.clientName) return String(formData.clientName);
+    if (formData?.clientId) return `Client ${formData.clientId}`;
+    if (formData?.contactEmail) return String(formData.contactEmail);
+    return `Untitled Draft ${fallbackCount}`;
   }, []);
+
+  const saveClientDraft = React.useCallback((formData) => {
+    try {
+      const sanitizedData = sanitizeDraftValue(formData);
+      const now = new Date().toISOString();
+      let didUpdateExistingDraft = false;
+      let savedDraftId = activeDraftId;
+
+      setClientDrafts((prevDrafts) => {
+        const hasActiveDraft = Boolean(savedDraftId) && prevDrafts.some((draft) => draft.id === savedDraftId);
+        let nextDrafts;
+
+        if (hasActiveDraft) {
+          didUpdateExistingDraft = true;
+          nextDrafts = prevDrafts.map((draft) =>
+            draft.id === savedDraftId
+              ? {
+                  ...draft,
+                  title: getClientDraftTitle(sanitizedData, prevDrafts.length),
+                  updatedAt: now,
+                  data: sanitizedData,
+                }
+              : draft
+          );
+        } else {
+          savedDraftId = createClientDraftId();
+          nextDrafts = [
+            {
+              id: savedDraftId,
+              title: getClientDraftTitle(sanitizedData, prevDrafts.length + 1),
+              createdAt: now,
+              updatedAt: now,
+              data: sanitizedData,
+            },
+            ...prevDrafts,
+          ];
+        }
+
+        persistClientDrafts(nextDrafts);
+        return nextDrafts;
+      });
+
+      setActiveDraftId(savedDraftId);
+      showTransientMessage(didUpdateExistingDraft ? "Draft updated successfully" : "Draft saved successfully");
+    } catch (error) {
+      console.error("Failed to save client draft:", error);
+      alert("Unable to save draft right now. Please try again.");
+    }
+  }, [activeDraftId, getClientDraftTitle, persistClientDrafts, sanitizeDraftValue, showTransientMessage]);
+
+  const handleCancelClientForm = React.useCallback(() => {
+    setShowClientForm(false);
+    setShowDataTable(true);
+    setEditingIndex(null);
+    setEditingData(null);
+    setActiveDraftId(null);
+    setIsAddClientMenuOpen(false);
+  }, []);
+
+  const handleUseClientDraft = React.useCallback((draftId) => {
+    const selectedDraft = clientDrafts.find((draft) => draft.id === draftId);
+    if (!selectedDraft) return;
+    openClientForm(selectedDraft.data || {}, selectedDraft.id);
+    showTransientMessage(`Loaded draft: ${selectedDraft.title}`);
+  }, [clientDrafts, openClientForm, showTransientMessage]);
+
+  const handleDeleteClientDraft = React.useCallback((draftId) => {
+    setClientDrafts((prevDrafts) => {
+      const nextDrafts = prevDrafts.filter((draft) => draft.id !== draftId);
+      persistClientDrafts(nextDrafts);
+      return nextDrafts;
+    });
+
+    if (activeDraftId === draftId) {
+      setActiveDraftId(null);
+      setEditingData(null);
+      setClientFormKey((prev) => prev + 1);
+    }
+
+    showTransientMessage("Draft deleted successfully");
+  }, [activeDraftId, persistClientDrafts, showTransientMessage]);
 
   const handleViewClient = React.useCallback(
     (row) => {
@@ -304,7 +489,10 @@ export default function Clients() {
 
   const handleClientSubmit = React.useCallback(
     (data) => {
-      const normalized = normalizeClientRecord(data);
+      const normalized = normalizeClientRecord({
+        ...data,
+        clientId: String(data?.clientId || "").trim() || generateNextClientId(),
+      });
       const isEditMode = editingIndex !== null;
 
       setSubmittedData((prev) =>
@@ -317,19 +505,28 @@ export default function Clients() {
       setShowDataTable(true);
       setEditingIndex(null);
       setEditingData(null);
-      setSuccessMessageText(isEditMode ? "Client updated successfully" : "Client added successfully");
-      setShowSuccessMessage(true);
-
-      setTimeout(() => {
-        setShowSuccessMessage(false);
-      }, 3000);
+      setActiveDraftId(null);
+      setIsAddClientMenuOpen(false);
+      showTransientMessage(isEditMode ? "Client updated successfully" : "Client added successfully");
     },
-    [editingIndex, normalizeClientRecord]
+    [editingIndex, generateNextClientId, normalizeClientRecord, showTransientMessage]
   );
 
   const closeViewDrawer = React.useCallback(() => {
     setIsViewDrawerOpen(false);
   }, []);
+
+  const clientFormConfig = React.useMemo(
+    () => ({
+      ...clientConfig,
+      showDraftAction: editingIndex === null,
+      showCancelAction: true,
+      cancelLabel: "Cancel",
+      onCancel: handleCancelClientForm,
+      onSaveDraft: saveClientDraft,
+    }),
+    [editingIndex, handleCancelClientForm, saveClientDraft]
+  );
 
   return (
     <div className={styles.page}>
@@ -343,16 +540,71 @@ export default function Clients() {
               activation status, and engagement timelines to ensure smooth coordination and efficient client
               management.
             </p>
-            <button className={styles.addButton} onClick={handleAddClient} type="button">
-              <span className={styles.addIcon}>+</span>
-              Add Client
-            </button>
+            <div ref={addClientMenuRef} className={styles.addClientMenuAnchor}>
+              <div className={styles.addClientSplit}>
+                <button className={styles.addButton} onClick={handleAddClient} type="button">
+                  <span className={styles.addIcon}>+</span>
+                  Add Client
+                </button>
+                <button
+                  type="button"
+                  className={`${styles.addButtonDropdownTrigger}${isAddClientMenuOpen ? ` ${styles.addButtonDropdownTriggerOpen}` : ""}`}
+                  onClick={handleAddClientMenuToggle}
+                  aria-label="Open add client options"
+                  aria-haspopup="menu"
+                  aria-expanded={isAddClientMenuOpen}
+                >
+                  <FiChevronDown size={14} />
+                </button>
+              </div>
+
+              {isAddClientMenuOpen && (
+                <div className={styles.addClientMenu} role="menu" aria-label="Add client options">
+                  <div className={styles.addClientMenuTitle}>Saved Drafts</div>
+
+                  {clientDrafts.length === 0 ? (
+                    <div className={styles.addClientMenuEmpty}>No saved drafts available.</div>
+                  ) : (
+                    <div className={styles.addClientDraftList} role="none">
+                      {clientDrafts.map((draft) => (
+                        <div key={draft.id} className={styles.addClientDraftRow}>
+                          <button
+                            type="button"
+                            className={styles.addClientMenuOption}
+                            onClick={() => handleUseClientDraft(draft.id)}
+                            title={draft.title || "Untitled Draft"}
+                          >
+                            <span className={styles.addClientDraftTitle}>{draft.title || "Untitled Draft"}</span>
+                            <span className={styles.addClientDraftMeta}>
+                              {new Date(draft.updatedAt || draft.createdAt || Date.now()).toLocaleString()}
+                            </span>
+                          </button>
+                          <button
+                            type="button"
+                            className={styles.addClientDraftDelete}
+                            onClick={() => handleDeleteClientDraft(draft.id)}
+                            aria-label="Delete draft"
+                          >
+                            <FiTrash2 size={14} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         )}
 
         {showClientForm && (
           <div className={styles.formWrap}>
-            <ReusableForm config={clientConfig} onSubmit={handleClientSubmit} initialData={editingData} />
+            <ReusableForm
+              key={`client-form-${clientFormKey}`}
+              config={clientFormConfig}
+              onSubmit={handleClientSubmit}
+              initialData={editingData}
+            />
           </div>
         )}
 

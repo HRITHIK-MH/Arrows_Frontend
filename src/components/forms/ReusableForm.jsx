@@ -6,6 +6,75 @@ import MultiStepForm from './MultiStepForm';
 import API from '../../api/axiosConfig';
 import './ReusableForm.css';
 
+const DRAFT_STORAGE_PREFIX = 'reusable-form-draft';
+
+const getDraftStorageKey = (config) => {
+  const formIdentity =
+    config?.draftKey ||
+    config?.itemName ||
+    config?.title ||
+    config?.submitEndpoint ||
+    'form';
+
+  return `${DRAFT_STORAGE_PREFIX}:${String(formIdentity).toLowerCase().replace(/\s+/g, '-')}`;
+};
+
+const sanitizeDraftData = (value) => {
+  if (value === null || value === undefined) return value;
+
+  if (Array.isArray(value)) {
+    return value.map((item) => sanitizeDraftData(item));
+  }
+
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+
+  if (typeof File !== 'undefined' && value instanceof File) {
+    return {
+      name: value.name,
+      size: value.size,
+      type: value.type,
+      lastModified: value.lastModified,
+    };
+  }
+
+  if (typeof Blob !== 'undefined' && value instanceof Blob) {
+    return {
+      size: value.size,
+      type: value.type,
+    };
+  }
+
+  if (typeof value === 'object') {
+    return Object.entries(value).reduce((acc, [key, val]) => {
+      acc[key] = sanitizeDraftData(val);
+      return acc;
+    }, {});
+  }
+
+  return value;
+};
+
+const loadDraftData = (draftStorageKey) => {
+  if (typeof window === 'undefined') return null;
+
+  try {
+    const rawDraft = window.localStorage.getItem(draftStorageKey);
+    if (!rawDraft) return null;
+
+    const parsed = JSON.parse(rawDraft);
+    if (parsed && typeof parsed === 'object' && parsed.data && typeof parsed.data === 'object') {
+      return parsed.data;
+    }
+
+    return parsed && typeof parsed === 'object' ? parsed : null;
+  } catch (error) {
+    console.error('Failed to load draft data:', error);
+    return null;
+  }
+};
+
 // Reusable form configuration
 const createFormConfig = (config) => {
   return {
@@ -91,6 +160,7 @@ const FormStep = ({ formData, onChange, fields, title, onSetStepFields, validati
   const isJobBasicInfo = title === "Job Basic Information" || title === "Job Information";
   const fieldMetaSignatureRef = React.useRef('');
   const jdParsedFileRef = React.useRef('');
+  const previousJdTemplateModeRef = React.useRef(formData.jdTemplateMode || 'manual');
   const [jdExtractionStatus, setJdExtractionStatus] = React.useState({ state: 'idle', message: '' });
   const [jdGenerationLoading, setJdGenerationLoading] = React.useState(false);
   const [jdGenerationError, setJdGenerationError] = React.useState('');
@@ -195,7 +265,12 @@ const FormStep = ({ formData, onChange, fields, title, onSetStepFields, validati
     if (!isJobBasicInfo) return;
 
     const jdTemplateMode = formData.jdTemplateMode || 'manual';
-    if (jdTemplateMode === 'manual') {
+    const previousJdTemplateMode = previousJdTemplateModeRef.current;
+    previousJdTemplateModeRef.current = jdTemplateMode;
+
+    // Only clear template-derived fields when the user actually switches
+    // from template mode back to manual mode, not on initial render/draft load.
+    if (jdTemplateMode === 'manual' && previousJdTemplateMode === 'template') {
       // Clear auto-filled fields when switching to manual mode (No)
       const fieldsToClear = [
         'positionName',
@@ -690,12 +765,74 @@ const FormStep = ({ formData, onChange, fields, title, onSetStepFields, validati
 // Main reusable form component
 const ReusableForm = ({ config, onSubmit, initialData, readOnly = false }) => {
   const [validationErrors, setValidationErrors] = useState({});
+  const [showDraftRestoredMessage, setShowDraftRestoredMessage] = useState(false);
+
+  const draftStorageKey = useMemo(() => getDraftStorageKey(config), [config]);
+
+  const draftLoadResult = useMemo(() => {
+    if (initialData) {
+      return { data: initialData, restoredFromDraft: false };
+    }
+
+    const draftData = loadDraftData(draftStorageKey);
+    return {
+      data: draftData || null,
+      restoredFromDraft: Boolean(draftData),
+    };
+  }, [initialData, draftStorageKey]);
+
+  const resolvedInitialData = draftLoadResult.data;
 
   const formConfig = useMemo(() => createFormConfig(config), [config]);
 
   React.useEffect(() => {
     setValidationErrors({});
   }, [initialData, config]);
+
+  React.useEffect(() => {
+    if (!draftLoadResult.restoredFromDraft) return;
+
+    setShowDraftRestoredMessage(true);
+    const timer = window.setTimeout(() => {
+      setShowDraftRestoredMessage(false);
+    }, 3000);
+
+    return () => window.clearTimeout(timer);
+  }, [draftLoadResult.restoredFromDraft]);
+
+  const clearSavedDraft = useCallback(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      window.localStorage.removeItem(draftStorageKey);
+    } catch (error) {
+      console.error('Failed to clear draft data:', error);
+    }
+  }, [draftStorageKey]);
+
+  const handleSaveDraft = useCallback(
+    async (formData) => {
+      if (config.onSaveDraft) {
+        await config.onSaveDraft(formData);
+        return;
+      }
+
+      if (typeof window === 'undefined') return;
+
+      try {
+        const payload = {
+          savedAt: new Date().toISOString(),
+          data: sanitizeDraftData(formData),
+        };
+
+        window.localStorage.setItem(draftStorageKey, JSON.stringify(payload));
+        alert(`${config.itemName || config.title || 'Form'} draft saved successfully`);
+      } catch (error) {
+        console.error('Failed to save draft data:', error);
+        alert('Failed to save draft. Please try again.');
+      }
+    },
+    [config, draftStorageKey]
+  );
 
   // Create validation functions
   const createValidationFunction = useCallback((ruleName) => {
@@ -872,6 +1009,8 @@ const ReusableForm = ({ config, onSubmit, initialData, readOnly = false }) => {
       // Call the onSubmit callback if provided
       onSubmit?.(formData);
 
+      clearSavedDraft();
+
       // Handle successful submission
       console.log(`${config.itemName || 'Form'} submitted successfully`);
     } catch (error) {
@@ -881,6 +1020,7 @@ const ReusableForm = ({ config, onSubmit, initialData, readOnly = false }) => {
       if (error.code === 'ERR_NETWORK' || error.response?.status === 404) {
         console.log('No backend server available, treating as successful submission for development');
         onSubmit?.(formData);
+        clearSavedDraft();
       } else {
         alert(`Error submitting ${itemLabel}. Please try again.`);
         return;
@@ -962,6 +1102,11 @@ const ReusableForm = ({ config, onSubmit, initialData, readOnly = false }) => {
       className={`reusable-form-page${config.formClassName ? ` ${config.formClassName}` : ''}${readOnly ? ' read-only' : ''}`}
     >
       {!config.hideTitle && <h1>{config.title}</h1>}
+      {showDraftRestoredMessage && (
+        <div className="draft-restored-alert">
+          Draft restored successfully.
+        </div>
+      )}
       <MultiStepForm
         steps={enhancedSteps}
         onSubmit={handleSubmit}
@@ -969,14 +1114,14 @@ const ReusableForm = ({ config, onSubmit, initialData, readOnly = false }) => {
         onValidateStep={validateStepFields}
         onFieldChange={validateFieldOnChange}
         hideStepper={config.hideStepper}
-        showDraftAction={config.showDraftAction}
+        showDraftAction={config.showDraftAction ?? true}
         draftLabel={config.draftLabel}
-        onSaveDraft={config.onSaveDraft}
+        onSaveDraft={handleSaveDraft}
         submitLabel={config.submitLabel}
         showCancelAction={config.showCancelAction}
         cancelLabel={config.cancelLabel}
         onCancel={config.onCancel}
-        initialData={initialData}
+        initialData={resolvedInitialData}
         readOnly={readOnly}
       />
     </div>

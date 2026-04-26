@@ -1420,7 +1420,8 @@ export const clientConfig = {
           type: "text",
           required: true,
           validationRule: "requiredField",
-          placeholder: "CS342415"
+          placeholder: "Auto Generated",
+          disabled: true
         },
         {
           name: "clientName",
