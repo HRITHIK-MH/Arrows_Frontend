@@ -5,6 +5,7 @@ import {
   FiEye,
   FiFileText,
   FiFilter,
+  FiMail,
   FiMapPin,
   FiPhone,
   FiPlus,
@@ -306,6 +307,8 @@ export default function JobOpenings() {
   const [expandedRows, setExpandedRows] = React.useState({});
   const [isViewDrawerOpen, setIsViewDrawerOpen] = React.useState(false);
   const [selectedJobOpening, setSelectedJobOpening] = React.useState(null);
+  const [isCandidateDrawerOpen, setIsCandidateDrawerOpen] = React.useState(false);
+  const [selectedCandidate, setSelectedCandidate] = React.useState(null);
   const [drawerTab, setDrawerTab] = React.useState("Job Information");
   const addJobOpeningMenuRef = React.useRef(null);
 
@@ -320,17 +323,21 @@ export default function JobOpenings() {
   }, []);
 
   const sanitizeDraftValue = React.useCallback((value) => {
-    if (value === null || value === undefined) return value;
-    if (Array.isArray(value)) return value.map((item) => sanitizeDraftValue(item));
-    if (typeof value !== "object") return value;
-    if (value instanceof Date) return value.toISOString();
-    if (typeof File !== "undefined" && value instanceof File) return value.name;
-    if (typeof Blob !== "undefined" && value instanceof Blob) return "blob";
+    const sanitize = (input) => {
+      if (input === null || input === undefined) return input;
+      if (Array.isArray(input)) return input.map((item) => sanitize(item));
+      if (typeof input !== "object") return input;
+      if (input instanceof Date) return input.toISOString();
+      if (typeof File !== "undefined" && input instanceof File) return input.name;
+      if (typeof Blob !== "undefined" && input instanceof Blob) return "blob";
 
-    return Object.entries(value).reduce((acc, [key, nestedValue]) => {
-      acc[key] = sanitizeDraftValue(nestedValue);
-      return acc;
-    }, {});
+      return Object.entries(input).reduce((acc, [key, nestedValue]) => {
+        acc[key] = sanitize(nestedValue);
+        return acc;
+      }, {});
+    };
+
+    return sanitize(value);
   }, []);
 
   const persistJobOpeningDrafts = React.useCallback((drafts) => {
@@ -666,8 +673,22 @@ export default function JobOpenings() {
       ...row,
       openingJobId: row.openingJobId || row.jobPositionId || String(index),
     });
+    setIsCandidateDrawerOpen(false);
     setDrawerTab("Job Information");
     setIsViewDrawerOpen(true);
+  }, []);
+
+  const handleViewCandidate = React.useCallback((candidate, row, index) => {
+    setSelectedCandidate({
+      ...candidate,
+      openingJobId: row.openingJobId || row.jobPositionId || String(index),
+      postingTitle: row.postingTitle || row.positionName || "-",
+      clientName: row.clientName || "-",
+      hiringManager: row.hiringManager || "-",
+      accountManager: row.accountManager || "-",
+    });
+    setIsViewDrawerOpen(false);
+    setIsCandidateDrawerOpen(true);
   }, []);
 
   const handleOpenJobDescription = React.useCallback((row, index) => {
@@ -770,6 +791,11 @@ export default function JobOpenings() {
     setIsViewDrawerOpen(false);
   }, []);
 
+  const closeCandidateDrawer = React.useCallback(() => {
+    setIsCandidateDrawerOpen(false);
+    setSelectedCandidate(null);
+  }, []);
+
   const jobOpeningFormConfig = React.useMemo(
     () => ({
       ...jobOpeningConfig,
@@ -783,22 +809,27 @@ export default function JobOpenings() {
   );
 
   React.useEffect(() => {
-    if (!isViewDrawerOpen) return undefined;
+    if (!isViewDrawerOpen && !isCandidateDrawerOpen) return undefined;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
       document.body.style.overflow = previousOverflow;
     };
-  }, [isViewDrawerOpen]);
+  }, [isViewDrawerOpen, isCandidateDrawerOpen]);
 
   React.useEffect(() => {
-    if (!isViewDrawerOpen) return undefined;
+    if (!isViewDrawerOpen && !isCandidateDrawerOpen) return undefined;
     const onEsc = (event) => {
-      if (event.key === "Escape") setIsViewDrawerOpen(false);
+      if (event.key !== "Escape") return;
+      if (isCandidateDrawerOpen) {
+        closeCandidateDrawer();
+        return;
+      }
+      setIsViewDrawerOpen(false);
     };
     document.addEventListener("keydown", onEsc);
     return () => document.removeEventListener("keydown", onEsc);
-  }, [isViewDrawerOpen]);
+  }, [closeCandidateDrawer, isCandidateDrawerOpen, isViewDrawerOpen]);
 
   return (
     <div className={styles.page}>
@@ -852,7 +883,9 @@ export default function JobOpenings() {
                           >
                             <span className={styles.createJobDraftTitle}>{draft.title || "Untitled Draft"}</span>
                             <span className={styles.createJobDraftMeta}>
-                              {new Date(draft.updatedAt || draft.createdAt || Date.now()).toLocaleString()}
+                              {draft.updatedAt || draft.createdAt
+                                ? new Date(draft.updatedAt || draft.createdAt).toLocaleString()
+                                : "-"}
                             </span>
                           </button>
                           <button
@@ -1074,7 +1107,12 @@ export default function JobOpenings() {
                                         </td>
                                         <td>{candidate.round}</td>
                                         <td>
-                                          <button type="button" className={styles.actionBtn} aria-label="View candidate">
+                                          <button
+                                            type="button"
+                                            className={styles.actionBtn}
+                                            aria-label="View candidate"
+                                            onClick={() => handleViewCandidate(candidate, row, sourceIndex)}
+                                          >
                                             <FiEye size={16} />
                                           </button>
                                         </td>
@@ -1335,6 +1373,78 @@ export default function JobOpenings() {
                   </div>
                 </div>
               )}
+            </div>
+          </aside>
+        </div>
+      ) : null}
+
+      {isCandidateDrawerOpen && selectedCandidate ? (
+        <div className={styles.viewDrawerOverlay} onClick={closeCandidateDrawer}>
+          <aside className={styles.candidateDrawer} onClick={(event) => event.stopPropagation()}>
+            <div className={styles.candidateHead}>
+              <div>
+                <h3 className={styles.candidateTitle}>{selectedCandidate.candidateName || "Candidate"}</h3>
+                <p className={styles.candidateSubtitle}>{selectedCandidate.candidateId || "-"}</p>
+              </div>
+              <button
+                type="button"
+                className={styles.drawerClose}
+                onClick={closeCandidateDrawer}
+                aria-label="Close candidate details"
+              >
+                <FiX size={18} />
+              </button>
+            </div>
+
+            <div className={styles.candidateBody}>
+              <div className={styles.candidateField}>
+                <span>Email</span>
+                <strong><FiMail size={12} /> {selectedCandidate.candidateEmail || "-"}</strong>
+              </div>
+              <div className={styles.candidateField}>
+                <span>Modified Time</span>
+                <strong>{selectedCandidate.modifiedTime || "-"}</strong>
+              </div>
+              <div className={styles.candidateField}>
+                <span>Source</span>
+                <strong>{selectedCandidate.source || "-"}</strong>
+              </div>
+              <div className={styles.candidateField}>
+                <span>Rating</span>
+                <strong>{selectedCandidate.rating || "-"}</strong>
+              </div>
+              <div className={styles.candidateField}>
+                <span>Stage</span>
+                <strong>
+                  <span className={`${styles.stagePill} ${getStageClass(selectedCandidate.stage)}`}>
+                    {selectedCandidate.stage || "-"}
+                  </span>
+                </strong>
+              </div>
+              <div className={styles.candidateField}>
+                <span>Round</span>
+                <strong>{selectedCandidate.round || "-"}</strong>
+              </div>
+              <div className={styles.candidateField}>
+                <span>Opening Job Id</span>
+                <strong>{selectedCandidate.openingJobId || "-"}</strong>
+              </div>
+              <div className={styles.candidateField}>
+                <span>Posting Title</span>
+                <strong>{selectedCandidate.postingTitle || "-"}</strong>
+              </div>
+              <div className={styles.candidateField}>
+                <span>Client Name</span>
+                <strong>{selectedCandidate.clientName || "-"}</strong>
+              </div>
+              <div className={styles.candidateField}>
+                <span>Hiring Manager</span>
+                <strong>{selectedCandidate.hiringManager || "-"}</strong>
+              </div>
+              <div className={styles.candidateField}>
+                <span>Account Manager</span>
+                <strong>{selectedCandidate.accountManager || "-"}</strong>
+              </div>
             </div>
           </aside>
         </div>
