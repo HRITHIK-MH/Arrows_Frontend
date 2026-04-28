@@ -388,9 +388,39 @@ export const jobOpeningConfig = {
           cssClass: "grid-col-2 grid-row-4",
           placeholder: "Select",
           options: [
-            { value: "onsite", label: "On-site" },
-            { value: "hybrid", label: "Hybrid" },
-            { value: "remote", label: "Remote" }
+            { value: "full-time", label: "Full Time Employment" },
+            { value: "part-time", label: "Part Time" },
+            { value: "contract", label: "Contract" },
+            { value: "internship", label: "Internship" }
+          ]
+        },
+        {
+          name: "hiringManager",
+          label: "Hiring Manager *",
+          type: "select",
+          required: true,
+          cssClass: "grid-col-3 grid-row-4",
+          validationRule: "requiredField",
+          placeholder: "Select Hiring Manager",
+          options: [
+            { value: "Karthik Rao", label: "Karthik Rao" },
+            { value: "Sneha Nair", label: "Sneha Nair" },
+            { value: "Anitha Kumar", label: "Anitha Kumar" },
+            { value: "Parthiban", label: "Parthiban" },
+            { value: "Saravanan", label: "Saravanan" },
+            { value: "Manigandan", label: "Manigandan" }
+          ]
+        },
+        {
+          name: "jdTemplateMode",
+          label: "Have JD Template? *",
+          type: "radio",
+          required: true,
+          cssClass: "grid-col-3 grid-row-4",
+          validationRule: "requiredField",
+          options: [
+            { value: "manual", label: "No" },
+            { value: "template", label: "Yes" }
           ]
         },
         {
@@ -640,7 +670,8 @@ export const jobOpeningConfig = {
       if (isEmptyValue(value)) {
         const fieldLabels = {
           jobPositionId: 'Job Position Id',
-          positionName: 'Position Name'
+          positionName: 'Position Name',
+          hiringManager: 'Hiring Manager'
         };
         const fieldLabel = fieldLabels[fieldName] || fieldName;
         return { isValid: false, message: `${fieldLabel} is required` };

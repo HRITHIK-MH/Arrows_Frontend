@@ -1,4 +1,4 @@
-import { FiTrash2 } from 'react-icons/fi';
+﻿import { FiTrash2 } from 'react-icons/fi';
 import { useEffect, useRef, useState } from 'react';
 import { validateMandatoryField } from '../../utils/formValidation';
 import './FormField.css';
@@ -59,9 +59,6 @@ const FormField = ({
     })
     .filter((option) => option.label !== '');
 
-  // Sync prop error with local error when prop changes
-  // This ensures errors from parent (Next button click) are displayed
-  // And when parent clears the error (after validation passes), localError is also cleared
   useEffect(() => {
     if (error) {
       setLocalError(error);
@@ -69,6 +66,48 @@ const FormField = ({
       setLocalError('');
     }
   }, [error, name]);
+
+  const handleValidationResult = (result) => {
+    if (result && typeof result === 'object') {
+      if (result.isValid) {
+        setLocalError('');
+      } else {
+        setLocalError(result.message);
+      }
+
+      if (onValidation) {
+        onValidation(name, result);
+      }
+    } else {
+      setLocalError('Validation failed');
+      if (onValidation) {
+        onValidation(name, { isValid: false, message: 'Validation failed' });
+      }
+    }
+  };
+
+  const triggerFieldValidation = (newValue) => {
+    const shouldValidate = validate || required || error || localError;
+    if (!shouldValidate) return;
+
+    if (validate) {
+      setIsValidating(true);
+      const currentFormData = formData || {};
+      const updatedFormData = { ...currentFormData, [name]: newValue };
+      Promise.resolve(validate(newValue, name, updatedFormData))
+        .then(handleValidationResult)
+        .catch(handleValidationResult)
+        .finally(() => setIsValidating(false));
+      return;
+    }
+
+    setIsValidating(true);
+    const fieldLabel = cleanedLabel || name;
+    validateMandatoryField(newValue, name, fieldLabel)
+      .then(handleValidationResult)
+      .catch(handleValidationResult)
+      .finally(() => setIsValidating(false));
+  };
 
   const handleChange = (e) => {
     let newValue = type === 'file'
@@ -110,54 +149,18 @@ const FormField = ({
     }
   };
 
-  const triggerFieldValidation = (newValue) => {
-    // Validate if:
-    // 1. Custom validation function exists, OR
-    // 2. Field is required, OR
-    // 3. There's already an error showing (user is correcting it)
-    const shouldValidate = validate || required || error;
-    if (!shouldValidate) return;
-
-    if (validate) {
-      setIsValidating(true);
-      const currentFormData = formData || {};
-      const updatedFormData = { ...currentFormData, [name]: newValue };
-      Promise.resolve(validate(newValue, name, updatedFormData))
-        .then(result => {
-          handleValidationResult(result);
-        })
-        .catch(err => {
-          handleValidationResult(err);
-        })
-        .finally(() => setIsValidating(false));
-      return;
-    }
-
-    // For required fields or fields with errors, run mandatory validation
-    setIsValidating(true);
-    const fieldLabel = cleanedLabel || name;
-    validateMandatoryField(newValue, name, fieldLabel)
-      .then(result => {
-        handleValidationResult(result);
-      })
-      .catch(err => {
-        handleValidationResult(err);
-      })
-      .finally(() => setIsValidating(false));
-  };
-
   const handleMultiSelectChange = (selectedValues) => {
     onChange(name, selectedValues);
 
     if (validate) {
-      // Custom validation function
       setIsValidating(true);
-      // Pass updated formData with new value to validation function
       const currentFormData = formData || {};
       const updatedFormData = { ...currentFormData, [name]: selectedValues };
-      validate(selectedValues, name, updatedFormData).then(handleValidationResult).catch(handleValidationResult).finally(() => setIsValidating(false));
-    } else if (required) {
-      // For required fields, always validate on change to clear/show errors
+      Promise.resolve(validate(selectedValues, name, updatedFormData))
+        .then(handleValidationResult)
+        .catch(handleValidationResult)
+        .finally(() => setIsValidating(false));
+    } else if (required || error || localError) {
       setIsValidating(true);
       const fieldLabel = cleanedLabel || name;
       validateMandatoryField(selectedValues, name, fieldLabel)
@@ -168,7 +171,7 @@ const FormField = ({
   };
 
   const removeMultiSelectItem = (itemToRemove) => {
-    const newValue = value.filter(item => item !== itemToRemove);
+    const newValue = value.filter((item) => item !== itemToRemove);
     setCustomOptions((prev) => prev.filter((item) => item.value !== itemToRemove));
     handleMultiSelectChange(newValue);
   };
@@ -183,7 +186,7 @@ const FormField = ({
   const toggleMultiSelectItem = (optionValue) => {
     const selectedValues = Array.isArray(value) ? value : [];
     if (selectedValues.includes(optionValue)) {
-      handleMultiSelectChange(selectedValues.filter(item => item !== optionValue));
+      handleMultiSelectChange(selectedValues.filter((item) => item !== optionValue));
     } else {
       handleMultiSelectChange([...selectedValues, optionValue]);
     }
@@ -208,45 +211,17 @@ const FormField = ({
     setCustomOption('');
   };
 
-  const handleValidationResult = (result) => {
-    if (result && typeof result === 'object') {
-
-
-      // Update local error state immediately for instant UI feedback
-      if (result.isValid) {
-        setLocalError('');
-      } else {
-        setLocalError(result.message);
-      }
-
-      // Also call parent callback for state management - this is critical for clearing errors
-      if (onValidation) {
-        onValidation(name, result);
-      }
-    } else {
-
-      setLocalError('Validation failed');
-      if (onValidation) {
-        onValidation(name, { isValid: false, message: 'Validation failed' });
-      }
-    }
-  };
-
   const handleBlur = async () => {
     if (isValidating) return;
 
     setIsValidating(true);
     try {
-      // If custom validation function is provided, use it
       if (validate) {
         const currentFormData = formData || {};
         const updatedFormData = { ...currentFormData, [name]: value };
         const validationResult = await validate(value, name, updatedFormData);
         handleValidationResult(validationResult);
-      }
-      // For required fields without custom validation, validate that field has value
-      else if (required) {
-        // Extract label from prop (removing asterisk if present)
+      } else if (required) {
         const fieldLabel = cleanedLabel || name;
         const validationResult = await validateMandatoryField(value, name, fieldLabel);
         handleValidationResult(validationResult);
@@ -328,9 +303,19 @@ const FormField = ({
     return String(option.label || option.value).toLowerCase().includes(term);
   });
 
+  const hasValue =
+    value !== null &&
+    value !== undefined &&
+    (typeof value !== 'string' || value.trim() !== '') &&
+    (!Array.isArray(value) || value.length > 0);
+  const resolvedError = localError || error || '';
+  const displayError =
+    hasValue && typeof resolvedError === 'string' && resolvedError.toLowerCase().includes('required')
+      ? ''
+      : resolvedError;
+
   return (
     <div className={`form-field${name ? ` field-${name}` : ''}${hasOpenDropdown ? ' dropdown-open' : ''}`}>
-
       <label htmlFor={name} className={hideLabel ? 'label-hidden' : undefined}>
         {safeLabel.includes('*') ? (
           <>
@@ -341,6 +326,7 @@ const FormField = ({
           safeLabel
         )}
       </label>
+
       {type === 'multiselect' ? (
         <div className={`multiselect-container${isDropdownOpen ? ' open' : ''}`} ref={dropdownRef}>
           <div
@@ -358,7 +344,7 @@ const FormField = ({
           >
             {Array.isArray(value) && value.length > 0 ? (
               value.map((selectedValue) => {
-                const option = mergedOptions.find(opt => opt.value === selectedValue);
+                const option = mergedOptions.find((opt) => opt.value === selectedValue);
                 return (
                   <span key={selectedValue} className="selected-item">
                     {option?.label || selectedValue}
@@ -371,7 +357,7 @@ const FormField = ({
                       }}
                       aria-label={`Remove ${option?.label || selectedValue}`}
                     >
-                      ×
+                      x
                     </button>
                   </span>
                 );
@@ -440,14 +426,14 @@ const FormField = ({
           <button
             type="button"
             id={name}
-            className="select-trigger"
+            className={`select-trigger${displayError ? ' error' : ''}`}
             onClick={() => !disabled && setIsDropdownOpen((prev) => !prev)}
             disabled={disabled}
             aria-haspopup="listbox"
             aria-expanded={isDropdownOpen}
           >
             <span className="select-value">
-              {normalizedSelectOptions.find((opt) => String(opt.value) === String(value))?.label || placeholder || "Select..."}
+              {normalizedSelectOptions.find((opt) => String(opt.value) === String(value))?.label || placeholder || 'Select...'}
             </span>
             <span className="select-chevron" aria-hidden="true" />
           </button>
@@ -476,147 +462,117 @@ const FormField = ({
             </div>
           )}
         </div>
+      ) : type === 'textarea' ? (
+        <textarea
+          id={name}
+          name={name}
+          value={value}
+          onChange={handleChange}
+          onBlur={handleBlur}
+          required={required}
+          className={displayError ? 'error' : ''}
+          placeholder={placeholder}
+          rows="4"
+          maxLength={maxLength}
+          disabled={disabled}
+        />
       ) : (
-        type === 'textarea' ? (
-          <textarea
-            id={name}
-            name={name}
-            value={value}
-            onChange={handleChange}
-            onBlur={handleBlur}
-            required={required}
-            className={error ? 'error' : ''}
-            placeholder={placeholder}
-            rows="4"
-            maxLength={maxLength}
-            disabled={disabled}
-          />
-        ) : (
-          (() => {
-            // Custom rendering for file inputs to show the selected filename in a read-only text box
-            if (type === 'file') {
-              const fileName = Array.isArray(value)
-                ? value.map((f) => (f && f.name) || String(f)).join(', ')
-                : (value && value.name) || (typeof value === 'string' ? value : '');
+        (() => {
+          if (type === 'file') {
+            const fileName = Array.isArray(value)
+              ? value.map((f) => (f && f.name) || String(f)).join(', ')
+              : (value && value.name) || (typeof value === 'string' ? value : '');
 
-              return (
-                <div className={`file-field${error ? ' error' : ''}`}>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    id={name}
-                    name={name}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    required={required}
-                    className="file-input-hidden"
-                    style={{ display: 'none' }}
-                    accept={accept}
-                    multiple={multiple}
-                    aria-label={label}
-                    disabled={disabled}
-                  />
-                  <div className={`file-input-display${showBrowseButton ? ' with-button' : ' no-button'}`}>
-                    <span className="file-icon upload-icon" aria-hidden="true">⬆</span>
-                    {showBrowseButton && (
-                      <button
-                        type="button"
-                        className="file-browse-btn"
-                        onClick={() => {
-                          if (!disabled && fileInputRef.current) {
-                            fileInputRef.current.click();
-                          }
-                        }}
-                        disabled={disabled}
-                      >
-                        Browse
-                      </button>
-                    )}
-                    <input
-                      type="text"
-                      readOnly
-                      value={fileName || ''}
-                      placeholder={placeholder || 'No file chosen'}
-                      className={`file-visual-input${error ? ' error' : ''}`}
+            return (
+              <div className={`file-field${displayError ? ' error' : ''}`}>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  id={name}
+                  name={name}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  required={required}
+                  className="file-input-hidden"
+                  style={{ display: 'none' }}
+                  accept={accept}
+                  multiple={multiple}
+                  aria-label={label}
+                  disabled={disabled}
+                />
+                <div className={`file-input-display${showBrowseButton ? ' with-button' : ' no-button'}`}>
+                  <span className="file-icon upload-icon" aria-hidden="true">^</span>
+                  {showBrowseButton && (
+                    <button
+                      type="button"
+                      className="file-browse-btn"
                       onClick={() => {
                         if (!disabled && fileInputRef.current) {
                           fileInputRef.current.click();
                         }
                       }}
                       disabled={disabled}
-                    />
-                  </div>
-                </div>
-              );
-            }
-
-            const inputElement = (
-              <input
-                type={resolvedInputType}
-                id={name}
-                name={name}
-                value={type === 'file' ? undefined : value}
-                onChange={handleChange}
-                onBlur={handleBlur}
-                onKeyDown={handleNumberKeyDown}
-                onPaste={(event) => {
-                  if (type !== 'number') return;
-                  const pastedText = event.clipboardData?.getData('text') || '';
-                  if ((allowDecimal && /[^\d.]/.test(pastedText)) || (!allowDecimal && /[^\d]/.test(pastedText))) {
-                    event.preventDefault();
-                    const sanitizedPaste = allowDecimal
-                      ? pastedText.replace(/[^\d.]/g, '')
-                      : pastedText.replace(/[^\d]/g, '');
-                    const currentValue = String(event.currentTarget.value || '');
-                    const combinedValue = `${currentValue}${sanitizedPaste}`;
-                    const nextValue = allowDecimal
-                      ? combinedValue.replace(/(\..*)\./g, '$1')
-                      : combinedValue.replace(/[^\d]/g, '');
-                    if (nextValue) {
-                      onChange(name, nextValue);
-                      triggerFieldValidation(nextValue);
-                    }
-                  }
-                }}
-                required={required}
-                min={type === 'number' ? '0' : undefined}
-                inputMode={type === 'number' ? (allowDecimal ? 'decimal' : 'numeric') : undefined}
-                pattern={type === 'number' ? (allowDecimal ? '[0-9]*[.]?[0-9]*' : '[0-9]*') : undefined}
-                className={error ? 'error' : ''}
-                placeholder={placeholder}
-                maxLength={maxLength}
-                accept={accept}
-                multiple={type === 'file' ? multiple : undefined}
-                disabled={disabled}
-              />
-            );
-
-            if (!prefix) {
-              return (
-                <>
-                  {inputElement}
-                  {type === 'file' && value && (
-                    Array.isArray(value) ? (
-                      <div className="selected-files">
-                        {value.map((f, idx) => (
-                          <div key={idx} className="selected-file">{(f && f.name) || String(f)}</div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="selected-files">
-                        <div className="selected-file">{(value && value.name) || String(value)}</div>
-                      </div>
-                    )
+                    >
+                      Browse
+                    </button>
                   )}
-                </>
-              );
-            }
+                  <input
+                    type="text"
+                    readOnly
+                    value={fileName || ''}
+                    placeholder={placeholder || 'No file chosen'}
+                    className={`file-visual-input${displayError ? ' error' : ''}`}
+                    onClick={() => {
+                      if (!disabled && fileInputRef.current) {
+                        fileInputRef.current.click();
+                      }
+                    }}
+                    disabled={disabled}
+                  />
+                </div>
+              </div>
+            );
+          }
 
+          const inputElement = (
+            <input
+              type={resolvedInputType}
+              id={name}
+              name={name}
+              value={type === 'file' ? undefined : value}
+              onChange={handleChange}
+              onBlur={handleBlur}
+              onKeyDown={handleNumberKeyDown}
+              onPaste={(event) => {
+                if (type !== 'number') return;
+                const pastedText = event.clipboardData?.getData('text') || '';
+                if (/[^\d]/.test(pastedText)) {
+                  event.preventDefault();
+                  const digitsOnly = pastedText.replace(/[^\d]/g, '');
+                  if (digitsOnly) {
+                    const nextValue = `${event.currentTarget.value || ''}${digitsOnly}`;
+                    onChange(name, nextValue);
+                    triggerFieldValidation(nextValue);
+                  }
+                }
+              }}
+              required={required}
+              min={type === 'number' ? '0' : undefined}
+              inputMode={type === 'number' ? 'numeric' : undefined}
+              pattern={type === 'number' ? '[0-9]*' : undefined}
+              className={displayError ? 'error' : ''}
+              placeholder={placeholder}
+              maxLength={maxLength}
+              accept={accept}
+              multiple={type === 'file' ? multiple : undefined}
+              disabled={disabled}
+            />
+          );
+
+          if (!prefix) {
             return (
-              <div className={`field-control has-prefix${error ? ' error' : ''}`}>
-                <span className="field-prefix">{prefix}</span>
+              <>
                 {inputElement}
-                {/* Display selected file name(s) for file inputs */}
                 {type === 'file' && value && (
                   Array.isArray(value) ? (
                     <div className="selected-files">
@@ -630,15 +586,36 @@ const FormField = ({
                     </div>
                   )
                 )}
-              </div>
+              </>
             );
-          })()
-        )
+          }
+
+          return (
+            <div className={`field-control has-prefix${displayError ? ' error' : ''}`}>
+              <span className="field-prefix">{prefix}</span>
+              {inputElement}
+              {type === 'file' && value && (
+                Array.isArray(value) ? (
+                  <div className="selected-files">
+                    {value.map((f, idx) => (
+                      <div key={idx} className="selected-file">{(f && f.name) || String(f)}</div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="selected-files">
+                    <div className="selected-file">{(value && value.name) || String(value)}</div>
+                  </div>
+                )
+              )}
+            </div>
+          );
+        })()
       )}
+
       {isValidating && <span className="validation-loading">Validating...</span>}
-      {!suppressError && (localError || error) && (
+      {!suppressError && displayError && (
         <>
-          <span className="error-message">{localError || error}</span>
+          <span className="error-message">{displayError}</span>
         </>
       )}
     </div>

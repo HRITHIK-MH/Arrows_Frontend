@@ -3,7 +3,6 @@ import React, { useState, useMemo, useCallback } from 'react';
 import { validateMandatoryField } from '../../utils/formValidation';
 import FormField from './FormField';
 import MultiStepForm from './MultiStepForm';
-import API from '../../api/axiosConfig';
 import './ReusableForm.css';
 
 const DRAFT_STORAGE_PREFIX = 'reusable-form-draft';
@@ -162,8 +161,6 @@ const FormStep = ({ formData, onChange, fields, title, onSetStepFields, validati
   const jdParsedFileRef = React.useRef('');
   const previousJdTemplateModeRef = React.useRef(formData.jdTemplateMode || 'manual');
   const [jdExtractionStatus, setJdExtractionStatus] = React.useState({ state: 'idle', message: '' });
-  const [jdGenerationLoading, setJdGenerationLoading] = React.useState(false);
-  const [jdGenerationError, setJdGenerationError] = React.useState('');
 
   // Notify parent about fields in this step
   React.useEffect(() => {
@@ -199,67 +196,6 @@ const FormStep = ({ formData, onChange, fields, title, onSetStepFields, validati
       onChange("clientName", mappedClientName);
     }
   }, [fields, formData.clientId, formData.clientName, onChange]);
-
-  const handleGenerateJD = React.useCallback(async () => {
-    if (!isJobBasicInfo) return;
-
-    const positionName = normalizeText(formData.positionName || '');
-    const minExperience = normalizeText(formData.minExperience || '');
-    const maxExperience = normalizeText(formData.maxExperience || '');
-
-    if (!positionName) {
-      setJdGenerationError('Please enter a position name before generating JD');
-      return;
-    }
-
-    setJdGenerationLoading(true);
-    setJdGenerationError('');
-
-    try {
-      const payload = {
-        positionName,
-        minExperience: minExperience ? parseInt(minExperience, 10) : undefined,
-        maxExperience: maxExperience ? parseInt(maxExperience, 10) : undefined,
-      };
-
-      const candidateEndpoints = ['/extendedb-ai/generate-jd', '/jobs/generate-jd'];
-      let response = null;
-
-      for (const endpoint of candidateEndpoints) {
-        try {
-          response = await API.post(endpoint, payload, {
-            skipAuthRedirect: true,
-          });
-          break;
-        } catch (requestError) {
-          const statusCode = requestError?.response?.status;
-          const isRecoverable = statusCode === 404 || statusCode === 405;
-          if (!isRecoverable || endpoint === candidateEndpoints[candidateEndpoints.length - 1]) {
-            throw requestError;
-          }
-        }
-      }
-
-      const generatedJD =
-        response?.data?.description ||
-        response?.data?.jdDescription ||
-        response?.data?.jobDescription ||
-        response?.data?.content ||
-        '';
-      if (generatedJD) {
-        onChange('jdDescription', generatedJD);
-        setJdGenerationError('');
-      } else {
-        setJdGenerationError('Failed to generate JD: No description returned');
-      }
-    } catch (error) {
-      console.error('Error generating JD:', error);
-      const errorMsg = error.response?.data?.message || error.message || 'Failed to generate JD';
-      setJdGenerationError(errorMsg);
-    } finally {
-      setJdGenerationLoading(false);
-    }
-  }, [formData.positionName, formData.minExperience, formData.maxExperience, isJobBasicInfo, onChange]);
 
   React.useEffect(() => {
     if (!isJobBasicInfo) return;
@@ -508,7 +444,11 @@ const FormStep = ({ formData, onChange, fields, title, onSetStepFields, validati
         label={field.label}
         type={field.type}
         name={field.name}
-        value={formData[field.name] || (field.type === 'multiselect' ? [] : '')}
+        value={
+          formData[field.name] !== undefined && formData[field.name] !== null
+            ? formData[field.name]
+            : (field.type === 'multiselect' ? [] : '')
+        }
         onChange={onChange}
         required={field.required}
         options={field.options}
@@ -709,43 +649,7 @@ const FormStep = ({ formData, onChange, fields, title, onSetStepFields, validati
               {getField('softSkills')}
             </div>
             <div className="grid-cell grid-col-3 grid-row-4">
-              {getField('technicalSkills')}
-            </div>
-
-            <div className="grid-cell grid-col-1 grid-row-5">
-              {renderField(normalizedAddTechnicalConfig)}
-            </div>
-            <div className="grid-cell grid-col-2 grid-row-5">
-              {getField('additionalSkills')}
-            </div>
-            <div className="grid-cell grid-col-3 grid-row-5">
-              <div className="jd-description-wrapper">
-                <label className="form-label">
-                  JD Description
-                </label>
-                <textarea
-                  className="jd-description-textarea"
-                  name="jdDescription"
-                  value={formData.jdDescription || ''}
-                  onChange={(e) => onChange('jdDescription', e.target.value)}
-                  placeholder="Enter or generate JD description"
-                  rows="4"
-                  disabled={disabled}
-                />
-                <button
-                  type="button"
-                  className="generate-jd-button"
-                  onClick={handleGenerateJD}
-                  disabled={disabled || jdGenerationLoading}
-                >
-                  {jdGenerationLoading ? 'Generating...' : 'Generate JD'}
-                </button>
-                {jdGenerationError && (
-                  <div className="jd-generation-error">
-                    {jdGenerationError}
-                  </div>
-                )}
-              </div>
+              {getField('hiringManager')}
             </div>
           </div>
         </div>
