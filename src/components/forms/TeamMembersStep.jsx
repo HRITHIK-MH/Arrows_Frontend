@@ -17,6 +17,7 @@ const TEAM_MEMBERS = [
   },
 ];
 
+const ADD_NEW_MEMBER_OPTION = "__add_new_member__";
 const normalizeName = (value) => String(value || "").trim().replace(/\s+/g, " ");
 
 const buildEmailFromName = (name) => {
@@ -134,11 +135,17 @@ const TeamMembersStep = ({
       event.preventDefault();
     }
     const trimmedNewMemberName = normalizeName(newTeamMemberName);
+    const isAddingNewMember = selectedRecruiterId === ADD_NEW_MEMBER_OPTION;
     let recruiterIdToAssign = selectedRecruiterId;
 
-    if (trimmedNewMemberName) {
+    if (isAddingNewMember) {
+      if (!trimmedNewMemberName) {
+        return;
+      }
+
       const existingMember = allTeamMembers.find(
-        (member) => normalizeName(member.name).toLowerCase() === trimmedNewMemberName.toLowerCase()
+        (member) =>
+          normalizeName(member.name).toLowerCase() === trimmedNewMemberName.toLowerCase()
       );
 
       if (existingMember) {
@@ -155,7 +162,7 @@ const TeamMembersStep = ({
       }
     }
 
-    if (!recruiterIdToAssign) {
+    if (!recruiterIdToAssign || recruiterIdToAssign === ADD_NEW_MEMBER_OPTION) {
       return;
     }
 
@@ -269,12 +276,18 @@ const TeamMembersStep = ({
                   onChange={(event) => {
                     const nextId = event.target.value;
                     setSelectedRecruiterId(nextId);
+                    if (nextId === ADD_NEW_MEMBER_OPTION) {
+                      setNewTeamMemberName("");
+                      setRecruiterRole("");
+                      return;
+                    }
                     setRecruiterRole(resolveRecruiterRole(nextId));
                   }}
                 >
                   <option value="" disabled>
                     Select recruiter
                   </option>
+                  <option value={ADD_NEW_MEMBER_OPTION}>Add new team member</option>
                   {allTeamMembers.map((member) => (
                     <option key={member.id} value={member.id}>
                       {member.name}
@@ -283,24 +296,21 @@ const TeamMembersStep = ({
                 </select>
               </div>
 
-              <div className="modal-field">
-                <label className="modal-label" htmlFor="newTeamMemberName">
-                  New Team Member Name
-                </label>
-                <input
-                  id="newTeamMemberName"
-                  className="modal-input"
-                  type="text"
-                  placeholder="Add a new team member"
-                  value={newTeamMemberName}
-                  onChange={(event) => {
-                    setNewTeamMemberName(event.target.value);
-                    if (event.target.value.trim()) {
-                      setSelectedRecruiterId("");
-                    }
-                  }}
-                />
-              </div>
+              {selectedRecruiterId === ADD_NEW_MEMBER_OPTION && (
+                <div className="modal-field">
+                  <label className="modal-label" htmlFor="newTeamMemberName">
+                    Name
+                  </label>
+                  <input
+                    id="newTeamMemberName"
+                    className="modal-input"
+                    type="text"
+                    placeholder="Add a new team member"
+                    value={newTeamMemberName}
+                    onChange={(event) => setNewTeamMemberName(event.target.value)}
+                  />
+                </div>
+              )}
 
               <div className="modal-field">
                 <label className="modal-label" htmlFor="recruiterRole">
@@ -321,7 +331,11 @@ const TeamMembersStep = ({
                   type="button"
                   className="modal-btn primary"
                   onClick={handleAssignSubmit}
-                  disabled={!selectedRecruiterId && !newTeamMemberName.trim()}
+                  disabled={
+                    !selectedRecruiterId ||
+                    (selectedRecruiterId === ADD_NEW_MEMBER_OPTION &&
+                      !newTeamMemberName.trim())
+                  }
                 >
                   Submit
                 </button>

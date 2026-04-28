@@ -10,7 +10,7 @@ import Login from "./pages/login/Login.jsx";
 // Lazy load page components for code splitting
 const Dashboard = lazy(() => import("./pages/dashboard/Dashboard.jsx"));
 const JobOpenings = lazy(() => import("./pages/job-openings/JobOpenings.jsx"));
-const Candidates = lazy(() => 
+const Candidates = lazy(() =>
   import("./pages/job-openings/Candidates.jsx").catch(err => {
     console.error("Failed to load Candidates:", err);
     throw err;
@@ -38,12 +38,12 @@ const LoadingFallback = () => (
 export default function App() {
   const [isSidebarOpen, setSidebarOpen] = React.useState(false);
   const location = useLocation();
-  
+
   // Debug logging for route changes
   useEffect(() => {
     console.log('Route changed to:', location.pathname);
   }, [location.pathname]);
-  
+
   useEffect(() => {
     document.documentElement.classList.remove("dark");
     document.documentElement.style.backgroundColor = "#ffffff";
@@ -132,7 +132,7 @@ export default function App() {
             <Route path="/" element={<Navigate to="/login" replace />} />
             <Route path="/login" element={<Login />} />
             <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/job-openings" element={<JobOpenings/>} />
+            <Route path="/job-openings" element={<JobOpenings />} />
             <Route path="/candidates" element={<Candidates />} />
             <Route path="/interviews" element={<Interviews />} />
             <Route path="/clients" element={<Clients />} />

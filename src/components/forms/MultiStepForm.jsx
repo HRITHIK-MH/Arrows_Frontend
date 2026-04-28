@@ -23,6 +23,12 @@ const MultiStepForm = ({
   const [formData, setFormData] = useState(() => initialData || {});
   const [stepFields, setStepFields] = useState({});
 
+  React.useEffect(() => {
+    setCurrentStep(0);
+    setFormData(initialData || {});
+    setStepFields({});
+  }, [initialData]);
+
   const normalizeLabel = (label, fallback) => {
     if (!label) return fallback;
     return label.replace('*', '').trim() || fallback;

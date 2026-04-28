@@ -63,79 +63,79 @@ const FilterBar = React.memo(({
   onClearFilters
 }) => {
   return (
-  <div className={styles.filtersBar}>
-    <div className={styles.filtersLeft}>
-      <FiFilter className={styles.filterIcon} aria-hidden="true" />
-      <div className={styles.searchField}>
-        <FiSearch className={styles.searchIcon} aria-hidden="true" />
+    <div className={styles.filtersBar}>
+      <div className={styles.filtersLeft}>
+        <FiFilter className={styles.filterIcon} aria-hidden="true" />
+        <div className={styles.searchField}>
+          <FiSearch className={styles.searchIcon} aria-hidden="true" />
+          <input
+            type="text"
+            placeholder="Search here..."
+            value={searchTerm}
+            onChange={onSearchChange}
+            className={styles.searchInput}
+          />
+        </div>
+
+        <select
+          value={filterPostingTitle}
+          onChange={onFilterPostingTitleChange}
+          className={styles.selectField}
+        >
+          <option value="">Posting Title</option>
+          {uniquePostingTitles.map(title => (
+            <option key={title} value={title}>{title}</option>
+          ))}
+        </select>
+
         <input
-          type="text"
-          placeholder="Search here..."
-          value={searchTerm}
-          onChange={onSearchChange}
-          className={styles.searchInput}
+          type="date"
+          value={filterTargetDate}
+          onChange={onFilterTargetDateChange}
+          className={styles.dateField}
         />
+
+        <select
+          value={filterJobStatus}
+          onChange={onFilterJobStatusChange}
+          className={styles.selectField}
+        >
+          <option value="">Job Status</option>
+          {uniqueJobStatuses.map(status => (
+            <option key={status} value={status}>{status}</option>
+          ))}
+        </select>
+
+        <select
+          value={filterHiringManager}
+          onChange={onFilterHiringManagerChange}
+          className={styles.selectField}
+        >
+          <option value="">Hiring Manager</option>
+          {uniqueHiringManagers.map(manager => (
+            <option key={manager} value={manager}>{manager}</option>
+          ))}
+        </select>
+
       </div>
 
-      <select
-        value={filterPostingTitle}
-        onChange={onFilterPostingTitleChange}
-        className={styles.selectField}
-      >
-        <option value="">Posting Title</option>
-        {uniquePostingTitles.map(title => (
-          <option key={title} value={title}>{title}</option>
-        ))}
-      </select>
-
-      <input
-        type="date"
-        value={filterTargetDate}
-        onChange={onFilterTargetDateChange}
-        className={styles.dateField}
-      />
-
-      <select
-        value={filterJobStatus}
-        onChange={onFilterJobStatusChange}
-        className={styles.selectField}
-      >
-        <option value="">Job Status</option>
-        {uniqueJobStatuses.map(status => (
-          <option key={status} value={status}>{status}</option>
-        ))}
-      </select>
-
-      <select
-        value={filterHiringManager}
-        onChange={onFilterHiringManagerChange}
-        className={styles.selectField}
-      >
-        <option value="">Hiring Manager</option>
-        {uniqueHiringManagers.map(manager => (
-          <option key={manager} value={manager}>{manager}</option>
-        ))}
-      </select>
-
+      <div className={styles.filtersRight}>
+        <button
+          className={styles.clearButton}
+          type="button"
+          onClick={onClearFilters}
+          disabled={!hasFilters}
+        >
+          Clear
+        </button>
+      </div>
     </div>
-
-    <div className={styles.filtersRight}>
-      <button
-        className={styles.clearButton}
-        type="button"
-        onClick={onClearFilters}
-        disabled={!hasFilters}
-      >
-        Clear
-      </button>
-    </div>
-  </div>
   );
 });
 
 FilterBar.displayName = 'FilterBar';
 
-export default function JobOpenings() {
+export default function JobOpenings({ createMode = false }) {
   const navigate = useNavigate();
   const [showJobOpeningForm, setShowJobOpeningForm] = React.useState(false);
   const [showDataTable, setShowDataTable] = React.useState(true);
@@ -310,7 +310,15 @@ export default function JobOpenings() {
   const [isCandidateDrawerOpen, setIsCandidateDrawerOpen] = React.useState(false);
   const [selectedCandidate, setSelectedCandidate] = React.useState(null);
   const [drawerTab, setDrawerTab] = React.useState("Job Information");
+  const [sortConfig, setSortConfig] = React.useState({ key: null, direction: 'asc' });
   const addJobOpeningMenuRef = React.useRef(null);
+
+  const handleSort = React.useCallback((key) => {
+    setSortConfig((prev) => ({
+      key,
+      direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc',
+    }));
+  }, []);
 
   const deferredSearchTerm = React.useDeferredValue(searchTerm);
 
@@ -388,11 +396,11 @@ export default function JobOpenings() {
           nextDrafts = prevDrafts.map((draft) =>
             draft.id === savedDraftId
               ? {
-                  ...draft,
-                  title: getJobOpeningDraftTitle(sanitizedData, prevDrafts.length),
-                  updatedAt: now,
-                  data: sanitizedData,
-                }
+                ...draft,
+                title: getJobOpeningDraftTitle(sanitizedData, prevDrafts.length),
+                updatedAt: now,
+                data: sanitizedData,
+              }
               : draft
           );
         } else {
@@ -458,6 +466,7 @@ export default function JobOpenings() {
     setCurrentPage(1);
   }, []);
 
+
   const normalizedData = React.useMemo(() => (
     submittedData.map((item, sourceIndex) => ({
       ...item,
@@ -479,7 +488,7 @@ export default function JobOpenings() {
   ), [submittedData]);
 
   // Get unique values for filter dropdowns - memoized to avoid recalculations
-  const uniquePostingTitles = React.useMemo(() => 
+  const uniquePostingTitles = React.useMemo(() =>
     [...new Set(normalizedData.map(item => item.postingTitle).filter(Boolean))],
     [normalizedData]
   );
@@ -495,14 +504,14 @@ export default function JobOpenings() {
   );
 
   // Memoized filter logic - only recalculates when dependencies change
-  const filteredData = React.useMemo(() =>
-    normalizedData.filter(item => {
-      const matchesSearch = 
-        !deferredSearchTerm || 
-        Object.values(item).some(value => 
+  const filteredData = React.useMemo(() => {
+    let result = normalizedData.filter(item => {
+      const matchesSearch =
+        !deferredSearchTerm ||
+        Object.values(item).some(value =>
           String(value).toLowerCase().includes(deferredSearchTerm.toLowerCase())
         );
-      
+
       const matchesPostingTitle = !filterPostingTitle || item.postingTitle === filterPostingTitle;
       const matchesTargetDate = !filterTargetDate || item.targetDate === filterTargetDate;
       const matchesJobStatus = !filterJobStatus || item.jobOpeningStatus === filterJobStatus;
@@ -515,8 +524,23 @@ export default function JobOpenings() {
         matchesJobStatus &&
         matchesHiringManager
       );
-    }),
-    [normalizedData, deferredSearchTerm, filterPostingTitle, filterTargetDate, filterJobStatus, filterHiringManager]
+    });
+
+
+    if (sortConfig.key) {
+      result.sort((a, b) => {
+        const aValue = String(a[sortConfig.key] || '').toLowerCase();
+        const bValue = String(b[sortConfig.key] || '').toLowerCase();
+
+        if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+
+    return result;
+  },
+    [normalizedData, deferredSearchTerm, filterPostingTitle, filterTargetDate, filterJobStatus, filterHiringManager, sortConfig]
   );
 
   const hasFilters = Boolean(
@@ -610,6 +634,24 @@ export default function JobOpenings() {
     return `JOP-${String(maxSequence + 1).padStart(3, "0")}`;
   }, [submittedData]);
 
+  React.useEffect(() => {
+    if (createMode) {
+      setShowJobOpeningForm(true);
+      setShowDataTable(false);
+      setEditingIndex(null);
+      setEditingData((prev) => {
+        if (!prev || (prev.jobPositionId !== nextJobPositionId && !prev.jobId)) {
+          return {
+            jobPositionId: nextJobPositionId,
+            jdTemplateMode: 'manual',
+          };
+        }
+        return prev;
+      });
+      setEditLocked(false);
+    }
+  }, [createMode, nextJobPositionId]);
+
   const openJobOpeningForm = React.useCallback((draftData = null, draftId = null) => {
     setShowJobOpeningForm(true);
     setShowDataTable(false);
@@ -626,8 +668,8 @@ export default function JobOpenings() {
   }, [nextJobPositionId]);
 
   const handleCreateJobOpening = React.useCallback(() => {
-    openJobOpeningForm(null, null);
-  }, [openJobOpeningForm]);
+    navigate("/job-openings/create");
+  }, [navigate]);
 
   const handleJobOpeningMenuToggle = React.useCallback(() => {
     setJobOpeningDrafts(getJobOpeningDrafts());
@@ -704,7 +746,7 @@ export default function JobOpenings() {
     });
     setShowJobOpeningForm(true);
     setShowDataTable(false);
-    setEditLocked(true);
+    setEditLocked(false);
   }, []);
 
   const handleDeleteJobOpening = React.useCallback((row, index) => {
@@ -716,12 +758,16 @@ export default function JobOpenings() {
 
   const handleJobOpeningSubmit = React.useCallback((data) => {
     const effectiveJdAttachment = data.jdTemplateMode === 'template' ? data.jdAttachment : null;
+    const resolvedAssignedRecruiters =
+      data.assignedRecruiters ||
+      resolveAssignedRecruiterNames(data.teamMembers, data.customTeamMembers);
     const normalized = {
       ...data,
       jdAttachment: effectiveJdAttachment,
       extraTechnicalSkills: data.extraTechnicalSkills ?? data.addTechnicalSkills ?? [],
       jobOpeningStatus: data.jobOpeningStatus || data.jobStatus || 'Active',
-      assignedRecruiters: data.teamMembers || []
+
+      assignedRecruiters: resolvedAssignedRecruiters
     };
     if (editingIndex !== null) {
       console.log('Job opening updated:', normalized);
@@ -908,7 +954,7 @@ export default function JobOpenings() {
 
         {showJobOpeningForm && (
           <div className={styles.formWrap}>
-            {editingIndex !== null && (
+            {editingIndex !== null && editLocked && (
               <div className={styles.formHeader}>
                 <button
                   type="button"
@@ -940,10 +986,10 @@ export default function JobOpenings() {
               initialData={
                 editingData
                   ? {
-                      ...editingData,
-                      extraTechnicalSkills:
-                        editingData.extraTechnicalSkills ?? editingData.addTechnicalSkills ?? []
-                    }
+                    ...editingData,
+                    extraTechnicalSkills:
+                      editingData.extraTechnicalSkills ?? editingData.addTechnicalSkills ?? []
+                  }
                   : editingData
               }
               readOnly={editLocked}
@@ -988,20 +1034,40 @@ export default function JobOpenings() {
                 </colgroup>
                 <thead>
                   <tr>
-                    <th>Opening Job Id</th>
-                    <th>Posting Title</th>
-                    <th>Client Name</th>
-                    <th>Assigned Recruiter(s)</th>
-                    <th>Target Date</th>
-                    <th>Job Opening Status</th>
-                    <th>City</th>
-                    <th>Account Manager</th>
-                    <th>Hiring Manager</th>
+                    {[
+                      { key: "openingJobId", label: "Opening Job Id" },
+                      { key: "postingTitle", label: "Posting Title" },
+                      { key: "clientName", label: "Client Name" },
+                      { key: "assignedRecruiters", label: "Assigned Recruiter(s)" },
+                      { key: "targetDate", label: "Target Date" },
+                      { key: "jobOpeningStatus", label: "Job Opening Status" },
+                      { key: "city", label: "City" },
+                      { key: "accountManager", label: "Account Manager" },
+                      { key: "hiringManager", label: "Hiring Manager" },
+                    ].map((col) => (
+                      <th
+                        key={col.key}
+                        onClick={() => handleSort(col.key)}
+                        style={{ cursor: 'pointer', position: 'relative' }}
+                      >
+                        <span className={styles.headerLabel}>{col.label}</span>
+                        <span className={styles.sortArrows} aria-hidden="true">
+                          <span className={sortConfig.key === col.key && sortConfig.direction === 'asc' ? styles.sortArrowActive : ""}>▲</span>
+                          <span className={sortConfig.key === col.key && sortConfig.direction === 'desc' ? styles.sortArrowActive : ""}>▼</span>
+                        </span>
+                      </th>
+                    ))}
                     <th className={styles.actionsCol}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {paginatedData.map((row, index) => {
+                  {paginatedData.length === 0 ? (
+                    <tr>
+                      <td colSpan={10} className={styles.emptyTableCell}>
+                        No jobs found
+                      </td>
+                    </tr>
+                  ) : paginatedData.map((row, index) => {
                     const sourceIndex = Number.isInteger(row?._sourceIndex) ? row._sourceIndex : index;
                     const rowKey = row.openingJobId || row.jobPositionId || String(sourceIndex);
                     const isExpanded = Boolean(expandedRows[rowKey]);
@@ -1182,22 +1248,22 @@ export default function JobOpenings() {
                   </button>
                 </div>
                 <div className={styles.pagination} style={{ display: "none" }}>
-                <button type="button" className={styles.pageBtn} aria-label="Previous page">
-                  ‹
-                </button>
-                <button type="button" className={`${styles.pageBtn} ${styles.pageBtnActive}`}>
-                  1
-                </button>
-                <button type="button" className={styles.pageBtn}>
-                  2
-                </button>
-                <button type="button" className={styles.pageBtn}>
-                  3
-                </button>
-                <button type="button" className={styles.pageBtn} aria-label="Next page">
-                  ›
-                </button>
-              </div>
+                  <button type="button" className={styles.pageBtn} aria-label="Previous page">
+                    ‹
+                  </button>
+                  <button type="button" className={`${styles.pageBtn} ${styles.pageBtnActive}`}>
+                    1
+                  </button>
+                  <button type="button" className={styles.pageBtn}>
+                    2
+                  </button>
+                  <button type="button" className={styles.pageBtn}>
+                    3
+                  </button>
+                  <button type="button" className={styles.pageBtn} aria-label="Next page">
+                    ›
+                  </button>
+                </div>
               </>
             </div>
           </div>
@@ -1452,4 +1518,4 @@ export default function JobOpenings() {
     </div>
   );
 }
- 
+
