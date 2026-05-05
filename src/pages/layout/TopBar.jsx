@@ -164,7 +164,7 @@ export default function TopBar({ isSidebarOpen, setSidebarOpen }) {
             aria-expanded={menuOpen ? "true" : "false"}
             onClick={() => setMenuOpen((v) => !v)}
           >
-            <span aria-hidden className="profileAvatar" />
+            <span aria-hidden className="profileAvatar">S</span>
            
             <span className="profileText">
                     <span className="profileName">Saravanan</span>
