@@ -4,6 +4,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import NotificationBell from "../notification/NotificationBell";
+import ProfileModal from "../../components/ProfileModal";
+import SettingsModal from "../../components/SettingsModal";
 import { LINKS } from "./routesConfig";
 
 
@@ -85,6 +87,8 @@ export default function TopBar({ isSidebarOpen, setSidebarOpen }) {
   /** Profile menu state */
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
 
   // Close profile menu when clicking outside
@@ -176,11 +180,14 @@ export default function TopBar({ isSidebarOpen, setSidebarOpen }) {
 
           {menuOpen && (
             <ul className="profileMenu" role="menu" aria-label="Profile menu">
-              <li role="menuitem" className="profileMenuItem">Profile</li>
-              <li role="menuitem" className="profileMenuItem">Settings</li>
+              <li role="menuitem" className="profileMenuItem" onClick={() => { setMenuOpen(false); setProfileOpen(true); }}>Profile</li>
+              <li role="menuitem" className="profileMenuItem" onClick={() => { setMenuOpen(false); setSettingsOpen(true); }}>Settings</li>
               <li role="menuitem" className="profileMenuItem profileMenuDanger" onClick={() => { setMenuOpen(false); navigate('/login'); }}>Logout</li>
             </ul>
           )}
+
+          {profileOpen && <ProfileModal onClose={() => setProfileOpen(false)} />}
+          {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} />}
         </div>
       </div>
     </header>

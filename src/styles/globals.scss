@@ -69,6 +69,92 @@
 } 
 
 
+/* ===== Dark Theme ===== */
+[data-theme="dark"] {
+  --bg: rgba(15, 23, 42, 0.92);
+  --text: #e2e8f0;
+  --text-primary: #f1f5f9;
+  --sidebar-bg: rgba(30, 41, 59, 0.95);
+  --header-bg: rgba(15, 23, 42, 0.92);
+  --divider: rgba(255, 255, 255, 0.08);
+  --sidebar-icon: #94a3b8;
+  --blue-border: rgba(255, 255, 255, 0.1);
+  --bgiconactive: rgba(59, 130, 246, 0.2);
+  --subtext: #94a3b8;
+  --dropdown-bg: #1e293b;
+  --dropdown-border: #334155;
+  --dropdown-text: #e2e8f0;
+  --dropdown-text-disabled: #64748b;
+  color-scheme: dark;
+}
+
+[data-theme="dark"] html,
+[data-theme="dark"] body,
+html[data-theme="dark"],
+html[data-theme="dark"] body {
+  background-color: rgba(15, 23, 42, 0.92) !important;
+  color: #e2e8f0 !important;
+}
+
+[data-theme="dark"] .app {
+  background-color: rgba(15, 23, 42, 0.92);
+  min-height: 100vh;
+}
+
+[data-theme="dark"] .header {
+  background: rgba(15, 23, 42, 0.92) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  color: #e2e8f0;
+}
+
+[data-theme="dark"] .sidebar {
+  background: rgba(30, 41, 59, 0.95) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-theme="dark"] .main {
+  background: rgba(15, 23, 42, 0.92) !important;
+}
+
+[data-theme="dark"] .profileBtn {
+  background: rgba(30, 41, 59, 0.9) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  color: #e2e8f0 !important;
+}
+
+[data-theme="dark"] .profileMenu {
+  background: #1e293b !important;
+  border-color: #334155 !important;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.4) !important;
+}
+
+[data-theme="dark"] .profileMenu::before {
+  background: #1e293b !important;
+  border-color: #334155 !important;
+}
+
+[data-theme="dark"] .profileMenuItem {
+  color: #e2e8f0 !important;
+}
+
+[data-theme="dark"] .profileMenuItem:hover {
+  background: rgba(255, 255, 255, 0.07) !important;
+}
+
+[data-theme="dark"] .topTitle,
+[data-theme="dark"] .breadcrumbLink,
+[data-theme="dark"] .breadcrumbCurrent {
+  color: #e2e8f0 !important;
+}
+
+[data-theme="dark"] .profileName {
+  color: #f1f5f9 !important;
+}
+
+[data-theme="dark"] .role {
+  color: #94a3b8 !important;
+}
+
 html, body {
   background-color: var(--bg) !important;
   color: var(--text) !important;

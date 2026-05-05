@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { FiBell } from 'react-icons/fi';
+import { useTheme } from '../../context/ThemeContext';
 import './notification.scss'; // import the SCSS (global)
 
 
@@ -7,7 +8,7 @@ export default function NotificationBell() {
   const [open, setOpen] = useState(false);
   const [unread, setUnread] = useState(3);
   const ref = useRef(null);
-
+  const { notificationsEnabled } = useTheme();
 
   // Close menu on outside click / Escape
   useEffect(() => {
@@ -24,6 +25,8 @@ export default function NotificationBell() {
       document.removeEventListener('keydown', onKey);
     };
   }, []);
+
+  if (!notificationsEnabled) return null;
 
 
   return (

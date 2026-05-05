@@ -160,6 +160,7 @@ function DashboardStatsBar() {
 
 const DASHBOARD_KEY = "default";
 const DASHBOARD_NATIVE_FILTERS_KEY = import.meta.env.VITE_SUPERSET_NATIVE_FILTERS_KEY || "";
+const DASHBOARD_PERMALINK_KEY = import.meta.env.VITE_SUPERSET_PERMALINK_KEY || "";
 const DASHBOARD_EMBED_ID = import.meta.env.VITE_SUPERSET_EMBED_ID || "";
 
 /**
@@ -191,13 +192,32 @@ export default function Dashboard() {
   const [isLoadingToken, setIsLoadingToken] = React.useState(false);
   const [isEmbedding, setIsEmbedding] = React.useState(false);
   const [tokenError, setTokenError] = React.useState("");
-  const [dashboardId, setDashboardId] = React.useState(DASHBOARD_UUIDS[DASHBOARD_KEY]);
   const embedContainerRef = React.useRef(null);
   const isEmbeddedRef = React.useRef(false);
 
   const selectedDashboardUuid = DASHBOARD_UUIDS[DASHBOARD_KEY];
-  const embedDashboardId = DASHBOARD_EMBED_ID || dashboardId;
+  const effectiveDashboardId = DASHBOARD_EMBED_ID || selectedDashboardUuid;
   const supersetDomain = import.meta.env.VITE_SUPERSET_URL || "http://localhost:8088";
+
+  const dashboardUrlParams = React.useMemo(() => {
+    const urlSearchParams = new URLSearchParams(window.location.search);
+    const nativeFiltersKey = (urlSearchParams.get("native_filters_key") || DASHBOARD_NATIVE_FILTERS_KEY || "").trim();
+    const permalinkKey = (urlSearchParams.get("permalink_key") || DASHBOARD_PERMALINK_KEY || "").trim();
+
+    const params = {};
+
+    if (nativeFiltersKey) {
+      params.native_filters_key = nativeFiltersKey;
+    }
+
+    if (permalinkKey) {
+      params.permalink_key = permalinkKey;
+    }
+
+    return params;
+  }, []);
+
+  const hasDashboardUrlParams = Object.keys(dashboardUrlParams).length > 0;
 
   const loadGuestToken = React.useCallback(async () => {
     setIsLoadingToken(true);
@@ -206,7 +226,6 @@ export default function Dashboard() {
     // Use hardcoded token if available (development mode)
     if (HAS_HARDCODED_GUEST_TOKEN) {
       setGuestToken(HARDCODED_GUEST_TOKEN);
-      setDashboardId(selectedDashboardUuid);
       isEmbeddedRef.current = false;
       setIsLoadingToken(false);
       return;
@@ -216,7 +235,7 @@ export default function Dashboard() {
     try {
       const payload = {
         dashboardKey: DASHBOARD_KEY,
-        resources: selectedDashboardUuid ? [{ type: "dashboard", id: String(selectedDashboardUuid) }] : [],
+        resources: effectiveDashboardId ? [{ type: "dashboard", id: String(effectiveDashboardId) }] : [],
         rls: [],
       };
 
@@ -227,7 +246,6 @@ export default function Dashboard() {
       }
 
       setGuestToken(result.token);
-      setDashboardId(result.raw?.dashboardUuid || selectedDashboardUuid);
       isEmbeddedRef.current = false;
     } catch (error) {
       setTokenError(error?.response?.data?.message || error?.message || "Failed to fetch guest token");
@@ -236,12 +254,12 @@ export default function Dashboard() {
     } finally {
       setIsLoadingToken(false);
     }
-  }, [selectedDashboardUuid]);
+  }, [effectiveDashboardId]);
 
   // Embed dashboard when token is available
   React.useEffect(() => {
     const mountPoint = embedContainerRef.current;
-    if (!mountPoint || !guestToken || !embedDashboardId || tokenError || isEmbeddedRef.current) {
+    if (!mountPoint || !guestToken || !effectiveDashboardId || tokenError || isEmbeddedRef.current) {
       return;
     }
 
@@ -250,30 +268,50 @@ export default function Dashboard() {
       setIsEmbedding(true);
       mountPoint.innerHTML = "";
 
-      try {
-        await embedDashboard({
-          // Per SDK docs, this must match the dashboard identifier allowed for embedding.
-          id: embedDashboardId,
-          supersetDomain,
-          mountPoint,
-          fetchGuestToken: async () => guestToken,
-          dashboardUiConfig: {
-            hideTitle: true,
-            hideChartControls: true,
-            hideTab: false,
-            filters: {
-              visible: true,
-              expanded: false,
-            },
-            ...(DASHBOARD_NATIVE_FILTERS_KEY
-              ? {
-                urlParams: {
-                  native_filters_key: DASHBOARD_NATIVE_FILTERS_KEY,
-                },
-              }
-              : {}),
+      const embedOptions = {
+        // Per SDK docs, this must match the dashboard identifier allowed for embedding.
+        id: effectiveDashboardId,
+        supersetDomain,
+        mountPoint,
+        fetchGuestToken: async () => guestToken,
+        ...(hasDashboardUrlParams ? { urlParams: dashboardUrlParams } : {}),
+        dashboardUiConfig: {
+          hideTitle: true,
+          hideChartControls: true,
+          hideTab: false,
+          filters: {
+            visible: true,
+            expanded: false,
           },
-        });
+          ...(hasDashboardUrlParams
+            ? {
+              urlParams: {
+                ...dashboardUrlParams,
+              },
+            }
+            : {}),
+        },
+      };
+
+      try {
+        try {
+          await embedDashboard(embedOptions);
+        } catch (error) {
+          const isNotFound = String(error?.message || "").toLowerCase().includes("not found");
+          if (!isNotFound || !hasDashboardUrlParams) {
+            throw error;
+          }
+
+          // A stale permalink/native filter key can produce Not found; retry once without URL params.
+          await embedDashboard({
+            ...embedOptions,
+            urlParams: undefined,
+            dashboardUiConfig: {
+              ...embedOptions.dashboardUiConfig,
+              urlParams: undefined,
+            },
+          });
+        }
 
         if (!cancelled) {
           isEmbeddedRef.current = true;
@@ -337,7 +375,9 @@ export default function Dashboard() {
         if (!cancelled) {
           const embedError = error?.message || "Failed to embed dashboard";
           if (String(embedError).toLowerCase().includes("not found")) {
-            setTokenError("Superset dashboard not found or not enabled for embedding. Verify dashboard UUID and Superset embed settings.");
+            setTokenError(
+              "Superset dashboard not found or not enabled for embedding. Verify VITE_SUPERSET_EMBED_ID matches the dashboard allowed in Superset embedding settings."
+            );
           } else {
             setTokenError(embedError);
           }
@@ -354,7 +394,7 @@ export default function Dashboard() {
     return () => {
       cancelled = true;
     };
-  }, [embedDashboardId, guestToken, tokenError]);
+  }, [effectiveDashboardId, guestToken, tokenError, hasDashboardUrlParams, dashboardUrlParams, supersetDomain]);
 
   // Load token on mount
   React.useEffect(() => {
