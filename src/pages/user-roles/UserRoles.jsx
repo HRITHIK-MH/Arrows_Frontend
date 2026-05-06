@@ -395,10 +395,6 @@ export default function UserRoles() {
                 Table View
               </button>
             </div>
-            <button className={styles.addButton} onClick={handleAddUser}>
-              <FiPlus aria-hidden="true" />
-              Add User
-            </button>
           </div>
         </div>
         <p className={styles.pageDescription}>
@@ -445,20 +441,6 @@ export default function UserRoles() {
                       >
                         <FiEye />
                       </button>
-                      <button 
-                        className={styles.actionBtn}
-                        onClick={() => handleEditUser(ceo)}
-                        title="Edit"
-                      >
-                        <FiEdit2 />
-                      </button>
-                      <button 
-                        className={styles.actionBtn}
-                        onClick={() => handleDeleteUser(ceo.id)}
-                        title="Delete"
-                      >
-                        <FiTrash2 />
-                      </button>
                     </div>
                   </div>
                   <div className={styles.connectorDown}></div>
@@ -495,20 +477,6 @@ export default function UserRoles() {
                               >
                                 <FiEye />
                               </button>
-                              <button 
-                                className={styles.actionBtn}
-                                onClick={() => handleEditUser(manager)}
-                                title="Edit"
-                              >
-                                <FiEdit2 />
-                              </button>
-                              <button 
-                                className={styles.actionBtn}
-                                onClick={() => handleDeleteUser(manager.id)}
-                                title="Delete"
-                              >
-                                <FiTrash2 />
-                              </button>
                             </div>
                           </div>
                           {getRecruitersForManager(manager.fullName).length > 0 && (
@@ -540,20 +508,6 @@ export default function UserRoles() {
                                       title="View"
                                     >
                                       <FiEye />
-                                    </button>
-                                    <button 
-                                      className={styles.actionBtn}
-                                      onClick={() => handleEditUser(recruiter)}
-                                      title="Edit"
-                                    >
-                                      <FiEdit2 />
-                                    </button>
-                                    <button 
-                                      className={styles.actionBtn}
-                                      onClick={() => handleDeleteUser(recruiter.id)}
-                                      title="Delete"
-                                    >
-                                      <FiTrash2 />
                                     </button>
                                   </div>
                                 </div>

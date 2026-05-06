@@ -13,7 +13,7 @@ import {
   FiTrash2,
   FiX,
 } from "react-icons/fi";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { jobOpeningConfig } from "../../components/forms/formConfigs";
 import ReusableForm from "../../components/forms/ReusableForm";
 import styles from "./JobOpenings.module.scss";
@@ -24,7 +24,23 @@ const DEFAULT_TEAM_MEMBERS = [
 ];
 
 const JOB_OPENING_DRAFT_STORAGE_KEY = "job-openings:add-draft:v1";
+const JOB_OPENING_TABLE_STORAGE_KEY = "job-openings:table:v1";
 const createJobOpeningDraftId = () => `draft-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+const saveJobOpeningTableData = (rows) => {
+  try {
+    localStorage.setItem(JOB_OPENING_TABLE_STORAGE_KEY, JSON.stringify(rows));
+  } catch (error) {
+    console.error("Failed to save job openings:", error);
+  }
+};
+
+const getJobOpeningSequence = (value) => {
+  const matchedDigits = String(value || "").match(/(\d+)/);
+  if (!matchedDigits) return 0;
+  const parsed = Number(matchedDigits[1]);
+  return Number.isNaN(parsed) ? 0 : parsed;
+};
 
 const formatAssignedRecruiters = (assignedRecruiters, customTeamMembers = []) => {
   const teamDirectory = [
@@ -42,6 +58,23 @@ const formatAssignedRecruiters = (assignedRecruiters, customTeamMembers = []) =>
 
   const textValue = String(assignedRecruiters || "").trim();
   return textValue || "-";
+};
+
+const resolveAssignedRecruiterNames = (teamMembers, customTeamMembers = []) => {
+  const teamDirectory = [
+    ...DEFAULT_TEAM_MEMBERS,
+    ...(Array.isArray(customTeamMembers) ? customTeamMembers : []),
+  ];
+  const memberNameById = new Map(teamDirectory.map((member) => [member.id, member.name]));
+
+  if (!Array.isArray(teamMembers)) {
+    return String(teamMembers || "").trim();
+  }
+
+  return teamMembers
+    .map((memberId) => memberNameById.get(memberId) || String(memberId || "").trim())
+    .filter(Boolean)
+    .join(", ");
 };
 
 // Memoized filter bar component to prevent unnecessary re-renders
@@ -137,9 +170,21 @@ FilterBar.displayName = 'FilterBar';
 
 export default function JobOpenings({ createMode = false }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const [showJobOpeningForm, setShowJobOpeningForm] = React.useState(false);
   const [showDataTable, setShowDataTable] = React.useState(true);
-  const [submittedData, setSubmittedData] = React.useState([
+  const [submittedData, setSubmittedData] = React.useState(() => {
+    try {
+      const savedData = localStorage.getItem(JOB_OPENING_TABLE_STORAGE_KEY);
+      const parsedData = savedData ? JSON.parse(savedData) : null;
+      if (Array.isArray(parsedData) && parsedData.length > 0) {
+        return parsedData;
+      }
+    } catch (error) {
+      console.error("Failed to load saved job openings:", error);
+    }
+
+    return [
     {
       jobPositionId: "JOP-001",
       positionName: "Senior React Developer",
@@ -287,7 +332,8 @@ export default function JobOpenings({ createMode = false }) {
         }
       ]
     }
-  ]);
+    ];
+  });
   const [showSuccessMessage, setShowSuccessMessage] = React.useState(false);
   const [successMessageText, setSuccessMessageText] = React.useState("Job opening created successfully");
   const [editingIndex, setEditingIndex] = React.useState(null);
@@ -312,6 +358,7 @@ export default function JobOpenings({ createMode = false }) {
   const [drawerTab, setDrawerTab] = React.useState("Job Information");
   const [sortConfig, setSortConfig] = React.useState({ key: null, direction: 'asc' });
   const addJobOpeningMenuRef = React.useRef(null);
+  const createModeInitializedRef = React.useRef(false);
 
   const handleSort = React.useCallback((key) => {
     setSortConfig((prev) => ({
@@ -329,6 +376,10 @@ export default function JobOpenings({ createMode = false }) {
       setShowSuccessMessage(false);
     }, 3000);
   }, []);
+
+  React.useEffect(() => {
+    saveJobOpeningTableData(submittedData);
+  }, [submittedData]);
 
   const sanitizeDraftValue = React.useCallback((value) => {
     const sanitize = (input) => {
@@ -622,19 +673,29 @@ export default function JobOpenings({ createMode = false }) {
   }, []);
 
   const nextJobPositionId = React.useMemo(() => {
-    const maxSequence = submittedData.reduce((maxValue, item) => {
-      const candidateId = item?.jobPositionId || item?.openingJobId || "";
-      const matchedDigits = String(candidateId).match(/(\d+)/);
-      if (!matchedDigits) return maxValue;
-      const parsed = Number(matchedDigits[1]);
-      if (Number.isNaN(parsed)) return maxValue;
-      return Math.max(maxValue, parsed);
-    }, 0);
+    const submittedSequences = submittedData.map((item) =>
+      getJobOpeningSequence(item?.jobPositionId || item?.openingJobId || item?.jobId)
+    );
+    const draftSequences = jobOpeningDrafts.map((draft) =>
+      getJobOpeningSequence(draft?.data?.jobPositionId || draft?.data?.openingJobId || draft?.data?.jobId)
+    );
+    const maxSequence = Math.max(0, ...submittedSequences, ...draftSequences);
 
     return `JOP-${String(maxSequence + 1).padStart(3, "0")}`;
-  }, [submittedData]);
+  }, [jobOpeningDrafts, submittedData]);
 
   React.useEffect(() => {
+    if (!createMode) {
+      createModeInitializedRef.current = false;
+      return;
+    }
+
+    if (createModeInitializedRef.current) {
+      return;
+    }
+
+    createModeInitializedRef.current = true;
+
     if (createMode) {
       setShowJobOpeningForm(true);
       setShowDataTable(false);
@@ -643,7 +704,6 @@ export default function JobOpenings({ createMode = false }) {
         if (!prev || (prev.jobPositionId !== nextJobPositionId && !prev.jobId)) {
           return {
             jobPositionId: nextJobPositionId,
-            jdTemplateMode: 'manual',
           };
         }
         return prev;
@@ -652,20 +712,55 @@ export default function JobOpenings({ createMode = false }) {
     }
   }, [createMode, nextJobPositionId]);
 
+  React.useEffect(() => {
+    if (location.pathname !== "/job-openings/edit") return;
+
+    const routeJob = location.state?.job;
+    if (!routeJob) return;
+
+    const routeEditingIndex = Number.isInteger(location.state?.editingIndex)
+      ? location.state.editingIndex
+      : submittedData.findIndex((item) =>
+        (item.openingJobId || item.jobPositionId) === (routeJob.openingJobId || routeJob.jobPositionId)
+      );
+
+    setEditingIndex(routeEditingIndex >= 0 ? routeEditingIndex : null);
+    setEditingData({
+      ...routeJob,
+    });
+    setShowJobOpeningForm(true);
+    setShowDataTable(false);
+    setEditLocked(false);
+    setActiveDraftId(null);
+  }, [location.pathname, location.state, submittedData]);
+
+  // Helper to check if a jobPositionId is already used
+  const isJobIdUsed = React.useCallback((jobId) => {
+    const allIds = [
+      ...submittedData.map(item => String(item?.jobPositionId || item?.openingJobId || item?.jobId || "").trim()),
+      ...jobOpeningDrafts.map(draft => String(draft?.data?.jobPositionId || draft?.data?.openingJobId || draft?.data?.jobId || "").trim())
+    ];
+    return allIds.includes(String(jobId).trim());
+  }, [submittedData, jobOpeningDrafts]);
+
+  // When opening a draft, if its job ID is already used, assign the next available
   const openJobOpeningForm = React.useCallback((draftData = null, draftId = null) => {
     setShowJobOpeningForm(true);
     setShowDataTable(false);
     setEditingIndex(null);
+    let jobId = String(draftData?.jobPositionId || "").trim();
+    if (!jobId || isJobIdUsed(jobId)) {
+      jobId = nextJobPositionId;
+    }
     setEditingData({
       ...(draftData ? { ...draftData } : {}),
-      jobPositionId: String(draftData?.jobPositionId || "").trim() || nextJobPositionId,
-      jdTemplateMode: draftData?.jdTemplateMode || 'manual',
+      jobPositionId: jobId,
     });
     setEditLocked(false);
     setActiveDraftId(draftId);
     setJobOpeningFormKey((prev) => prev + 1);
     setIsAddJobOpeningMenuOpen(false);
-  }, [nextJobPositionId]);
+  }, [nextJobPositionId, isJobIdUsed]);
 
   const handleCreateJobOpening = React.useCallback(() => {
     navigate("/job-openings/create");
@@ -707,7 +802,8 @@ export default function JobOpenings({ createMode = false }) {
     setEditLocked(false);
     setActiveDraftId(null);
     setIsAddJobOpeningMenuOpen(false);
-  }, []);
+    navigate("/job-openings");
+  }, [navigate]);
 
   const handleViewJobOpening = React.useCallback((row, index) => {
     console.log('View job opening:', row);
@@ -742,12 +838,17 @@ export default function JobOpenings({ createMode = false }) {
     setEditingIndex(index);
     setEditingData({
       ...row,
-      jdTemplateMode: row.jdTemplateMode || (row.jdAttachment ? 'template' : 'manual')
     });
     setShowJobOpeningForm(true);
     setShowDataTable(false);
     setEditLocked(false);
-  }, []);
+    navigate("/job-openings/edit", {
+      state: {
+        job: row,
+        editingIndex: index,
+      },
+    });
+  }, [navigate]);
 
   const handleDeleteJobOpening = React.useCallback((row, index) => {
     console.log('Delete job opening:', row);
@@ -756,25 +857,55 @@ export default function JobOpenings({ createMode = false }) {
     }
   }, []);
 
-  const handleJobOpeningSubmit = React.useCallback((data) => {
-    const effectiveJdAttachment = data.jdTemplateMode === 'template' ? data.jdAttachment : null;
+  const handleJobOpeningSubmit = React.useCallback((data = {}) => {
+    const safeData = data && typeof data === "object" ? data : {};
+    let requestedJobPositionId = String(safeData.jobPositionId || safeData.openingJobId || nextJobPositionId).trim();
+    // Always enforce unique job ID for new jobs
+    if (editingIndex === null && isJobIdUsed(requestedJobPositionId)) {
+      requestedJobPositionId = nextJobPositionId;
+    }
+    const jobPositionId = requestedJobPositionId;
+    const effectiveJdAttachment = safeData.jdAttachment || null;
+    const resolvedLocation = Array.isArray(safeData.location)
+      ? safeData.location.filter(Boolean).join(", ")
+      : String(safeData.location || "").trim();
     const resolvedAssignedRecruiters =
-      data.assignedRecruiters ||
-      resolveAssignedRecruiterNames(data.teamMembers, data.customTeamMembers);
+      safeData.assignedRecruiters ||
+      resolveAssignedRecruiterNames(safeData.teamMembers, safeData.customTeamMembers) ||
+      "-";
     const normalized = {
-      ...data,
+      ...safeData,
+      jobPositionId,
+      openingJobId: safeData.openingJobId || jobPositionId,
+      postingTitle: safeData.postingTitle || safeData.positionName || "",
       jdAttachment: effectiveJdAttachment,
-      extraTechnicalSkills: data.extraTechnicalSkills ?? data.addTechnicalSkills ?? [],
-      jobOpeningStatus: data.jobOpeningStatus || data.jobStatus || 'Active',
-
-      assignedRecruiters: resolvedAssignedRecruiters
+      extraTechnicalSkills: safeData.extraTechnicalSkills ?? safeData.addTechnicalSkills ?? [],
+      targetDate: safeData.targetDate || safeData.jobReceivedDate || "",
+      jobOpeningStatus: safeData.jobOpeningStatus || safeData.jobStatus || 'Active',
+      city: safeData.city || resolvedLocation,
+      accountManager: safeData.accountManager || safeData.hiringManager || "",
+      assignedRecruiters: resolvedAssignedRecruiters,
+      candidates: Array.isArray(safeData.candidates) ? safeData.candidates : [],
     };
     if (editingIndex !== null) {
-      console.log('Job opening updated:', normalized);
-      setSubmittedData(prev => prev.map((item, idx) => (idx === editingIndex ? normalized : item)));
+      setSubmittedData(prev => {
+        const nextRows = prev.map((item, idx) => (idx === editingIndex ? normalized : item));
+        saveJobOpeningTableData(nextRows);
+        return nextRows;
+      });
     } else {
-      console.log('Job opening created:', normalized);
-      setSubmittedData(prev => [...prev, normalized]);
+      setSubmittedData(prev => {
+        const nextRows = [...prev, normalized];
+        saveJobOpeningTableData(nextRows);
+        return nextRows;
+      });
+    }
+    if (activeDraftId) {
+      setJobOpeningDrafts((prevDrafts) => {
+        const nextDrafts = prevDrafts.filter((draft) => draft.id !== activeDraftId);
+        persistJobOpeningDrafts(nextDrafts);
+        return nextDrafts;
+      });
     }
     setShowJobOpeningForm(false);
     setShowDataTable(true);
@@ -784,8 +915,9 @@ export default function JobOpenings({ createMode = false }) {
     setEditLocked(false);
     setActiveDraftId(null);
     setIsAddJobOpeningMenuOpen(false);
+    navigate("/job-openings");
     // Here you would typically send the data to your backend API
-  }, [editingIndex, showTransientMessage]);
+  }, [activeDraftId, editingIndex, navigate, nextJobPositionId, persistJobOpeningDrafts, showTransientMessage, submittedData, isJobIdUsed]);
 
   const formatInrAmount = React.useCallback((value) => {
     const numericValue = Number(value);
@@ -845,6 +977,7 @@ export default function JobOpenings({ createMode = false }) {
   const jobOpeningFormConfig = React.useMemo(
     () => ({
       ...jobOpeningConfig,
+      localSubmitOnly: true,
       showDraftAction: editingIndex === null,
       showCancelAction: true,
       cancelLabel: "Cancel",
@@ -1035,8 +1168,8 @@ export default function JobOpenings({ createMode = false }) {
                 <thead>
                   <tr>
                     {[
-                      { key: "openingJobId", label: "Opening Job Id" },
-                      { key: "postingTitle", label: "Posting Title" },
+                      { key: "openingJobId", label: "Job Id" },
+                      { key: "postingTitle", label: "Job Title" },
                       { key: "clientName", label: "Client Name" },
                       { key: "assignedRecruiters", label: "Assigned Recruiter(s)" },
                       { key: "targetDate", label: "Target Date" },
@@ -1518,4 +1651,3 @@ export default function JobOpenings({ createMode = false }) {
     </div>
   );
 }
-

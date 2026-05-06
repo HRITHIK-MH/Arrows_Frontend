@@ -593,9 +593,11 @@ const JobDescription = () => {
               <button type="button" className={styles.mapBtn} disabled={!isMapStage}>
                 Map Job
               </button>
-              <button type="button" className={styles.uploadBtn} onClick={handleUploadClick}>
-                Upload Candidate
-              </button>
+              {isMapStage && (
+                <button type="button" className={styles.uploadBtn} onClick={handleUploadClick}>
+                  Upload Candidate
+                </button>
+              )}
             </div>
           </div>
 
@@ -624,7 +626,7 @@ const JobDescription = () => {
                   {isMapStage ? <th>Matching Score</th> : <th>Rating</th>}
                   {!isMapStage ? <th>Stage</th> : null}
                   {!isMapStage ? <th>Status</th> : null}
-                  <th>Actions</th>
+                  <th className={styles.actionsHead}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -645,7 +647,7 @@ const JobDescription = () => {
                     <td>{row.candidateName}</td>
                     <td>{row.candidateEmail}</td>
                     <td>{row.recruiterName}</td>
-                    <td>{row.source}</td>
+                    <td className={styles.sourceCell}>{row.source}</td>
                     {isMapStage ? (
                       <td className={styles.matchScoreCell}>
                         <span className={styles.matchScoreWrap} style={getScoreCircleStyle(row.matchingScore)}>
@@ -654,8 +656,10 @@ const JobDescription = () => {
                       </td>
                     ) : (
                       <td className={styles.ratingCell}>
-                        {row.rating}
-                        <span className={styles.ratingStar}>★</span>
+                        <div className={styles.ratingWrap}>
+                          {row.rating}
+                          <span className={styles.ratingStar}>★</span>
+                        </div>
                       </td>
                     )}
                     {!isMapStage ? (
@@ -664,7 +668,7 @@ const JobDescription = () => {
                       </td>
                     ) : null}
                     {!isMapStage ? (
-                      <td>
+                      <td className={styles.statusCell}>
                         <span
                           className={`${styles.statusDot} ${
                             row.status === "Completed" ? styles.statusGreen : styles.statusDark

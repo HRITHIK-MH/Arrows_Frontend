@@ -459,7 +459,7 @@ const PermissionStep = ({ formData, onChange, onSetStepFields, fields = [], vali
 
         <section className="permission-panel">
           <div className="permission-header">
-            <h3 className="permission-title">Focus Location</h3>
+            <h3 className="permission-title">Preferred Location</h3>
             <p className="permission-subtitle">Candidate Location</p>
           </div>
           <div className="permission-options inline">

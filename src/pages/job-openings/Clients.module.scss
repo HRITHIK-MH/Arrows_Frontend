@@ -82,7 +82,6 @@
 
 .addClientSplit {
   display: inline-flex;
-  align-items: stretch;
   border-radius: 8px;
   overflow: hidden;
   box-shadow: 0 8px 14px rgba(59, 130, 246, 0.2);
@@ -222,7 +221,210 @@
 }
 
 .tableSection {
-  margin-top: 8px;
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.filtersBar {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+  padding: 6px;
+  background: #e6eaef;
+  border-radius: 12px;
+  border: 1px solid #bfc8d1;
+  min-height: 36px;
+}
+
+.dateRangeAnchor {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.dateRangeToggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  background-image: none !important;
+  padding-right: 10px;
+  min-width: 140px;
+}
+
+.dateRangeToggleActive {
+  border-color: #3b82f6;
+  background-color: #f8fafc;
+}
+
+.dropdownIcon {
+  color: #94a3b8;
+  transition: transform 0.2s ease;
+}
+
+.dateRangeToggleActive .dropdownIcon {
+  transform: rotate(180deg);
+  color: #3b82f6;
+}
+
+.dateRangeMenu {
+  position: absolute;
+  left: 0;
+  top: calc(100% + 8px);
+  width: 280px;
+  background: #fff;
+  border: 1px solid #dfe5ef;
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+  z-index: 60;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dateRangeItem {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dateRangeLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.filtersLeft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.filtersRight {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filterIcon {
+  color: #94a3b8;
+  margin-left: 4px;
+}
+
+.searchField {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff;
+  border: 1px solid #bfc8d1;
+  border-radius: 8px;
+  padding: 4px 10px;
+  min-height: 28px;
+  min-width: 200px;
+  flex: 1 1 240px;
+  transition: border-color 0.2s ease;
+
+  &:focus-within {
+    border-color: #3b82f6;
+  }
+}
+
+.searchIcon {
+  color: #94a3b8;
+  font-size: 14px;
+}
+
+.searchInput {
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 13px;
+  width: 100%;
+  color: #1f2937;
+
+  &::placeholder {
+    color: #94a3b8;
+  }
+}
+
+.selectField {
+  border: 1px solid #bfc8d1;
+  background: #fff;
+  border-radius: 8px;
+  padding: 4px 30px 4px 10px;
+  font-size: 13px;
+  color: #1f2937;
+  min-width: 140px;
+  height: 28px;
+  line-height: 1.2;
+  cursor: pointer;
+  flex: 0 0 auto;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2394A3B8' stroke-width='1.8' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 12px 8px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+  transition: border-color 0.2s ease;
+
+  &:focus {
+    outline: none;
+    border-color: #3b82f6;
+  }
+}
+
+.dateField {
+  border: 1px solid #bfc8d1;
+  background: #fff;
+  border-radius: 8px;
+  padding: 4px 10px;
+  font-size: 13px;
+  color: #1f2937;
+  min-width: 140px;
+  height: 28px;
+  line-height: 1.2;
+  cursor: pointer;
+  flex: 0 0 auto;
+  transition: border-color 0.2s ease;
+
+  &:focus {
+    outline: none;
+    border-color: #3b82f6;
+  }
+}
+
+.clearButton {
+  border: 1px solid #bfc8d1;
+  background: #f8fafc;
+  color: #64748b;
+  padding: 4px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover:not(:disabled) {
+    background: #f1f5f9;
+    color: #475569;
+    border-color: #94a3b8;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
 }
 
 .tableWrap {

@@ -508,6 +508,9 @@
 
 .colCity {
   width: 98px;
+  white-space: nowrap;
+  word-break: keep-all;
+  overflow-wrap: normal;
 }
 
 .colActions {
@@ -533,8 +536,8 @@
 .jobTable th:nth-child(7),
 .jobTable td:nth-child(7) {
   white-space: nowrap;
-  overflow-wrap: normal;
   word-break: keep-all;
+  overflow-wrap: normal;
 }
 
 .jobTable th:nth-child(4),
@@ -565,6 +568,14 @@
 .actionsCol {
   text-align: center;
   vertical-align: top;
+}
+.jobTable td.actionsCol > * {
+  margin-right: 6px;
+  margin-left: 0;
+}
+
+.jobTable td.actionsCol > *:last-child {
+  margin-right: 0;
 }
 
 .actionIcons {

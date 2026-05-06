@@ -238,6 +238,13 @@
   vertical-align: middle;
   white-space: nowrap;
   word-break: normal;
+  cursor: pointer;
+  user-select: none;
+  outline: none;
+
+  &:hover {
+    color: #111827;
+  }
 }
 
 .interviewsTable tbody td {
@@ -280,6 +287,10 @@
   line-height: 8px;
 }
 
+.sortArrowActive {
+  color: #3f90f6;
+}
+
 .actionsCol {
   text-align: center;
   width: 84px;
@@ -288,7 +299,7 @@
 .actionIcons {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 12px;
 }
 
 .actionBtn {
