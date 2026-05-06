@@ -18,7 +18,6 @@ export const LINKS = [
   { to: "/interviews", label: "Interviews", icon: FiUserCheck },
   { to: "/clients", label: "Client", icon: FiUser },
   { to: "/reports", label: "Reports", icon: FiBarChart2 },
-  { to: "/chat", label: "Chat", icon: FiMessageSquare },
   { to: "/calendar", label: "Calendar", icon: FiCalendar },
   { to: "/users", label: "User Roles", icon: FiUserPlus },
 ];

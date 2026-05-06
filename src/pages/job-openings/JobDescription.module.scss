@@ -584,7 +584,11 @@
 }
 
 .ratingCell {
-  display: inline-flex;
+  vertical-align: middle;
+}
+
+.ratingWrap {
+  display: flex;
   align-items: center;
   gap: 4px;
 }
@@ -621,6 +625,8 @@
 }
 
 .stagePill {
+  display: inline-block;
+  white-space: nowrap;
   background: #ede9fe;
   color: #7c3aed;
   border-radius: 999px;
@@ -629,8 +635,9 @@
 }
 
 .stageCell {
-  white-space: normal;
-  max-width: 100px;
+  white-space: nowrap;
+  max-width: none;
+  vertical-align: middle;
 }
 
 .stageSourced { background: #ede9fe; color: #7c3aed; border: 1px solid #c4b5fd; }
@@ -640,6 +647,20 @@
 .stageOffer { background: #dbeafe; color: #1d4ed8; border: 1px solid #93c5fd; }
 .stageRejected { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
 .stageNeutral { background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; }
+
+.sourceCell {
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.actionsHead {
+  text-align: center !important;
+}
+
+.statusCell {
+  white-space: nowrap;
+  vertical-align: middle;
+}
 
 .statusDot {
   width: 8px;

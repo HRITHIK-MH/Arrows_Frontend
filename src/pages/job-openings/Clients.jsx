@@ -1,5 +1,5 @@
 import * as React from "react";
-import { FiChevronDown, FiMail, FiMapPin, FiPhone, FiTrash2, FiUser, FiX } from "react-icons/fi";
+import { FiChevronDown, FiFilter, FiMail, FiMapPin, FiPhone, FiSearch, FiTrash2, FiUser, FiX } from "react-icons/fi";
 import DataTable from "../../components/forms/DataTable";
 import { clientConfig } from "../../components/forms/formConfigs";
 import ReusableForm from "../../components/forms/ReusableForm";
@@ -131,7 +131,15 @@ export default function Clients() {
   const [activeDraftId, setActiveDraftId] = React.useState(null);
   const [isAddClientMenuOpen, setIsAddClientMenuOpen] = React.useState(false);
   const [clientFormKey, setClientFormKey] = React.useState(0);
+  const [searchTerm, setSearchTerm] = React.useState("");
+  const [filterActiveFromStart, setFilterActiveFromStart] = React.useState("");
+  const [filterActiveFromEnd, setFilterActiveFromEnd] = React.useState("");
+  const [filterAssignedPerson, setFilterAssignedPerson] = React.useState("");
+  const [filterStatus, setFilterStatus] = React.useState("");
+  const [isDateRangeOpen, setIsDateRangeOpen] = React.useState(false);
+  const deferredSearchTerm = React.useDeferredValue(searchTerm);
   const addClientMenuRef = React.useRef(null);
+  const dateRangeRef = React.useRef(null);
 
   const showTransientMessage = React.useCallback((message) => {
     setSuccessMessageText(message);
@@ -257,6 +265,17 @@ export default function Clients() {
     return () => document.removeEventListener("keydown", onEsc);
   }, [isViewDrawerOpen]);
 
+  React.useEffect(() => {
+    if (!isDateRangeOpen) return undefined;
+    const handleOutsideClick = (event) => {
+      if (dateRangeRef.current && !dateRangeRef.current.contains(event.target)) {
+        setIsDateRangeOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, [isDateRangeOpen]);
+
   const getStatusClass = React.useCallback((status) => {
     const normalized = String(status || "").toLowerCase();
     if (normalized === "active") return styles.statusActive;
@@ -293,7 +312,33 @@ export default function Clients() {
     [formatDate, formatPhoneNumber, getStatusClass]
   );
 
-  const totalRecords = submittedData.length;
+  const uniqueAssignedPeople = React.useMemo(() => {
+    return [...new Set(submittedData.map((item) => item.accountManager).filter(Boolean))];
+  }, [submittedData]);
+
+  const uniqueStatuses = React.useMemo(() => {
+    return [...new Set(submittedData.map((item) => item.clientStatus).filter(Boolean))];
+  }, [submittedData]);
+
+  const filteredData = React.useMemo(() => {
+    return submittedData.filter((item) => {
+      const matchesSearch =
+        !deferredSearchTerm.trim() ||
+        Object.values(item).some((val) =>
+          String(val || "").toLowerCase().includes(deferredSearchTerm.toLowerCase())
+        );
+
+      const matchesActiveFrom =
+        (!filterActiveFromStart || item.activeFrom >= filterActiveFromStart) &&
+        (!filterActiveFromEnd || item.activeFrom <= filterActiveFromEnd);
+      const matchesAssignedPerson = !filterAssignedPerson || item.accountManager === filterAssignedPerson;
+      const matchesStatus = !filterStatus || item.clientStatus === filterStatus;
+
+      return matchesSearch && matchesActiveFrom && matchesAssignedPerson && matchesStatus;
+    });
+  }, [submittedData, deferredSearchTerm, filterActiveFromStart, filterActiveFromEnd, filterAssignedPerson, filterStatus]);
+
+  const totalRecords = filteredData.length;
   const totalPages = Math.max(1, Math.ceil(totalRecords / entriesPerPage));
 
   const generateNextClientId = React.useCallback(() => {
@@ -314,11 +359,11 @@ export default function Clients() {
 
   const paginatedData = React.useMemo(() => {
     const startIndex = (currentPage - 1) * entriesPerPage;
-    return submittedData.slice(startIndex, startIndex + entriesPerPage).map((item, offset) => ({
+    return filteredData.slice(startIndex, startIndex + entriesPerPage).map((item, offset) => ({
       ...item,
       _sourceIndex: startIndex + offset,
     }));
-  }, [currentPage, entriesPerPage, submittedData]);
+  }, [currentPage, entriesPerPage, filteredData]);
 
   const pageNumbers = React.useMemo(
     () => Array.from({ length: totalPages }, (_, index) => index + 1),
@@ -344,6 +389,20 @@ export default function Clients() {
   const handleNextPage = React.useCallback(() => {
     setCurrentPage((previousPage) => Math.min(previousPage + 1, totalPages));
   }, [totalPages]);
+
+  const handleSearchChange = React.useCallback((event) => {
+    setSearchTerm(event.target.value);
+    setCurrentPage(1);
+  }, []);
+
+  const clearFilters = React.useCallback(() => {
+    setSearchTerm("");
+    setFilterActiveFromStart("");
+    setFilterActiveFromEnd("");
+    setFilterAssignedPerson("");
+    setFilterStatus("");
+    setCurrentPage(1);
+  }, []);
 
   const handleAddClient = React.useCallback(() => {
     setShowClientForm(true);
@@ -610,6 +669,110 @@ export default function Clients() {
 
         {showDataTable && (
           <div className={styles.tableSection}>
+            <div className={styles.filtersBar}>
+              <div className={styles.filtersLeft}>
+                <FiFilter className={styles.filterIcon} aria-hidden="true" />
+                <div className={styles.searchField}>
+                  <FiSearch className={styles.searchIcon} aria-hidden="true" />
+                  <input
+                    type="text"
+                    placeholder="Search here..."
+                    value={searchTerm}
+                    onChange={handleSearchChange}
+                    className={styles.searchInput}
+                  />
+                </div>
+
+                <div ref={dateRangeRef} className={styles.dateRangeAnchor}>
+                  <button
+                    type="button"
+                    className={`${styles.selectField} ${styles.dateRangeToggle}${isDateRangeOpen ? ` ${styles.dateRangeToggleActive}` : ""}`}
+                    onClick={() => setIsDateRangeOpen((prev) => !prev)}
+                  >
+                    Active From
+                    <FiChevronDown size={14} className={styles.dropdownIcon} />
+                  </button>
+
+                  {isDateRangeOpen && (
+                    <div className={styles.dateRangeMenu}>
+                      <div className={styles.dateRangeItem}>
+                        <label className={styles.dateRangeLabel}>From Date</label>
+                        <input
+                          type="date"
+                          value={filterActiveFromStart}
+                          onChange={(e) => {
+                            setFilterActiveFromStart(e.target.value);
+                            setCurrentPage(1);
+                          }}
+                          className={styles.dateField}
+                        />
+                      </div>
+                      <div className={styles.dateRangeItem}>
+                        <label className={styles.dateRangeLabel}>To Date</label>
+                        <input
+                          type="date"
+                          value={filterActiveFromEnd}
+                          onChange={(e) => {
+                            setFilterActiveFromEnd(e.target.value);
+                            setCurrentPage(1);
+                          }}
+                          className={styles.dateField}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <select
+                  value={filterAssignedPerson}
+                  onChange={(e) => {
+                    setFilterAssignedPerson(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className={styles.selectField}
+                >
+                  <option value="">Assigned Person</option>
+                  {uniqueAssignedPeople.map((person) => (
+                    <option key={person} value={person}>
+                      {person}
+                    </option>
+                  ))}
+                </select>
+
+                <select
+                  value={filterStatus}
+                  onChange={(e) => {
+                    setFilterStatus(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className={styles.selectField}
+                >
+                  <option value="">Status</option>
+                  {uniqueStatuses.map((status) => (
+                    <option key={status} value={status}>
+                      {status}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className={styles.filtersRight}>
+                <button
+                  type="button"
+                  className={styles.clearButton}
+                  onClick={clearFilters}
+                  disabled={
+                    !searchTerm &&
+                    !filterActiveFromStart &&
+                    !filterActiveFromEnd &&
+                    !filterAssignedPerson &&
+                    !filterStatus
+                  }
+                >
+                  Clear
+                </button>
+              </div>
+            </div>
+
             <div className={styles.tableWrap}>
               <DataTable
                 data={paginatedData}

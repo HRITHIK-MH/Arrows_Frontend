@@ -179,6 +179,7 @@ export default function Interviews() {
   const [filterInterviewType, setFilterInterviewType] = React.useState("");
   const [filterStatus, setFilterStatus] = React.useState("");
   const [filterDateRange, setFilterDateRange] = React.useState("");
+  const [sortConfig, setSortConfig] = React.useState({ key: null, direction: "asc" });
   const [entriesPerPage, setEntriesPerPage] = React.useState(10);
   const [currentPage, setCurrentPage] = React.useState(1);
   const [interviews, setInterviews] = React.useState([]);
@@ -1376,6 +1377,18 @@ export default function Interviews() {
         matchesStatus &&
         matchesDateRange
       );
+    }).sort((a, b) => {
+      if (!sortConfig.key) return 0;
+      const aValue = a[sortConfig.key];
+      const bValue = b[sortConfig.key];
+
+      if (aValue < bValue) {
+        return sortConfig.direction === "asc" ? -1 : 1;
+      }
+      if (aValue > bValue) {
+        return sortConfig.direction === "asc" ? 1 : -1;
+      }
+      return 0;
     });
   }, [
     interviews,
@@ -1384,6 +1397,7 @@ export default function Interviews() {
     filterInterviewType,
     filterStatus,
     filterDateRange,
+    sortConfig,
   ]);
 
   const totalRecords = filteredInterviews.length;
@@ -1441,6 +1455,16 @@ export default function Interviews() {
   const handleNextPage = React.useCallback(() => {
     setCurrentPage((prevPage) => Math.min(prevPage + 1, totalPages));
   }, [totalPages]);
+
+  const requestSort = React.useCallback((key) => {
+    setSortConfig((prev) => {
+      let direction = "asc";
+      if (prev.key === key && prev.direction === "asc") {
+        direction = "desc";
+      }
+      return { key, direction };
+    });
+  }, []);
 
   return (
     <div className={styles.page}>
@@ -1572,11 +1596,39 @@ export default function Interviews() {
                   <thead>
                     <tr>
                       {columns.map((column) => (
-                        <th key={column.key}>
+                        <th
+                          key={column.key}
+                          onClick={() => requestSort(column.key)}
+                          role="button"
+                          tabIndex={0}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              requestSort(column.key);
+                            }
+                          }}
+                          aria-label={`Sort by ${column.label}`}
+                        >
                           <span className={styles.headerLabel}>{column.label}</span>
                           <span className={styles.sortArrows} aria-hidden="true">
-                            <span>▲</span>
-                            <span>▼</span>
+                            <span
+                              className={
+                                sortConfig.key === column.key && sortConfig.direction === "asc"
+                                  ? styles.sortArrowActive
+                                  : ""
+                              }
+                            >
+                              ▲
+                            </span>
+                            <span
+                              className={
+                                sortConfig.key === column.key && sortConfig.direction === "desc"
+                                  ? styles.sortArrowActive
+                                  : ""
+                              }
+                            >
+                              ▼
+                            </span>
                           </span>
                         </th>
                       ))}

@@ -257,7 +257,7 @@ export const jobOpeningConfig = {
       fields: [
         {
           name: "jobPositionId",
-          label: "Job Position Id *",
+          label: "Job Id *",
           type: "text",
           required: true,
           cssClass: "grid-col-1 grid-row-1",
@@ -267,7 +267,7 @@ export const jobOpeningConfig = {
         },
         {
           name: "positionName",
-          label: "Position Name *",
+          label: "Job Name *",
           type: "text",
           required: true,
           cssClass: "grid-col-2 grid-row-1",
@@ -349,18 +349,6 @@ export const jobOpeningConfig = {
           cssClass: "grid-col-2 grid-row-3"
         },
         {
-          name: "jdTemplateMode",
-          label: "Have JD Template? *",
-          type: "radio",
-          required: true,
-          cssClass: "grid-col-1 grid-row-4",
-          validationRule: "requiredField",
-          options: [
-            { value: "manual", label: "No" },
-            { value: "template", label: "Yes" }
-          ]
-        },
-        {
           name: "minSalary",
           label: "Salary Min",
           type: "number",
@@ -382,7 +370,7 @@ export const jobOpeningConfig = {
         },
         {
           name: "jobType",
-          label: "Job Type *",
+          label: "Employment Type *",
           type: "select",
           required: true,
           cssClass: "grid-col-2 grid-row-4",
@@ -412,27 +400,14 @@ export const jobOpeningConfig = {
           ]
         },
         {
-          name: "jdTemplateMode",
-          label: "Have JD Template? *",
-          type: "radio",
-          required: true,
-          cssClass: "grid-col-3 grid-row-4",
-          validationRule: "requiredField",
-          options: [
-            { value: "manual", label: "No" },
-            { value: "template", label: "Yes" }
-          ]
-        },
-        {
           name: "jdAttachment",
           label: "JD Attachment",
           type: "file",
           required: false,
           accept: ".pdf,.doc,.docx,.txt",
           placeholder: "Attachment",
-          validationRule: "jdAttachmentConditional",
           showBrowseButton: true,
-          cssClass: "grid-col-3 grid-row-4"
+          cssClass: "grid-col-1 grid-row-1"
         },
         {
           name: "technicalSkills",
@@ -560,6 +535,19 @@ export const jobOpeningConfig = {
           validationRule: "emailOptional",
           cssClass: "grid-col-1 grid-row-2",
           placeholder: "Enter Contact Person Email"
+        },
+        {
+          name: "hiringType",
+          label: "Work Type *",
+          type: "select",
+          required: true,
+          cssClass: "grid-col-3 grid-row-1",
+          placeholder: "Select",
+          options: [
+            { value: "remote", label: "Remote" },
+            { value: "hybrid", label: "Hybrid" },
+            { value: "on-site", label: "On-site" }
+          ]
         },
         {
           name: "permissionVisibility",
@@ -756,17 +744,6 @@ export const jobOpeningConfig = {
           // Return success for client-side validation only
           return { isValid: true };
         }
-      }
-
-      return { isValid: true };
-    },
-    jdAttachmentConditional: (value, _fieldName, formData) => {
-      if (formData?.jdTemplateMode !== "template") {
-        return { isValid: true };
-      }
-
-      if (isEmptyValue(value)) {
-        return { isValid: false, message: "JD Attachment is required when JD Template is Yes" };
       }
 
       return { isValid: true };

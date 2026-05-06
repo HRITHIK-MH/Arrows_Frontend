@@ -76,6 +76,8 @@ const loadDraftData = (draftStorageKey) => {
 
 // Reusable form configuration
 const createFormConfig = (config) => {
+  const allFields = config.steps.flatMap((configStep) => configStep.fields || []);
+
   return {
     steps: config.steps.map(step => ({
       title: step.title,
@@ -86,6 +88,7 @@ const createFormConfig = (config) => {
           <FormStep
             {...props}
             fields={step.fields || []}
+            allFields={allFields}
             title={step.title}
           />
         )
@@ -155,11 +158,10 @@ const readUploadedFileText = async (file) => {
 };
 
 // Reusable step component
-const FormStep = ({ formData, onChange, fields, title, onSetStepFields, validationErrors = {}, disabled = false }) => {
+const FormStep = ({ formData, onChange, fields, allFields = fields, title, onSetStepFields, validationErrors = {}, disabled = false }) => {
   const isJobBasicInfo = title === "Job Basic Information" || title === "Job Information";
   const fieldMetaSignatureRef = React.useRef('');
   const jdParsedFileRef = React.useRef('');
-  const previousJdTemplateModeRef = React.useRef(formData.jdTemplateMode || 'manual');
   const [jdExtractionStatus, setJdExtractionStatus] = React.useState({ state: 'idle', message: '' });
 
   // Notify parent about fields in this step
@@ -200,55 +202,6 @@ const FormStep = ({ formData, onChange, fields, title, onSetStepFields, validati
   React.useEffect(() => {
     if (!isJobBasicInfo) return;
 
-    const jdTemplateMode = formData.jdTemplateMode || 'manual';
-    const previousJdTemplateMode = previousJdTemplateModeRef.current;
-    previousJdTemplateModeRef.current = jdTemplateMode;
-
-    // Only clear template-derived fields when the user actually switches
-    // from template mode back to manual mode, not on initial render/draft load.
-    if (jdTemplateMode === 'manual' && previousJdTemplateMode === 'template') {
-      // Clear auto-filled fields when switching to manual mode (No)
-      const fieldsToClear = [
-        'positionName',
-        'minExperience',
-        'maxExperience',
-        'noOfPositions',
-        'location',
-        'positionLevel',
-        'jobType',
-        'hiringType',
-        'technicalSkills',
-        'softSkills',
-        'additionalSkills',
-        'jdAttachment'
-      ];
-
-      fieldsToClear.forEach(field => {
-        const currentValue = formData[field];
-        // Only clear if field has a value
-        if (currentValue) {
-          if (Array.isArray(currentValue)) {
-            onChange(field, []);
-          } else {
-            onChange(field, '');
-          }
-        }
-      });
-
-      setJdExtractionStatus({ state: 'idle', message: '' });
-      jdParsedFileRef.current = '';
-    }
-  }, [formData.jdTemplateMode, isJobBasicInfo, onChange]);
-
-  React.useEffect(() => {
-    if (!isJobBasicInfo) return;
-
-    const jdTemplateMode = formData.jdTemplateMode || 'manual';
-    if (jdTemplateMode !== 'template') {
-      setJdExtractionStatus({ state: 'idle', message: '' });
-      return;
-    }
-
     const uploadedFile = formData.jdAttachment;
     if (!uploadedFile || typeof uploadedFile !== 'object') {
       setJdExtractionStatus({ state: 'idle', message: '' });
@@ -266,14 +219,54 @@ const FormStep = ({ formData, onChange, fields, title, onSetStepFields, validati
       try {
         setJdExtractionStatus({ state: 'loading', message: 'Reading JD and extracting fields...' });
 
-        const fileNameWithoutExt = normalizeText(String(uploadedFile.name || '').replace(/\.[^.]+$/, ''));
         const extractedText = await readUploadedFileText(uploadedFile);
-        const combinedText = normalizeText(`${fileNameWithoutExt} ${extractedText}`);
+        const fileNameWithoutExt = normalizeText(String(uploadedFile.name || '').replace(/\.[^.]+$/, ''));
+        const documentText = normalizeText(extractedText);
+        const combinedText = normalizeText(`${fileNameWithoutExt} ${documentText}`);
         const normalizedText = normalizeToken(combinedText);
 
         const updates = {};
+        const availableFields = Array.isArray(allFields) && allFields.length ? allFields : fields;
+        const getAvailableField = (fieldName) =>
+          availableFields.find((field) => field.name === fieldName);
+        const extractLabelValue = (labels, stopLabels = []) => {
+          const labelPattern = labels.map((label) => label.replace(/\s+/g, '\\s*')).join('|');
+          const stopLabelPattern = [
+            ...stopLabels,
+            'job\\s*name',
+            'position\\s*name',
+            'job\\s*title',
+            'role',
+            'client\\s*id',
+            'client\\s*name',
+            'contact\\s*person\\s*name',
+            'contact\\s*person\\s*email(?:\\s*id)?',
+            'contact\\s*email(?:\\s*id)?',
+            'position\\s*level',
+            'location',
+            'job\\s*type',
+            'employment\\s*type',
+            'work\\s*type',
+            'hiring\\s*type',
+            'positions?',
+            'openings?',
+            'min(?:imum)?\\s*(?:experience|exp|salary|ctc)',
+            'max(?:imum)?\\s*(?:experience|exp|salary|ctc)',
+            'salary',
+            'ctc',
+            'technical\\s*skills?',
+            'soft\\s*skills?',
+            'additional\\s*skills?'
+          ].join('|');
+          const match = documentText.match(
+            new RegExp(`(?:${labelPattern})\\s*[:\\-]\\s*(.+?)(?=\\s+(?:${stopLabelPattern})\\s*[:\\-]|$)`, 'i')
+          );
+          return normalizeText(match?.[1] || '');
+        };
 
-        let positionMatch = combinedText.match(/(?:position\s*name|job\s*title|role)\s*[:\-]\s*([^:\n\r,]+)/i)?.[1];
+        let positionMatch = documentText.match(
+          /(?:job\s*name|position\s*name|job\s*title|role)\s*[:\-]\s*(.+?)(?=\s+(?:position\s*level|location|job\s*type|employment\s*type|work\s*type|hiring\s*type|positions?|openings?|min(?:imum)?\s*(?:experience|exp|salary|ctc)|max(?:imum)?\s*(?:experience|exp|salary|ctc)|salary|ctc|technical\s*skills?|soft\s*skills?|additional\s*skills?)\s*[:\-]|$)/i
+        )?.[1];
         if (positionMatch) {
           // Stop at common adjacent field labels (e.g. "Min Experience", "Max Experience", "Experience")
           positionMatch = positionMatch.replace(/\s*(?:min(?:imum)?|max(?:imum)?)\s*(?:experience|exp)?.*$/i, '').trim();
@@ -281,7 +274,6 @@ const FormStep = ({ formData, onChange, fields, title, onSetStepFields, validati
           // Limit to first 4 words and 100 chars
           positionMatch = positionMatch.split(/\s+/).slice(0, 4).join(' ').substring(0, 100);
         }
-        positionMatch = positionMatch || fileNameWithoutExt;
 
         if (positionMatch && !normalizeText(formData.positionName)) {
           updates.positionName = normalizeText(positionMatch);
@@ -342,37 +334,68 @@ const FormStep = ({ formData, onChange, fields, title, onSetStepFields, validati
           updates.jobReceivedDate = `${yyyy}-${mm}-${dd}`;
         }
 
-        const locationField = fields.find((field) => field.name === 'location');
-        const locationValue = findMatchingOptionValue(normalizedText, locationField?.options || []);
-        if (locationValue && !normalizeText(formData.location)) {
-          updates.location = [locationValue];
+        const locationField = getAvailableField('location');
+        const locationValues = collectMatchingOptionValues(normalizedText, locationField?.options || []);
+        if (locationValues.length > 0 && !normalizeText(formData.location)) {
+          updates.location = locationValues;
         }
 
-        const positionLevelField = fields.find((field) => field.name === 'positionLevel');
+        const positionLevelField = getAvailableField('positionLevel');
         const positionLevelValue = findMatchingOptionValue(normalizedText, positionLevelField?.options || []);
         if (positionLevelValue && !normalizeText(formData.positionLevel)) {
           updates.positionLevel = positionLevelValue;
         }
 
-        const jobTypeField = fields.find((field) => field.name === 'jobType');
+        const jobTypeField = getAvailableField('jobType');
         const jobTypeValue = findMatchingOptionValue(normalizedText, jobTypeField?.options || []);
         if (jobTypeValue && !normalizeText(formData.jobType)) {
           updates.jobType = jobTypeValue;
         }
 
-        const hiringTypeField = fields.find((field) => field.name === 'hiringType');
+        const hiringTypeField = getAvailableField('hiringType');
         const hiringTypeValue = findMatchingOptionValue(normalizedText, hiringTypeField?.options || []);
         if (hiringTypeValue && !normalizeText(formData.hiringType)) {
           updates.hiringType = hiringTypeValue;
         }
 
-        const technicalField = fields.find((field) => field.name === 'technicalSkills');
+        const clientIdField = getAvailableField('clientId');
+        const clientIdValue = findMatchingOptionValue(normalizedText, clientIdField?.options || []);
+        if (clientIdValue && !normalizeText(formData.clientId)) {
+          updates.clientId = clientIdValue;
+        }
+
+        const matchedClientOption = clientIdField?.options?.find(
+          (option) => String(option.value) === String(clientIdValue || formData.clientId)
+        );
+        const clientNameFromLabel = extractLabelValue(['client\\s*name']);
+        const clientNameFromOption = matchedClientOption?.clientName || matchedClientOption?.name || '';
+        const clientName = clientNameFromLabel || clientNameFromOption;
+        if (clientName && !normalizeText(formData.clientName)) {
+          updates.clientName = clientName;
+        }
+
+        const contactPersonName = extractLabelValue([
+          'contact\\s*person\\s*name',
+          'contact\\s*name'
+        ]);
+        if (contactPersonName && !normalizeText(formData.contactPersonName)) {
+          updates.contactPersonName = contactPersonName;
+        }
+
+        const contactEmail = documentText.match(
+          /(?:contact\s*person\s*email(?:\s*id)?|contact\s*email(?:\s*id)?|email)\s*[:\-]\s*([A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,})/i
+        )?.[1];
+        if (contactEmail && !normalizeText(formData.contactPersonEmail)) {
+          updates.contactPersonEmail = contactEmail;
+        }
+
+        const technicalField = getAvailableField('technicalSkills');
         const extractedTechnicalSkills = collectMatchingOptionValues(normalizedText, technicalField?.options || []);
         if (extractedTechnicalSkills.length > 0) {
           updates.technicalSkills = mergeUnique(formData.technicalSkills, extractedTechnicalSkills);
         }
 
-        const softField = fields.find((field) => field.name === 'softSkills');
+        const softField = getAvailableField('softSkills');
         const extractedSoftSkills = collectMatchingOptionValues(normalizedText, softField?.options || []);
         if (extractedSoftSkills.length > 0) {
           updates.softSkills = mergeUnique(formData.softSkills, extractedSoftSkills);
@@ -417,11 +440,15 @@ const FormStep = ({ formData, onChange, fields, title, onSetStepFields, validati
       isCancelled = true;
     };
   }, [
+    allFields,
     fields,
     formData.additionalSkills,
+    formData.clientId,
+    formData.clientName,
+    formData.contactPersonEmail,
+    formData.contactPersonName,
     formData.hiringType,
     formData.jdAttachment,
-    formData.jdTemplateMode,
     formData.jobType,
     formData.location,
     formData.maxExperience,
@@ -558,10 +585,6 @@ const FormStep = ({ formData, onChange, fields, title, onSetStepFields, validati
       placeholder: addTechnicalConfig.placeholder || 'Select skills'
     };
 
-    const jdTemplateMode = formData.jdTemplateMode || 'manual';
-    const showJdAttachmentField = jdTemplateMode === 'template';
-    const jdTemplateModeError = validationErrors.jdTemplateMode;
-
     return (
       <div className="job-basic-info-step">
         <div className="job-section">
@@ -572,46 +595,11 @@ const FormStep = ({ formData, onChange, fields, title, onSetStepFields, validati
 
           <div className="job-basic-info-grid">
             <div className="grid-cell grid-col-1 grid-row-1">
-              <div className="job-template-choice">
-                <div className="job-template-choice-label">
-                  Have JD Template?
-                  <span className="required-star">*</span>
-                </div>
-                <div className="job-template-choice-options" role="radiogroup">
-                  <label className="job-template-choice-option" htmlFor="jdTemplateMode">
-                    <input
-                      id="jdTemplateMode"
-                      type="radio"
-                      name="jdTemplateMode"
-                      value="manual"
-                      checked={jdTemplateMode === 'manual'}
-                      onChange={() => onChange('jdTemplateMode', 'manual')}
-                      disabled={disabled}
-                    />
-                    <span>No</span>
-                  </label>
-                  <label className="job-template-choice-option" htmlFor="jdTemplateMode-template">
-                    <input
-                      id="jdTemplateMode-template"
-                      type="radio"
-                      name="jdTemplateMode"
-                      value="template"
-                      checked={jdTemplateMode === 'template'}
-                      onChange={() => onChange('jdTemplateMode', 'template')}
-                      disabled={disabled}
-                    />
-                    <span>Yes</span>
-                  </label>
-                </div>
-                {jdTemplateModeError ? <div className="error-text">{jdTemplateModeError}</div> : null}
-                {showJdAttachmentField ? (
-                  <div className="job-template-upload-wrap">
-                    {getField('jdAttachment')}
-                    {jdExtractionStatus.state !== 'idle' ? (
-                      <div className={`jd-extraction-status jd-extraction-status--${jdExtractionStatus.state}`}>
-                        {jdExtractionStatus.message}
-                      </div>
-                    ) : null}
+              <div className="job-template-upload-wrap">
+                {getField('jdAttachment')}
+                {jdExtractionStatus.state !== 'idle' ? (
+                  <div className={`jd-extraction-status jd-extraction-status--${jdExtractionStatus.state}`}>
+                    {jdExtractionStatus.message}
                   </div>
                 ) : null}
               </div>
@@ -650,6 +638,16 @@ const FormStep = ({ formData, onChange, fields, title, onSetStepFields, validati
             </div>
             <div className="grid-cell grid-col-3 grid-row-4">
               {getField('hiringManager')}
+            </div>
+
+            <div className="grid-cell grid-col-1 grid-row-5">
+              {getField('technicalSkills')}
+            </div>
+            <div className="grid-cell grid-col-2 grid-row-5">
+              {getField('additionalSkills')}
+            </div>
+            <div className="grid-cell grid-col-3 grid-row-5">
+              {renderField(normalizedAddTechnicalConfig)}
             </div>
           </div>
         </div>
@@ -881,6 +879,7 @@ const ReusableForm = ({ config, onSubmit, initialData, readOnly = false }) => {
 
   const handleSubmit = async (formData) => {
     const itemLabel = String(config.itemName || 'Form').toLowerCase();
+    let didRunSubmitCallback = false;
 
     try {
       // Validate all mandatory fields before submission
@@ -911,6 +910,7 @@ const ReusableForm = ({ config, onSubmit, initialData, readOnly = false }) => {
       }
 
       // Call the onSubmit callback if provided
+      didRunSubmitCallback = true;
       onSubmit?.(formData);
 
       clearSavedDraft();
@@ -919,6 +919,14 @@ const ReusableForm = ({ config, onSubmit, initialData, readOnly = false }) => {
       console.log(`${config.itemName || 'Form'} submitted successfully`);
     } catch (error) {
       console.error(`Error submitting ${itemLabel}:`, error);
+
+      if (config.localSubmitOnly) {
+        if (!didRunSubmitCallback) {
+          onSubmit?.(formData);
+        }
+        clearSavedDraft();
+        return;
+      }
 
       // For development purposes, treat as success if it's a network error (no backend)
       if (error.code === 'ERR_NETWORK' || error.response?.status === 404) {

@@ -136,6 +136,8 @@ export default function App() {
             <Route path="/candidates" element={<Candidates />} />
             <Route path="/interviews" element={<Interviews />} />
             <Route path="/clients" element={<Clients />} />
+            <Route path="/job-openings/edit" element={<JobOpenings />} />
+            <Route path="/job-openings/create" element={<JobOpenings createMode={true} />} />
             <Route path="/job-openings/:jobId" element={<JobDescription />} />
             <Route path="/reports" element={<Reports />} />
             <Route path="/calendar" element={<Calendar />} />
