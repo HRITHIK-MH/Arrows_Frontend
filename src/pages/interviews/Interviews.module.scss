@@ -274,6 +274,10 @@
   padding-right: 18px;
 }
 
+.interviewsTable thead th:nth-child(5) .headerLabel {
+  color: #111827;
+}
+
 .sortArrows {
   position: absolute;
   right: 12px;
