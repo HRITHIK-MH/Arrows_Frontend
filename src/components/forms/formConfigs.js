@@ -59,12 +59,6 @@ const RECRUITER_DIRECTORY = [
   { id: "REC-004", name: "Priya" }
 ];
 
-const SOURCE_ID_OPTIONS = SOURCE_DIRECTORY.map(({ id, name }) => ({
-  value: id,
-  label: id,
-  sourceName: name,
-}));
-
 const SOURCE_NAME_OPTIONS = SOURCE_DIRECTORY.map(({ id, name }) => ({
   value: name,
   label: name,
@@ -383,20 +377,16 @@ export const jobOpeningConfig = {
           ]
         },
         {
-          name: "hiringManager",
-          label: "Hiring Manager *",
+          name: "hiringType",
+          label: "Work Type *",
           type: "select",
           required: true,
           cssClass: "grid-col-3 grid-row-4",
-          validationRule: "requiredField",
-          placeholder: "Select Hiring Manager",
+          placeholder: "Select",
           options: [
-            { value: "Karthik Rao", label: "Karthik Rao" },
-            { value: "Sneha Nair", label: "Sneha Nair" },
-            { value: "Anitha Kumar", label: "Anitha Kumar" },
-            { value: "Parthiban", label: "Parthiban" },
-            { value: "Saravanan", label: "Saravanan" },
-            { value: "Manigandan", label: "Manigandan" }
+            { value: "remote", label: "Remote" },
+            { value: "hybrid", label: "Hybrid" },
+            { value: "on-site", label: "On-site" }
           ]
         },
         {
@@ -490,6 +480,15 @@ export const jobOpeningConfig = {
             { value: "azure", label: "Microsoft Azure" },
             { value: "gcp", label: "Google Cloud Platform" }
           ]
+        },
+        {
+          name: "accountManager",
+          label: "Account Manager",
+          type: "text",
+          required: false,
+          cssClass: "grid-col-2 grid-row-6",
+          placeholder: "Account Manager",
+          disabled: true
         }
       ]
     },
@@ -499,24 +498,25 @@ export const jobOpeningConfig = {
       fields: [
         {
           name: "clientId",
-          label: "Client Id *",
-          type: "select",
-          required: true,
-          cssClass: "grid-col-1 grid-row-1",
-          placeholder: "Select Client Id",
-          options: [
-            { value: "C1292938", label: "C1292938", clientName: "MethodHub" },
-            { value: "C1292432", label: "C1292432", clientName: "Arrows Inc" },
-            { value: "C1292921", label: "C1292921", clientName: "NovaLabs" }
-          ]
-        },
-        {
-          name: "clientName",
-          label: "Client Name",
+          label: "Client Id",
           type: "text",
           required: false,
           cssClass: "grid-col-2 grid-row-1",
-          placeholder: "Enter Client Name"
+          placeholder: "Client ID",
+          disabled: true
+        },
+        {
+          name: "clientName",
+          label: "Client Name *",
+          type: "select",
+          required: true,
+          cssClass: "grid-col-1 grid-row-1",
+          placeholder: "Select Client Name",
+          options: [
+            { value: "MethodHub", label: "MethodHub", clientId: "C1292938" },
+            { value: "Arrows Inc", label: "Arrows Inc", clientId: "C1292432" },
+            { value: "NovaLabs", label: "NovaLabs", clientId: "C1292921" }
+          ]
         },
         {
           name: "contactPersonName",
@@ -537,16 +537,16 @@ export const jobOpeningConfig = {
           placeholder: "Enter Contact Person Email"
         },
         {
-          name: "hiringType",
-          label: "Work Type *",
+          name: "priority",
+          label: "Priority",
           type: "select",
-          required: true,
-          cssClass: "grid-col-3 grid-row-1",
-          placeholder: "Select",
+          required: false,
+          cssClass: "grid-col-2 grid-row-2",
+          placeholder: "Select Priority",
           options: [
-            { value: "remote", label: "Remote" },
-            { value: "hybrid", label: "Hybrid" },
-            { value: "on-site", label: "On-site" }
+            { value: "high", label: "High" },
+            { value: "medium", label: "Medium" },
+            { value: "low", label: "Low" }
           ]
         },
         {
@@ -554,6 +554,19 @@ export const jobOpeningConfig = {
           label: "Visibility",
           type: "custom",
           required: false
+        },
+        {
+          name: "jobActivationDate",
+          label: "Validity Upto *",
+          type: "date",
+          required: true
+        },
+        {
+          name: "targetDate",
+          label: "Target *",
+          type: "date",
+          required: true,
+          validationRule: "targetDate"
         },
         {
           name: "permissionAccess",
@@ -653,13 +666,24 @@ export const jobOpeningConfig = {
       // Benefits is optional, so no validation required
       return { isValid: true };
     },
+    targetDate: (value, fieldName, formData) => {
+      if (isEmptyValue(value)) {
+        return { isValid: false, message: "Target is required" };
+      }
+
+      const validityUpto = formData?.jobActivationDate;
+      if (!isEmptyValue(validityUpto) && String(value) < String(validityUpto)) {
+        return { isValid: false, message: "Target date cannot be before Validity Upto date" };
+      }
+
+      return { isValid: true };
+    },
     requiredField: async (value, fieldName) => {
       // Check if value is empty
       if (isEmptyValue(value)) {
         const fieldLabels = {
           jobPositionId: 'Job Position Id',
-          positionName: 'Position Name',
-          hiringManager: 'Hiring Manager'
+          positionName: 'Position Name'
         };
         const fieldLabel = fieldLabels[fieldName] || fieldName;
         return { isValid: false, message: `${fieldLabel} is required` };
@@ -857,16 +881,16 @@ export const candidateConfig = {
         },
         {
           name: "candidateTemplateFile",
-          label: "Candidate Attachment",
+          label: "Candidate Resume",
           type: "file",
           required: false,
           accept: ".pdf,.doc,.docx,.txt",
-          placeholder: "Attachment",
+          placeholder: "Resume",
           showBrowseButton: true
         },
         {
           name: "candidateId",
-          label: "Candidate Id *",
+          label: "Application Id *",
           type: "text",
           required: true,
           validationRule: "requiredField",
@@ -1092,27 +1116,19 @@ export const candidateConfig = {
           placeholder: "Enter years"
         },
         {
-          name: "sourceId",
-          label: "Source Id *",
-          type: "select",
-          required: true,
-          validationRule: "sourceReference",
-          placeholder: "Select Source Id",
-          options: SOURCE_ID_OPTIONS
-        },
-        {
           name: "recruiterId",
-          label: "Recruiter Id",
+          label: "Recruiter",
           type: "select",
           required: false,
-          placeholder: "Select Recruiter Id",
+          placeholder: "Select Recruiter",
           options: RECRUITER_OPTIONS
         },
         {
           name: "sourceName",
-          label: "Source Name",
+          label: "Source Name *",
           type: "select",
-          required: false,
+          required: true,
+          validationRule: "sourceReference",
           placeholder: "Select Source Name",
           options: SOURCE_NAME_OPTIONS
         },
@@ -1176,7 +1192,7 @@ export const candidateConfig = {
 
       if (isEmptyValue(value)) {
         const fieldLabels = {
-          candidateId: 'Candidate Id',
+          candidateId: 'Application Id',
           firstName: 'First Name',
           lastName: 'Last Name',
           primaryEmail: 'Primary Email Address',
@@ -1192,7 +1208,7 @@ export const candidateConfig = {
           skillExperienceLevel: 'Experience Level',
           skillRating: 'Ratings',
           skillExperienceYears: 'Experience (Years)',
-          sourceId: 'Source Id',
+          sourceName: 'Source Name',
           sourcedDate: 'Sourced Date',
           candidateResume: 'Resume'
         };
@@ -1200,14 +1216,14 @@ export const candidateConfig = {
         return { isValid: false, message: `${fieldLabel} is required` };
       }
 
-      // Strict format validation for Candidate ID
+      // Strict format validation for Application ID
       if (fieldName === 'candidateId') {
         const trimmedValue = String(value).trim();
         // Alphanumeric with specific length (e.g. 4-20 chars) and must start with a letter
         if (!/^[A-Za-z][A-Za-z0-9\-]{3,19}$/.test(trimmedValue)) {
           return {
             isValid: false,
-            message: 'Candidate ID must be 4-20 characters, start with a letter and contain only letters, numbers, or hyphens'
+            message: 'Application ID must be 4-20 characters, start with a letter and contain only letters, numbers, or hyphens'
           };
         }
       }
@@ -1323,7 +1339,7 @@ export const candidateConfig = {
       const hasSourceName = !isEmptyValue(formData?.sourceName);
 
       if (!hasSourceId && !hasSourceName) {
-        return { isValid: false, message: "Select a Source Id or Source Name" };
+        return { isValid: false, message: "Select a Source Name" };
       }
 
       return { isValid: true };
@@ -1396,7 +1412,7 @@ export const candidateConfig = {
     }
   },
   columns: [
-    { key: 'candidateId', label: 'Candidate Id' },
+    { key: 'candidateId', label: 'Application Id' },
     { key: 'firstName', label: 'First Name' },
     { key: 'lastName', label: 'Last Name' },
     { key: 'primaryEmail', label: 'Primary Email' },

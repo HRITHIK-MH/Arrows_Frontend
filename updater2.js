@@ -5,7 +5,7 @@ let code = fs.readFileSync(targetPath, 'utf8');
 
 const headersOld = `                <thead>
                   <tr>
-                    <th onClick={() => handleSort('candidateId')} style={{ cursor: 'pointer', userSelect: 'none', position: 'relative' }}>Candidate Id <span style={{ position: 'absolute', right: '8px' }}>{getSortArrow('candidateId')}</span></th>
+                    <th onClick={() => handleSort('candidateId')} style={{ cursor: 'pointer', userSelect: 'none', position: 'relative' }}>Application Id <span style={{ position: 'absolute', right: '8px' }}>{getSortArrow('candidateId')}</span></th>
                     <th onClick={() => handleSort('candidateName')} style={{ cursor: 'pointer', userSelect: 'none', position: 'relative' }}>Candidate Name <span style={{ position: 'absolute', right: '8px' }}>{getSortArrow('candidateName')}</span></th>
                     <th onClick={() => handleSort('candidateEmail')} style={{ cursor: 'pointer', userSelect: 'none', position: 'relative' }}>Email Address <span style={{ position: 'absolute', right: '8px' }}>{getSortArrow('candidateEmail')}</span></th>
                     <th onClick={() => handleSort('modifiedTime')} style={{ cursor: 'pointer', userSelect: 'none', position: 'relative' }}>Modified Time <span style={{ position: 'absolute', right: '8px' }}>{getSortArrow('modifiedTime')}</span></th>
@@ -22,7 +22,7 @@ const flexDiv = `<div style={{ display: 'flex', alignItems: 'center', justifyCon
 
 const headersNew = `                <thead>
                   <tr>
-                    <th onClick={() => handleSort('candidateId')} ${thStyle}>${flexDiv}<span>Candidate Id</span>{getSortArrow('candidateId')}</div></th>
+                    <th onClick={() => handleSort('candidateId')} ${thStyle}>${flexDiv}<span>Application Id</span>{getSortArrow('candidateId')}</div></th>
                     <th onClick={() => handleSort('candidateName')} ${thStyle}>${flexDiv}<span>Candidate Name</span>{getSortArrow('candidateName')}</div></th>
                     <th onClick={() => handleSort('candidateEmail')} ${thStyle}>${flexDiv}<span>Email Address</span>{getSortArrow('candidateEmail')}</div></th>
                     <th onClick={() => handleSort('modifiedTime')} ${thStyle}>${flexDiv}<span>Modified Time</span>{getSortArrow('modifiedTime')}</div></th>

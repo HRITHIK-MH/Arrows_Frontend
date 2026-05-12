@@ -664,9 +664,8 @@ const CandidateBasicInfoStep = ({
           <div className="candidate-section-divider" />
         </div>
         <div className="candidate-grid">
-          {renderField("sourceId")}
-          {renderField("recruiterId")}
           {renderField("sourceName")}
+          {renderField("recruiterId")}
           {renderField("sourcedDate")}
         </div>
       </div>
