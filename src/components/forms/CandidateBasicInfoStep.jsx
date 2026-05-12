@@ -366,11 +366,38 @@ const CandidateBasicInfoStep = ({
   };
 
   const skills = formData.skills || [
-    { primarySkill: "", skillExperienceLevel: "", skillExperienceYears: "", skillRating: "", skillComments: "" }
+    {
+      primarySkill: "",
+      enableSecondarySkill: false,
+      secondarySkill: "",
+      skillExperienceLevel: "",
+      skillExperienceYears: "",
+      skillRating: "",
+      skillComments: "",
+      secondarySkillExperienceLevel: "",
+      secondarySkillExperienceYears: "",
+      secondarySkillRating: "",
+      secondarySkillComments: ""
+    }
   ];
 
   const handleAddField = () => {
-    const newSkills = [...skills, { primarySkill: "", skillExperienceLevel: "", skillExperienceYears: "", skillRating: "", skillComments: "" }];
+    const newSkills = [
+      ...skills,
+      {
+        primarySkill: "",
+        enableSecondarySkill: false,
+        secondarySkill: "",
+        skillExperienceLevel: "",
+        skillExperienceYears: "",
+        skillRating: "",
+        skillComments: "",
+        secondarySkillExperienceLevel: "",
+        secondarySkillExperienceYears: "",
+        secondarySkillRating: "",
+        secondarySkillComments: ""
+      }
+    ];
     onChange("skills", newSkills);
   };
 
@@ -382,6 +409,27 @@ const CandidateBasicInfoStep = ({
   const handleSkillChange = (index, fieldName, value) => {
     const newSkills = [...skills];
     newSkills[index] = { ...newSkills[index], [fieldName]: value };
+    onChange("skills", newSkills);
+  };
+
+  const toggleSecondarySkill = (index, enabled) => {
+    const newSkills = [...skills];
+    const current = newSkills[index] || {};
+
+    if (enabled) {
+      newSkills[index] = { ...current, enableSecondarySkill: true };
+    } else {
+      newSkills[index] = {
+        ...current,
+        enableSecondarySkill: false,
+        secondarySkill: "",
+        secondarySkillExperienceLevel: "",
+        secondarySkillExperienceYears: "",
+        secondarySkillRating: "",
+        secondarySkillComments: "",
+      };
+    }
+
     onChange("skills", newSkills);
   };
 
@@ -400,10 +448,10 @@ const CandidateBasicInfoStep = ({
           <div className="candidate-cell">
             <div className="job-template-choice">
               <div className="job-template-choice-label">
-                Have Candidate Template?
+                Have Candidate Resume?
                 <span className="required-star">*</span>
               </div>
-              <div className="job-template-choice-options" role="radiogroup" aria-label="Have Candidate Template">
+              <div className="job-template-choice-options" role="radiogroup" aria-label="Have Candidate Resume">
                 <label className="job-template-choice-option" htmlFor="candidateTemplateMode-no">
                   <input
                     id="candidateTemplateMode-no"
@@ -643,6 +691,99 @@ const CandidateBasicInfoStep = ({
                 )}
               </div>
             </div>
+
+            {(skill.enableSecondarySkill || skill.secondarySkill) && (
+              <div className="candidate-grid secondary-skill-grid">
+                <div className="candidate-cell">
+                  {fieldMap.secondarySkill && (
+                    <FormField
+                      {...fieldMap.secondarySkill}
+                      value={skill.secondarySkill || ""}
+                      onChange={(_, value) => handleSkillChange(index, "secondarySkill", value)}
+                      formData={formData}
+                      hideLabel={index > 0}
+                    />
+                  )}
+                </div>
+                <div className="candidate-cell skill-split-cell">
+                  <div className="skill-split-fields">
+                    <FormField
+                      {...fieldMap.secondarySkillExperienceLevel}
+                      value={skill.secondarySkillExperienceLevel || ""}
+                      onChange={(_, value) => handleSkillChange(index, "secondarySkillExperienceLevel", value)}
+                      formData={formData}
+                      hideLabel={index > 0}
+                    />
+                    <FormField
+                      {...fieldMap.secondarySkillExperienceYears}
+                      value={skill.secondarySkillExperienceYears || ""}
+                      onChange={(_, value) => handleSkillChange(index, "secondarySkillExperienceYears", value)}
+                      formData={formData}
+                      hideLabel={index > 0}
+                    />
+                  </div>
+                </div>
+                <div className="candidate-cell skill-split-cell">
+                  <div className="skill-split-fields skill-rating-comments-fields">
+                    <div className="form-field skill-rating-field">
+                      {index === 0 && (
+                        <label>
+                          {fieldMap.secondarySkillRating?.label || "Secondary Ratings"}
+                        </label>
+                      )}
+                      <div className="skill-rating-stars" role="radiogroup" aria-label="Secondary skill rating">
+                        {[1, 2, 3, 4, 5].map((starValue) => {
+                          const currentRating = Number.parseInt(String(skill.secondarySkillRating || "0"), 10);
+                          const isActive = Number.isFinite(currentRating) && starValue <= currentRating;
+
+                          return (
+                            <button
+                              key={`secondary-${starValue}`}
+                              type="button"
+                              className={`skill-rating-star${isActive ? " active" : ""}`}
+                              onClick={() => handleSkillChange(index, "secondarySkillRating", String(starValue))}
+                              aria-label={`Set secondary rating ${starValue}`}
+                              aria-pressed={isActive}
+                              title={`${starValue} star${starValue > 1 ? "s" : ""}`}
+                            >
+                              ★
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                    <FormField
+                      {...fieldMap.secondarySkillComments}
+                      value={skill.secondarySkillComments || ""}
+                      onChange={(_, value) => handleSkillChange(index, "secondarySkillComments", value)}
+                      formData={formData}
+                      hideLabel={index > 0}
+                    />
+                  </div>
+                </div>
+                <div className="candidate-cell secondary-skill-actions-cell">
+                  <button
+                    type="button"
+                    className="secondary-skill-toggle remove"
+                    onClick={() => toggleSecondarySkill(index, false)}
+                  >
+                    Remove Secondary Skill
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {!(skill.enableSecondarySkill || skill.secondarySkill) && (
+              <div className="secondary-skill-actions">
+                <button
+                  type="button"
+                  className="secondary-skill-toggle"
+                  onClick={() => toggleSecondarySkill(index, true)}
+                >
+                  Add Secondary Skill (Optional)
+                </button>
+              </div>
+            )}
           </div>
         ))}
 
@@ -663,9 +804,9 @@ const CandidateBasicInfoStep = ({
           <h3 className="candidate-section-title">Source Info</h3>
           <div className="candidate-section-divider" />
         </div>
-        <div className="candidate-grid">
-          {renderField("sourceName")}
-          {renderField("recruiterId")}
+        <div className="candidate-grid source-info-grid">
+          {renderField("sourceName", "dropdown-up")}
+          {renderField("recruiterId", "dropdown-up")}
           {renderField("sourcedDate")}
         </div>
       </div>

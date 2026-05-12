@@ -184,8 +184,8 @@ export default function Interviews() {
   const [currentPage, setCurrentPage] = React.useState(1);
   const [interviews, setInterviews] = React.useState([]);
   const [loading, setLoading] = React.useState(false);
-  const [expandedGroups, setExpandedGroups] = React.useState(["JD1"]);
-  const [selectedGroup, setSelectedGroup] = React.useState("JD1");
+  const [expandedGroups, setExpandedGroups] = React.useState(["Java"]);
+  const [selectedGroup, setSelectedGroup] = React.useState("Java");
   const [showAddMemberModal, setShowAddMemberModal] = React.useState(false);
   const [newMemberRound, setNewMemberRound] = React.useState("");
   const [newMemberInterviewer, setNewMemberInterviewer] = React.useState("");
@@ -219,8 +219,8 @@ export default function Interviews() {
   // Sample groups data
   const [groups, setGroups] = React.useState([
     {
-      id: "JD1",
-      name: "JD1",
+      id: "Java",
+      name: "Java",
       members: 6,
       rounds: ["Round 1", "Round 2", "Round 3"],
       teamMembers: [
@@ -1018,12 +1018,12 @@ export default function Interviews() {
             <span className={styles.profileValue}>{selectedCandidate.offersInHand}</span>
           </div>
           <div className={styles.profileItem}>
-            <span className={styles.profileLabel}>Current CTC</span>
-            <span className={styles.profileValue}>{selectedCandidate.currentCtc}</span>
+            <span className={styles.profileLabel}>Current CTC (LPA)</span>
+            <span className={styles.profileValue}>{selectedCandidate.currentCtc} LPA</span>
           </div>
           <div className={styles.profileItem}>
-            <span className={styles.profileLabel}>Expected CTC</span>
-            <span className={styles.profileValue}>{selectedCandidate.expectedCtc}</span>
+            <span className={styles.profileLabel}>Expected CTC (LPA)</span>
+            <span className={styles.profileValue}>{selectedCandidate.expectedCtc} LPA</span>
           </div>
         </div>
       );
@@ -1346,10 +1346,10 @@ export default function Interviews() {
     { key: "candidateName", label: "Candidate Name" },
     { key: "roleJobTitle", label: "Role / Job Title" },
     { key: "dateTime", label: "Date & Time" },
-    { key: "company", label: "Company" },
+    { key: "company", label: "Client" },
     { key: "interviewType", label: "Interview Type" },
     { key: "mode", label: "Mode" },
-    { key: "status", label: "Status" }
+    { key: "status", label: "Stage" }
   ];
 
   // Get unique values for filters
@@ -1540,7 +1540,7 @@ export default function Interviews() {
                 onChange={(e) => setFilterStatus(e.target.value)}
                 className={styles.selectField}
               >
-                <option value="">Status</option>
+                <option value="">Stage</option>
                 {uniqueStatuses.map((status) => (
                   <option key={status} value={status}>
                     {status}
@@ -1644,10 +1644,10 @@ export default function Interviews() {
                         <td data-label="Candidate Name">{row.candidateName}</td>
                         <td data-label="Role / Job Title">{row.roleJobTitle}</td>
                         <td data-label="Date & Time">{row.dateTime}</td>
-                        <td data-label="Company">{row.company}</td>
+                        <td data-label="Client">{row.company}</td>
                         <td data-label="Interview Type">{row.interviewType}</td>
                         <td data-label="Mode">{row.mode}</td>
-                        <td data-label="Status">
+                        <td data-label="Stage">
                           <span
                             className={`${styles.statusPill} ${
                               row.status === "Rescheduled"
@@ -2369,7 +2369,7 @@ export default function Interviews() {
         <th>Opening Job Id</th>
         <th>Posting Title</th>
         <th>Client</th>
-        <th>Status</th>
+        <th>Stage</th>
         </tr>
         </thead>
 

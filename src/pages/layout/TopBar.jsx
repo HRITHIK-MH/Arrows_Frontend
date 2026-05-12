@@ -82,6 +82,24 @@ export default function TopBar({ isSidebarOpen, setSidebarOpen }) {
   const pageTitle = crumbs.length ? crumbs[crumbs.length - 1].label : "Dashboard";
   const isDashboardOnly = crumbs.length === 1 && crumbs[0]?.path === "/dashboard";
   const navigate = useNavigate();
+  const currentUserRole = useMemo(() => {
+    if (typeof window === "undefined") return "";
+    return String(window.localStorage.getItem("userRole") || "").toLowerCase();
+  }, []);
+  const profileDisplay = useMemo(() => {
+    if (currentUserRole === "accountmanager") {
+      return {
+        name: "Surya",
+        role: "Account Manager",
+      };
+    }
+
+    return {
+      name: "Saravanan",
+      role: "Team Lead",
+    };
+  }, [currentUserRole]);
+  const profileInitial = (profileDisplay.name || "S").charAt(0).toUpperCase();
 
 
   /** Profile menu state */
@@ -164,11 +182,11 @@ export default function TopBar({ isSidebarOpen, setSidebarOpen }) {
             aria-expanded={menuOpen ? "true" : "false"}
             onClick={() => setMenuOpen((v) => !v)}
           >
-            <span aria-hidden className="profileAvatar">S</span>
+            <span aria-hidden className="profileAvatar">{profileInitial}</span>
 
             <span className="profileText">
-              <span className="profileName">Saravanan</span>
-              <span className="role">Team Lead</span>
+              <span className="profileName">{profileDisplay.name}</span>
+              <span className="role">{profileDisplay.role}</span>
             </span>
 
 

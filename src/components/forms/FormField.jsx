@@ -19,6 +19,7 @@ const FormField = ({
   accept,
   multiple,
   prefix,
+  suffix,
   formData,
   disabled,
   showBrowseButton,
@@ -591,9 +592,10 @@ const FormField = ({
           }
 
           return (
-            <div className={`field-control has-prefix${displayError ? ' error' : ''}`}>
+            <div className={`field-control has-prefix${suffix ? ' has-suffix' : ''}${displayError ? ' error' : ''}`}>
               <span className="field-prefix">{prefix}</span>
               {inputElement}
+              {suffix && <span className="field-suffix">{suffix}</span>}
               {type === 'file' && value && (
                 Array.isArray(value) ? (
                   <div className="selected-files">

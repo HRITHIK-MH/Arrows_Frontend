@@ -18,7 +18,7 @@ export const LINKS = [
   { to: "/interviews", label: "Interviews", icon: FiUserCheck },
   { to: "/clients", label: "Client", icon: FiUser },
   { to: "/reports", label: "Reports", icon: FiBarChart2 },
-  { to: "/calendar", label: "Calendar", icon: FiCalendar },
-  { to: "/users", label: "User Roles", icon: FiUserPlus },
+  // { to: "/calendar", label: "Calendar", icon: FiCalendar }, // Disabled for later
+  // { to: "/users", label: "User Roles", icon: FiUserPlus }, // Disabled for later
 ];
 

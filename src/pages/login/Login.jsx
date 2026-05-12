@@ -12,7 +12,19 @@ import loginCircle from "../../assets/login/login_circle.png";
 import loginCircle2 from "../../assets/login/login_circle2.png";
 import './Login.css';
 
+const LOGIN_CREDENTIALS_BY_ROLE = {
+  recruiter: [
+    { email: 'admin@example.com', password: 'admin' },
+    { email: 'recruiter@example.com', password: 'recruiter' }
+  ],
+  accountManager: [
+    { email: 'accountmanager@example.com', password: 'accountmanager' },
+    { email: 'am@example.com', password: 'am123' }
+  ]
+};
+
 const Login = () => {
+  const [role, setRole] = useState('recruiter');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -51,15 +63,22 @@ const Login = () => {
     try {
       const response = await new Promise((resolve, reject) => {
         setTimeout(() => {
-          if (email === 'admin@example.com' && password === 'admin') {
-            resolve({ ok: true });
+          const roleCredentials = LOGIN_CREDENTIALS_BY_ROLE[role] || [];
+          const isValid = roleCredentials.some(
+            (item) => item.email.toLowerCase() === email.toLowerCase().trim() && item.password === password
+          );
+
+          if (isValid) {
+            resolve({ ok: true, role });
           } else {
-            reject(new Error('Invalid credentials'));
+            reject(new Error('Invalid credentials for selected role'));
           }
         }, 1000); // Simulate network delay
       });
 
       if (response.ok) {
+        localStorage.setItem('userRole', response.role);
+        localStorage.setItem('userEmail', email.toLowerCase().trim());
         navigate('/dashboard');
       }
     } catch (err) {
@@ -85,6 +104,18 @@ If you've forgotten your password, use the "Forgot Password" option<br></br> to 
         <img src={arrowLogo} alt="Arrow Logo" className="arrow-logo" />
         </div>
         <form onSubmit={handleSubmit} className="login-form">
+          <div className="form-group">
+            <label htmlFor="role">Login As</label>
+            <select
+              id="role"
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
+              aria-label="Select login role"
+            >
+              <option value="recruiter">Recruiter</option>
+              <option value="accountManager">Account Manager</option>
+            </select>
+          </div>
           <div className="form-group email-group">
             <label htmlFor="email">Email Address</label>
             <div className="input-wrapper">
@@ -133,6 +164,9 @@ If you've forgotten your password, use the "Forgot Password" option<br></br> to 
           <button type="submit" className="login-btn" disabled={loading}>
             {loading ? 'Signing In...' : 'Sign In'}
           </button>
+          <p className="login-hint">
+            Recruiter: admin@example.com / admin | Account Manager: accountmanager@example.com / accountmanager
+          </p>
         </form>
       </div>
     </div>

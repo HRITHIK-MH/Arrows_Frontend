@@ -41,12 +41,71 @@
 }
 
 .successMessage {
-  padding: 10px 14px;
-  background: #eaf7ee;
-  border: 1px solid #c9ebd3;
-  color: #1f6b3b;
-  border-radius: 8px;
-  font-size: 13px;
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 16px 28px;
+  background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+  border: 2px solid #22c55e;
+  color: #15803d;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  z-index: 2000;
+  max-width: 550px;
+  text-align: center;
+  box-shadow: 0 4px 16px rgba(34, 197, 94, 0.25);
+  animation: slideDown 0.4s ease-out;
+  letter-spacing: 0.3px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.closeButton {
+  background: none;
+  border: none;
+  color: #15803d;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 0;
+  margin: 0;
+  min-width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+  font-weight: bold;
+
+  &:hover {
+    opacity: 1;
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-20px);
+  }
 }
 
 .card {

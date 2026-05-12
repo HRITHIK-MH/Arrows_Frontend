@@ -266,7 +266,7 @@ export const jobOpeningConfig = {
           required: true,
           cssClass: "grid-col-2 grid-row-1",
           validationRule: "requiredField",
-          placeholder: "Enter Position Name"
+          placeholder: "Job Name"
         },
         {
           name: "minExperience",
@@ -337,30 +337,32 @@ export const jobOpeningConfig = {
         },
         {
           name: "jobReceivedDate",
-          label: "Job Received Date *",
+          label: "Job Received Date (dd-mm-yyyy) *",
           type: "date",
           required: true,
           cssClass: "grid-col-2 grid-row-3"
         },
         {
           name: "minSalary",
-          label: "Salary Min",
+          label: "Salary Min (in CTC)",
           type: "number",
           required: true,
           cssClass: "grid-col-3 grid-row-3",
           validationRule: "salary",
           hideLabel: true,
-          prefix: "Min"
+          prefix: "Min",
+          suffix: "LPA"
         },
         {
           name: "maxSalary",
-          label: "Salary Max",
+          label: "Salary Max (in CTC)",
           type: "number",
           required: true,
           cssClass: "grid-col-3 grid-row-3",
           validationRule: "salary",
           hideLabel: true,
-          prefix: "Max"
+          prefix: "Max",
+          suffix: "LPA"
         },
         {
           name: "jobType",
@@ -388,6 +390,14 @@ export const jobOpeningConfig = {
             { value: "hybrid", label: "Hybrid" },
             { value: "on-site", label: "On-site" }
           ]
+        },
+        {
+          name: "jdAttachmentMode",
+          label: "Have JD Template? *",
+          type: "radio-choice",
+          required: false,
+          cssClass: "grid-col-1 grid-row-1",
+          defaultValue: "no"
         },
         {
           name: "jdAttachment",
@@ -626,14 +636,22 @@ export const jobOpeningConfig = {
       }),
     salary: (value, fieldName, formData) => {
       const label = fieldName === "maxSalary" ? "Max salary" : "Min salary";
+      
+      // Validate as lakh values (e.g., 5.5 lakhs for 550000)
       const integerValidation = validateIntegerValue(value, {
         label,
         min: 0,
-        max: 10000000
+        max: 200
       });
 
       if (!integerValidation.isValid) {
-        return integerValidation;
+        return { isValid: false, message: `${label} must be between 0 and 200 lakhs` };
+      }
+
+      // Check if value looks like it might be in actual rupees instead of lakhs
+      const numValue = parseInt(value, 10);
+      if (numValue > 200 && numValue < 100000) {
+        return { isValid: false, message: `${label} should be in lakhs (e.g., 5 for 5 lakhs or 5,00,000 rupees)` };
       }
 
       const currentFormData = { ...(formData || {}), [fieldName]: String(value).trim() };
@@ -852,8 +870,8 @@ export const jobOpeningConfig = {
     { key: 'location', label: 'Location' },
     { key: 'minExperience', label: 'Min Exp' },
     { key: 'maxExperience', label: 'Max Exp' },
-    { key: 'minSalary', label: 'Min Salary' },
-    { key: 'maxSalary', label: 'Max Salary' },
+    { key: 'minSalary', label: 'Min Salary (CTC in Lakhs)' },
+    { key: 'maxSalary', label: 'Max Salary (CTC in Lakhs)' },
     { key: 'requiredSkills', label: 'Required Skills' }
   ]
 };
@@ -1041,19 +1059,19 @@ export const candidateConfig = {
         },
         {
           name: "currentCtc",
-          label: "Current CTC (Annual INR) *",
+          label: "Current CTC (LPA) *",
           type: "number",
           required: true,
           validationRule: "ctc",
-          placeholder: "Enter annual current CTC in INR"
+          placeholder: "Enter current CTC in LPA (e.g., 10)"
         },
         {
           name: "expectedCtc",
-          label: "Expected CTC (Annual INR) *",
+          label: "Expected CTC (LPA) *",
           type: "number",
           required: true,
           validationRule: "ctc",
-          placeholder: "Enter annual expected CTC in INR"
+          placeholder: "Enter expected CTC in LPA (e.g., 15)"
         },
         {
           name: "primarySkill",
@@ -1071,11 +1089,37 @@ export const candidateConfig = {
           ]
         },
         {
+          name: "secondarySkill",
+          label: "Secondary Skill",
+          type: "select",
+          required: false,
+          placeholder: "Select Secondary Skill",
+          options: [
+            { value: "java", label: "Core Java" },
+            { value: "python", label: "Python" },
+            { value: "react", label: "React" },
+            { value: "node", label: "Node.js" },
+            { value: "aws", label: "AWS" }
+          ]
+        },
+        {
           name: "skillExperienceLevel",
           label: "Experience Level *",
           type: "select",
           required: true,
           validationRule: "requiredField",
+          placeholder: "Select Experience Level",
+          options: [
+            { value: "beginner", label: "Beginner" },
+            { value: "intermediate", label: "Intermediate" },
+            { value: "expert", label: "Expert" }
+          ]
+        },
+        {
+          name: "secondarySkillExperienceLevel",
+          label: "Secondary Experience Level",
+          type: "select",
+          required: false,
           placeholder: "Select Experience Level",
           options: [
             { value: "beginner", label: "Beginner" },
@@ -1100,8 +1144,30 @@ export const candidateConfig = {
           ]
         },
         {
+          name: "secondarySkillRating",
+          label: "Secondary Ratings",
+          type: "select",
+          required: false,
+          placeholder: "Select Rating",
+          options: [
+            { value: "0", label: "0" },
+            { value: "1", label: "1" },
+            { value: "2", label: "2" },
+            { value: "3", label: "3" },
+            { value: "4", label: "4" },
+            { value: "5", label: "5" }
+          ]
+        },
+        {
           name: "skillComments",
           label: "Comments",
+          type: "text",
+          required: false,
+          placeholder: "Add comments"
+        },
+        {
+          name: "secondarySkillComments",
+          label: "Secondary Comments",
           type: "text",
           required: false,
           placeholder: "Add comments"
@@ -1112,6 +1178,14 @@ export const candidateConfig = {
           type: "number",
           required: true,
           validationRule: "requiredField",
+          allowDecimal: true,
+          placeholder: "Enter years"
+        },
+        {
+          name: "secondarySkillExperienceYears",
+          label: "Secondary Experience (Years)",
+          type: "number",
+          required: false,
           allowDecimal: true,
           placeholder: "Enter years"
         },
@@ -1147,10 +1221,9 @@ export const candidateConfig = {
       fields: [
         {
           name: "candidateResume",
-          label: "Resume *",
+          label: "Resume",
           type: "file",
-          required: true,
-          validationRule: "requiredField",
+          required: false,
           accept: ".pdf,.doc,.docx",
           placeholder: "Upload Resume"
         },
@@ -1205,9 +1278,14 @@ export const candidateConfig = {
           currentCtc: 'Current CTC',
           expectedCtc: 'Expected CTC',
           primarySkill: 'Primary Skill',
+          secondarySkill: 'Secondary Skill',
           skillExperienceLevel: 'Experience Level',
+          secondarySkillExperienceLevel: 'Secondary Experience Level',
           skillRating: 'Ratings',
+          secondarySkillRating: 'Secondary Ratings',
           skillExperienceYears: 'Experience (Years)',
+          secondarySkillExperienceYears: 'Secondary Experience (Years)',
+          secondarySkillComments: 'Secondary Comments',
           sourceName: 'Source Name',
           sourcedDate: 'Sourced Date',
           candidateResume: 'Resume'
@@ -1388,7 +1466,7 @@ export const candidateConfig = {
       const integerValidation = validateIntegerValue(value, {
         label,
         min: 0,
-        max: 100000000
+        max: 1000
       });
 
       if (!integerValidation.isValid) {

@@ -105,9 +105,9 @@ const PermissionStep = ({ formData, onChange, onSetStepFields, fields = [], vali
       : [])
     .map((item) => String(item || "").toLowerCase())
     .filter((item) => FOCUS_LOCATION_VALUES.has(item));
-  const availabilityOptions = Array.isArray(formData.availabilityOptions)
-    ? formData.availabilityOptions
-    : [];
+  const availabilitySelection = Array.isArray(formData.availabilityOptions)
+    ? (formData.availabilityOptions[0] || "")
+    : String(formData.availabilityOptions || "");
   const interviewStages = Array.isArray(formData.interviewStages)
     ? formData.interviewStages
     : [];
@@ -135,7 +135,9 @@ const PermissionStep = ({ formData, onChange, onSetStepFields, fields = [], vali
       onChange("focusLocationValue", fallbackLocations);
     }
     if (formData.availabilityOptions === undefined) {
-      onChange("availabilityOptions", ["immediate", "1month"]);
+      onChange("availabilityOptions", "immediate");
+    } else if (Array.isArray(formData.availabilityOptions)) {
+      onChange("availabilityOptions", formData.availabilityOptions[0] || "");
     }
     if (formData.interviewStages === undefined) {
       onChange("interviewStages", []);
@@ -271,11 +273,8 @@ const PermissionStep = ({ formData, onChange, onSetStepFields, fields = [], vali
     onSetStepFields,
   ]);
 
-  const toggleAvailabilityOption = (option) => {
-    const nextOptions = availabilityOptions.includes(option)
-      ? availabilityOptions.filter((item) => item !== option)
-      : [...availabilityOptions, option];
-    onChange("availabilityOptions", nextOptions);
+  const handleAvailabilityChange = (option) => {
+    onChange("availabilityOptions", option);
   };
 
   const openStagePopup = (mode) => {
@@ -553,9 +552,12 @@ const PermissionStep = ({ formData, onChange, onSetStepFields, fields = [], vali
             {AVAILABILITY_OPTIONS.map((option) => (
               <label key={option.value} className="permission-option">
                 <input
-                  type="checkbox"
-                  checked={availabilityOptions.includes(option.value)}
-                  onChange={() => toggleAvailabilityOption(option.value)}
+                  type="radio"
+                  name="availabilityOptions"
+                  value={option.value}
+                  checked={availabilitySelection === option.value}
+                  onChange={() => handleAvailabilityChange(option.value)}
+                  disabled={disabled}
                 />
                 <span>{option.label}</span>
               </label>

@@ -137,23 +137,31 @@ const collectMatchingOptionValues = (text, options = []) => {
 };
 
 const readDocxText = async (file) => {
+  console.log('[JD EXTRACTION] Starting Mammoth import...');
   const mammoth = await import('mammoth/mammoth.browser');
+  console.log('[JD EXTRACTION] Mammoth loaded, converting to ArrayBuffer...');
   const arrayBuffer = await file.arrayBuffer();
+  console.log('[JD EXTRACTION] ArrayBuffer ready, extracting text...');
   const result = await mammoth.extractRawText({ arrayBuffer });
+  console.log('[JD EXTRACTION] Mammoth extraction complete, text length:', result?.value?.length || 0);
   return normalizeText(result?.value || '');
 };
 
 const readUploadedFileText = async (file) => {
   const extension = String(file?.name || '').split('.').pop()?.toLowerCase();
+  console.log('[JD EXTRACTION] Reading file extension:', extension);
 
   if (extension === 'docx') {
+    console.log('[JD EXTRACTION] Using Mammoth for DOCX');
     return readDocxText(file);
   }
 
   if (extension === 'txt' || extension === 'doc') {
+    console.log('[JD EXTRACTION] Using native File.text() for', extension);
     return normalizeText(await file.text());
   }
 
+  console.log('[JD EXTRACTION] Unsupported extension:', extension);
   return '';
 };
 
@@ -162,7 +170,15 @@ const FormStep = ({ formData, onChange, fields, allFields = fields, title, onSet
   const isJobBasicInfo = title === "Job Basic Information" || title === "Job Information";
   const fieldMetaSignatureRef = React.useRef('');
   const jdParsedFileRef = React.useRef('');
+  const onChangeRef = React.useRef(onChange);
+  const [jdTemplateMode, setJdTemplateMode] = React.useState(
+    formData.jdAttachmentMode === 'yes' ? 'yes' : 'no'
+  );
   const [jdExtractionStatus, setJdExtractionStatus] = React.useState({ state: 'idle', message: '' });
+
+  React.useEffect(() => {
+    onChangeRef.current = onChange;
+  }, [onChange]);
 
   // Notify parent about fields in this step
   React.useEffect(() => {
@@ -195,9 +211,20 @@ const FormStep = ({ formData, onChange, fields, allFields = fields, title, onSet
     const mappedClientId = matchedClient?.clientId || matchedClient?.id || "";
 
     if (mappedClientId && mappedClientId !== formData.clientId) {
-      onChange("clientId", mappedClientId);
+      onChangeRef.current("clientId", mappedClientId);
     }
-  }, [fields, formData.clientId, formData.clientName, onChange]);
+  }, [fields, formData.clientId, formData.clientName]);
+
+  React.useEffect(() => {
+    if (!isJobBasicInfo) return;
+    if (formData.jdAttachmentMode === 'yes' && jdTemplateMode !== 'yes') {
+      setJdTemplateMode('yes');
+      return;
+    }
+    if (formData.jdAttachmentMode === 'no' && jdTemplateMode !== 'no' && !formData.jdAttachment) {
+      setJdTemplateMode('no');
+    }
+  }, [formData.jdAttachment, formData.jdAttachmentMode, isJobBasicInfo, jdTemplateMode]);
 
   React.useEffect(() => {
     if (!isJobBasicInfo) return;
@@ -208,27 +235,89 @@ const FormStep = ({ formData, onChange, fields, allFields = fields, title, onSet
       return;
     }
 
+    if (jdTemplateMode !== 'yes') {
+      setJdTemplateMode('yes');
+    }
+    if (formData.jdAttachmentMode !== 'yes') {
+      onChangeRef.current('jdAttachmentMode', 'yes');
+    }
+
     const fileKey = `${uploadedFile.name || ''}-${uploadedFile.size || 0}-${uploadedFile.lastModified || 0}`;
     if (jdParsedFileRef.current === fileKey) {
+      console.log('[JD EXTRACTION] File already parsed, skipping:', fileKey);
       return;
     }
 
-    let isCancelled = false;
+    console.log('[JD EXTRACTION] Starting extraction for file:', uploadedFile.name);
+    
+    // Use AbortController to handle cancellation properly
+    const controller = new AbortController();
 
     const parseAndPopulate = async () => {
       try {
+        if (controller.signal.aborted) {
+          console.log('[JD EXTRACTION] Already cancelled before reading file');
+          return;
+        }
+
+        console.log('[JD EXTRACTION] Phase 1: Reading file...');
         setJdExtractionStatus({ state: 'loading', message: 'Reading JD and extracting fields...' });
 
         const extractedText = await readUploadedFileText(uploadedFile);
+        const rawDocumentText = String(extractedText || '');
         const fileNameWithoutExt = normalizeText(String(uploadedFile.name || '').replace(/\.[^.]+$/, ''));
-        const documentText = normalizeText(extractedText);
+        const documentText = normalizeText(rawDocumentText);
         const combinedText = normalizeText(`${fileNameWithoutExt} ${documentText}`);
         const normalizedText = normalizeToken(combinedText);
+        const rawLines = rawDocumentText
+          .split(/\r?\n/)
+          .map((line) => line.replace(/\u00A0/g, ' '))
+          .map((line) => line.trim())
+          .filter(Boolean);
+
+        if (!documentText) {
+          const extension = String(uploadedFile.name || '').split('.').pop()?.toLowerCase();
+          const detail = extension === 'pdf'
+            ? 'PDF text extraction is limited in current setup.'
+            : 'Try a DOCX or TXT file with selectable text.';
+          setJdExtractionStatus({ state: 'warning', message: `JD uploaded, but readable text was not detected. ${detail}` });
+          jdParsedFileRef.current = fileKey;
+          return;
+        }
 
         const updates = {};
         const availableFields = Array.isArray(allFields) && allFields.length ? allFields : fields;
         const getAvailableField = (fieldName) =>
           availableFields.find((field) => field.name === fieldName);
+        const normalizeKey = (value) => normalizeToken(String(value || '').replace(/[^a-zA-Z0-9\s]/g, ' '));
+        const keyValueEntries = rawLines
+          .map((line) => {
+            const colonSeparatedMatch = line.match(/^([^:\-]{2,80})\s*[:\-]\s*(.+)$/);
+            const tableSeparatedMatch = colonSeparatedMatch
+              ? null
+              : line.match(/^(.{2,80}?)(?:\t+|\s{2,})(.{1,})$/);
+
+            const match = colonSeparatedMatch || tableSeparatedMatch;
+            if (!match) return null;
+
+            const rawKey = normalizeText(match[1]);
+            const rawValue = normalizeText(match[2]);
+            if (!rawKey || !rawValue) return null;
+            if (/^(yes|no)$/i.test(rawValue)) return null;
+
+            return {
+              key: normalizeKey(rawKey),
+              value: rawValue
+            };
+          })
+          .filter((entry) => entry && entry.key && entry.value);
+        const getLineLabelValue = (labels = []) => {
+          const normalizedLabels = labels.map((label) => normalizeKey(label));
+          const matchedEntry = keyValueEntries.find((entry) =>
+            normalizedLabels.some((label) => entry.key.includes(label) || label.includes(entry.key))
+          );
+          return normalizeText(matchedEntry?.value || '');
+        };
         const extractLabelValue = (labels, stopLabels = []) => {
           const labelPattern = labels.map((label) => label.replace(/\s+/g, '\\s*')).join('|');
           const stopLabelPattern = [
@@ -264,7 +353,7 @@ const FormStep = ({ formData, onChange, fields, allFields = fields, title, onSet
           return normalizeText(match?.[1] || '');
         };
 
-        let positionMatch = documentText.match(
+        let positionMatch = getLineLabelValue(['job name', 'position name', 'position', 'job title', 'role', 'designation']) || documentText.match(
           /(?:job\s*name|position\s*name|job\s*title|role)\s*[:\-]\s*(.+?)(?=\s+(?:position\s*level|location|job\s*type|employment\s*type|work\s*type|hiring\s*type|positions?|openings?|min(?:imum)?\s*(?:experience|exp|salary|ctc)|max(?:imum)?\s*(?:experience|exp|salary|ctc)|salary|ctc|technical\s*skills?|soft\s*skills?|additional\s*skills?)\s*[:\-]|$)/i
         )?.[1];
         if (positionMatch) {
@@ -283,8 +372,11 @@ const FormStep = ({ formData, onChange, fields, allFields = fields, title, onSet
         const minMatch = normalizedText.match(/(?:minimum|min)\s*(?:experience)?\s*[:\-]?\s*(\d{1,2})/i);
         const maxMatch = normalizedText.match(/(?:maximum|max)\s*(?:experience)?\s*[:\-]?\s*(\d{1,2})/i);
 
-        const minExperience = rangeMatch?.[1] || minMatch?.[1] || '';
-        const maxExperience = rangeMatch?.[2] || maxMatch?.[1] || '';
+        const minExperienceFromLine = getLineLabelValue(['min experience', 'minimum experience', 'experience min']).match(/\d{1,2}/)?.[0] || '';
+        const maxExperienceFromLine = getLineLabelValue(['max experience', 'maximum experience', 'experience max']).match(/\d{1,2}/)?.[0] || '';
+
+        const minExperience = rangeMatch?.[1] || minMatch?.[1] || minExperienceFromLine;
+        const maxExperience = rangeMatch?.[2] || maxMatch?.[1] || maxExperienceFromLine;
 
         if (minExperience && !normalizeText(formData.minExperience)) {
           updates.minExperience = minExperience;
@@ -311,8 +403,10 @@ const FormStep = ({ formData, onChange, fields, allFields = fields, title, onSet
           /(?:max(?:imum)?\s*(?:salary|ctc|compensation|package)|(?:salary|ctc)\s*max)\s*[:\-]?\s*(\d[\d,]*(?:\.\d+)?)/i
         );
 
-        const minSalary = normalizeSalaryNumber(salaryRangeMatch?.[1] || minSalaryMatch?.[1]);
-        const maxSalary = normalizeSalaryNumber(salaryRangeMatch?.[2] || maxSalaryMatch?.[1]);
+        const minSalaryFromLine = getLineLabelValue(['min salary', 'minimum salary', 'salary min', 'min ctc', 'minimum ctc']);
+        const maxSalaryFromLine = getLineLabelValue(['max salary', 'maximum salary', 'salary max', 'max ctc', 'maximum ctc']);
+        const minSalary = normalizeSalaryNumber(salaryRangeMatch?.[1] || minSalaryMatch?.[1] || minSalaryFromLine);
+        const maxSalary = normalizeSalaryNumber(salaryRangeMatch?.[2] || maxSalaryMatch?.[1] || maxSalaryFromLine);
 
         if (minSalary && !normalizeText(formData.minSalary)) {
           updates.minSalary = minSalary;
@@ -322,8 +416,10 @@ const FormStep = ({ formData, onChange, fields, allFields = fields, title, onSet
         }
 
         const openingsMatch = normalizedText.match(/(?:positions?|openings?)\s*[:\-]?\s*(\d{1,3})/i);
-        if (openingsMatch?.[1] && !normalizeText(formData.noOfPositions)) {
-          updates.noOfPositions = openingsMatch[1];
+        const openingsFromLine = getLineLabelValue(['positions', 'no of positions', 'number of positions', 'openings']).match(/\d{1,3}/)?.[0] || '';
+        const openingsValue = openingsMatch?.[1] || openingsFromLine;
+        if (openingsValue && !normalizeText(formData.noOfPositions)) {
+          updates.noOfPositions = openingsValue;
         }
 
         if (!normalizeText(formData.jobReceivedDate)) {
@@ -359,7 +455,7 @@ const FormStep = ({ formData, onChange, fields, allFields = fields, title, onSet
         }
 
         const clientNameField = getAvailableField('clientName');
-        const clientNameFromLabel = extractLabelValue(['client\\s*name']);
+        const clientNameFromLabel = getLineLabelValue(['client name']) || extractLabelValue(['client\\s*name']);
         const clientNameValue = findMatchingOptionValue(
           clientNameFromLabel || normalizedText,
           clientNameField?.options || []
@@ -372,13 +468,16 @@ const FormStep = ({ formData, onChange, fields, allFields = fields, title, onSet
         const matchedClientOption = clientNameField?.options?.find(
           (option) => String(option.value) === String(clientName || formData.clientName)
         );
-        const clientIdFromLabel = extractLabelValue(['client\\s*id']);
+        const clientIdFromLabel = getLineLabelValue(['client id']) || extractLabelValue(['client\\s*id']);
         const clientId = matchedClientOption?.clientId || matchedClientOption?.id || clientIdFromLabel;
         if (clientId && !normalizeText(formData.clientId)) {
           updates.clientId = clientId;
         }
 
-        const contactPersonName = extractLabelValue([
+        const contactPersonName = getLineLabelValue([
+          'contact person name',
+          'contact name'
+        ]) || extractLabelValue([
           'contact\\s*person\\s*name',
           'contact\\s*name'
         ]);
@@ -386,85 +485,114 @@ const FormStep = ({ formData, onChange, fields, allFields = fields, title, onSet
           updates.contactPersonName = contactPersonName;
         }
 
-        const contactEmail = documentText.match(
+        const contactEmail = getLineLabelValue([
+          'contact person email',
+          'contact email',
+          'email'
+        ]) || documentText.match(
           /(?:contact\s*person\s*email(?:\s*id)?|contact\s*email(?:\s*id)?|email)\s*[:\-]\s*([A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,})/i
         )?.[1];
         if (contactEmail && !normalizeText(formData.contactPersonEmail)) {
-          updates.contactPersonEmail = contactEmail;
+          const detectedEmail = String(contactEmail).match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0] || '';
+          if (detectedEmail) {
+            updates.contactPersonEmail = detectedEmail;
+          }
         }
 
         const technicalField = getAvailableField('technicalSkills');
-        const extractedTechnicalSkills = collectMatchingOptionValues(normalizedText, technicalField?.options || []);
+        const technicalLineValue = getLineLabelValue(['technical skills', 'primary skills', 'mandatory skills', 'skills']);
+        const extractedTechnicalSkills = collectMatchingOptionValues(
+          normalizeToken(`${normalizedText} ${technicalLineValue}`),
+          technicalField?.options || []
+        );
         if (extractedTechnicalSkills.length > 0) {
           updates.technicalSkills = mergeUnique(formData.technicalSkills, extractedTechnicalSkills);
         }
 
         const softField = getAvailableField('softSkills');
-        const extractedSoftSkills = collectMatchingOptionValues(normalizedText, softField?.options || []);
+        const softLineValue = getLineLabelValue(['soft skills', 'behavioral skills']);
+        const extractedSoftSkills = collectMatchingOptionValues(
+          normalizeToken(`${normalizedText} ${softLineValue}`),
+          softField?.options || []
+        );
         if (extractedSoftSkills.length > 0) {
           updates.softSkills = mergeUnique(formData.softSkills, extractedSoftSkills);
         }
 
+        const additionalSkillsFromLine = getLineLabelValue(['additional skills', 'other skills']);
         const additionalSkillsMatch = combinedText.match(
           /(?:additional\s*skills?|additional\s*skill)\s*[:\-]\s*(.+?)(?=(?:technical\s*skills?|soft\s*skills?|job\s*type|hiring\s*type|location|position\s*level|positions?|openings?|minimum\s*experience|maximum\s*experience|min\s*experience|max\s*experience|job\s*description|responsibilities|qualifications|$))/i
         )?.[1];
-        const extractedAdditionalSkills = normalizeText(additionalSkillsMatch);
+        const extractedAdditionalSkills = normalizeText(additionalSkillsFromLine || additionalSkillsMatch);
         if (extractedAdditionalSkills && !normalizeText(formData.additionalSkills)) {
           updates.additionalSkills = extractedAdditionalSkills;
         }
 
-        if (isCancelled) return;
+        if (controller.signal.aborted) return;
 
-        Object.entries(updates).forEach(([key, value]) => {
-          onChange(key, value);
-        });
+        console.log('[JD EXTRACTION] Phase 2: Populating fields. Found', Object.keys(updates).length, 'fields to update');
+        console.log('[JD EXTRACTION] Updates:', updates);
+
+        // Batch all onChange calls to ensure they complete
+        const updateKeys = Object.entries(updates);
+        for (const [key, value] of updateKeys) {
+          if (controller.signal.aborted) {
+            console.log('[JD EXTRACTION] Cancelled during onChange updates at key:', key);
+            return;
+          }
+          console.log('[JD EXTRACTION] Calling onChange for:', key);
+          onChangeRef.current(key, value);
+        }
+
+        console.log('[JD EXTRACTION] All onChange calls completed');
+
+        // CRITICAL FIX: Yield to event loop to let React batch and apply all updates
+        // This prevents effect cleanup from interrupting the state updates
+        await new Promise(resolve => setTimeout(resolve, 0));
+        
+        if (controller.signal.aborted) {
+          console.log('[JD EXTRACTION] Cancelled after update batch yield');
+          return;
+        }
 
         const extension = String(uploadedFile.name || '').split('.').pop()?.toLowerCase();
         const unsupportedExtraction = extension === 'pdf';
         const fieldCount = Object.keys(updates).length;
         if (fieldCount > 0) {
           const note = unsupportedExtraction ? ' PDF text extraction is limited; mapped what was detectable.' : '';
-          setJdExtractionStatus({ state: 'success', message: `${fieldCount} field(s) auto-filled from uploaded JD.${note}` });
+          const message = `${fieldCount} field(s) auto-filled from uploaded JD.${note}`;
+          console.log('[JD EXTRACTION] Success:', message);
+          setJdExtractionStatus({ state: 'success', message });
         } else if (unsupportedExtraction) {
+          console.log('[JD EXTRACTION] Warning: PDF uploaded with no detectable text');
           setJdExtractionStatus({ state: 'warning', message: 'PDF upload detected. Direct text extraction is limited in current setup.' });
         } else {
+          console.log('[JD EXTRACTION] Warning: No matching field values found');
           setJdExtractionStatus({ state: 'warning', message: 'JD uploaded, but no matching values were detected for form fields.' });
         }
 
         jdParsedFileRef.current = fileKey;
+        console.log('[JD EXTRACTION] Parsing complete for:', fileKey);
       } catch (error) {
-        if (isCancelled) return;
+        console.error('[JD EXTRACTION] Error during parsing:', error);
+        if (controller.signal.aborted) {
+          console.log('[JD EXTRACTION] Error occurred but already cancelled, ignoring');
+          return;
+        }
         setJdExtractionStatus({ state: 'error', message: 'Unable to parse this file. Try DOCX or TXT format.' });
       }
     };
 
-    parseAndPopulate();
+    console.log('[JD EXTRACTION] Starting async parseAndPopulate...');
+    parseAndPopulate().catch((err) => {
+      console.error('[JD EXTRACTION] Uncaught error in parseAndPopulate:', err);
+    });
 
     return () => {
-      isCancelled = true;
+      console.log('[JD EXTRACTION] Cleanup called for file:', uploadedFile.name);
+      controller.abort();
     };
-  }, [
-    allFields,
-    fields,
-    formData.additionalSkills,
-    formData.clientId,
-    formData.clientName,
-    formData.contactPersonEmail,
-    formData.contactPersonName,
-    formData.hiringType,
-    formData.jdAttachment,
-    formData.jobType,
-    formData.location,
-    formData.maxExperience,
-    formData.minExperience,
-    formData.noOfPositions,
-    formData.positionLevel,
-    formData.positionName,
-    formData.softSkills,
-    formData.technicalSkills,
-    isJobBasicInfo,
-    onChange
-  ]);
+  }, [formData.jdAttachment, isJobBasicInfo]);
 
   const renderField = (field) => {
     const isAutoMappedClientName = isJobBasicInfo && field.name === "clientName";
@@ -491,6 +619,7 @@ const FormStep = ({ formData, onChange, fields, allFields = fields, title, onSet
         accept={field.accept}
         multiple={field.multiple}
         prefix={field.prefix}
+        suffix={field.suffix}
         formData={formData}
         disabled={disabled || Boolean(field.disabled) || isAutoMappedClientName}
         showBrowseButton={field.showBrowseButton}
@@ -500,6 +629,9 @@ const FormStep = ({ formData, onChange, fields, allFields = fields, title, onSet
   };
 
   if (isJobBasicInfo) {
+    const hasUploadedJdFile = Boolean(formData.jdAttachment && typeof formData.jdAttachment === 'object');
+    const isJdTemplateEnabled = jdTemplateMode === 'yes' || hasUploadedJdFile;
+
     // Create a map of fields by name (and cssClass where helpful)
     const fieldMap = {};
     fields.forEach(field => {
@@ -599,13 +731,53 @@ const FormStep = ({ formData, onChange, fields, allFields = fields, title, onSet
 
           <div className="job-basic-info-grid">
             <div className="grid-cell grid-col-1 grid-row-1">
-              <div className="job-template-upload-wrap">
-                {getField('jdAttachment')}
-                {jdExtractionStatus.state !== 'idle' ? (
-                  <div className={`jd-extraction-status jd-extraction-status--${jdExtractionStatus.state}`}>
-                    {jdExtractionStatus.message}
+              <div className="job-template-choice">
+                <div className="job-template-choice-label">
+                  Have JD Template?
+                  <span className="required-star">*</span>
+                </div>
+                <div className="job-template-choice-options" role="radiogroup" aria-label="Have JD Template">
+                  <label className="job-template-choice-option" htmlFor="jdAttachmentMode-no">
+                    <input
+                      id="jdAttachmentMode-no"
+                      type="radio"
+                      name="jdAttachmentMode"
+                      value="no"
+                      checked={!isJdTemplateEnabled}
+                      onChange={() => {
+                        setJdTemplateMode("no");
+                        onChange("jdAttachmentMode", "no");
+                        onChange("jdAttachment", "");
+                        setJdExtractionStatus({ state: 'idle', message: '' });
+                      }}
+                    />
+                    <span>No</span>
+                  </label>
+                  <label className="job-template-choice-option" htmlFor="jdAttachmentMode-yes">
+                    <input
+                      id="jdAttachmentMode-yes"
+                      type="radio"
+                      name="jdAttachmentMode"
+                      value="yes"
+                      checked={isJdTemplateEnabled}
+                      onChange={() => {
+                        setJdTemplateMode("yes");
+                        onChange("jdAttachmentMode", "yes");
+                      }}
+                    />
+                    <span>Yes</span>
+                  </label>
+                </div>
+                {isJdTemplateEnabled && (
+                  <div className="job-template-upload-wrap">
+                    {getField('jdAttachment')}
+                    {jdExtractionStatus.state !== 'idle' ? (
+                      <div className={`jd-extraction-status jd-extraction-status--${jdExtractionStatus.state}`}>
+                        {jdExtractionStatus.message}
+                      </div>
+                    ) : null}
                   </div>
-                ) : null}
+                )}
               </div>
             </div>
             <div className="grid-cell grid-col-2 grid-row-1">

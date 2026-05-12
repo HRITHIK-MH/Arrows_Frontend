@@ -194,6 +194,14 @@ const PRIMARY_SKILL_LABELS = {
   aws: "AWS",
 };
 
+const SECONDARY_SKILL_LABELS = {
+  java: "Core Java",
+  python: "Python",
+  react: "React",
+  node: "Node.js",
+  aws: "AWS",
+};
+
 const EXPERIENCE_LEVEL_LABELS = {
   beginner: "Beginner",
   intermediate: "Intermediate",
@@ -665,7 +673,39 @@ export default function Candidates() {
         })
       : [];
 
+    const mappedSecondarySkills = Array.isArray(row.skills)
+      ? row.skills
+        .filter((skill) => skill && skill.secondarySkill)
+        .map((skill, index) => {
+          const rawSkillName = String(skill.secondarySkill || "").trim();
+          const normalizedSkillName = rawSkillName.toLowerCase();
+          const displaySkillName =
+            SECONDARY_SKILL_LABELS[normalizedSkillName] ||
+            SECONDARY_SKILL_OPTIONS.find(
+              (option) => option.toLowerCase() === normalizedSkillName
+            ) ||
+            rawSkillName;
+
+          const yearsValue = String(skill.secondarySkillExperienceYears || "").trim();
+          const displayExperience = yearsValue ? `${yearsValue} Years` : "-";
+          const parsedRating = Number.parseInt(String(skill.secondarySkillRating || ""), 10);
+          const ratingValue = Number.isFinite(parsedRating)
+            ? Math.max(0, Math.min(5, parsedRating))
+            : 0;
+
+          return {
+            id: `secondary-form-${index + 1}`,
+            name: displaySkillName,
+            experience: displayExperience || "-",
+            rating: ratingValue,
+            lastUsed: skill.secondarySkillLastUsed || "-",
+            comments: String(skill.secondarySkillComments || "").trim(),
+          };
+        })
+      : [];
+
     const hasMappedPrimarySkills = mappedPrimarySkills.length > 0;
+    const hasMappedSecondarySkills = mappedSecondarySkills.length > 0;
     const defaultPrimarySkills = [
       {
         id: "primary-1",
@@ -903,7 +943,7 @@ export default function Candidates() {
       currentCtc: row.currentCtc || "25,000,00 LPA",
       expectedCtc: row.expectedCtc || "30,000,00 LPA",
       primarySkills: row.primarySkills || (hasMappedPrimarySkills ? mappedPrimarySkills : defaultPrimarySkills),
-      secondarySkills: row.secondarySkills || (hasMappedPrimarySkills ? [] : defaultSecondarySkills),
+      secondarySkills: row.secondarySkills || (hasMappedSecondarySkills ? mappedSecondarySkills : (hasMappedPrimarySkills ? [] : defaultSecondarySkills)),
       resumeFiles: Array.isArray(row.resumeFiles) ? row.resumeFiles : normalizedCandidateDocuments,
       attachments: Array.isArray(row.attachments) ? row.attachments : normalizedCandidateDocuments,
       timeline: row.timeline || defaultTimeline,
@@ -1308,12 +1348,12 @@ export default function Candidates() {
             <span className={styles.profileValue}>{selectedCandidate.offersInHand}</span>
           </div>
           <div className={styles.profileItem}>
-            <span className={styles.profileLabel}>Current CTC</span>
-            <span className={styles.profileValue}>{selectedCandidate.currentCtc}</span>
+              <span className={styles.profileLabel}>Current CTC (LPA)</span>
+              <span className={styles.profileValue}>{selectedCandidate.currentCtc} LPA</span>
           </div>
           <div className={styles.profileItem}>
-            <span className={styles.profileLabel}>Expected CTC</span>
-            <span className={styles.profileValue}>{selectedCandidate.expectedCtc}</span>
+              <span className={styles.profileLabel}>Expected CTC (LPA)</span>
+              <span className={styles.profileValue}>{selectedCandidate.expectedCtc} LPA</span>
           </div>
         </div>
       );

@@ -204,6 +204,11 @@ FilterBar.displayName = 'FilterBar';
 export default function JobOpenings({ createMode = false }) {
   const navigate = useNavigate();
   const location = useLocation();
+  const currentUserRole = React.useMemo(() => {
+    if (typeof window === "undefined") return "";
+    return String(window.localStorage.getItem("userRole") || "").toLowerCase();
+  }, []);
+  const isRecruiter = currentUserRole === "recruiter";
   const [showJobOpeningForm, setShowJobOpeningForm] = React.useState(false);
   const [showDataTable, setShowDataTable] = React.useState(true);
   const [submittedData, setSubmittedData] = React.useState(() => {
@@ -411,7 +416,7 @@ export default function JobOpenings({ createMode = false }) {
     setShowSuccessMessage(true);
     window.setTimeout(() => {
       setShowSuccessMessage(false);
-    }, 3000);
+    }, 60000);
   }, []);
 
   React.useEffect(() => {
@@ -741,6 +746,14 @@ export default function JobOpenings({ createMode = false }) {
   }, [submittedData]);
 
   React.useEffect(() => {
+    if (isRecruiter && createMode) {
+      setShowJobOpeningForm(false);
+      setShowDataTable(true);
+      navigate("/job-openings", { replace: true });
+      showTransientMessage("Recruiter access is view-only for job opening creation.");
+      return;
+    }
+
     if (!createMode) {
       createModeInitializedRef.current = false;
       return;
@@ -766,7 +779,7 @@ export default function JobOpenings({ createMode = false }) {
       });
       setEditLocked(false);
     }
-  }, [createMode, nextJobPositionId]);
+  }, [createMode, isRecruiter, navigate, nextJobPositionId, showTransientMessage]);
 
   React.useEffect(() => {
     if (location.pathname !== "/job-openings/edit") return;
@@ -924,10 +937,18 @@ export default function JobOpenings({ createMode = false }) {
     const resolvedLocation = Array.isArray(safeData.location)
       ? safeData.location.filter(Boolean).join(", ")
       : String(safeData.location || "").trim();
-    const resolvedAssignedRecruiters =
-      safeData.assignedRecruiters ||
-      resolveAssignedRecruiterNames(safeData.teamMembers, safeData.customTeamMembers) ||
-      "-";
+    const hasTeamMemberSelection = Array.isArray(safeData.teamMembers);
+    const resolvedFromTeamMembers = resolveAssignedRecruiterNames(
+      safeData.teamMembers,
+      safeData.customTeamMembers
+    );
+    const resolvedAssignedRecruiters = hasTeamMemberSelection
+      ? (resolvedFromTeamMembers || "-")
+      : (
+        safeData.assignedRecruiters ||
+        resolvedFromTeamMembers ||
+        "-"
+      );
     const normalized = {
       ...safeData,
       jobPositionId,
@@ -965,7 +986,7 @@ export default function JobOpenings({ createMode = false }) {
     }
     setShowJobOpeningForm(false);
     setShowDataTable(true);
-    showTransientMessage(editingIndex !== null ? "Job opening updated successfully" : "Job opening created successfully");
+    showTransientMessage(editingIndex !== null ? "JD updated successfully" : "JD Created successfully");
     setEditingIndex(null);
     setEditingData(null);
     setEditLocked(false);
@@ -1033,6 +1054,7 @@ export default function JobOpenings({ createMode = false }) {
   const jobOpeningFormConfig = React.useMemo(
     () => ({
       ...jobOpeningConfig,
+      submitLabel: editingIndex !== null ? "Save JD" : (jobOpeningConfig.submitLabel || "Create JD"),
       steps: jobOpeningConfig.steps.map((step) => ({
         ...step,
         fields: (step.fields || []).map((field) =>
@@ -1081,7 +1103,14 @@ export default function JobOpenings({ createMode = false }) {
     <div className={styles.page}>
       {showSuccessMessage && (
         <div className={styles.successMessage}>
-          {successMessageText}
+          <span>{successMessageText}</span>
+          <button
+            onClick={() => setShowSuccessMessage(false)}
+            className={styles.closeButton}
+            aria-label="Close success message"
+          >
+            ✕
+          </button>
         </div>
       )}
 
@@ -1093,62 +1122,64 @@ export default function JobOpenings({ createMode = false }) {
               location, required experience, and application status. Quickly track how many candidates
               have applied and manage each opening efficiently.
             </p>
-            <div ref={addJobOpeningMenuRef} className={styles.createJobMenuAnchor}>
-              <div className={styles.createJobSplit}>
-                <button type="button" className={styles.createButton} onClick={handleCreateJobOpening}>
-                  <FiPlus size={16} />
-                  Create Job Opening
-                </button>
-                <button
-                  type="button"
-                  className={`${styles.createButtonDropdownTrigger}${isAddJobOpeningMenuOpen ? ` ${styles.createButtonDropdownTriggerOpen}` : ""}`}
-                  onClick={handleJobOpeningMenuToggle}
-                  aria-label="Open create job opening options"
-                  aria-haspopup="menu"
-                  aria-expanded={isAddJobOpeningMenuOpen}
-                >
-                  <FiChevronDown size={14} />
-                </button>
-              </div>
-
-              {isAddJobOpeningMenuOpen && (
-                <div className={styles.createJobMenu} role="menu" aria-label="Create job opening options">
-                  <div className={styles.createJobMenuTitle}>Saved Drafts</div>
-
-                  {jobOpeningDrafts.length === 0 ? (
-                    <div className={styles.createJobMenuEmpty}>No saved drafts available.</div>
-                  ) : (
-                    <div className={styles.createJobDraftList} role="none">
-                      {jobOpeningDrafts.map((draft) => (
-                        <div key={draft.id} className={styles.createJobDraftRow}>
-                          <button
-                            type="button"
-                            className={styles.createJobMenuOption}
-                            onClick={() => handleUseJobOpeningDraft(draft.id)}
-                            title={draft.title || "Untitled Draft"}
-                          >
-                            <span className={styles.createJobDraftTitle}>{draft.title || "Untitled Draft"}</span>
-                            <span className={styles.createJobDraftMeta}>
-                              {draft.updatedAt || draft.createdAt
-                                ? new Date(draft.updatedAt || draft.createdAt).toLocaleString()
-                                : "-"}
-                            </span>
-                          </button>
-                          <button
-                            type="button"
-                            className={styles.createJobDraftDelete}
-                            onClick={() => handleDeleteJobOpeningDraft(draft.id)}
-                            aria-label="Delete draft"
-                          >
-                            <FiTrash2 size={14} />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+            {!isRecruiter && (
+              <div ref={addJobOpeningMenuRef} className={styles.createJobMenuAnchor}>
+                <div className={styles.createJobSplit}>
+                  <button type="button" className={styles.createButton} onClick={handleCreateJobOpening}>
+                    <FiPlus size={16} />
+                    Create Job Opening
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.createButtonDropdownTrigger}${isAddJobOpeningMenuOpen ? ` ${styles.createButtonDropdownTriggerOpen}` : ""}`}
+                    onClick={handleJobOpeningMenuToggle}
+                    aria-label="Open create job opening options"
+                    aria-haspopup="menu"
+                    aria-expanded={isAddJobOpeningMenuOpen}
+                  >
+                    <FiChevronDown size={14} />
+                  </button>
                 </div>
-              )}
-            </div>
+
+                {isAddJobOpeningMenuOpen && (
+                  <div className={styles.createJobMenu} role="menu" aria-label="Create job opening options">
+                    <div className={styles.createJobMenuTitle}>Saved Drafts</div>
+
+                    {jobOpeningDrafts.length === 0 ? (
+                      <div className={styles.createJobMenuEmpty}>No saved drafts available.</div>
+                    ) : (
+                      <div className={styles.createJobDraftList} role="none">
+                        {jobOpeningDrafts.map((draft) => (
+                          <div key={draft.id} className={styles.createJobDraftRow}>
+                            <button
+                              type="button"
+                              className={styles.createJobMenuOption}
+                              onClick={() => handleUseJobOpeningDraft(draft.id)}
+                              title={draft.title || "Untitled Draft"}
+                            >
+                              <span className={styles.createJobDraftTitle}>{draft.title || "Untitled Draft"}</span>
+                              <span className={styles.createJobDraftMeta}>
+                                {draft.updatedAt || draft.createdAt
+                                  ? new Date(draft.updatedAt || draft.createdAt).toLocaleString()
+                                  : "-"}
+                              </span>
+                            </button>
+                            <button
+                              type="button"
+                              className={styles.createJobDraftDelete}
+                              onClick={() => handleDeleteJobOpeningDraft(draft.id)}
+                              aria-label="Delete draft"
+                            >
+                              <FiTrash2 size={14} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
 
@@ -1321,14 +1352,16 @@ export default function JobOpenings({ createMode = false }) {
                               >
                                 <FiFileText size={16} />
                               </button>
-                              <button
-                                type="button"
-                                className={styles.actionBtn}
-                                onClick={() => handleEditJobOpening(row, sourceIndex)}
-                                aria-label="Edit"
-                              >
-                                <FiEdit2 size={16} />
-                              </button>
+                              {!isRecruiter && (
+                                <button
+                                  type="button"
+                                  className={styles.actionBtn}
+                                  onClick={() => handleEditJobOpening(row, sourceIndex)}
+                                  aria-label="Edit"
+                                >
+                                  <FiEdit2 size={16} />
+                                </button>
+                              )}
                               <button
                                 type="button"
                                 className={styles.actionBtn}
