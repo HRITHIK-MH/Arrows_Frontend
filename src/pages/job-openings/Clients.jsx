@@ -3,122 +3,16 @@ import { FiChevronDown, FiFilter, FiMail, FiMapPin, FiPhone, FiSearch, FiTrash2,
 import DataTable from "../../components/forms/DataTable";
 import { clientConfig } from "../../components/forms/formConfigs";
 import ReusableForm from "../../components/forms/ReusableForm";
+import { loadClientRows, saveClientRows } from "../../utils/clientStore";
 import styles from "./Clients.module.scss";
 
 const CLIENT_DRAFT_STORAGE_KEY = "clients:add-draft:v1";
 const createClientDraftId = () => `draft-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
-const initialClients = [
-  {
-    clientId: "CL001",
-    clientName: "ABC Technologies",
-    contactNumber: "9876543210",
-    contactEmail: "contact@abctech.com",
-    primaryContactPerson: "Rajesh Kumar",
-    secondaryContactPerson: "Neha Kapoor",
-    accountManager: "Neha Verma",
-    activeFrom: "2024-01-01",
-    clientStatus: "Active",
-    comments: "Enterprise account focused on Java and cloud hiring.",
-    clientLocation: "Bangalore",
-  },
-  {
-    clientId: "CL002",
-    clientName: "Nova Solutions",
-    contactNumber: "9876543211",
-    contactEmail: "hr@novasolutions.com",
-    primaryContactPerson: "Priya Sharma",
-    secondaryContactPerson: "Amit Shah",
-    accountManager: "Arun Kumar",
-    activeFrom: "2024-02-15",
-    clientStatus: "Active",
-    comments: "Scaling product and QA hiring this quarter.",
-    clientLocation: "Pune",
-  },
-  {
-    clientId: "CL003",
-    clientName: "PixelSoft Pvt Ltd",
-    contactNumber: "9876543212",
-    contactEmail: "careers@pixelsoft.com",
-    primaryContactPerson: "Anil Mehta",
-    secondaryContactPerson: "Ritika Jain",
-    accountManager: "Sneha Iyer",
-    activeFrom: "2024-03-10",
-    clientStatus: "Active",
-    comments: "Hiring for UI and backend roles.",
-    clientLocation: "Chennai",
-  },
-  {
-    clientId: "CL004",
-    clientName: "FinEdge Systems",
-    contactNumber: "9876543213",
-    contactEmail: "hr@finedge.com",
-    primaryContactPerson: "Kavita Rao",
-    secondaryContactPerson: "Rohan Das",
-    accountManager: "Vikram Singh",
-    activeFrom: "2024-04-25",
-    clientStatus: "On Hold",
-    comments: "Paused due to budget approval cycle.",
-    clientLocation: "Mumbai",
-  },
-  {
-    clientId: "CL005",
-    clientName: "CloudNet Corp",
-    contactNumber: "9876543214",
-    contactEmail: "contact@cloudnet.com",
-    primaryContactPerson: "Suresh Nair",
-    secondaryContactPerson: "Ira Menon",
-    accountManager: "Karthik M",
-    activeFrom: "2024-05-05",
-    clientStatus: "Active",
-    comments: "Critical roles in DevOps and SRE.",
-    clientLocation: "Hyderabad",
-  },
-  {
-    clientId: "CL006",
-    clientName: "Insight Labs",
-    contactNumber: "9876543215",
-    contactEmail: "hr@insightlabs.com",
-    primaryContactPerson: "Ananya Rao",
-    secondaryContactPerson: "Pooja Mehta",
-    accountManager: "Pooja Mehta",
-    activeFrom: "2024-06-18",
-    clientStatus: "Inactive",
-    comments: "No active requirement at the moment.",
-    clientLocation: "Coimbatore",
-  },
-  {
-    clientId: "CL007",
-    clientName: "CodeBase Solutions",
-    contactNumber: "9876543216",
-    contactEmail: "jobs@codebase.com",
-    primaryContactPerson: "Rohit Verma",
-    secondaryContactPerson: "Neha Gupta",
-    accountManager: "Ravi Patel",
-    activeFrom: "2024-07-01",
-    clientStatus: "Active",
-    comments: "Long-term hiring partnership.",
-    clientLocation: "Delhi",
-  },
-  {
-    clientId: "CL008",
-    clientName: "BrandHive Digital",
-    contactNumber: "9876543217",
-    contactEmail: "hello@brandhive.com",
-    primaryContactPerson: "Neha Gupta",
-    secondaryContactPerson: "Aarav Sharma",
-    accountManager: "Sneha Iyer",
-    activeFrom: "2024-08-12",
-    clientStatus: "On Hold",
-    comments: "Campaign hiring delayed until next release.",
-    clientLocation: "Noida",
-  },
-];
-
 export default function Clients() {
   const [showClientForm, setShowClientForm] = React.useState(false);
   const [showDataTable, setShowDataTable] = React.useState(true);
-  const [submittedData, setSubmittedData] = React.useState(initialClients);
+  const [submittedData, setSubmittedData] = React.useState(() => loadClientRows());
   const [entriesPerPage, setEntriesPerPage] = React.useState(10);
   const [currentPage, setCurrentPage] = React.useState(1);
   const [editingIndex, setEditingIndex] = React.useState(null);
@@ -200,6 +94,10 @@ export default function Clients() {
   }), []);
 
   React.useEffect(() => {
+    saveClientRows(submittedData);
+  }, [submittedData]);
+
+  React.useEffect(() => {
     if (!isViewDrawerOpen) return undefined;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -209,17 +107,21 @@ export default function Clients() {
   }, [isViewDrawerOpen]);
 
   const sanitizeDraftValue = React.useCallback((value) => {
-    if (value === null || value === undefined) return value;
-    if (Array.isArray(value)) return value.map((item) => sanitizeDraftValue(item));
-    if (typeof value !== "object") return value;
-    if (value instanceof Date) return value.toISOString();
-    if (typeof File !== "undefined" && value instanceof File) return value.name;
-    if (typeof Blob !== "undefined" && value instanceof Blob) return "blob";
+    const sanitize = (input) => {
+      if (input === null || input === undefined) return input;
+      if (Array.isArray(input)) return input.map((item) => sanitize(item));
+      if (typeof input !== "object") return input;
+      if (input instanceof Date) return input.toISOString();
+      if (typeof File !== "undefined" && input instanceof File) return input.name;
+      if (typeof Blob !== "undefined" && input instanceof Blob) return "blob";
 
-    return Object.entries(value).reduce((acc, [key, nestedValue]) => {
-      acc[key] = sanitizeDraftValue(nestedValue);
-      return acc;
-    }, {});
+      return Object.entries(input).reduce((acc, [key, nestedValue]) => {
+        acc[key] = sanitize(nestedValue);
+        return acc;
+      }, {});
+    };
+
+    return sanitize(value);
   }, []);
 
   const persistClientDrafts = React.useCallback((drafts) => {
@@ -635,7 +537,9 @@ export default function Clients() {
                           >
                             <span className={styles.addClientDraftTitle}>{draft.title || "Untitled Draft"}</span>
                             <span className={styles.addClientDraftMeta}>
-                              {new Date(draft.updatedAt || draft.createdAt || Date.now()).toLocaleString()}
+                              {draft.updatedAt || draft.createdAt
+                                ? new Date(draft.updatedAt || draft.createdAt).toLocaleString()
+                                : "-"}
                             </span>
                           </button>
                           <button

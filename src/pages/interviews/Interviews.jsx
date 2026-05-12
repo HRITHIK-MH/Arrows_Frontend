@@ -970,7 +970,7 @@ export default function Interviews() {
       return (
         <div className={styles.profileGrid}>
           <div className={styles.profileItem}>
-            <span className={styles.profileLabel}>Candidate ID</span>
+            <span className={styles.profileLabel}>Application ID</span>
             <span className={styles.profileValue}>{selectedCandidate.candidateId}</span>
           </div>
           <div className={styles.profileItem}>
@@ -1342,7 +1342,7 @@ export default function Interviews() {
 
   // Define table columns
   const columns = [
-    { key: "candidateId", label: "Candidate Id" },
+    { key: "candidateId", label: "Application Id" },
     { key: "candidateName", label: "Candidate Name" },
     { key: "roleJobTitle", label: "Role / Job Title" },
     { key: "dateTime", label: "Date & Time" },
@@ -1640,7 +1640,7 @@ export default function Interviews() {
                   <tbody>
                     {paginatedInterviews.map((row, index) => (
                       <tr key={`${row.candidateId}-${index}`}>
-                        <td data-label="Candidate ID">{row.candidateId}</td>
+                        <td data-label="Application ID">{row.candidateId}</td>
                         <td data-label="Candidate Name">{row.candidateName}</td>
                         <td data-label="Role / Job Title">{row.roleJobTitle}</td>
                         <td data-label="Date & Time">{row.dateTime}</td>

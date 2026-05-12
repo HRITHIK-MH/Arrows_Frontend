@@ -150,7 +150,7 @@ export default function TopBar({ isSidebarOpen, setSidebarOpen }) {
       </div>
       {/* Right-side actions: Notification + Profile */}
       <div className="topActions">
-        <NotificationBell/>
+        <NotificationBell />
 
 
 
@@ -165,11 +165,11 @@ export default function TopBar({ isSidebarOpen, setSidebarOpen }) {
             onClick={() => setMenuOpen((v) => !v)}
           >
             <span aria-hidden className="profileAvatar">S</span>
-           
+
             <span className="profileText">
-                    <span className="profileName">Saravanan</span>
-                    <span className="role">Team Lead</span>
-                  </span>
+              <span className="profileName">Saravanan</span>
+              <span className="role">Team Lead</span>
+            </span>
 
 
             <svg className="profileCaret" width="16" height="16" viewBox="0 0 24 24" aria-hidden>

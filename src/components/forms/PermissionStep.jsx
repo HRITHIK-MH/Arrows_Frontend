@@ -1,11 +1,6 @@
 import React, { useEffect } from "react";
 import FormField from "./FormField";
 
-const JOB_ACTIVATION_OPTIONS = [
-  { value: "validity-upto", label: "Validity Upto" },
-  { value: "hold-after-month", label: "Target" },
-];
-
 const FOCUS_LOCATION_OPTIONS = [
   { value: "base", label: "Base" },
   { value: "any", label: "Any" },
@@ -69,16 +64,17 @@ const PermissionStep = ({ formData, onChange, onSetStepFields, fields = [], vali
 
   const clientIdConfig = fieldMap.clientId || {
     name: "clientId",
-    label: "Client Id *",
-    type: "select",
-    required: true,
+    label: "Client Id",
+    type: "text",
+    required: false,
     options: []
   };
   const clientNameConfig = fieldMap.clientName || {
     name: "clientName",
-    label: "Client Name",
-    type: "text",
-    required: false
+    label: "Client Name *",
+    type: "select",
+    required: true,
+    options: []
   };
   const contactPersonNameConfig = fieldMap.contactPersonName || {
     name: "contactPersonName",
@@ -92,15 +88,15 @@ const PermissionStep = ({ formData, onChange, onSetStepFields, fields = [], vali
     type: "email",
     required: false
   };
-  const hiringTypeConfig = fieldMap.hiringType || {
-    name: "hiringType",
-    label: "Hiring Type *",
+  const priorityConfig = fieldMap.priority || {
+    name: "priority",
+    label: "Priority",
     type: "select",
-    required: true,
+    required: false,
     options: []
   };
+  const hiringTypeConfig = fieldMap.hiringType;
 
-  const jobActivationStatus = formData.jobActivationStatus || "validity-upto";
   const focusLocationType = formData.focusLocationType || "base";
   const selectedJobLocations = (Array.isArray(formData.location)
     ? formData.location
@@ -131,9 +127,6 @@ const PermissionStep = ({ formData, onChange, onSetStepFields, fields = [], vali
   }, [formData.interviewCount]);
 
   useEffect(() => {
-    if (formData.jobActivationStatus === undefined) {
-      onChange("jobActivationStatus", "validity-upto");
-    }
     if (formData.focusLocationType === undefined) {
       onChange("focusLocationType", "base");
     }
@@ -160,7 +153,6 @@ const PermissionStep = ({ formData, onChange, onSetStepFields, fields = [], vali
       onChange("finalStages", ["preboarding"]);
     }
   }, [
-    formData.jobActivationStatus,
     formData.focusLocationType,
     formData.focusLocationValue,
     selectedJobLocations,
@@ -212,6 +204,33 @@ const PermissionStep = ({ formData, onChange, onSetStepFields, fields = [], vali
     onChange("focusLocationValue", []);
   };
 
+  const getClientIdForName = React.useCallback((clientName) => {
+    const matchedClient = (clientNameConfig.options || []).find(
+      (option) => String(option.value) === String(clientName)
+    );
+    return matchedClient?.clientId || matchedClient?.id || "";
+  }, [clientNameConfig.options]);
+
+  const handleClientNameChange = (fieldName, value) => {
+    onChange(fieldName, value);
+    onChange(clientIdConfig.name, getClientIdForName(value));
+  };
+
+  useEffect(() => {
+    if (!formData[clientNameConfig.name]) return;
+
+    const mappedClientId = getClientIdForName(formData[clientNameConfig.name]);
+    if (mappedClientId && mappedClientId !== formData[clientIdConfig.name]) {
+      onChange(clientIdConfig.name, mappedClientId);
+    }
+  }, [
+    clientIdConfig.name,
+    clientNameConfig.name,
+    formData,
+    getClientIdForName,
+    onChange,
+  ]);
+
   useEffect(() => {
     if (onSetStepFields) {
       const mappedStepFields = [
@@ -219,8 +238,9 @@ const PermissionStep = ({ formData, onChange, onSetStepFields, fields = [], vali
         clientNameConfig,
         contactPersonNameConfig,
         contactPersonEmailConfig,
+        priorityConfig,
         hiringTypeConfig,
-      ].map((field) => ({
+      ].filter(Boolean).map((field) => ({
         name: field.name,
         label: field.label,
         required: Boolean(field.required),
@@ -228,8 +248,8 @@ const PermissionStep = ({ formData, onChange, onSetStepFields, fields = [], vali
 
       onSetStepFields([
         ...mappedStepFields,
-        { name: "jobActivationStatus", label: "Job Activation", required: false },
-        { name: "jobActivationDate", label: "Job Activation Date", required: false },
+        { name: "jobActivationDate", label: "Validity Upto", required: true },
+        { name: "targetDate", label: "Target", required: true },
         { name: "focusLocationType", label: "Focus Location", required: false },
         { name: "focusLocationValue", label: "Focus Location Value", required: false },
         { name: "availabilityOptions", label: "Availability", required: false },
@@ -246,6 +266,7 @@ const PermissionStep = ({ formData, onChange, onSetStepFields, fields = [], vali
     clientNameConfig,
     contactPersonNameConfig,
     contactPersonEmailConfig,
+    priorityConfig,
     hiringTypeConfig,
     onSetStepFields,
   ]);
@@ -352,34 +373,34 @@ const PermissionStep = ({ formData, onChange, onSetStepFields, fields = [], vali
         <div className="job-basic-info-grid job-basic-info-grid--client">
           <div className="grid-cell grid-col-1 grid-row-1">
             <FormField
-              label={clientIdConfig.label}
-              type={clientIdConfig.type || "select"}
-              name={clientIdConfig.name}
-              value={formData[clientIdConfig.name] || ""}
-              onChange={onChange}
-              required={Boolean(clientIdConfig.required)}
-              options={clientIdConfig.options || []}
-              placeholder={clientIdConfig.placeholder || "Select Client Id"}
-              error={validationErrors[clientIdConfig.name]}
-              formData={formData}
-              disabled={disabled || Boolean(clientIdConfig.disabled)}
-            />
-          </div>
-          <div className="grid-cell grid-col-2 grid-row-1">
-            <FormField
               label={clientNameConfig.label}
-              type={clientNameConfig.type || "text"}
+              type={clientNameConfig.type || "select"}
               name={clientNameConfig.name}
               value={formData[clientNameConfig.name] || ""}
-              onChange={onChange}
+              onChange={handleClientNameChange}
               required={Boolean(clientNameConfig.required)}
-              placeholder={clientNameConfig.placeholder || "Enter Client Name"}
+              options={clientNameConfig.options || []}
+              placeholder={clientNameConfig.placeholder || "Select Client Name"}
               error={validationErrors[clientNameConfig.name]}
               formData={formData}
               disabled={disabled || Boolean(clientNameConfig.disabled)}
             />
           </div>
-          <div className="grid-cell grid-col-1 grid-row-2">
+          <div className="grid-cell grid-col-2 grid-row-1">
+            <FormField
+              label={clientIdConfig.label}
+              type={clientIdConfig.type || "text"}
+              name={clientIdConfig.name}
+              value={formData[clientIdConfig.name] || ""}
+              onChange={onChange}
+              required={Boolean(clientIdConfig.required)}
+              placeholder={clientIdConfig.placeholder || "Auto Selected"}
+              error={validationErrors[clientIdConfig.name]}
+              formData={formData}
+              disabled
+            />
+          </div>
+          <div className="grid-cell grid-col-3 grid-row-1">
             <FormField
               label={contactPersonNameConfig.label}
               type={contactPersonNameConfig.type || "text"}
@@ -394,7 +415,7 @@ const PermissionStep = ({ formData, onChange, onSetStepFields, fields = [], vali
               disabled={disabled || Boolean(contactPersonNameConfig.disabled)}
             />
           </div>
-          <div className="grid-cell grid-col-2 grid-row-2">
+          <div className="grid-cell grid-col-1 grid-row-2">
             <FormField
               label={contactPersonEmailConfig.label}
               type={contactPersonEmailConfig.type || "email"}
@@ -409,21 +430,38 @@ const PermissionStep = ({ formData, onChange, onSetStepFields, fields = [], vali
               disabled={disabled || Boolean(contactPersonEmailConfig.disabled)}
             />
           </div>
-          <div className="grid-cell grid-col-3 grid-row-1">
+          <div className="grid-cell grid-col-2 grid-row-2">
             <FormField
-              label={hiringTypeConfig.label}
-              type={hiringTypeConfig.type || "select"}
-              name={hiringTypeConfig.name}
-              value={formData[hiringTypeConfig.name] || ""}
+              label={priorityConfig.label}
+              type={priorityConfig.type || "select"}
+              name={priorityConfig.name}
+              value={formData[priorityConfig.name] || ""}
               onChange={onChange}
-              required={Boolean(hiringTypeConfig.required)}
-              options={hiringTypeConfig.options || []}
-              placeholder={hiringTypeConfig.placeholder || "Select"}
-              error={validationErrors[hiringTypeConfig.name]}
+              required={Boolean(priorityConfig.required)}
+              options={priorityConfig.options || []}
+              placeholder={priorityConfig.placeholder || "Select Priority"}
+              error={validationErrors[priorityConfig.name]}
               formData={formData}
-              disabled={disabled || Boolean(hiringTypeConfig.disabled)}
+              disabled={disabled || Boolean(priorityConfig.disabled)}
             />
           </div>
+          {hiringTypeConfig ? (
+            <div className="grid-cell grid-col-3 grid-row-1">
+              <FormField
+                label={hiringTypeConfig.label}
+                type={hiringTypeConfig.type || "select"}
+                name={hiringTypeConfig.name}
+                value={formData[hiringTypeConfig.name] || ""}
+                onChange={onChange}
+                required={Boolean(hiringTypeConfig.required)}
+                options={hiringTypeConfig.options || []}
+                placeholder={hiringTypeConfig.placeholder || "Select"}
+                error={validationErrors[hiringTypeConfig.name]}
+                formData={formData}
+                disabled={disabled || Boolean(hiringTypeConfig.disabled)}
+              />
+            </div>
+          ) : null}
         </div>
       </div>
 
@@ -435,26 +473,39 @@ const PermissionStep = ({ formData, onChange, onSetStepFields, fields = [], vali
               Status &amp; Duration of the Job to be active
             </p>
           </div>
-          <div className="permission-options inline">
-            {JOB_ACTIVATION_OPTIONS.map((option) => (
-              <label key={option.value} className="permission-option">
-                <input
-                  type="radio"
-                  name="jobActivationStatus"
-                  value={option.value}
-                  checked={jobActivationStatus === option.value}
-                  onChange={() => onChange("jobActivationStatus", option.value)}
-                />
-                <span>{option.label}</span>
-              </label>
-            ))}
+          <div className="permission-date-grid">
+            <label className="permission-field">
+              <span>Validity Upto *</span>
+              <input
+                id="jobActivationDate"
+                type="date"
+                className="permission-input"
+                value={formData.jobActivationDate || ""}
+                onChange={(event) => onChange("jobActivationDate", event.target.value)}
+                required
+                disabled={disabled}
+              />
+              {validationErrors.jobActivationDate ? (
+                <span className="permission-error">{validationErrors.jobActivationDate}</span>
+              ) : null}
+            </label>
+            <label className="permission-field">
+              <span>Target *</span>
+              <input
+                id="targetDate"
+                type="date"
+                className="permission-input"
+                value={formData.targetDate || ""}
+                onChange={(event) => onChange("targetDate", event.target.value)}
+                min={formData.jobActivationDate || undefined}
+                required
+                disabled={disabled}
+              />
+              {validationErrors.targetDate ? (
+                <span className="permission-error">{validationErrors.targetDate}</span>
+              ) : null}
+            </label>
           </div>
-          <input
-            type="date"
-            className="permission-input"
-            value={formData.jobActivationDate || ""}
-            onChange={(event) => onChange("jobActivationDate", event.target.value)}
-          />
         </section>
 
         <section className="permission-panel">

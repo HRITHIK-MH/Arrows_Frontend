@@ -195,7 +195,7 @@ const TeamMembersStep = ({
     <div className="team-members-step">
       <div className="team-members-toolbar">
         <button className="assign-button" type="button" onClick={openAssignModal}>
-          Assign Team Members
+          Assign Team Member
         </button>
       </div>
 
@@ -203,7 +203,6 @@ const TeamMembersStep = ({
         <table>
           <thead>
             <tr>
-              <th>Recruiter Id</th>
               <th>Recruiter Name</th>
               <th>Email Address</th>
               <th>Role</th>
@@ -217,7 +216,6 @@ const TeamMembersStep = ({
               if (!member) return null;
               return (
                 <tr key={member.id}>
-                  <td>{member.id}</td>
                   <td>{member.name}</td>
                   <td>{member.email}</td>
                   <td>{memberRoles[member.id] || member.role}</td>

@@ -183,19 +183,19 @@ const FormStep = ({ formData, onChange, fields, allFields = fields, title, onSet
   }, [fields, onSetStepFields, isJobBasicInfo]);
 
   React.useEffect(() => {
-    const clientIdField = fields.find((field) => field.name === "clientId");
-    const selectedClientId = formData.clientId;
-    if (!clientIdField || !Array.isArray(clientIdField.options) || !selectedClientId) {
+    const clientNameField = fields.find((field) => field.name === "clientName");
+    const selectedClientName = formData.clientName;
+    if (!clientNameField || !Array.isArray(clientNameField.options) || !selectedClientName) {
       return;
     }
 
-    const matchedClient = clientIdField.options.find(
-      (option) => String(option.value) === String(selectedClientId)
+    const matchedClient = clientNameField.options.find(
+      (option) => String(option.value) === String(selectedClientName)
     );
-    const mappedClientName = matchedClient?.clientName || matchedClient?.name || "";
+    const mappedClientId = matchedClient?.clientId || matchedClient?.id || "";
 
-    if (mappedClientName && mappedClientName !== formData.clientName) {
-      onChange("clientName", mappedClientName);
+    if (mappedClientId && mappedClientId !== formData.clientId) {
+      onChange("clientId", mappedClientId);
     }
   }, [fields, formData.clientId, formData.clientName, onChange]);
 
@@ -358,20 +358,24 @@ const FormStep = ({ formData, onChange, fields, allFields = fields, title, onSet
           updates.hiringType = hiringTypeValue;
         }
 
-        const clientIdField = getAvailableField('clientId');
-        const clientIdValue = findMatchingOptionValue(normalizedText, clientIdField?.options || []);
-        if (clientIdValue && !normalizeText(formData.clientId)) {
-          updates.clientId = clientIdValue;
-        }
-
-        const matchedClientOption = clientIdField?.options?.find(
-          (option) => String(option.value) === String(clientIdValue || formData.clientId)
-        );
+        const clientNameField = getAvailableField('clientName');
         const clientNameFromLabel = extractLabelValue(['client\\s*name']);
-        const clientNameFromOption = matchedClientOption?.clientName || matchedClientOption?.name || '';
-        const clientName = clientNameFromLabel || clientNameFromOption;
+        const clientNameValue = findMatchingOptionValue(
+          clientNameFromLabel || normalizedText,
+          clientNameField?.options || []
+        );
+        const clientName = clientNameValue || clientNameFromLabel;
         if (clientName && !normalizeText(formData.clientName)) {
           updates.clientName = clientName;
+        }
+
+        const matchedClientOption = clientNameField?.options?.find(
+          (option) => String(option.value) === String(clientName || formData.clientName)
+        );
+        const clientIdFromLabel = extractLabelValue(['client\\s*id']);
+        const clientId = matchedClientOption?.clientId || matchedClientOption?.id || clientIdFromLabel;
+        if (clientId && !normalizeText(formData.clientId)) {
+          updates.clientId = clientId;
         }
 
         const contactPersonName = extractLabelValue([
@@ -637,7 +641,7 @@ const FormStep = ({ formData, onChange, fields, allFields = fields, title, onSet
               {getField('softSkills')}
             </div>
             <div className="grid-cell grid-col-3 grid-row-4">
-              {getField('hiringManager')}
+              {getField('hiringType')}
             </div>
 
             <div className="grid-cell grid-col-1 grid-row-5">

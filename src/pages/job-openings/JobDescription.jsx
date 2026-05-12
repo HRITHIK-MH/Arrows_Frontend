@@ -618,7 +618,7 @@ const JobDescription = () => {
                       />
                     </th>
                   ) : null}
-                  <th>Candidate Id</th>
+                  <th>Application Id</th>
                   <th>Candidate Name</th>
                   <th>Email Address</th>
                   <th>Recruiter Name</th>

@@ -16,12 +16,27 @@ import {
 import { useLocation, useNavigate } from "react-router-dom";
 import { jobOpeningConfig } from "../../components/forms/formConfigs";
 import ReusableForm from "../../components/forms/ReusableForm";
+import { getClientOptions, loadClientRows } from "../../utils/clientStore";
 import styles from "./JobOpenings.module.scss";
 
 const DEFAULT_TEAM_MEMBERS = [
   { id: "A83261", name: "Rahul Mehta" },
   { id: "A83233", name: "Priya Sharma" },
 ];
+
+const resolveUserName = () => {
+  const email = localStorage.getItem("userEmail");
+  if (email) {
+    const namePart = email.split("@")[0];
+    if (namePart) {
+      return namePart
+        .split(".")
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(" ");
+    }
+  }
+  return localStorage.getItem("userName") || "Divya Mehta";
+};
 
 const JOB_OPENING_DRAFT_STORAGE_KEY = "job-openings:add-draft:v1";
 const JOB_OPENING_TABLE_STORAGE_KEY = "job-openings:table:v1";
@@ -40,6 +55,24 @@ const getJobOpeningSequence = (value) => {
   if (!matchedDigits) return 0;
   const parsed = Number(matchedDigits[1]);
   return Number.isNaN(parsed) ? 0 : parsed;
+};
+
+const getJobOpeningIdValue = (item) =>
+  item?.jobPositionId || item?.openingJobId || item?.jobId || "";
+
+const getNextJobOpeningId = (rows = []) => {
+  const usedSequences = new Set(
+    rows
+      .map((item) => getJobOpeningSequence(getJobOpeningIdValue(item)))
+      .filter((sequence) => sequence > 0)
+  );
+
+  let nextSequence = 1;
+  while (usedSequences.has(nextSequence)) {
+    nextSequence += 1;
+  }
+
+  return `JOP-${String(nextSequence).padStart(3, "0")}`;
 };
 
 const formatAssignedRecruiters = (assignedRecruiters, customTeamMembers = []) => {
@@ -87,11 +120,11 @@ const FilterBar = React.memo(({
   onFilterTargetDateChange,
   filterJobStatus,
   onFilterJobStatusChange,
-  filterHiringManager,
-  onFilterHiringManagerChange,
+  filterPriority,
+  onFilterPriorityChange,
   uniquePostingTitles,
   uniqueJobStatuses,
-  uniqueHiringManagers,
+  uniquePriorities,
   hasFilters,
   onClearFilters
 }) => {
@@ -140,13 +173,13 @@ const FilterBar = React.memo(({
         </select>
 
         <select
-          value={filterHiringManager}
-          onChange={onFilterHiringManagerChange}
+          value={filterPriority}
+          onChange={onFilterPriorityChange}
           className={styles.selectField}
         >
-          <option value="">Hiring Manager</option>
-          {uniqueHiringManagers.map(manager => (
-            <option key={manager} value={manager}>{manager}</option>
+          <option value="">Priority</option>
+          {uniquePriorities.map(priority => (
+            <option key={priority} value={priority}>{priority}</option>
           ))}
         </select>
 
@@ -185,153 +218,156 @@ export default function JobOpenings({ createMode = false }) {
     }
 
     return [
-    {
-      jobPositionId: "JOP-001",
-      positionName: "Senior React Developer",
-      minExperience: 4,
-      maxExperience: 7,
-      jobDescriptionLink: "https://example.com/jd/react",
-      positionLevel: "senior",
-      location: "Delhi",
-      noOfPositions: 2,
-      jobReceivedDate: "2026-01-12",
-      hiringType: "direct",
-      minSalary: 1200000,
-      maxSalary: 2000000,
-      jobType: "full-time",
-      technicalSkills: ["react", "javascript", "typescript"],
-      softSkills: ["communication", "teamwork"],
-      additionalSkills: "Redux",
-      addTechnicalSkills: ["machine-learning", "azure"],
-      clientId: "C1292938",
-      clientName: "MethodHub",
-      contactPersonName: "Divya Mehta",
-      contactPersonEmail: "divya.mehta@email.com",
-      assignedRecruiters: "Asha, Rohan",
-      targetDate: "2026-02-15",
-      jobOpeningStatus: "Active",
-      hiringManager: "Karthik Rao",
-      candidates: [
-        {
-          candidateId: "C001",
-          candidateName: "Rahul Mehta",
-          candidateEmail: "rahul.mehta@email.com",
-          modifiedTime: "11/10/2025 05:30 PM",
-          source: "Resume Inbox",
-          rating: "3/5",
-          stage: "Assessment",
-          round: "Round 3"
-        },
-        {
-          candidateId: "C002",
-          candidateName: "Arun Kumar",
-          candidateEmail: "arun.kumar@email.com",
-          modifiedTime: "11/10/2025 05:30 PM",
-          source: "LinkedIn",
-          rating: "4/5",
-          stage: "Client Interview",
-          round: "Round 4"
-        },
-        {
-          candidateId: "C003",
-          candidateName: "Priya Sharma",
-          candidateEmail: "priya.sharma@email.com",
-          modifiedTime: "11/10/2025 05:30 PM",
-          source: "Naukri",
-          rating: "2/5",
-          stage: "Pre-Screening",
-          round: "Round 2"
-        }
-      ]
-    },
-    {
-      jobPositionId: "JOP-002",
-      positionName: "Product Manager",
-      minExperience: 6,
-      maxExperience: 10,
-      jobDescriptionLink: "https://example.com/jd/pm",
-      positionLevel: "manager",
-      location: "Pune",
-      noOfPositions: 1,
-      jobReceivedDate: "2026-01-20",
-      hiringType: "contract",
-      minSalary: 1400000,
-      maxSalary: 2200000,
-      jobType: "contract",
-      technicalSkills: ["sql", "aws"],
-      softSkills: ["leadership", "communication"],
-      additionalSkills: "Roadmapping",
-      addTechnicalSkills: ["data-science"],
-      clientId: "C1292432",
-      clientName: "Arrows Inc",
-      contactPersonName: "Rahul Mehta",
-      contactPersonEmail: "rahul.mehta@email.com",
-      assignedRecruiters: "Priya, Naveen",
-      targetDate: "2026-03-01",
-      jobOpeningStatus: "Draft",
-      hiringManager: "Sneha Nair",
-      candidates: [
-        {
-          candidateId: "C011",
-          candidateName: "Ananya Rao",
-          candidateEmail: "ananya.rao@email.com",
-          modifiedTime: "11/12/2025 11:20 AM",
-          source: "LinkedIn",
-          rating: "4/5",
-          stage: "Sourced",
-          round: "Round 1"
-        },
-        {
-          candidateId: "C012",
-          candidateName: "Vikram Singh",
-          candidateEmail: "vikram.singh@email.com",
-          modifiedTime: "11/12/2025 11:20 AM",
-          source: "Resume Inbox",
-          rating: "3/5",
-          stage: "Assessment",
-          round: "Round 2"
-        }
-      ]
-    },
-    {
-      jobPositionId: "JOP-003",
-      positionName: "UI/UX Designer",
-      minExperience: 3,
-      maxExperience: 6,
-      jobDescriptionLink: "https://example.com/jd/uiux",
-      positionLevel: "mid",
-      location: "Bangalore",
-      noOfPositions: 1,
-      jobReceivedDate: "2026-01-18",
-      hiringType: "direct",
-      minSalary: 900000,
-      maxSalary: 1400000,
-      jobType: "full-time",
-      technicalSkills: ["html", "css"],
-      softSkills: ["creativity", "presentation"],
-      additionalSkills: "Figma",
-      extraTechnicalSkills: ["computer-vision"],
-      clientId: "C1292921",
-      clientName: "NovaLabs",
-      contactPersonName: "Arjun Rao",
-      contactPersonEmail: "arjun.rao@email.com",
-      assignedRecruiters: "Nisha",
-      targetDate: "2026-02-05",
-      jobOpeningStatus: "Closed",
-      hiringManager: "Anitha Kumar",
-      candidates: [
-        {
-          candidateId: "C021",
-          candidateName: "Sneha Iyer",
-          candidateEmail: "sneha.iyer@email.com",
-          modifiedTime: "11/18/2025 03:00 PM",
-          source: "LinkedIn",
-          rating: "4/5",
-          stage: "Pre-Screening",
-          round: "Round 1"
-        }
-      ]
-    }
+      {
+        jobPositionId: "JOP-001",
+        positionName: "Senior React Developer",
+        minExperience: 4,
+        maxExperience: 7,
+        jobDescriptionLink: "https://example.com/jd/react",
+        positionLevel: "senior",
+        location: "Delhi",
+        noOfPositions: 2,
+        jobReceivedDate: "2026-01-12",
+        hiringType: "on-site",
+        minSalary: 1200000,
+        maxSalary: 2000000,
+        jobType: "full-time",
+        technicalSkills: ["react", "javascript", "typescript"],
+        softSkills: ["communication", "teamwork"],
+        additionalSkills: "Redux",
+        addTechnicalSkills: ["machine-learning", "azure"],
+        clientId: "C1292938",
+        clientName: "MethodHub",
+        contactPersonName: "Divya Mehta",
+        contactPersonEmail: "divya.mehta@email.com",
+        assignedRecruiters: "Asha, Rohan",
+        targetDate: "2026-02-15",
+        jobOpeningStatus: "Active",
+        priority: "High",
+        hiringManager: "Karthik Rao",
+        candidates: [
+          {
+            candidateId: "C001",
+            candidateName: "Rahul Mehta",
+            candidateEmail: "rahul.mehta@email.com",
+            modifiedTime: "11/10/2025 05:30 PM",
+            source: "Resume Inbox",
+            rating: "3/5",
+            stage: "Assessment",
+            round: "Round 3"
+          },
+          {
+            candidateId: "C002",
+            candidateName: "Arun Kumar",
+            candidateEmail: "arun.kumar@email.com",
+            modifiedTime: "11/10/2025 05:30 PM",
+            source: "LinkedIn",
+            rating: "4/5",
+            stage: "Client Interview",
+            round: "Round 4"
+          },
+          {
+            candidateId: "C003",
+            candidateName: "Priya Sharma",
+            candidateEmail: "priya.sharma@email.com",
+            modifiedTime: "11/10/2025 05:30 PM",
+            source: "Naukri",
+            rating: "2/5",
+            stage: "Pre-Screening",
+            round: "Round 2"
+          }
+        ]
+      },
+      {
+        jobPositionId: "JOP-002",
+        positionName: "Product Manager",
+        minExperience: 6,
+        maxExperience: 10,
+        jobDescriptionLink: "https://example.com/jd/pm",
+        positionLevel: "manager",
+        location: "Pune",
+        noOfPositions: 1,
+        jobReceivedDate: "2026-01-20",
+        hiringType: "remote",
+        minSalary: 1400000,
+        maxSalary: 2200000,
+        jobType: "contract",
+        technicalSkills: ["sql", "aws"],
+        softSkills: ["leadership", "communication"],
+        additionalSkills: "Roadmapping",
+        addTechnicalSkills: ["data-science"],
+        clientId: "C1292432",
+        clientName: "Arrows Inc",
+        contactPersonName: "Rahul Mehta",
+        contactPersonEmail: "rahul.mehta@email.com",
+        assignedRecruiters: "Priya, Naveen",
+        targetDate: "2026-03-01",
+        jobOpeningStatus: "Draft",
+        priority: "Medium",
+        hiringManager: "Sneha Nair",
+        candidates: [
+          {
+            candidateId: "C011",
+            candidateName: "Ananya Rao",
+            candidateEmail: "ananya.rao@email.com",
+            modifiedTime: "11/12/2025 11:20 AM",
+            source: "LinkedIn",
+            rating: "4/5",
+            stage: "Sourced",
+            round: "Round 1"
+          },
+          {
+            candidateId: "C012",
+            candidateName: "Vikram Singh",
+            candidateEmail: "vikram.singh@email.com",
+            modifiedTime: "11/12/2025 11:20 AM",
+            source: "Resume Inbox",
+            rating: "3/5",
+            stage: "Assessment",
+            round: "Round 2"
+          }
+        ]
+      },
+      {
+        jobPositionId: "JOP-003",
+        positionName: "UI/UX Designer",
+        minExperience: 3,
+        maxExperience: 6,
+        jobDescriptionLink: "https://example.com/jd/uiux",
+        positionLevel: "mid",
+        location: "Bangalore",
+        noOfPositions: 1,
+        jobReceivedDate: "2026-01-18",
+        hiringType: "hybrid",
+        minSalary: 900000,
+        maxSalary: 1400000,
+        jobType: "full-time",
+        technicalSkills: ["html", "css"],
+        softSkills: ["creativity", "presentation"],
+        additionalSkills: "Figma",
+        extraTechnicalSkills: ["computer-vision"],
+        clientId: "C1292921",
+        clientName: "NovaLabs",
+        contactPersonName: "Arjun Rao",
+        contactPersonEmail: "arjun.rao@email.com",
+        assignedRecruiters: "Nisha",
+        targetDate: "2026-02-05",
+        jobOpeningStatus: "Closed",
+        priority: "Low",
+        hiringManager: "Anitha Kumar",
+        candidates: [
+          {
+            candidateId: "C021",
+            candidateName: "Sneha Iyer",
+            candidateEmail: "sneha.iyer@email.com",
+            modifiedTime: "11/18/2025 03:00 PM",
+            source: "LinkedIn",
+            rating: "4/5",
+            stage: "Pre-Screening",
+            round: "Round 1"
+          }
+        ]
+      }
     ];
   });
   const [showSuccessMessage, setShowSuccessMessage] = React.useState(false);
@@ -347,7 +383,7 @@ export default function JobOpenings({ createMode = false }) {
   const [filterPostingTitle, setFilterPostingTitle] = React.useState('');
   const [filterTargetDate, setFilterTargetDate] = React.useState('');
   const [filterJobStatus, setFilterJobStatus] = React.useState('');
-  const [filterHiringManager, setFilterHiringManager] = React.useState('');
+  const [filterPriority, setFilterPriority] = React.useState('');
   const [entriesPerPage, setEntriesPerPage] = React.useState(10);
   const [currentPage, setCurrentPage] = React.useState(1);
   const [expandedRows, setExpandedRows] = React.useState({});
@@ -357,6 +393,7 @@ export default function JobOpenings({ createMode = false }) {
   const [selectedCandidate, setSelectedCandidate] = React.useState(null);
   const [drawerTab, setDrawerTab] = React.useState("Job Information");
   const [sortConfig, setSortConfig] = React.useState({ key: null, direction: 'asc' });
+  const [clientOptions, setClientOptions] = React.useState(() => getClientOptions(loadClientRows()));
   const addJobOpeningMenuRef = React.useRef(null);
   const createModeInitializedRef = React.useRef(false);
 
@@ -380,6 +417,21 @@ export default function JobOpenings({ createMode = false }) {
   React.useEffect(() => {
     saveJobOpeningTableData(submittedData);
   }, [submittedData]);
+
+  React.useEffect(() => {
+    const refreshClientOptions = () => {
+      setClientOptions(getClientOptions(loadClientRows()));
+    };
+
+    refreshClientOptions();
+    window.addEventListener("focus", refreshClientOptions);
+    window.addEventListener("storage", refreshClientOptions);
+
+    return () => {
+      window.removeEventListener("focus", refreshClientOptions);
+      window.removeEventListener("storage", refreshClientOptions);
+    };
+  }, []);
 
   const sanitizeDraftValue = React.useCallback((value) => {
     const sanitize = (input) => {
@@ -512,8 +564,8 @@ export default function JobOpenings({ createMode = false }) {
     setCurrentPage(1);
   }, []);
 
-  const handleFilterHiringManagerChange = React.useCallback((e) => {
-    setFilterHiringManager(e.target.value);
+  const handleFilterPriorityChange = React.useCallback((e) => {
+    setFilterPriority(e.target.value);
     setCurrentPage(1);
   }, []);
 
@@ -532,9 +584,13 @@ export default function JobOpenings({ createMode = false }) {
       ),
       targetDate: item.targetDate ?? item.jobReceivedDate ?? "",
       jobOpeningStatus: item.jobOpeningStatus ?? item.jobStatus ?? "",
+      workType: ["remote", "hybrid", "on-site"].includes(String(item.workType ?? item.hiringType ?? "").toLowerCase())
+        ? (item.workType ?? item.hiringType)
+        : "",
       city: item.city ?? item.location ?? "",
+      priority: item.priority ?? "Medium",
       hiringManager: item.hiringManager ?? "",
-      accountManager: item.accountManager ?? item.hiringManager ?? "",
+      accountManager: item.accountManager || item.hiringManager || resolveUserName(),
     }))
   ), [submittedData]);
 
@@ -549,8 +605,8 @@ export default function JobOpenings({ createMode = false }) {
     [normalizedData]
   );
 
-  const uniqueHiringManagers = React.useMemo(() =>
-    [...new Set(normalizedData.map(item => item.hiringManager).filter(Boolean))],
+  const uniquePriorities = React.useMemo(() =>
+    [...new Set(normalizedData.map(item => item.priority).filter(Boolean))],
     [normalizedData]
   );
 
@@ -566,14 +622,14 @@ export default function JobOpenings({ createMode = false }) {
       const matchesPostingTitle = !filterPostingTitle || item.postingTitle === filterPostingTitle;
       const matchesTargetDate = !filterTargetDate || item.targetDate === filterTargetDate;
       const matchesJobStatus = !filterJobStatus || item.jobOpeningStatus === filterJobStatus;
-      const matchesHiringManager = !filterHiringManager || item.hiringManager === filterHiringManager;
+      const matchesPriority = !filterPriority || item.priority === filterPriority;
 
       return (
         matchesSearch &&
         matchesPostingTitle &&
         matchesTargetDate &&
         matchesJobStatus &&
-        matchesHiringManager
+        matchesPriority
       );
     });
 
@@ -591,7 +647,7 @@ export default function JobOpenings({ createMode = false }) {
 
     return result;
   },
-    [normalizedData, deferredSearchTerm, filterPostingTitle, filterTargetDate, filterJobStatus, filterHiringManager, sortConfig]
+    [normalizedData, deferredSearchTerm, filterPostingTitle, filterTargetDate, filterJobStatus, filterPriority, sortConfig]
   );
 
   const hasFilters = Boolean(
@@ -599,7 +655,7 @@ export default function JobOpenings({ createMode = false }) {
     filterPostingTitle ||
     filterTargetDate ||
     filterJobStatus ||
-    filterHiringManager
+    filterPriority
   );
 
   const clearFilters = React.useCallback(() => {
@@ -607,7 +663,7 @@ export default function JobOpenings({ createMode = false }) {
     setFilterPostingTitle('');
     setFilterTargetDate('');
     setFilterJobStatus('');
-    setFilterHiringManager('');
+    setFilterPriority('');
     setCurrentPage(1);
   }, []);
 
@@ -656,6 +712,14 @@ export default function JobOpenings({ createMode = false }) {
     return styles.statusNeutral;
   }, []);
 
+  const getPriorityClass = React.useCallback((priority) => {
+    const normalized = String(priority || '').toLowerCase();
+    if (normalized === 'high') return styles.priorityHigh;
+    if (normalized === 'medium') return styles.priorityMedium;
+    if (normalized === 'low') return styles.priorityLow;
+    return styles.priorityNeutral;
+  }, []);
+
   const getStageClass = React.useCallback((stage) => {
     const normalized = String(stage || '').toLowerCase();
     if (normalized === 'added') return styles.stageAdded;
@@ -673,16 +737,8 @@ export default function JobOpenings({ createMode = false }) {
   }, []);
 
   const nextJobPositionId = React.useMemo(() => {
-    const submittedSequences = submittedData.map((item) =>
-      getJobOpeningSequence(item?.jobPositionId || item?.openingJobId || item?.jobId)
-    );
-    const draftSequences = jobOpeningDrafts.map((draft) =>
-      getJobOpeningSequence(draft?.data?.jobPositionId || draft?.data?.openingJobId || draft?.data?.jobId)
-    );
-    const maxSequence = Math.max(0, ...submittedSequences, ...draftSequences);
-
-    return `JOP-${String(maxSequence + 1).padStart(3, "0")}`;
-  }, [jobOpeningDrafts, submittedData]);
+    return getNextJobOpeningId(submittedData);
+  }, [submittedData]);
 
   React.useEffect(() => {
     if (!createMode) {
@@ -736,12 +792,9 @@ export default function JobOpenings({ createMode = false }) {
 
   // Helper to check if a jobPositionId is already used
   const isJobIdUsed = React.useCallback((jobId) => {
-    const allIds = [
-      ...submittedData.map(item => String(item?.jobPositionId || item?.openingJobId || item?.jobId || "").trim()),
-      ...jobOpeningDrafts.map(draft => String(draft?.data?.jobPositionId || draft?.data?.openingJobId || draft?.data?.jobId || "").trim())
-    ];
+    const allIds = submittedData.map(item => String(getJobOpeningIdValue(item)).trim());
     return allIds.includes(String(jobId).trim());
-  }, [submittedData, jobOpeningDrafts]);
+  }, [submittedData]);
 
   // When opening a draft, if its job ID is already used, assign the next available
   const openJobOpeningForm = React.useCallback((draftData = null, draftId = null) => {
@@ -755,6 +808,7 @@ export default function JobOpenings({ createMode = false }) {
     setEditingData({
       ...(draftData ? { ...draftData } : {}),
       jobPositionId: jobId,
+      accountManager: draftData?.accountManager || resolveUserName(),
     });
     setEditLocked(false);
     setActiveDraftId(draftId);
@@ -822,6 +876,7 @@ export default function JobOpenings({ createMode = false }) {
       openingJobId: row.openingJobId || row.jobPositionId || String(index),
       postingTitle: row.postingTitle || row.positionName || "-",
       clientName: row.clientName || "-",
+      priority: row.priority || "-",
       hiringManager: row.hiringManager || "-",
       accountManager: row.accountManager || "-",
     });
@@ -883,7 +938,8 @@ export default function JobOpenings({ createMode = false }) {
       targetDate: safeData.targetDate || safeData.jobReceivedDate || "",
       jobOpeningStatus: safeData.jobOpeningStatus || safeData.jobStatus || 'Active',
       city: safeData.city || resolvedLocation,
-      accountManager: safeData.accountManager || safeData.hiringManager || "",
+      priority: safeData.priority || "Medium",
+      accountManager: safeData.accountManager || safeData.hiringManager || resolveUserName(),
       assignedRecruiters: resolvedAssignedRecruiters,
       candidates: Array.isArray(safeData.candidates) ? safeData.candidates : [],
     };
@@ -917,7 +973,7 @@ export default function JobOpenings({ createMode = false }) {
     setIsAddJobOpeningMenuOpen(false);
     navigate("/job-openings");
     // Here you would typically send the data to your backend API
-  }, [activeDraftId, editingIndex, navigate, nextJobPositionId, persistJobOpeningDrafts, showTransientMessage, submittedData, isJobIdUsed]);
+  }, [activeDraftId, editingIndex, navigate, nextJobPositionId, persistJobOpeningDrafts, showTransientMessage, isJobIdUsed]);
 
   const formatInrAmount = React.useCallback((value) => {
     const numericValue = Number(value);
@@ -977,6 +1033,17 @@ export default function JobOpenings({ createMode = false }) {
   const jobOpeningFormConfig = React.useMemo(
     () => ({
       ...jobOpeningConfig,
+      steps: jobOpeningConfig.steps.map((step) => ({
+        ...step,
+        fields: (step.fields || []).map((field) =>
+          field.name === "clientName"
+            ? {
+              ...field,
+              options: clientOptions,
+            }
+            : field
+        ),
+      })),
       localSubmitOnly: true,
       showDraftAction: editingIndex === null,
       showCancelAction: true,
@@ -984,7 +1051,7 @@ export default function JobOpenings({ createMode = false }) {
       onCancel: handleCancelJobOpeningForm,
       onSaveDraft: saveJobOpeningDraft,
     }),
-    [editingIndex, handleCancelJobOpeningForm, saveJobOpeningDraft]
+    [clientOptions, editingIndex, handleCancelJobOpeningForm, saveJobOpeningDraft]
   );
 
   React.useEffect(() => {
@@ -1142,11 +1209,11 @@ export default function JobOpenings({ createMode = false }) {
               onFilterTargetDateChange={handleFilterTargetDateChange}
               filterJobStatus={filterJobStatus}
               onFilterJobStatusChange={handleFilterJobStatusChange}
-              filterHiringManager={filterHiringManager}
-              onFilterHiringManagerChange={handleFilterHiringManagerChange}
+              filterPriority={filterPriority}
+              onFilterPriorityChange={handleFilterPriorityChange}
               uniquePostingTitles={uniquePostingTitles}
               uniqueJobStatuses={uniqueJobStatuses}
-              uniqueHiringManagers={uniqueHiringManagers}
+              uniquePriorities={uniquePriorities}
               hasFilters={hasFilters}
               onClearFilters={clearFilters}
             />
@@ -1160,7 +1227,7 @@ export default function JobOpenings({ createMode = false }) {
                   <col />
                   <col className={styles.colTargetDate} />
                   <col />
-                  <col className={styles.colCity} />
+                  <col className={styles.colWorkType} />
                   <col />
                   <col />
                   <col className={styles.colActions} />
@@ -1174,9 +1241,9 @@ export default function JobOpenings({ createMode = false }) {
                       { key: "assignedRecruiters", label: "Assigned Recruiter(s)" },
                       { key: "targetDate", label: "Target Date" },
                       { key: "jobOpeningStatus", label: "Job Opening Status" },
-                      { key: "city", label: "City" },
+                      { key: "workType", label: "Work Type" },
                       { key: "accountManager", label: "Account Manager" },
-                      { key: "hiringManager", label: "Hiring Manager" },
+                      { key: "priority", label: "Priority" },
                     ].map((col) => (
                       <th
                         key={col.key}
@@ -1229,9 +1296,13 @@ export default function JobOpenings({ createMode = false }) {
                               </span>
                             ) : "-"}
                           </td>
-                          <td>{row.city || "-"}</td>
+                          <td>{formatLabelCase(row.workType)}</td>
                           <td>{row.accountManager}</td>
-                          <td>{row.hiringManager}</td>
+                          <td>
+                            <span className={`${styles.priorityPill} ${getPriorityClass(row.priority)}`}>
+                              {row.priority}
+                            </span>
+                          </td>
                           <td className={styles.actionsCol}>
                             <div className={styles.actionIcons}>
                               <button
@@ -1276,7 +1347,7 @@ export default function JobOpenings({ createMode = false }) {
                                 <table className={styles.innerTable}>
                                   <thead>
                                     <tr>
-                                      <th>Candidate Id</th>
+                                      <th>Application Id</th>
                                       <th>Candidate Name</th>
                                       <th>Email Address</th>
                                       <th>Modified Time</th>
@@ -1478,8 +1549,8 @@ export default function JobOpenings({ createMode = false }) {
                     <strong>{formatDateDDMMYYYY(selectedJobOpening.jobReceivedDate)}</strong>
                   </div>
                   <div className={styles.drawerField}>
-                    <span>Hiring Type</span>
-                    <strong>{formatLabelCase(selectedJobOpening.hiringType)}</strong>
+                    <span>Work Type</span>
+                    <strong>{formatLabelCase(selectedJobOpening.workType)}</strong>
                   </div>
                   <div className={styles.drawerField}>
                     <span>Salary in CTC</span>
@@ -1513,8 +1584,12 @@ export default function JobOpenings({ createMode = false }) {
                     <strong>{selectedJobOpening.contactPersonEmail || "-"}</strong>
                   </div>
                   <div className={styles.drawerField}>
-                    <span>Hiring Manager</span>
-                    <strong>{selectedJobOpening.hiringManager || "-"}</strong>
+                    <span>Priority</span>
+                    <strong>
+                      <span className={`${styles.priorityPill} ${getPriorityClass(selectedJobOpening.priority)}`}>
+                        {selectedJobOpening.priority || "-"}
+                      </span>
+                    </strong>
                   </div>
                   <div className={styles.drawerField}>
                     <span>Assigned Recruiters</span>
@@ -1551,8 +1626,12 @@ export default function JobOpenings({ createMode = false }) {
               {drawerTab === "Team Members" && (
                 <div className={styles.drawerGrid}>
                   <div className={styles.drawerField}>
-                    <span>Hiring Manager</span>
-                    <strong>{selectedJobOpening.hiringManager || "-"}</strong>
+                    <span>Priority</span>
+                    <strong>
+                      <span className={`${styles.priorityPill} ${getPriorityClass(selectedJobOpening.priority)}`}>
+                        {selectedJobOpening.priority || "-"}
+                      </span>
+                    </strong>
                   </div>
                   <div className={styles.drawerField}>
                     <span>Assigned Recruiters</span>
@@ -1636,9 +1715,13 @@ export default function JobOpenings({ createMode = false }) {
                 <span>Client Name</span>
                 <strong>{selectedCandidate.clientName || "-"}</strong>
               </div>
-              <div className={styles.candidateField}>
-                <span>Hiring Manager</span>
-                <strong>{selectedCandidate.hiringManager || "-"}</strong>
+              <div className={styles.candidateDetail}>
+                <span>Priority</span>
+                <strong>
+                  <span className={`${styles.priorityPill} ${getPriorityClass(selectedCandidate.priority || selectedCandidate.hiringManager)}`}>
+                    {selectedCandidate.priority || selectedCandidate.hiringManager || "-"}
+                  </span>
+                </strong>
               </div>
               <div className={styles.candidateField}>
                 <span>Account Manager</span>
