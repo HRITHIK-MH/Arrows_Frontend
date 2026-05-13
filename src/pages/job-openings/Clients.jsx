@@ -17,14 +17,14 @@ export default function Clients() {
 
   const clientsPageDescription = React.useMemo(() => {
     if (currentUserRole === "recruiter") {
-      return "Manage client accounts, monitor account ownership, engagement status, and coordination activity in one place.";
+      return <><strong>Manage client accounts, monitor account ownership, engagement status,</strong> and <strong>coordination activity</strong> in one place.</>;
     }
 
     if (currentUserRole === "accountmanager" || currentUserRole === "manager" || currentUserRole === "management") {
-      return "Track client relationships, account ownership, and account activity with centralized visibility.";
+      return <strong>Track client relationships, account ownership, and account activity with centralized visibility.</strong>;
     }
 
-    return "Track client relationships, account ownership, and account activity with centralized visibility.";
+    return <><strong>Track client relationships, account ownership,</strong> and <strong>account activity</strong> with centralized visibility.</>;
   }, [currentUserRole]);
 
   const [showClientForm, setShowClientForm] = React.useState(false);

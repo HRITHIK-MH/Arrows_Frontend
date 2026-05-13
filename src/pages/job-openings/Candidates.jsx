@@ -13,6 +13,7 @@ import {
   FiSearch,
   FiStar,
   FiTrash2,
+  FiUpload,
   FiX
 } from "react-icons/fi";
 import ReusableForm from "../../components/forms/ReusableForm";
@@ -305,6 +306,7 @@ export default function Candidates() {
   const [candidateFormKey, setCandidateFormKey] = React.useState(0);
   const mapDropdownRef = React.useRef(null);
   const addCandidateMenuRef = React.useRef(null);
+  const resumeUploadRef = React.useRef(null);
 
   const currentUserRole = React.useMemo(() => {
     if (typeof window === "undefined") return "";
@@ -313,10 +315,18 @@ export default function Candidates() {
 
   const candidatesPageDescription = React.useMemo(() => {
     if (currentUserRole === "recruiter") {
-      return "Manage candidates, review key profiles, and track hiring progress across every recruitment stage.";
+      return (
+        <>
+          <strong>Manage candidates, review key profiles</strong>, and <strong>track hiring progress</strong> across every recruitment stage.
+        </>
+      );
     }
 
-    return "Centralize candidate profiles and monitor recruitment progress from sourcing to final selection.";
+    return (
+      <>
+        <strong>Centralize candidate profiles</strong> and <strong>monitor recruitment progress</strong> from sourcing to final selection.
+      </>
+    );
   }, [currentUserRole]);
 
   const generateNextCandidateId = React.useCallback(() => {
@@ -1248,13 +1258,45 @@ export default function Candidates() {
     setSkillDraft((prev) => ({ ...prev, [key]: value }));
   }, []);
 
+  const handleResumeUpload = React.useCallback((event) => {
+    const files = Array.from(event.target.files || []);
+    if (files.length === 0) return;
+    event.target.value = "";
+    setSelectedCandidate((prev) => {
+      if (!prev) return prev;
+      const existing = prev.resumeFiles || [];
+      const newFiles = files.map((file, i) => ({
+        id: `${file.name}-${file.lastModified}-${file.size}`,
+        name: file.name,
+        type: getFileExtension(file.name) || String(file.type).replace("application/", "").trim() || "file",
+        size: formatFileSize(file.size),
+        tone: (existing.length + i) % 2 === 0 ? "blue" : "peach",
+        file,
+      }));
+      const merged = [...existing, ...newFiles];
+      setSubmittedData((rows) =>
+        rows.map((row) =>
+          row.candidateId === prev.candidateId
+            ? { ...row, resumeFiles: merged }
+            : row
+        )
+      );
+      return { ...prev, resumeFiles: merged };
+    });
+  }, []);
+
   const handleResumeDelete = React.useCallback((fileId) => {
     setSelectedCandidate((prev) => {
       if (!prev) return prev;
-      return {
-        ...prev,
-        resumeFiles: (prev.resumeFiles || []).filter((file) => file.id !== fileId),
-      };
+      const updated = (prev.resumeFiles || []).filter((file) => file.id !== fileId);
+      setSubmittedData((rows) =>
+        rows.map((row) =>
+          row.candidateId === prev.candidateId
+            ? { ...row, resumeFiles: updated }
+            : row
+        )
+      );
+      return { ...prev, resumeFiles: updated };
     });
   }, []);
 
@@ -1481,6 +1523,27 @@ export default function Candidates() {
     if (activeProfileTab === "Resume") {
       return (
         <div className={styles.resumeList}>
+          <div className={styles.resumeListHeader}>
+            <span className={styles.resumeListTitle}>
+              {(selectedCandidate.resumeFiles || []).length} document{(selectedCandidate.resumeFiles || []).length !== 1 ? "s" : ""}
+            </span>
+            <button
+              type="button"
+              className={styles.resumeUploadBtn}
+              onClick={() => resumeUploadRef.current?.click()}
+            >
+              <FiUpload size={13} />
+              Attach Document
+            </button>
+            <input
+              ref={resumeUploadRef}
+              type="file"
+              accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg"
+              multiple
+              style={{ display: "none" }}
+              onChange={handleResumeUpload}
+            />
+          </div>
           {(selectedCandidate.resumeFiles || []).length === 0 && (
             <div className={styles.emptyCell}>No documents attached.</div>
           )}

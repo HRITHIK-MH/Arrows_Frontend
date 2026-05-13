@@ -223,15 +223,15 @@ export default function Interviews() {
 
   const interviewsPageDescription = React.useMemo(() => {
     if (activeTab === "group") {
-      return "Organize interview panels by skill group, assign interviewers, and manage round-wise evaluations efficiently.";
+      return <><strong>Organize interview panels</strong> by <strong>skill group, assign interviewers,</strong> and <strong>manage round-wise evaluations</strong> efficiently.</>;
     }
 
     if (currentUserRole === "recruiter") {
-      return "Schedule, track, and manage interviews with quick access to candidates, panels, stages, and actions.";
+      return <><strong>Schedule, track, and manage interviews</strong> with quick access to candidates, panels, stages, and <strong>actions</strong>.</>;
     }
 
     if (currentUserRole === "accountmanager" || currentUserRole === "manager" || currentUserRole === "management") {
-      return "Manage interview schedules, panel coordination, and candidate progress from a single workspace.";
+      return <><strong>Manage interview schedules, panel coordination,</strong> and <strong>candidate progress</strong> from a single workspace.</>;
     }
 
     return "Manage interview schedules, panel coordination, and candidate progress from a single workspace.";

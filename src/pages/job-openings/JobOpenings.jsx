@@ -210,14 +210,14 @@ export default function JobOpenings({ createMode = false }) {
   }, []);
   const jobOpeningsPageDescription = React.useMemo(() => {
     if (currentUserRole === "recruiter") {
-      return "Manage job openings, track application progress, and monitor hiring requirements efficiently.";
+      return <><strong>Manage job openings, track application progress,</strong> and <strong>monitor hiring requirements</strong> efficiently.</>;
     }
 
     if (currentUserRole === "accountmanager" || currentUserRole === "manager" || currentUserRole === "management") {
-      return "Centralize hiring demands, application pipelines, and recruitment progress across all openings.";
+      return <><strong>Centralize hiring demands, application pipelines,</strong> and <strong> recruitment progress</strong> across all openings.</>;
     }
 
-    return "Centralize hiring demands, application pipelines, and recruitment progress across all openings.";
+    return <strong>Centralize hiring demands, application pipelines, and recruitment progress across all openings.</strong>;
   }, [currentUserRole]);
   const isRecruiter = currentUserRole === "recruiter";
   const [showJobOpeningForm, setShowJobOpeningForm] = React.useState(false);
