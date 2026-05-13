@@ -208,6 +208,17 @@ export default function JobOpenings({ createMode = false }) {
     if (typeof window === "undefined") return "";
     return String(window.localStorage.getItem("userRole") || "").toLowerCase();
   }, []);
+  const jobOpeningsPageDescription = React.useMemo(() => {
+    if (currentUserRole === "recruiter") {
+      return "Manage job openings, track application progress, and monitor hiring requirements efficiently.";
+    }
+
+    if (currentUserRole === "accountmanager" || currentUserRole === "manager" || currentUserRole === "management") {
+      return "Centralize hiring demands, application pipelines, and recruitment progress across all openings.";
+    }
+
+    return "Centralize hiring demands, application pipelines, and recruitment progress across all openings.";
+  }, [currentUserRole]);
   const isRecruiter = currentUserRole === "recruiter";
   const [showJobOpeningForm, setShowJobOpeningForm] = React.useState(false);
   const [showDataTable, setShowDataTable] = React.useState(true);
@@ -1138,9 +1149,7 @@ export default function JobOpenings({ createMode = false }) {
         {!showJobOpeningForm && (
           <div className={styles.infoRow}>
             <p className={styles.description}>
-              View all current job openings along with essential information like job title, department,
-              location, required experience, and application status. Quickly track how many candidates
-              have applied and manage each opening efficiently.
+              {jobOpeningsPageDescription}
             </p>
             {!isRecruiter && (
               <div ref={addJobOpeningMenuRef} className={styles.createJobMenuAnchor}>

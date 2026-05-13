@@ -306,6 +306,19 @@ export default function Candidates() {
   const mapDropdownRef = React.useRef(null);
   const addCandidateMenuRef = React.useRef(null);
 
+  const currentUserRole = React.useMemo(() => {
+    if (typeof window === "undefined") return "";
+    return String(window.localStorage.getItem("userRole") || "").trim().toLowerCase();
+  }, []);
+
+  const candidatesPageDescription = React.useMemo(() => {
+    if (currentUserRole === "recruiter") {
+      return "Manage candidates, review key profiles, and track hiring progress across every recruitment stage.";
+    }
+
+    return "Centralize candidate profiles and monitor recruitment progress from sourcing to final selection.";
+  }, [currentUserRole]);
+
   const generateNextCandidateId = React.useCallback(() => {
     const maxNumericId = submittedData.reduce((maxValue, item) => {
       const matched = String(item?.candidateId || "").match(/(\d+)/);
@@ -1659,8 +1672,7 @@ export default function Candidates() {
           <div className={styles.infoRow}>
             <div className={styles.infoContent}>
               <p className={styles.description}>
-                View and manage all applicants with key details like experience, education, and current company.
-                Track their progress through stages such as Added, Sourced, Pre-screening, and Assessment.
+                {candidatesPageDescription}
               </p>
               <div className={styles.legendRow}>
                 {[

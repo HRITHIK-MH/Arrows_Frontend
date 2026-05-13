@@ -10,6 +10,23 @@ const CLIENT_DRAFT_STORAGE_KEY = "clients:add-draft:v1";
 const createClientDraftId = () => `draft-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
 export default function Clients() {
+  const currentUserRole = React.useMemo(() => {
+    if (typeof window === "undefined") return "";
+    return String(window.localStorage.getItem("userRole") || "").trim().toLowerCase();
+  }, []);
+
+  const clientsPageDescription = React.useMemo(() => {
+    if (currentUserRole === "recruiter") {
+      return "Manage client accounts, monitor account ownership, engagement status, and coordination activity in one place.";
+    }
+
+    if (currentUserRole === "accountmanager" || currentUserRole === "manager" || currentUserRole === "management") {
+      return "Track client relationships, account ownership, and account activity with centralized visibility.";
+    }
+
+    return "Track client relationships, account ownership, and account activity with centralized visibility.";
+  }, [currentUserRole]);
+
   const [showClientForm, setShowClientForm] = React.useState(false);
   const [showDataTable, setShowDataTable] = React.useState(true);
   const [submittedData, setSubmittedData] = React.useState(() => loadClientRows());
@@ -497,9 +514,7 @@ export default function Clients() {
         {!showClientForm && (
           <div className={styles.infoRow}>
             <p className={styles.description}>
-              View and manage all client accounts in one place. Track contact details, assigned recruiters,
-              activation status, and engagement timelines to ensure smooth coordination and efficient client
-              management.
+              {clientsPageDescription}
             </p>
             <div ref={addClientMenuRef} className={styles.addClientMenuAnchor}>
               <div className={styles.addClientSplit}>

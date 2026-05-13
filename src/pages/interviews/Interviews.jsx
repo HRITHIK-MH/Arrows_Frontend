@@ -216,6 +216,27 @@ export default function Interviews() {
   });
   const mapDropdownRef = React.useRef(null);
 
+  const currentUserRole = React.useMemo(() => {
+    if (typeof window === "undefined") return "";
+    return String(window.localStorage.getItem("userRole") || "").trim().toLowerCase();
+  }, []);
+
+  const interviewsPageDescription = React.useMemo(() => {
+    if (activeTab === "group") {
+      return "Organize interview panels by skill group, assign interviewers, and manage round-wise evaluations efficiently.";
+    }
+
+    if (currentUserRole === "recruiter") {
+      return "Schedule, track, and manage interviews with quick access to candidates, panels, stages, and actions.";
+    }
+
+    if (currentUserRole === "accountmanager" || currentUserRole === "manager" || currentUserRole === "management") {
+      return "Manage interview schedules, panel coordination, and candidate progress from a single workspace.";
+    }
+
+    return "Manage interview schedules, panel coordination, and candidate progress from a single workspace.";
+  }, [activeTab, currentUserRole]);
+
   // Sample groups data
   const [groups, setGroups] = React.useState([
     {
@@ -1471,9 +1492,7 @@ export default function Interviews() {
       <div className={styles.card}>
         <div className={styles.infoBox}>
           <p className={styles.pageDescription}>
-            View and manage all scheduled upcoming interviews in one place. Track interview dates,
-            candidates, roles, and interview modes, and take quick actions like rescheduling,
-            joining meetings, or adding notes.
+            {interviewsPageDescription}
           </p>
 
           <div className={styles.tabs}>

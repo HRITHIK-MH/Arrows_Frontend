@@ -44,15 +44,20 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 12px 10px;
+  padding: 12px 16px;
   margin-bottom: 8px;
 }
 
 .description {
   margin: 0;
-  color: #6b7280;
+  color: #334155;
   font-size: 13px;
-  line-height: 1.45;
+  line-height: 1.5;
+  padding: 12px 16px;
+  border: 1px solid #e5edf6;
+  border-radius: 12px;
+  background: #ffffff;
+  flex: 1;
 }
 
 .addButton {
@@ -875,6 +880,12 @@
 
   .infoRow {
     align-items: stretch;
+    padding: 12px 12px 0;
+  }
+
+  .description {
+    padding: 10px 12px;
+    border-radius: 10px;
   }
 
   .addButton {
