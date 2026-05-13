@@ -1,5 +1,7 @@
 import axios from 'axios';
 import React, { useState, useMemo, useCallback } from 'react';
+import * as pdfjsLib from 'pdfjs-dist';
+import pdfjsWorkerSrc from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import { validateMandatoryField } from '../../utils/formValidation';
 import FormField from './FormField';
 import MultiStepForm from './MultiStepForm';
@@ -146,15 +148,12 @@ const readDocxText = async (file) => {
 };
 
 const readPdfText = async (file) => {
-  const pdfjs = await import('pdfjs-dist');
-  const workerSrc = new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url).toString();
-
-  if (pdfjs.GlobalWorkerOptions.workerSrc !== workerSrc) {
-    pdfjs.GlobalWorkerOptions.workerSrc = workerSrc;
+  if (pdfjsLib.GlobalWorkerOptions.workerSrc !== pdfjsWorkerSrc) {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorkerSrc;
   }
 
   const arrayBuffer = await file.arrayBuffer();
-  const loadingTask = pdfjs.getDocument({ data: arrayBuffer });
+  const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
   const pdfDocument = await loadingTask.promise;
   const pageTexts = [];
 

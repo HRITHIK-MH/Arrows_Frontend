@@ -496,7 +496,8 @@ const PermissionStep = ({ formData, onChange, onSetStepFields, fields = [], vali
                 className="permission-input"
                 value={formData.targetDate || ""}
                 onChange={(event) => onChange("targetDate", event.target.value)}
-                min={formData.jobActivationDate || undefined}
+                min={formData.jobReceivedDate || undefined}
+                max={formData.jobActivationDate || undefined}
                 required
                 disabled={disabled}
               />

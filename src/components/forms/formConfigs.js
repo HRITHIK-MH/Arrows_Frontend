@@ -689,9 +689,15 @@ export const jobOpeningConfig = {
         return { isValid: false, message: "Target is required" };
       }
 
+      const requirementReceivedDate = formData?.jobReceivedDate;
       const validityUpto = formData?.jobActivationDate;
-      if (!isEmptyValue(validityUpto) && String(value) < String(validityUpto)) {
-        return { isValid: false, message: "Target date cannot be before Validity Upto date" };
+
+      if (!isEmptyValue(requirementReceivedDate) && String(value) < String(requirementReceivedDate)) {
+        return { isValid: false, message: "Target date cannot be before Requirement Received date" };
+      }
+
+      if (!isEmptyValue(validityUpto) && String(value) > String(validityUpto)) {
+        return { isValid: false, message: "Target date cannot be after Validity Upto date" };
       }
 
       return { isValid: true };
