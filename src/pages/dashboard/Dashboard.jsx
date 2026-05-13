@@ -1,7 +1,6 @@
 import * as React from "react";
 import { embedDashboard } from "@superset-ui/embedded-sdk";
 import styles from "./Dashboard.module.scss";
-import { fetchDashboardGuestToken } from "../../api/guestToken";
 
 /* ─────────────── Dashboard Stats Bar ─────────────── */
 function DashboardStatsBar() {
@@ -158,272 +157,90 @@ function DashboardStatsBar() {
   );
 }
 
-const DASHBOARD_KEY = "default";
-const DASHBOARD_NATIVE_FILTERS_KEY = import.meta.env.VITE_SUPERSET_NATIVE_FILTERS_KEY || "";
-const DASHBOARD_PERMALINK_KEY = import.meta.env.VITE_SUPERSET_PERMALINK_KEY || "";
-const DASHBOARD_EMBED_ID = import.meta.env.VITE_SUPERSET_EMBED_ID || "";
-
-/**
- * DEVELOPMENT MODE: Paste a Superset guest token here
- * 
- * To get a token:
- * 1. Start Superset: docker compose up (from Arrows_Backend directory)
- * 2. Visit http://localhost:8088, login with admin/admin
- * 3. Open any dashboard, check Network tab, find guest_token response
- * 4. Paste the "token" value below between the quotes
- * 
- * For production, set this via environment variable or remove for API-based generation
- */
-const HARDCODED_GUEST_TOKEN = "PASTE_SUPERSET_GUEST_TOKEN_HERE";
-const HAS_HARDCODED_GUEST_TOKEN =
-  HARDCODED_GUEST_TOKEN && HARDCODED_GUEST_TOKEN !== "PASTE_SUPERSET_GUEST_TOKEN_HERE";
-
-/**
- * Dashboard IDs in Superset
- * Update these UUIDs to match your actual Superset dashboards
- */
-const DASHBOARD_UUIDS = {
-  default: "4fe4d1ff-293f-4ac3-acce-e8887b9f014e",
-  "recruitment-overview": "4fe4d1ff-293f-4ac3-acce-e8887b9f014e",
-};
+const SUPERSET_BASE_URL = import.meta.env.VITE_SUPERSET_URL || "http://48.216.218.52:8088";
+const EMBED_DASHBOARD_UUID =
+  import.meta.env.VITE_SUPERSET_EMBED_ID || "4fe4d1ff-293f-4ac3-acce-e8887b9f014e";
+const DASHBOARD_RESOURCE_ID =
+  import.meta.env.VITE_SUPERSET_DASHBOARD_ID || EMBED_DASHBOARD_UUID;
+const STATIC_GUEST_TOKEN = import.meta.env.VITE_SUPERSET_GUEST_TOKEN || "<YOUR_GUEST_TOKEN>";
 
 export default function Dashboard() {
-  const [guestToken, setGuestToken] = React.useState("");
-  const [isLoadingToken, setIsLoadingToken] = React.useState(false);
-  const [isEmbedding, setIsEmbedding] = React.useState(false);
-  const [tokenError, setTokenError] = React.useState("");
-  const embedContainerRef = React.useRef(null);
-  const isEmbeddedRef = React.useRef(false);
+  const mountRef = React.useRef(null);
+  const [embedError, setEmbedError] = React.useState("");
 
-  const selectedDashboardUuid = DASHBOARD_UUIDS[DASHBOARD_KEY];
-  const effectiveDashboardId = DASHBOARD_EMBED_ID || selectedDashboardUuid;
-  const supersetDomain = import.meta.env.VITE_SUPERSET_URL || "http://localhost:8088";
+  React.useEffect(() => {
+    let isDisposed = false;
+    const mountPoint = mountRef.current;
 
-  const dashboardUrlParams = React.useMemo(() => {
-    const urlSearchParams = new URLSearchParams(window.location.search);
-    const nativeFiltersKey = (urlSearchParams.get("native_filters_key") || DASHBOARD_NATIVE_FILTERS_KEY || "").trim();
-    const permalinkKey = (urlSearchParams.get("permalink_key") || DASHBOARD_PERMALINK_KEY || "").trim();
-
-    const params = {};
-
-    if (nativeFiltersKey) {
-      params.native_filters_key = nativeFiltersKey;
-    }
-
-    if (permalinkKey) {
-      params.permalink_key = permalinkKey;
-    }
-
-    return params;
-  }, []);
-
-  const hasDashboardUrlParams = Object.keys(dashboardUrlParams).length > 0;
-
-  const loadGuestToken = React.useCallback(async () => {
-    setIsLoadingToken(true);
-    setTokenError("");
-
-    // Use hardcoded token if available (development mode)
-    if (HAS_HARDCODED_GUEST_TOKEN) {
-      setGuestToken(HARDCODED_GUEST_TOKEN);
-      isEmbeddedRef.current = false;
-      setIsLoadingToken(false);
+    if (!mountPoint) {
       return;
     }
 
-    // Fetch token from backend API (production mode)
-    try {
-      const payload = {
-        dashboardKey: DASHBOARD_KEY,
-        resources: effectiveDashboardId ? [{ type: "dashboard", id: String(effectiveDashboardId) }] : [],
-        rls: [],
-      };
+    const getGuestToken = async () => {
+      if (import.meta.env.DEV) {
+        const response = await fetch(
+          `/internal/superset/guest-token?embedId=${encodeURIComponent(EMBED_DASHBOARD_UUID)}&resourceId=${encodeURIComponent(DASHBOARD_RESOURCE_ID)}`
+        );
+        const body = await response.json().catch(() => ({}));
 
-      const result = await fetchDashboardGuestToken(payload);
+        if (!response.ok || !body?.token) {
+          throw new Error(body?.error || "Unable to generate Superset guest token.");
+        }
 
-      if (!result.token) {
-        throw new Error("Guest token missing in response");
+        return body.token;
       }
 
-      setGuestToken(result.token);
-      isEmbeddedRef.current = false;
-    } catch (error) {
-      setTokenError(error?.response?.data?.message || error?.message || "Failed to fetch guest token");
-      setGuestToken("");
-      isEmbeddedRef.current = false;
-    } finally {
-      setIsLoadingToken(false);
-    }
-  }, [effectiveDashboardId]);
+      if (STATIC_GUEST_TOKEN && STATIC_GUEST_TOKEN !== "<YOUR_GUEST_TOKEN>") {
+        return STATIC_GUEST_TOKEN;
+      }
 
-  // Embed dashboard when token is available
-  React.useEffect(() => {
-    const mountPoint = embedContainerRef.current;
-    if (!mountPoint || !guestToken || !effectiveDashboardId || tokenError || isEmbeddedRef.current) {
-      return;
-    }
+      throw new Error("Missing VITE_SUPERSET_GUEST_TOKEN for non-dev environment.");
+    };
 
-    let cancelled = false;
-    const mountDashboard = async () => {
-      setIsEmbedding(true);
-      mountPoint.innerHTML = "";
-
-      const embedOptions = {
-        // Per SDK docs, this must match the dashboard identifier allowed for embedding.
-        id: effectiveDashboardId,
-        supersetDomain,
-        mountPoint,
-        fetchGuestToken: async () => guestToken,
-        ...(hasDashboardUrlParams ? { urlParams: dashboardUrlParams } : {}),
-        dashboardUiConfig: {
-          hideTitle: true,
-          hideChartControls: true,
-          hideTab: false,
-          filters: {
-            visible: true,
-            expanded: false,
-          },
-          ...(hasDashboardUrlParams
-            ? {
-              urlParams: {
-                ...dashboardUrlParams,
-              },
-            }
-            : {}),
-        },
-      };
-
+    const initializeEmbedding = async () => {
       try {
-        try {
-          await embedDashboard(embedOptions);
-        } catch (error) {
-          const isNotFound = String(error?.message || "").toLowerCase().includes("not found");
-          if (!isNotFound || !hasDashboardUrlParams) {
-            throw error;
-          }
+        setEmbedError("");
+        mountPoint.innerHTML = "";
 
-          // A stale permalink/native filter key can produce Not found; retry once without URL params.
-          await embedDashboard({
-            ...embedOptions,
-            urlParams: undefined,
-            dashboardUiConfig: {
-              ...embedOptions.dashboardUiConfig,
-              urlParams: undefined,
-            },
-          });
-        }
-
-        if (!cancelled) {
-          isEmbeddedRef.current = true;
-
-          // Inject CSS into the embedded Superset iframe to style the 3 columns
-          const injectColumnStyles = (retries = 0) => {
-            try {
-              const iframe = mountPoint.querySelector("iframe");
-              if (!iframe) {
-                if (retries < 15) setTimeout(() => injectColumnStyles(retries + 1), 600);
-                return;
-              }
-              const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
-              if (!iframeDoc || iframeDoc.readyState === "loading") {
-                if (retries < 15) setTimeout(() => injectColumnStyles(retries + 1), 600);
-                return;
-              }
-              const cols = iframeDoc.querySelectorAll(".dragdroppable-column");
-              if (!cols.length) {
-                if (retries < 20) setTimeout(() => injectColumnStyles(retries + 1), 700);
-                return;
-              }
-              if (iframeDoc.getElementById("arrows-column-styles")) return;
-              const style = iframeDoc.createElement("style");
-              style.id = "arrows-column-styles";
-              style.textContent = `
-                body, html {
-                  overflow: hidden !important;
-                }
-                ::-webkit-scrollbar {
-                  display: none !important;
-                  width: 0 !important;
-                  height: 0 !important;
-                }
-                * {
-                  scrollbar-width: none !important;
-                  -ms-overflow-style: none !important;
-                }
-                .dragdroppable-column {
-                  background: #ffffff !important;
-                  border-radius: 12px !important;
-                  box-shadow: 0 2px 10px rgba(11, 91, 167, 0.08) !important;
-                  border: 1px solid #e2eaf4 !important;
-                  padding: 16px 14px !important;
-                  margin: 0 8px !important;
-                }
-                .dragdroppable-column:first-child { margin-left: 0 !important; }
-                .dragdroppable-column:last-child  { margin-right: 0 !important; }
-                .dragdroppable-row .dragdroppable-column {
-                  flex: 1;
-                }
-              `;
-              iframeDoc.head.appendChild(style);
-            } catch (_) {
-              // Cross-origin access denied — silently skip
-            }
-          };
-          setTimeout(() => injectColumnStyles(), 1000);
-        }
+        await embedDashboard({
+          id: EMBED_DASHBOARD_UUID,
+          supersetDomain: import.meta.env.DEV ? window.location.origin : SUPERSET_BASE_URL,
+          mountPoint,
+          fetchGuestToken: getGuestToken,
+          dashboardUiConfig: {
+            hideTitle: true,
+            filters: { expanded: true },
+          },
+        });
       } catch (error) {
-        if (!cancelled) {
-          const embedError = error?.message || "Failed to embed dashboard";
-          if (String(embedError).toLowerCase().includes("not found")) {
-            setTokenError(
-              "Superset dashboard not found or not enabled for embedding. Verify VITE_SUPERSET_EMBED_ID matches the dashboard allowed in Superset embedding settings."
-            );
-          } else {
-            setTokenError(embedError);
-          }
-        }
-      } finally {
-        if (!cancelled) {
-          setIsEmbedding(false);
+        if (!isDisposed) {
+          setEmbedError(error?.message || "Failed to load Superset dashboard.");
+          console.error("Failed to load embedded Superset dashboard", error);
         }
       }
     };
 
-    mountDashboard();
+    initializeEmbedding();
 
     return () => {
-      cancelled = true;
+      isDisposed = true;
+      if (mountPoint) {
+        mountPoint.innerHTML = "";
+      }
     };
-  }, [effectiveDashboardId, guestToken, tokenError, hasDashboardUrlParams, dashboardUrlParams, supersetDomain]);
-
-  // Load token on mount
-  React.useEffect(() => {
-    loadGuestToken();
-  }, [loadGuestToken]);
-
-  const renderTokenStatus = () => {
-    if (isLoadingToken) {
-      return <span className={styles.loading}>Loading token...</span>;
-    }
-    if (tokenError) {
-      return <span className={styles.error}>Error: {tokenError}</span>;
-    }
-    if (!guestToken) {
-      return <span className={styles.info}>No token available</span>;
-    }
-    return <span className={styles.success}>Token loaded ✓</span>;
-  };
+  }, []);
 
   return (
     <div className={styles.fullViewWrap}>
       <DashboardStatsBar />
-      {isLoadingToken && <div className={styles.loadingOverlay}>Loading dashboard...</div>}
-      {tokenError && (
-        <div className={styles.errorBanner}>
-          <strong>Error:</strong> {tokenError}
-        </div>
-      )}
-      <div ref={embedContainerRef} className={styles.embedFull} />
+      <div className={styles.embedFull}>
+        {embedError ? (
+          <div style={{ padding: 16, color: "#b91c1c" }}>
+            {embedError}
+          </div>
+        ) : null}
+        <div ref={mountRef} style={{ width: "100%", minHeight: 800 }} />
+      </div>
     </div>
   );
 }
