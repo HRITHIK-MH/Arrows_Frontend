@@ -23,6 +23,19 @@ async function readJsonSafely(response) {
   }
 }
 
+function attachSessionCookieIfMissing(proxy, sessionCookie) {
+  if (!sessionCookie) {
+    return;
+  }
+
+  proxy.on('proxyReq', (proxyReq) => {
+    const existingCookieHeader = proxyReq.getHeader('cookie');
+    if (!existingCookieHeader) {
+      proxyReq.setHeader('cookie', `session=${sessionCookie}`);
+    }
+  });
+}
+
 function supersetGuestTokenPlugin(env) {
   const supersetBaseUrl = trimTrailingSlash(env.VITE_SUPERSET_URL || DEFAULT_SUPERSET_URL);
   const sessionCookie = env.SUPERSET_SESSION_COOKIE || '';
@@ -122,6 +135,7 @@ function supersetGuestTokenPlugin(env) {
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
+  const supersetSessionCookie = env.SUPERSET_SESSION_COOKIE || '';
 
   return {
     plugins: [react(), supersetGuestTokenPlugin(env)],
@@ -146,6 +160,7 @@ export default defineConfig(({ mode }) => {
           autoRewrite: true,
           hostRewrite: 'localhost:5173',
           protocolRewrite: 'http',
+            configure: (proxy) => attachSessionCookieIfMissing(proxy, supersetSessionCookie),
         },
         '/static': {
           target: env.VITE_SUPERSET_URL || DEFAULT_SUPERSET_URL,
@@ -153,6 +168,7 @@ export default defineConfig(({ mode }) => {
           autoRewrite: true,
           hostRewrite: 'localhost:5173',
           protocolRewrite: 'http',
+            configure: (proxy) => attachSessionCookieIfMissing(proxy, supersetSessionCookie),
         },
         '/superset': {
           target: env.VITE_SUPERSET_URL || DEFAULT_SUPERSET_URL,
@@ -160,6 +176,7 @@ export default defineConfig(({ mode }) => {
           autoRewrite: true,
           hostRewrite: 'localhost:5173',
           protocolRewrite: 'http',
+            configure: (proxy) => attachSessionCookieIfMissing(proxy, supersetSessionCookie),
         },
         '/embedded': {
           target: env.VITE_SUPERSET_URL || DEFAULT_SUPERSET_URL,
@@ -167,6 +184,7 @@ export default defineConfig(({ mode }) => {
           autoRewrite: true,
           hostRewrite: 'localhost:5173',
           protocolRewrite: 'http',
+            configure: (proxy) => attachSessionCookieIfMissing(proxy, supersetSessionCookie),
         },
         '/login': {
           target: env.VITE_SUPERSET_URL || DEFAULT_SUPERSET_URL,
@@ -174,6 +192,7 @@ export default defineConfig(({ mode }) => {
           autoRewrite: true,
           hostRewrite: 'localhost:5173',
           protocolRewrite: 'http',
+            configure: (proxy) => attachSessionCookieIfMissing(proxy, supersetSessionCookie),
         },
       },
     },

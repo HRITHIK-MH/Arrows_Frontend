@@ -159,7 +159,7 @@ function DashboardStatsBar() {
 
 const SUPERSET_BASE_URL = import.meta.env.VITE_SUPERSET_URL || "http://48.216.218.52:8088";
 const EMBED_DASHBOARD_UUID =
-  import.meta.env.VITE_SUPERSET_EMBED_ID || "4fe4d1ff-293f-4ac3-acce-e8887b9f014e";
+  import.meta.env.VITE_SUPERSET_EMBED_ID || "413959da-fb14-4b18-8b51-8465aef685bf";
 const DASHBOARD_RESOURCE_ID =
   import.meta.env.VITE_SUPERSET_DASHBOARD_ID || EMBED_DASHBOARD_UUID;
 const STATIC_GUEST_TOKEN = import.meta.env.VITE_SUPERSET_GUEST_TOKEN || "<YOUR_GUEST_TOKEN>";
