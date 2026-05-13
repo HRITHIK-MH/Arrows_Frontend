@@ -56,7 +56,7 @@ const DEFAULT_STAGE_TABS = [
   "Client Interview",
   "Offer",
 ];
-const TEAM_OPTIONS = ["Java Team", "JD 1", "Python Team"];
+const TEAM_OPTIONS = ["Pre-Screening Panel", "Java Team", "JD 1", "Python Team"];
 const DURATION_OPTIONS = ["15 minutes", "30 minutes", "45 minutes", "60 minutes"];
 const PANEL_OPTIONS = ["Panel Name 1", "Panel Name 2", "Panel Name 3"];
 const PLATFORM_OPTIONS = ["Microsoft Teams", "Google Meet", "Zoom"];
@@ -325,7 +325,6 @@ const JobDescription = () => {
 
   const isMapStage = activeStage === "Map Candidates";
   const isSourcedStage = activeStage === "Sourced";
-  const isPreScreeningStage = activeStage === "Pre-Screening";
 
   const allMapRowsSelected =
     isMapStage &&
@@ -343,9 +342,36 @@ const JobDescription = () => {
     return styles.stageNeutral;
   }, []);
 
+  const getForwardStageOptions = React.useCallback(
+    (currentStage) => {
+      const normalizedCurrentStage = normalizeStage(currentStage);
+      const currentIndex = pipelineStages.findIndex(
+        (tab) => tab.toLowerCase() === normalizedCurrentStage.toLowerCase()
+      );
+
+      if (currentIndex < 0) return pipelineStages;
+      return pipelineStages.slice(currentIndex + 1);
+    },
+    [normalizeStage, pipelineStages]
+  );
+
   const handleMoveTo = (rowId, nextStage) => {
     const normalizedNextStage = normalizeStage(nextStage);
     if (!normalizedNextStage) return;
+
+    const currentRow = candidateRows.find((row) => row.rowId === rowId);
+    if (!currentRow) return;
+
+    const currentStageIndex = pipelineStages.findIndex(
+      (tab) => tab.toLowerCase() === normalizeStage(currentRow.stage).toLowerCase()
+    );
+    const nextStageIndex = pipelineStages.findIndex(
+      (tab) => tab.toLowerCase() === normalizedNextStage.toLowerCase()
+    );
+
+    if (currentStageIndex >= 0 && nextStageIndex >= 0 && nextStageIndex <= currentStageIndex) {
+      return;
+    }
 
     if (isSourcedStage && normalizedNextStage === "Pre-Screening") {
       setPreScreeningModal(getPreScreeningInitialState(rowId));
@@ -688,19 +714,24 @@ const JobDescription = () => {
                           <FiEye size={16} />
                         </button>
                       ) : (
+                        (() => {
+                          const forwardOptions = getForwardStageOptions(row.stage);
+                          return (
                         <select
                           className={`${styles.moveSelect}${isSourcedStage ? ` ${styles.moveSelectWide}` : ""}`}
                           value=""
                           onChange={(event) => handleMoveTo(row.rowId, event.target.value)}
-                          disabled={isPreScreeningStage}
+                          disabled={forwardOptions.length === 0}
                         >
-                          <option value="">Move to</option>
-                          {pipelineStages.map((tab) => (
+                          <option value="">{forwardOptions.length === 0 ? "No next stage" : "Move to"}</option>
+                          {forwardOptions.map((tab) => (
                             <option key={tab} value={tab}>
                               {tab}
                             </option>
                           ))}
                         </select>
+                          );
+                        })()
                       )}
                     </td>
                   </tr>
