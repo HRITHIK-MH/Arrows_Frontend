@@ -183,8 +183,8 @@ const HAS_HARDCODED_GUEST_TOKEN =
  * Update these UUIDs to match your actual Superset dashboards
  */
 const DASHBOARD_UUIDS = {
-  default: "9460305a-a764-4b91-b0b0-f4728a633e76",
-  "recruitment-overview": "9460305a-a764-4b91-b0b0-f4728a633e76",
+  default: "4fe4d1ff-293f-4ac3-acce-e8887b9f014e",
+  "recruitment-overview": "4fe4d1ff-293f-4ac3-acce-e8887b9f014e",
 };
 
 export default function Dashboard() {
