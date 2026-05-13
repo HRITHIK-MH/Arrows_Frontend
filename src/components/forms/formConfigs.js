@@ -311,7 +311,7 @@ export const jobOpeningConfig = {
           label: "Location *",
           type: "multiselect",
           required: true,
-          cssClass: "grid-col-3 grid-row-2",
+          cssClass: "grid-col-3 grid-row-4",
           placeholder: "Select locations",
           options: [
             { value: "chennai", label: "Chennai" },
@@ -383,7 +383,7 @@ export const jobOpeningConfig = {
           label: "Work Type *",
           type: "select",
           required: true,
-          cssClass: "grid-col-3 grid-row-4",
+          cssClass: "grid-col-3 grid-row-2",
           placeholder: "Select",
           options: [
             { value: "remote", label: "Remote" },
@@ -404,7 +404,7 @@ export const jobOpeningConfig = {
           label: "JD Attachment",
           type: "file",
           required: false,
-          accept: ".pdf,.doc,.docx,.txt",
+          accept: ".pdf,.docx,.txt",
           placeholder: "Attachment",
           showBrowseButton: true,
           cssClass: "grid-col-1 grid-row-1"

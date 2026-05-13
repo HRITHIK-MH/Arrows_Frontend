@@ -165,6 +165,20 @@ const MultiStepForm = ({
     });
   }, [onFieldChange]);
 
+  const handleBulkChange = useCallback((updates) => {
+    if (!updates || typeof updates !== 'object') {
+      return;
+    }
+
+    setFormData(prev => {
+      const nextFormData = { ...prev, ...updates };
+      Object.entries(updates).forEach(([field, value]) => {
+        void onFieldChange?.(field, value, nextFormData);
+      });
+      return nextFormData;
+    });
+  }, [onFieldChange]);
+
   const handleSetStepFields = useCallback((fields) => {
     setStepFields(prev => ({
       ...prev,
@@ -262,6 +276,7 @@ const MultiStepForm = ({
           <CurrentStepComponent
             formData={formData}
             onChange={handleChange}
+            onBulkChange={handleBulkChange}
             onSetStepFields={handleSetStepFields}
             {...(steps[currentStep].componentProps || {})}
           />

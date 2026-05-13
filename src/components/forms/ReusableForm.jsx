@@ -108,6 +108,8 @@ const uniqueValues = (items) => [...new Set(items.filter(Boolean))];
 
 const mergeUnique = (existing, incoming) => uniqueValues([...toArray(existing), ...toArray(incoming)]);
 
+const SUPPORTED_JD_TEXT_EXTENSIONS = new Set(['pdf', 'docx', 'txt']);
+
 const findMatchingOptionValue = (text, options = []) => {
   const normalized = normalizeToken(text);
   if (!normalized) return '';
@@ -137,39 +139,86 @@ const collectMatchingOptionValues = (text, options = []) => {
 };
 
 const readDocxText = async (file) => {
-  console.log('[JD EXTRACTION] Starting Mammoth import...');
   const mammoth = await import('mammoth/mammoth.browser');
-  console.log('[JD EXTRACTION] Mammoth loaded, converting to ArrayBuffer...');
   const arrayBuffer = await file.arrayBuffer();
-  console.log('[JD EXTRACTION] ArrayBuffer ready, extracting text...');
   const result = await mammoth.extractRawText({ arrayBuffer });
-  console.log('[JD EXTRACTION] Mammoth extraction complete, text length:', result?.value?.length || 0);
   return normalizeText(result?.value || '');
 };
 
+const readPdfText = async (file) => {
+  const pdfjs = await import('pdfjs-dist');
+  const workerSrc = new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url).toString();
+
+  if (pdfjs.GlobalWorkerOptions.workerSrc !== workerSrc) {
+    pdfjs.GlobalWorkerOptions.workerSrc = workerSrc;
+  }
+
+  const arrayBuffer = await file.arrayBuffer();
+  const loadingTask = pdfjs.getDocument({ data: arrayBuffer });
+  const pdfDocument = await loadingTask.promise;
+  const pageTexts = [];
+
+  for (let pageNumber = 1; pageNumber <= pdfDocument.numPages; pageNumber += 1) {
+    const page = await pdfDocument.getPage(pageNumber);
+    const textContent = await page.getTextContent();
+    const pageText = textContent.items
+      .map((item) => ('str' in item ? item.str : ''))
+      .join(' ');
+    pageTexts.push(pageText);
+  }
+
+  const extractedText = normalizeText(pageTexts.join('\n'));
+  return extractedText;
+};
+
+const getUploadedFileExtension = (file) => String(file?.name || '').split('.').pop()?.toLowerCase() || '';
+
+const getUnsupportedFileMessage = (extension) => {
+  if (extension === 'doc') {
+    return 'Legacy .doc files are not supported for auto-fill. Use PDF, DOCX, or TXT.';
+  }
+
+  if (extension && !SUPPORTED_JD_TEXT_EXTENSIONS.has(extension)) {
+    return `.${extension} files are not supported for JD auto-fill. Use PDF, DOCX, or TXT.`;
+  }
+
+  return 'JD uploaded, but readable text was not detected. Use a PDF, DOCX, or TXT file with selectable text.';
+};
+
 const readUploadedFileText = async (file) => {
-  const extension = String(file?.name || '').split('.').pop()?.toLowerCase();
-  console.log('[JD EXTRACTION] Reading file extension:', extension);
+  const extension = getUploadedFileExtension(file);
+
+  if (extension === 'pdf') {
+    return readPdfText(file);
+  }
 
   if (extension === 'docx') {
-    console.log('[JD EXTRACTION] Using Mammoth for DOCX');
     return readDocxText(file);
   }
 
-  if (extension === 'txt' || extension === 'doc') {
-    console.log('[JD EXTRACTION] Using native File.text() for', extension);
+  if (extension === 'txt') {
     return normalizeText(await file.text());
   }
 
-  console.log('[JD EXTRACTION] Unsupported extension:', extension);
   return '';
 };
 
 // Reusable step component
-const FormStep = ({ formData, onChange, fields, allFields = fields, title, onSetStepFields, validationErrors = {}, disabled = false }) => {
+const FormStep = ({
+  formData,
+  onChange,
+  onBulkChange,
+  fields,
+  allFields = fields,
+  title,
+  onSetStepFields,
+  validationErrors = {},
+  disabled = false
+}) => {
   const isJobBasicInfo = title === "Job Basic Information" || title === "Job Information";
   const fieldMetaSignatureRef = React.useRef('');
   const jdParsedFileRef = React.useRef('');
+  const jdProcessingRef = React.useRef(false);
   const onChangeRef = React.useRef(onChange);
   const [jdTemplateMode, setJdTemplateMode] = React.useState(
     formData.jdAttachmentMode === 'yes' ? 'yes' : 'no'
@@ -232,6 +281,13 @@ const FormStep = ({ formData, onChange, fields, allFields = fields, title, onSet
     const uploadedFile = formData.jdAttachment;
     if (!uploadedFile || typeof uploadedFile !== 'object') {
       setJdExtractionStatus({ state: 'idle', message: '' });
+      jdProcessingRef.current = false;
+      jdParsedFileRef.current = '';
+      return;
+    }
+
+    // Don't re-trigger extraction if we're already processing this file
+    if (jdProcessingRef.current) {
       return;
     }
 
@@ -244,24 +300,23 @@ const FormStep = ({ formData, onChange, fields, allFields = fields, title, onSet
 
     const fileKey = `${uploadedFile.name || ''}-${uploadedFile.size || 0}-${uploadedFile.lastModified || 0}`;
     if (jdParsedFileRef.current === fileKey) {
-      console.log('[JD EXTRACTION] File already parsed, skipping:', fileKey);
       return;
     }
 
-    console.log('[JD EXTRACTION] Starting extraction for file:', uploadedFile.name);
+    const extension = getUploadedFileExtension(uploadedFile);
     
-    // Use AbortController to handle cancellation properly
-    const controller = new AbortController();
+    // Mark file as being processed immediately
+    jdParsedFileRef.current = fileKey;
+    jdProcessingRef.current = true;
 
     const parseAndPopulate = async () => {
       try {
-        if (controller.signal.aborted) {
-          console.log('[JD EXTRACTION] Already cancelled before reading file');
+        setJdExtractionStatus({ state: 'loading', message: 'Reading JD and extracting fields...' });
+
+        if (!SUPPORTED_JD_TEXT_EXTENSIONS.has(extension)) {
+          setJdExtractionStatus({ state: 'warning', message: getUnsupportedFileMessage(extension) });
           return;
         }
-
-        console.log('[JD EXTRACTION] Phase 1: Reading file...');
-        setJdExtractionStatus({ state: 'loading', message: 'Reading JD and extracting fields...' });
 
         const extractedText = await readUploadedFileText(uploadedFile);
         const rawDocumentText = String(extractedText || '');
@@ -276,12 +331,7 @@ const FormStep = ({ formData, onChange, fields, allFields = fields, title, onSet
           .filter(Boolean);
 
         if (!documentText) {
-          const extension = String(uploadedFile.name || '').split('.').pop()?.toLowerCase();
-          const detail = extension === 'pdf'
-            ? 'PDF text extraction is limited in current setup.'
-            : 'Try a DOCX or TXT file with selectable text.';
-          setJdExtractionStatus({ state: 'warning', message: `JD uploaded, but readable text was not detected. ${detail}` });
-          jdParsedFileRef.current = fileKey;
+          setJdExtractionStatus({ state: 'warning', message: getUnsupportedFileMessage(extension) });
           return;
         }
 
@@ -528,79 +578,49 @@ const FormStep = ({ formData, onChange, fields, allFields = fields, title, onSet
           updates.additionalSkills = extractedAdditionalSkills;
         }
 
-        if (controller.signal.aborted) return;
-
-        console.log('[JD EXTRACTION] Phase 2: Populating fields. Found', Object.keys(updates).length, 'fields to update');
-        console.log('[JD EXTRACTION] Updates:', updates);
-
-        // Batch all onChange calls to ensure they complete
-        const updateKeys = Object.entries(updates);
-        for (const [key, value] of updateKeys) {
-          if (controller.signal.aborted) {
-            console.log('[JD EXTRACTION] Cancelled during onChange updates at key:', key);
-            return;
-          }
-          console.log('[JD EXTRACTION] Calling onChange for:', key);
-          onChangeRef.current(key, value);
-        }
-
-        console.log('[JD EXTRACTION] All onChange calls completed');
-
-        // CRITICAL FIX: Yield to event loop to let React batch and apply all updates
-        // This prevents effect cleanup from interrupting the state updates
-        await new Promise(resolve => setTimeout(resolve, 0));
-        
-        if (controller.signal.aborted) {
-          console.log('[JD EXTRACTION] Cancelled after update batch yield');
-          return;
-        }
-
-        const extension = String(uploadedFile.name || '').split('.').pop()?.toLowerCase();
-        const unsupportedExtraction = extension === 'pdf';
         const fieldCount = Object.keys(updates).length;
         if (fieldCount > 0) {
-          const note = unsupportedExtraction ? ' PDF text extraction is limited; mapped what was detectable.' : '';
-          const message = `${fieldCount} field(s) auto-filled from uploaded JD.${note}`;
-          console.log('[JD EXTRACTION] Success:', message);
+          if (typeof onBulkChange === 'function') {
+            onBulkChange(updates);
+          } else {
+            Object.entries(updates).forEach(([key, value]) => {
+              onChangeRef.current(key, value);
+            });
+          }
+
+          const message = `${fieldCount} field(s) auto-filled from uploaded JD.`;
           setJdExtractionStatus({ state: 'success', message });
-        } else if (unsupportedExtraction) {
-          console.log('[JD EXTRACTION] Warning: PDF uploaded with no detectable text');
-          setJdExtractionStatus({ state: 'warning', message: 'PDF upload detected. Direct text extraction is limited in current setup.' });
         } else {
-          console.log('[JD EXTRACTION] Warning: No matching field values found');
           setJdExtractionStatus({ state: 'warning', message: 'JD uploaded, but no matching values were detected for form fields.' });
         }
-
-        jdParsedFileRef.current = fileKey;
-        console.log('[JD EXTRACTION] Parsing complete for:', fileKey);
       } catch (error) {
         console.error('[JD EXTRACTION] Error during parsing:', error);
-        if (controller.signal.aborted) {
-          console.log('[JD EXTRACTION] Error occurred but already cancelled, ignoring');
-          return;
-        }
-        setJdExtractionStatus({ state: 'error', message: 'Unable to parse this file. Try DOCX or TXT format.' });
+        setJdExtractionStatus({ state: 'error', message: 'Unable to parse this file. Try a PDF, DOCX, or TXT file.' });
+      } finally {
+        // Always reset processing flag when done
+        jdProcessingRef.current = false;
       }
     };
 
-    console.log('[JD EXTRACTION] Starting async parseAndPopulate...');
     parseAndPopulate().catch((err) => {
       console.error('[JD EXTRACTION] Uncaught error in parseAndPopulate:', err);
+      jdProcessingRef.current = false;
     });
-
-    return () => {
-      console.log('[JD EXTRACTION] Cleanup called for file:', uploadedFile.name);
-      controller.abort();
-    };
   }, [formData.jdAttachment, isJobBasicInfo]);
 
   const renderField = (field) => {
     const isAutoMappedClientName = isJobBasicInfo && field.name === "clientName";
+    const isRemoteWorkType = String(formData.hiringType || '').trim().toLowerCase() === 'remote';
+    const isLocationField = field.name === 'location';
+    const effectiveRequired = isLocationField ? !isRemoteWorkType : field.required;
+    const effectiveLabel = isLocationField && isRemoteWorkType
+      ? String(field.label || '').replace(/\s*\*\s*$/, '')
+      : field.label;
 
     return (
       <FormField
         key={field.name}
-        label={field.label}
+        label={effectiveLabel}
         type={field.type}
         name={field.name}
         value={
@@ -609,7 +629,7 @@ const FormStep = ({ formData, onChange, fields, allFields = fields, title, onSet
             : (field.type === 'multiselect' ? [] : '')
         }
         onChange={onChange}
-        required={field.required}
+        required={effectiveRequired}
         options={field.options}
         validate={field.validate}
         error={validationErrors[field.name]}
@@ -793,7 +813,7 @@ const FormStep = ({ formData, onChange, fields, allFields = fields, title, onSet
               {getField('positionLevel')}
             </div>
             <div className="grid-cell grid-col-3 grid-row-2">
-              {getField('location')}
+              {getField('hiringType')}
             </div>
 
             <div className="grid-cell grid-col-1 grid-row-3">
@@ -813,7 +833,7 @@ const FormStep = ({ formData, onChange, fields, allFields = fields, title, onSet
               {getField('softSkills')}
             </div>
             <div className="grid-cell grid-col-3 grid-row-4">
-              {getField('hiringType')}
+              {getField('location')}
             </div>
 
             <div className="grid-cell grid-col-1 grid-row-5">
@@ -987,13 +1007,21 @@ const ReusableForm = ({ config, onSubmit, initialData, readOnly = false }) => {
     return data?.[fieldName];
   }, []);
 
+  const isLocationRequired = useCallback((data) => {
+    const hiringTypeValue = String(resolveFieldValue(data, 'hiringType') || '').trim().toLowerCase();
+    return hiringTypeValue !== 'remote';
+  }, [resolveFieldValue]);
+
   // Validate all mandatory fields at once
   const validateAllMandatoryFields = async (data, fields) => {
     const errors = {};
 
     const validationResults = await Promise.all(
       fields.map(async (field) => {
-        if (!field.required && !field.validationRule) {
+        const shouldTreatAsRequired =
+          field.required && (field.name !== 'location' || isLocationRequired(data));
+
+        if (!shouldTreatAsRequired && !field.validationRule) {
           return null;
         }
 
@@ -1004,7 +1032,7 @@ const ReusableForm = ({ config, onSubmit, initialData, readOnly = false }) => {
           return { field, result };
         }
 
-        if (field.required) {
+        if (shouldTreatAsRequired) {
           const result = await validateMandatoryField(
             resolveFieldValue(data, field.name),
             field.name,
@@ -1032,7 +1060,24 @@ const ReusableForm = ({ config, onSubmit, initialData, readOnly = false }) => {
     const allFields = config.steps.flatMap((step) => step.fields || []);
     const field = allFields.find((item) => item.name === fieldName);
 
-    if (!field || (!field.required && !field.validationRule)) {
+    if (fieldName === 'hiringType') {
+      const required = isLocationRequired(formData);
+      if (!required) {
+        setValidationErrors((prev) => {
+          if (!prev.location) {
+            return prev;
+          }
+          const updated = { ...prev };
+          delete updated.location;
+          return updated;
+        });
+      }
+    }
+
+    const shouldTreatAsRequired =
+      field?.required && (field.name !== 'location' || isLocationRequired(formData));
+
+    if (!field || (!shouldTreatAsRequired && !field.validationRule)) {
       return;
     }
 
@@ -1043,7 +1088,7 @@ const ReusableForm = ({ config, onSubmit, initialData, readOnly = false }) => {
       if (validateFn) {
         result = await validateFn(value, fieldName, formData);
       }
-    } else if (field.required) {
+    } else if (shouldTreatAsRequired) {
       const fieldLabel = field.label ? field.label.replace('*', '').trim() : field.name;
       result = await validateMandatoryField(value, field.name, fieldLabel);
     }
@@ -1051,7 +1096,7 @@ const ReusableForm = ({ config, onSubmit, initialData, readOnly = false }) => {
     if (result) {
       handleValidation(fieldName, result);
     }
-  }, [config.steps, createValidationFunction, handleValidation]);
+  }, [config.steps, createValidationFunction, handleValidation, isLocationRequired]);
 
   const handleSubmit = async (formData) => {
     const itemLabel = String(config.itemName || 'Form').toLowerCase();
@@ -1092,7 +1137,6 @@ const ReusableForm = ({ config, onSubmit, initialData, readOnly = false }) => {
       clearSavedDraft();
 
       // Handle successful submission
-      console.log(`${config.itemName || 'Form'} submitted successfully`);
     } catch (error) {
       console.error(`Error submitting ${itemLabel}:`, error);
 
@@ -1106,7 +1150,6 @@ const ReusableForm = ({ config, onSubmit, initialData, readOnly = false }) => {
 
       // For development purposes, treat as success if it's a network error (no backend)
       if (error.code === 'ERR_NETWORK' || error.response?.status === 404) {
-        console.log('No backend server available, treating as successful submission for development');
         onSubmit?.(formData);
         clearSavedDraft();
       } else {
@@ -1118,7 +1161,6 @@ const ReusableForm = ({ config, onSubmit, initialData, readOnly = false }) => {
 
   // Validate fields on a specific step and update error state to show errors
   const validateStepFields = async (stepIndex, data) => {
-    console.log(`[ReusableForm] validateStepFields called for step ${stepIndex}`);
     const stepFields = config.steps[stepIndex]?.fields || [];
     const updatedErrors = { ...validationErrors };
     const missingFields = [];
@@ -1136,6 +1178,8 @@ const ReusableForm = ({ config, onSubmit, initialData, readOnly = false }) => {
       stepFields.map(async (field) => {
         const value = resolveFieldValue(data, field.name);
         const fieldLabel = field.label ? field.label.replace('*', '').trim() : field.name;
+        const shouldTreatAsRequired =
+          field.required && (field.name !== 'location' || isLocationRequired(data));
         let result = null;
 
         if (field.validationRule) {
@@ -1143,22 +1187,21 @@ const ReusableForm = ({ config, onSubmit, initialData, readOnly = false }) => {
           if (validateFn) {
             result = await validateFn(value, field.name, data);
           }
-        } else if (field.required) {
+        } else if (shouldTreatAsRequired) {
           result = await validateMandatoryField(value, field.name, fieldLabel);
         }
 
-        return { field, fieldLabel, value, result };
+        return { field, fieldLabel, value, result, shouldTreatAsRequired };
       })
     );
 
-    fieldResults.forEach(({ field, fieldLabel, value, result }) => {
+    fieldResults.forEach(({ field, fieldLabel, value, result, shouldTreatAsRequired }) => {
       if (!result) return;
 
       if (!result.isValid) {
         updatedErrors[field.name] = result.message;
-        console.log(`[validateStepFields] Setting error for ${field.name}: ${result.message}`);
 
-        if (field.required && isEmptyValue(value)) {
+        if (shouldTreatAsRequired && isEmptyValue(value)) {
           missingFields.push(fieldLabel);
           missingNames.push(field.name);
         } else {
@@ -1167,13 +1210,11 @@ const ReusableForm = ({ config, onSubmit, initialData, readOnly = false }) => {
         }
       } else if (updatedErrors[field.name]) {
         delete updatedErrors[field.name];
-        console.log(`[validateStepFields] Clearing error for ${field.name}`);
       }
     });
 
     // Update validation errors state all at once
     setValidationErrors(updatedErrors);
-    console.log(`[validateStepFields] Final validation errors:`, updatedErrors);
 
     return {
       isValid: missingFields.length === 0 && invalidFields.length === 0,

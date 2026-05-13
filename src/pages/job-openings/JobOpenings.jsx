@@ -428,15 +428,23 @@ export default function JobOpenings({ createMode = false }) {
       setClientOptions(getClientOptions(loadClientRows()));
     };
 
+    const handleWindowFocus = () => {
+      // File picker close also triggers window focus; avoid rerendering while form is active.
+      if (showJobOpeningForm) {
+        return;
+      }
+      refreshClientOptions();
+    };
+
     refreshClientOptions();
-    window.addEventListener("focus", refreshClientOptions);
+    window.addEventListener("focus", handleWindowFocus);
     window.addEventListener("storage", refreshClientOptions);
 
     return () => {
-      window.removeEventListener("focus", refreshClientOptions);
+      window.removeEventListener("focus", handleWindowFocus);
       window.removeEventListener("storage", refreshClientOptions);
     };
-  }, []);
+  }, [showJobOpeningForm]);
 
   const sanitizeDraftValue = React.useCallback((value) => {
     const sanitize = (input) => {
@@ -925,6 +933,18 @@ export default function JobOpenings({ createMode = false }) {
     }
   }, []);
 
+  const jobOpeningFormInitialData = React.useMemo(() => {
+    if (!editingData) {
+      return editingData;
+    }
+
+    return {
+      ...editingData,
+      extraTechnicalSkills:
+        editingData.extraTechnicalSkills ?? editingData.addTechnicalSkills ?? []
+    };
+  }, [editingData]);
+
   const handleJobOpeningSubmit = React.useCallback((data = {}) => {
     const safeData = data && typeof data === "object" ? data : {};
     let requestedJobPositionId = String(safeData.jobPositionId || safeData.openingJobId || nextJobPositionId).trim();
@@ -1214,15 +1234,7 @@ export default function JobOpenings({ createMode = false }) {
             <ReusableForm
               key={`job-opening-form-${jobOpeningFormKey}`}
               config={jobOpeningFormConfig}
-              initialData={
-                editingData
-                  ? {
-                    ...editingData,
-                    extraTechnicalSkills:
-                      editingData.extraTechnicalSkills ?? editingData.addTechnicalSkills ?? []
-                  }
-                  : editingData
-              }
+              initialData={jobOpeningFormInitialData}
               readOnly={editLocked}
               onSubmit={handleJobOpeningSubmit}
             />
