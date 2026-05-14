@@ -162,7 +162,6 @@ const EMBED_DASHBOARD_UUID =
   import.meta.env.VITE_SUPERSET_EMBED_ID || "413959da-fb14-4b18-8b51-8465aef685bf";
 const DASHBOARD_RESOURCE_ID =
   import.meta.env.VITE_SUPERSET_DASHBOARD_ID || EMBED_DASHBOARD_UUID;
-const STATIC_GUEST_TOKEN = import.meta.env.VITE_SUPERSET_GUEST_TOKEN || "<YOUR_GUEST_TOKEN>";
 
 export default function Dashboard() {
   const mountRef = React.useRef(null);
@@ -177,24 +176,16 @@ export default function Dashboard() {
     }
 
     const getGuestToken = async () => {
-      if (import.meta.env.DEV) {
-        const response = await fetch(
-          `/internal/superset/guest-token?embedId=${encodeURIComponent(EMBED_DASHBOARD_UUID)}&resourceId=${encodeURIComponent(DASHBOARD_RESOURCE_ID)}`
-        );
-        const body = await response.json().catch(() => ({}));
+      const response = await fetch(
+        `/api/superset-token?embedId=${encodeURIComponent(EMBED_DASHBOARD_UUID)}&resourceId=${encodeURIComponent(DASHBOARD_RESOURCE_ID)}`
+      );
+      const body = await response.json().catch(() => ({}));
 
-        if (!response.ok || !body?.token) {
-          throw new Error(body?.error || "Unable to generate Superset guest token.");
-        }
-
-        return body.token;
+      if (!response.ok || !body?.token) {
+        throw new Error(body?.error || "Unable to generate Superset guest token.");
       }
 
-      if (STATIC_GUEST_TOKEN && STATIC_GUEST_TOKEN !== "<YOUR_GUEST_TOKEN>") {
-        return STATIC_GUEST_TOKEN;
-      }
-
-      throw new Error("Missing VITE_SUPERSET_GUEST_TOKEN for non-dev environment.");
+      return body.token;
     };
 
     const initializeEmbedding = async () => {
