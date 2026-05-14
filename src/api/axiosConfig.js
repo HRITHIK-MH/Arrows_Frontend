@@ -13,7 +13,7 @@ const API = axios.create({
 API.interceptors.request.use(
   (config) => {
     const skipAuth = Boolean(config?.skipAuth);
-    const token = localStorage.getItem('authToken');
+    const token = localStorage.getItem('authToken') || localStorage.getItem('token');
     if (token && !skipAuth) {
       config.headers.Authorization = `Bearer ${token}`;
     }

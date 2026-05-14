@@ -1,7 +1,7 @@
 import API from './axiosConfig';
 
 const SUPERSET_PROXY_PATH = '/api/superset/guest-token';
-const SUPERSET_PROXY_PATH_WITH_API_BASE = '/superset/guest-token';
+const SUPERSET_PROXY_PATH_WITH_API_BASE = 'superset/guest-token';
 
 const getSupersetProxyEndpoint = () => {
   const baseURL = (API.defaults.baseURL || '').replace(/\/+$/, '');
@@ -14,14 +14,10 @@ const getSupersetProxyEndpoint = () => {
 };
 
 export const fetchDashboardGuestToken = async (payload) => {
-  const dashboardKey = payload?.dashboardKey || 'default';
+  const username = payload?.username;
 
   try {
-    const proxyResponse = await API.get(getSupersetProxyEndpoint(), {
-      params: {
-        dashboard: dashboardKey,
-      },
-    });
+    const proxyResponse = await API.post(getSupersetProxyEndpoint(), username ? { username } : {});
     const data = proxyResponse?.data;
 
     if (!data) {
