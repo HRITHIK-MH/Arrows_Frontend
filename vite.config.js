@@ -1,5 +1,6 @@
 import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react-swc'
+import process from 'node:process'
 
 const DEFAULT_SUPERSET_URL = 'http://172.174.201.208:8088';
 
@@ -42,10 +43,99 @@ function supersetGuestTokenPlugin(env) {
   const defaultEmbedId = env.VITE_SUPERSET_EMBED_ID || '';
   const defaultResourceId = env.VITE_SUPERSET_DASHBOARD_ID || '';
 
+  function isUuidLike(value) {
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      String(value || ''),
+    );
+  }
+
+  async function resolveDashboardResourceId(dashboardId) {
+    const normalized = String(dashboardId || '').trim();
+    if (!normalized) return '';
+    if (!isUuidLike(normalized)) return normalized;
+
+    const candidateUrls = [
+      `${supersetBaseUrl}/api/v1/dashboard/${normalized}`,
+      `${supersetBaseUrl}/api/v1/dashboard/${normalized}/embedded`,
+    ];
+
+    for (const url of candidateUrls) {
+      try {
+        const response = await fetch(url, {
+          headers: {
+            Cookie: `session=${sessionCookie}`,
+          },
+        });
+        const payload = await readJsonSafely(response);
+        if (!response.ok || !payload.json) {
+          continue;
+        }
+
+        const result = payload.json.result || payload.json;
+        const resolvedId =
+          result?.id || result?.dashboard_id || result?.dashboardId || '';
+
+        if (resolvedId) {
+          return String(resolvedId);
+        }
+      } catch {
+        // Continue to next lookup strategy.
+      }
+    }
+
+    return normalized;
+  }
+
+  const embeddedUser = {
+    username: 'embed_user',
+    firstName: 'Embed',
+    lastName: 'User',
+    userId: 0,
+    isActive: true,
+    isAnonymous: false,
+    email: '',
+    loginCount: 0,
+    createdOn: new Date().toISOString(),
+    permissions: {},
+    roles: {},
+    groups: [],
+  };
+
+  function sendEmbeddedUser(res) {
+    sendJson(res, 200, { result: embeddedUser });
+  }
+
   return {
     name: 'superset-guest-token-dev-endpoint',
     apply: 'serve',
     configureServer(server) {
+      server.middlewares.use('/static/service-worker.js', async (req, res) => {
+        if (req.method !== 'GET') {
+          sendJson(res, 405, { error: 'Method not allowed. Use GET.' });
+          return;
+        }
+
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/javascript');
+        res.setHeader('Cache-Control', 'no-store');
+        res.end(
+          [
+            "self.addEventListener('install', (event) => { self.skipWaiting(); });",
+            "self.addEventListener('activate', (event) => { event.waitUntil(self.clients.claim()); });",
+            "self.addEventListener('fetch', () => {});",
+          ].join('\n'),
+        );
+      });
+
+      server.middlewares.use('/api/v1/me/roles/', async (req, res) => {
+        if (req.method !== 'GET') {
+          sendJson(res, 405, { error: 'Method not allowed. Use GET.' });
+          return;
+        }
+
+        sendEmbeddedUser(res);
+      });
+
       server.middlewares.use('/internal/superset/guest-token', async (req, res) => {
         if (req.method !== 'GET') {
           sendJson(res, 405, { error: 'Method not allowed. Use GET.' });
@@ -61,7 +151,8 @@ function supersetGuestTokenPlugin(env) {
 
         const requestUrl = new URL(req.url || '', 'http://localhost');
         const dashboardId = requestUrl.searchParams.get('embedId') || defaultEmbedId;
-        const resourceId = requestUrl.searchParams.get('resourceId') || defaultResourceId || dashboardId;
+        const requestedResourceId =
+          requestUrl.searchParams.get('resourceId') || defaultResourceId;
 
         if (!dashboardId) {
           sendJson(res, 400, {
@@ -69,6 +160,9 @@ function supersetGuestTokenPlugin(env) {
           });
           return;
         }
+
+        const resourceId =
+          requestedResourceId || (await resolveDashboardResourceId(dashboardId));
 
         if (!resourceId) {
           sendJson(res, 400, {
@@ -120,7 +214,12 @@ function supersetGuestTokenPlugin(env) {
             return;
           }
 
-          sendJson(res, 200, { token: guestBody.json.token });
+          sendJson(res, 200, {
+            token: guestBody.json.token,
+            dashboardUuid: dashboardId,
+            resourceId: String(resourceId),
+            supersetDomain: supersetBaseUrl,
+          });
         } catch (error) {
           sendJson(res, 500, {
             error: 'Unexpected error while generating Superset guest token.',
@@ -150,10 +249,6 @@ export default defineConfig(({ mode }) => {
       port: Number(env.VITE_PORT || 5173),
       strictPort: true,
       proxy: {
-        '/api': {
-          target: env.VITE_BACKEND_URL || 'http://localhost:3001',
-          changeOrigin: true,
-        },
         '/api/v1': {
           target: env.VITE_SUPERSET_URL || DEFAULT_SUPERSET_URL,
           changeOrigin: true,
@@ -193,6 +288,11 @@ export default defineConfig(({ mode }) => {
           hostRewrite: 'localhost:5173',
           protocolRewrite: 'http',
             configure: (proxy) => attachSessionCookieIfMissing(proxy, supersetSessionCookie),
+        },
+        // Keep this last so /api/v1 continues to proxy to Superset.
+        '/api': {
+          target: env.VITE_BACKEND_URL || 'http://localhost:3001',
+          changeOrigin: true,
         },
       },
     },
