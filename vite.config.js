@@ -1,7 +1,7 @@
 import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react-swc'
 
-const DEFAULT_SUPERSET_URL = 'http://48.216.218.52:8088';
+const DEFAULT_SUPERSET_URL = 'http://172.174.201.208:8088';
 
 function trimTrailingSlash(url) {
   return (url || '').replace(/\/+$/, '');

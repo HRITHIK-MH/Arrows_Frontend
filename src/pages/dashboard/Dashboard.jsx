@@ -2,6 +2,7 @@ import * as React from "react";
 import { embedDashboard } from "@superset-ui/embedded-sdk";
 import styles from "./Dashboard.module.scss";
 import { fetchDashboardGuestToken } from "../../api/guestToken";
+import { resolveEmbedSupersetDomain } from "../../utils/embedSupersetDomain";
 
 /* ─────────────── Dashboard Stats Bar ─────────────── */
 function DashboardStatsBar() {
@@ -158,9 +159,10 @@ function DashboardStatsBar() {
   );
 }
 
-const SUPERSET_BASE_URL = import.meta.env.VITE_SUPERSET_URL || "http://48.216.218.52:8088";
-const EMBED_DASHBOARD_UUID =
-  import.meta.env.VITE_SUPERSET_EMBED_ID || "413959da-fb14-4b18-8b51-8465aef685bf";
+const FALLBACK_SUPERSET_URL =
+  import.meta.env.VITE_SUPERSET_URL || "http://172.174.201.208:8088";
+const FALLBACK_EMBED_UUID =
+  import.meta.env.VITE_SUPERSET_EMBED_ID || "9b7611d5-1174-40d4-a577-9d5631d281a1";
 
 export default function Dashboard() {
   const mountRef = React.useRef(null);
@@ -174,26 +176,42 @@ export default function Dashboard() {
       return;
     }
 
-    const getGuestToken = async () => {
-      const { token } = await fetchDashboardGuestToken({ username: "embed_user" });
-
-      if (!token) {
-        throw new Error("Unable to generate Superset guest token.");
-      }
-
-      return token;
-    };
-
     const initializeEmbedding = async () => {
       try {
         setEmbedError("");
         mountPoint.innerHTML = "";
 
+        const bootstrap = await fetchDashboardGuestToken();
+        const dashboardId =
+          bootstrap.dashboardUuid || FALLBACK_EMBED_UUID;
+        const supersetDomain = resolveEmbedSupersetDomain(
+          bootstrap.supersetDomain || FALLBACK_SUPERSET_URL,
+        );
+
+        if (!dashboardId) {
+          throw new Error(
+            "Backend did not return dashboardUuid. Set SUPERSET_DASHBOARD_UUID in Arrows_back/.env.",
+          );
+        }
+
+        const getGuestToken = async () => {
+          const { token } = await fetchDashboardGuestToken();
+
+          if (!token) {
+            throw new Error("Unable to generate Superset guest token.");
+          }
+
+          return token;
+        };
+
         await embedDashboard({
-          id: EMBED_DASHBOARD_UUID,
-          supersetDomain: SUPERSET_BASE_URL,
+          id: dashboardId,
+          supersetDomain,
           mountPoint,
           fetchGuestToken: getGuestToken,
+          debug:
+            import.meta.env.DEV ||
+            import.meta.env.VITE_SUPERSET_EMBED_DEBUG === "true",
           dashboardUiConfig: {
             hideTitle: true,
             filters: { expanded: true },
