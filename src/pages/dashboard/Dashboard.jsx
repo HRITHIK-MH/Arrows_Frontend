@@ -252,7 +252,7 @@ export default function Dashboard() {
             {embedError}
           </div>
         ) : null}
-        <div ref={mountRef} style={{ width: "100%", minHeight: 800 }} />
+        <div ref={mountRef} style={{ width: "100%", height: "100vh" }} />
       </div>
     </div>
   );
