@@ -24,6 +24,10 @@ export default function Login() {
       const data = await res.json();
       localStorage.setItem("token", data.token);
       localStorage.setItem("userEmail", data.email);
+      // Store user role for dashboard UUID selection
+      if (data.role) {
+        localStorage.setItem("userRole", data.role);
+      }
       navigate("/dashboard");
     } catch (err) {
       setError(err.message || "Login failed");

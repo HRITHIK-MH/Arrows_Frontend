@@ -3,6 +3,7 @@ import { embedDashboard } from "@superset-ui/embedded-sdk";
 import styles from "./Dashboard.module.scss";
 import { fetchDashboardGuestToken } from "../../api/guestToken";
 import { resolveEmbedSupersetDomain } from "../../utils/embedSupersetDomain";
+import { DASHBOARD_UUID_MAP } from "../../utils/constants";
 
 /* ─────────────── Dashboard Stats Bar ─────────────── */
 function DashboardStatsBar() {
@@ -161,8 +162,9 @@ function DashboardStatsBar() {
 
 const FALLBACK_SUPERSET_URL =
   import.meta.env.VITE_SUPERSET_URL || "http://172.174.201.208:8088";
+
 const FALLBACK_EMBED_UUID =
-  import.meta.env.VITE_SUPERSET_EMBED_ID || "9b7611d5-1174-40d4-a577-9d5631d281a1";
+  import.meta.env.VITE_SUPERSET_EMBED_ID || DASHBOARD_UUID_MAP.default;
 
 export default function Dashboard() {
   const mountRef = React.useRef(null);
@@ -182,8 +184,14 @@ export default function Dashboard() {
         mountPoint.innerHTML = "";
 
         const bootstrap = await fetchDashboardGuestToken();
-        const dashboardId =
-          bootstrap.dashboardUuid || FALLBACK_EMBED_UUID;
+        // Determine dashboard UUID based on user role
+        let dashboardId = bootstrap.dashboardUuid;
+        if (!dashboardId) {
+          const userRole = localStorage.getItem("userRole");
+          dashboardId = userRole && DASHBOARD_UUID_MAP[userRole.toLowerCase()]
+            ? DASHBOARD_UUID_MAP[userRole.toLowerCase()]
+            : FALLBACK_EMBED_UUID;
+        }
         const supersetDomain = resolveEmbedSupersetDomain(
           bootstrap.supersetDomain || FALLBACK_SUPERSET_URL,
         );

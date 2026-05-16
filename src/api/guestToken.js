@@ -5,6 +5,16 @@ import { resolveEmbedSupersetDomain } from '../utils/embedSupersetDomain';
 const SUPERSET_TOKEN_PATH = 'superset-token';
 const INTERNAL_DEV_TOKEN_PATH = '/internal/superset/guest-token';
 
+function isLikelyJwt(token) {
+  const parts = String(token || '').split('.');
+  if (parts.length !== 3) {
+    return false;
+  }
+
+  // Superset guest tokens are JWTs with non-empty header/payload/signature.
+  return parts.every((part) => part.length > 0);
+}
+
 function normalizeGuestTokenPayload(data = {}) {
   return {
     token: data.token || data.guest_token || '',
@@ -26,6 +36,12 @@ function normalizeGuestTokenPayload(data = {}) {
 function guestTokenFromEnv() {
   const token = import.meta.env.VITE_SUPERSET_GUEST_TOKEN || '';
   if (!token) {
+    return null;
+  }
+  if (!isLikelyJwt(token)) {
+    console.warn(
+      '[superset] Ignoring VITE_SUPERSET_GUEST_TOKEN because it is not a valid JWT. Provide a real guest token, not a session cookie.',
+    );
     return null;
   }
   const hint =
