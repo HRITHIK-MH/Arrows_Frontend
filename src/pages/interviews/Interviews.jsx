@@ -867,6 +867,64 @@ export default function Interviews() {
     );
   };
 
+  const handleEditMember = (groupId, memberIndex) => {
+    const targetGroup = groups.find((group) => group.id === groupId);
+    const targetMember = targetGroup?.teamMembers?.[memberIndex];
+    if (!targetMember) return;
+
+    showPromptPopup(
+      "Edit Panelist",
+      "Update panelist name",
+      targetMember.name,
+      (nextName) => {
+        const normalizedName = String(nextName || "").trim();
+        if (!normalizedName || normalizedName === targetMember.name) return;
+
+        const interviewerMeta = INTERVIEWER_DIRECTORY[normalizedName] || null;
+
+        setGroups((prev) =>
+          prev.map((group) => {
+            if (group.id !== groupId) return group;
+
+            const duplicateMember = group.teamMembers.some(
+              (member, index) =>
+                index !== memberIndex &&
+                member.round.toLowerCase() === String(targetMember.round || "").toLowerCase() &&
+                member.name.toLowerCase() === normalizedName.toLowerCase()
+            );
+
+            if (duplicateMember) {
+              showInfoPopup(
+                "This panelist already exists for the selected round.",
+                "Duplicate Member"
+              );
+              return group;
+            }
+
+            const updatedTeamMembers = group.teamMembers.map((member, index) => {
+              if (index !== memberIndex) return member;
+
+              return {
+                ...member,
+                name: normalizedName,
+                email: interviewerMeta?.email || member.email,
+                mobile: interviewerMeta?.mobile || member.mobile,
+                designation: interviewerMeta?.designation || member.designation,
+                availability: interviewerMeta?.availability || member.availability,
+              };
+            });
+
+            return {
+              ...group,
+              teamMembers: updatedTeamMembers,
+              members: updatedTeamMembers.length,
+            };
+          })
+        );
+      }
+    );
+  };
+
   const handleCloseModal = () => {
     setShowAddMemberModal(false);
     setNewMemberRound("");
@@ -1823,27 +1881,32 @@ export default function Interviews() {
 
                     {expandedGroups.includes(group.id) && (
                       <div className={styles.roundsList}>
-                        {group.rounds.map((round) => (
-                          <div key={round} className={styles.roundItem}>
-                            <span className={styles.roundName}>{round}</span>
+                        {group.teamMembers.map((member, memberIndex) => (
+                          <div key={`${group.id}-${member.name}-${memberIndex}`} className={styles.roundItem}>
+                            <span className={styles.roundName}>{member.name}</span>
                             <div className={styles.roundActions}>
                               <button
                                 className={styles.roundActionBtn}
-                                onClick={() => handleEditRound(group.id, round)}
-                                aria-label="Edit round"
+                                onClick={() => handleEditMember(group.id, memberIndex)}
+                                aria-label="Edit panelist"
                               >
                                 <FiEdit2 size={14} />
                               </button>
                               <button
                                 className={styles.roundActionBtn}
-                                onClick={() => handleDeleteRound(group.id, round)}
-                                aria-label="Delete round"
+                                onClick={() => handleDeleteMember(group.id, memberIndex)}
+                                aria-label="Delete panelist"
                               >
                                 <FiTrash2 size={14} />
                               </button>
                             </div>
                           </div>
                         ))}
+                        {group.teamMembers.length === 0 && (
+                          <div className={styles.roundItem}>
+                            <span className={styles.roundName}>No panelists assigned</span>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
