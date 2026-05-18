@@ -14,11 +14,9 @@ import './Login.css';
 
 const LOGIN_CREDENTIALS_BY_ROLE = {
   recruiter: [
-    { email: 'admin@example.com', password: 'admin' },
     { email: 'recruiter@example.com', password: 'recruiter' }
   ],
   accountManager: [
-    { email: 'accountmanager@example.com', password: 'accountmanager' },
     { email: 'am@example.com', password: 'am123' }
   ]
 };

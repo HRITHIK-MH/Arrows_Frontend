@@ -37,3 +37,15 @@ export const CACHE_DURATION = {
   MEDIUM: 15 * 60 * 1000,    // 15 minutes
   LONG: 60 * 60 * 1000,      // 1 hour
 };
+
+// User roles and dashboard UUID mapping
+export const USER_ROLES = {
+  RECRUITER: 'recruiter',
+  ACCOUNT_MANAGER: 'account_manager',
+};
+
+export const DASHBOARD_UUID_MAP = {
+  recruiter: '9b7611d5-1174-40d4-a577-9d5631d281a1',
+  account_manager: '5c1bb2ee-d7a5-4522-9c9f-234f7b5a8eab',
+  default: '9b7611d5-1174-40d4-a577-9d5631d281a1',
+};

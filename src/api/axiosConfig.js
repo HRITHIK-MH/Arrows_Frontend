@@ -1,8 +1,24 @@
 import axios from 'axios';
 
+function resolveApiBaseUrl() {
+  const configured = String(import.meta.env.VITE_API_URL || '').trim();
+  const fallback = 'http://localhost:3001/api';
+
+  if (!configured) {
+    return fallback;
+  }
+
+  // Guard against placeholder values left in env templates.
+  if (/https?:\/\/api\.example\.com\/?$/i.test(configured)) {
+    return '/api';
+  }
+
+  return configured;
+}
+
 // Create axios instance with default config
 const API = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3001/api',
+  baseURL: resolveApiBaseUrl(),
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
