@@ -36,6 +36,21 @@ function attachSessionCookieIfMissing(proxy, sessionCookie) {
   });
 }
 
+/** Keep Host as the browser sent it (localhost vs 127.0.0.1) so iframe origin matches postMessage targetOrigin. */
+function preserveRequestHostHeader(proxy) {
+  proxy.on('proxyReq', (proxyReq, req) => {
+    const host = req.headers.host;
+    if (host) {
+      proxyReq.setHeader('Host', host);
+    }
+  });
+}
+
+function configureSupersetDevProxy(proxy, sessionCookie) {
+  attachSessionCookieIfMissing(proxy, sessionCookie);
+  preserveRequestHostHeader(proxy);
+}
+
 function supersetGuestTokenPlugin(env) {
   const supersetBaseUrl = trimTrailingSlash(env.VITE_SUPERSET_URL || DEFAULT_SUPERSET_URL);
   const sessionCookie = env.SUPERSET_SESSION_COOKIE || '';

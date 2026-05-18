@@ -142,6 +142,7 @@ export default function App() {
             <Route path="/reports" element={<Reports />} />
             <Route path="/calendar" element={<Calendar />} />
             <Route path="/users" element={<UserRoles />} />
+            <Route path="/applications" element={<ApplicationForm />} />
             <Route path="/application" element={<ApplicationForm />} />
 
             {/* TODO: add /chat route */}

@@ -164,9 +164,6 @@ If you've forgotten your password, use the "Forgot Password" option<br></br> to 
           <button type="submit" className="login-btn" disabled={loading}>
             {loading ? 'Signing In...' : 'Sign In'}
           </button>
-          <p className="login-hint">
-            Recruiter: admin@example.com / admin | Account Manager: accountmanager@example.com / accountmanager
-          </p>
         </form>
       </div>
     </div>

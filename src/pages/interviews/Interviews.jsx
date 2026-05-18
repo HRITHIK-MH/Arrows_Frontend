@@ -1506,7 +1506,7 @@ export default function Interviews() {
               className={`${styles.tab} ${activeTab === "group" ? styles.activeTab : ""}`}
               onClick={() => setActiveTab("group")}
             >
-              Interview Group
+              Interview Panel Members
             </button>
           </div>
         </div>
