@@ -14,10 +14,10 @@ import './Login.css';
 
 const LOGIN_CREDENTIALS_BY_ROLE = {
   recruiter: [
-    { email: 'recruiter@example.com', password: 'recruiter' }
+    { email: 'recruiter@method-hub.com', password: 'recruiter' }
   ],
   accountManager: [
-    { email: 'am@example.com', password: 'am123' }
+    { email: 'accmanager@method-hub.com', password: 'accmanager' }
   ]
 };
 
