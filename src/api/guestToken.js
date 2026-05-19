@@ -3,33 +3,13 @@ import { resolveEmbedSupersetDomain } from '../utils/embedSupersetDomain';
 
 /** Arrows_back: GET /api/superset-token (see Arrows_back/routes/supersetRoutes.js) */
 const SUPERSET_TOKEN_PATH = 'superset-token';
-
-
-function guestTokenFromEnv() {
-  const token = import.meta.env.VITE_SUPERSET_GUEST_TOKEN || '';
-  if (!token) {
-    return null;
-
 const INTERNAL_DEV_TOKEN_PATH = '/internal/superset/guest-token';
 
 function isLikelyJwt(token) {
   const parts = String(token || '').split('.');
   if (parts.length !== 3) {
     return false;
-
   }
-  const hint =
-    import.meta.env.VITE_SUPERSET_EMBED_ORIGIN ||
-    import.meta.env.VITE_SUPERSET_URL ||
-    '';
-  return {
-    token,
-    dashboardUuid: import.meta.env.VITE_SUPERSET_EMBED_ID || '',
-    supersetDomain: resolveEmbedSupersetDomain(String(hint).replace(/\/+$/, '')),
-    raw: { source: 'VITE_SUPERSET_GUEST_TOKEN' },
-  };
-}
-
 
   // Superset guest tokens are JWTs with non-empty header/payload/signature.
   return parts.every((part) => part.length > 0);
@@ -58,16 +38,19 @@ function guestTokenFromEnv() {
   if (!token) {
     return null;
   }
+
   if (!isLikelyJwt(token)) {
     console.warn(
       '[superset] Ignoring VITE_SUPERSET_GUEST_TOKEN because it is not a valid JWT. Provide a real guest token, not a session cookie.',
     );
     return null;
   }
+
   const hint =
     import.meta.env.VITE_SUPERSET_EMBED_ORIGIN ||
     import.meta.env.VITE_SUPERSET_URL ||
     '';
+
   return {
     token,
     dashboardUuid: import.meta.env.VITE_SUPERSET_EMBED_ID || '',
@@ -101,22 +84,6 @@ export const fetchDashboardGuestToken = async () => {
       skipAuthRedirect: true,
     });
 
-    const data = proxyResponse?.data;
-
-    if (!data) {
-      throw new Error('Guest token response was empty');
-    }
-
-    const token = data.token || data.guest_token || '';
-
-    return {
-      token,
-      dashboardUuid: data.dashboardUuid || data.dashboard_uuid || '',
-      supersetDomain: data.supersetDomain || data.superset_domain || '',
-      raw: data,
-    };
-  } catch (proxyError) {
-=======
     if (!proxyResponse?.data) {
       throw new Error('Guest token response was empty');
     }
@@ -136,7 +103,6 @@ export const fetchDashboardGuestToken = async () => {
         );
       }
     }
-
 
     const fromEnv = guestTokenFromEnv();
     if (fromEnv?.token) {
