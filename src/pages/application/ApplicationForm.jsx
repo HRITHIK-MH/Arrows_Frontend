@@ -1,5 +1,6 @@
 import React from 'react';
 import { FiChevronDown, FiFilter, FiSearch } from 'react-icons/fi';
+import API from '../../api/axiosConfig';
 import './ApplicationForm.css';
 
 const JOB_OPENING_TABLE_STORAGE_KEY = 'job-openings:table:v1';
@@ -118,6 +119,42 @@ const ApplicationForm = () => {
   const [applicationRows, setApplicationRows] = React.useState(() =>
     buildApplicationRows(loadJobOpenings())
   );
+
+  React.useEffect(() => {
+    const loadApplications = async () => {
+      try {
+        const response = await API.get('applications');
+        const rows = Array.isArray(response?.data) ? response.data : [];
+        if (!rows.length) return;
+
+        const normalized = rows.map((row, index) => ({
+          id: String(row?.id || row?.applicationId || `application-${index + 1}`),
+          candidateId: row?.candidateId || row?.candidate?.candidateId || '-',
+          candidateName:
+            row?.candidateName ||
+            row?.candidate?.candidateName ||
+            row?.candidate?.name ||
+            '-',
+          candidateEmail:
+            row?.candidateEmail ||
+            row?.candidate?.candidateEmail ||
+            row?.candidate?.email ||
+            '-',
+          appliedJobId: row?.jobId || row?.openingJobId || row?.jobPositionId || '-',
+          appliedJobTitle: row?.jobTitle || row?.postingTitle || row?.positionName || '-',
+          appliedOn: row?.appliedOn || row?.createdAt || '-',
+          stage: row?.stage || '-',
+          status: resolveCandidateStatus(row),
+        }));
+
+        setApplicationRows(normalized);
+      } catch (error) {
+        // Keep existing local fallback rows.
+      }
+    };
+
+    loadApplications();
+  }, []);
 
   React.useEffect(() => {
     const handleStorageUpdate = () => {

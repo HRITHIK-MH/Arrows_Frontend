@@ -7,8 +7,40 @@ import './notification.scss'; // import the SCSS (global)
 export default function NotificationBell() {
   const [open, setOpen] = useState(false);
   const [unread, setUnread] = useState(3);
+  const [items, setItems] = useState([]);
   const ref = useRef(null);
   const { notificationsEnabled } = useTheme();
+
+  useEffect(() => {
+    const loadNotifications = async () => {
+      try {
+        const response = await fetch('/api/notifications/status', {
+          method: 'GET',
+        });
+        if (!response.ok) {
+          throw new Error(`Notifications unavailable (${response.status})`);
+        }
+        const payload = await response.json().catch(() => []);
+        const rows = Array.isArray(payload) ? payload : (Array.isArray(payload?.data) ? payload.data : []);
+        setItems(rows);
+        const unreadCount = rows.filter((item) => {
+          const flag = String(item?.status || item?.state || '').toLowerCase();
+          return flag ? flag !== 'read' : true;
+        }).length;
+        setUnread(unreadCount);
+      } catch (error) {
+        // Keep lightweight local fallback when API is unavailable.
+        setItems([
+          { id: 'local-1', message: 'New comment on your post' },
+          { id: 'local-2', message: 'Build finished successfully' },
+        ]);
+      }
+    };
+
+    if (notificationsEnabled) {
+      loadNotifications();
+    }
+  }, [notificationsEnabled]);
 
   // Close menu on outside click / Escape
   useEffect(() => {
@@ -51,14 +83,18 @@ export default function NotificationBell() {
       {/* Optional dropdown */}
       {open && (
         <ul className="notifMenu" role="menu" aria-label="Notifications">
-          <li className="notifItem" role="menuitem">
-            <span className="notifDot" aria-hidden></span>
-            New comment on your post
-          </li>
-          <li className="notifItem" role="menuitem">
-            <span className="notifDot" aria-hidden></span>
-            Build finished successfully
-          </li>
+          {items.map((item, index) => (
+            <li className="notifItem" role="menuitem" key={item?.id || index}>
+              <span className="notifDot" aria-hidden></span>
+              {item?.message || item?.title || item?.text || 'Notification'}
+            </li>
+          ))}
+          {!items.length && (
+            <li className="notifItem" role="menuitem">
+              <span className="notifDot" aria-hidden></span>
+              No notifications yet
+            </li>
+          )}
           <li className="notifFooter" role="presentation">
             <button
               className="notifClear"

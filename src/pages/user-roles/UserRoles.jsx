@@ -2,6 +2,7 @@ import * as React from "react";
 import { FiPlus, FiEdit2, FiTrash2, FiEye, FiMail, FiMapPin, FiPhone, FiX } from "react-icons/fi";
 import styles from "./UserRoles.module.scss";
 import DataTable from "../../components/forms/DataTable.jsx";
+import API from "../../api/axiosConfig";
 
 export default function UserRoles() {
   const [users, setUsers] = React.useState([
@@ -196,9 +197,61 @@ export default function UserRoles() {
     comments: ""
   });
 
-  const userRoles = ["CEO", "Manager", "Recruiter", "Interviewer", "Coordinator"];
-  const departments = ["Leadership", "Hiring", "Operations", "Finance", "IT"];
+  const [userRoles, setUserRoles] = React.useState(["CEO", "Manager", "Recruiter", "Interviewer", "Coordinator"]);
+  const [departments, setDepartments] = React.useState(["Leadership", "Hiring", "Operations", "Finance", "IT"]);
   const countryCodes = ["+91", "+1", "+44", "+61", "+65"];
+
+  React.useEffect(() => {
+    const loadUsersMetadata = async () => {
+      try {
+        const [usersResponse, teamsResponse, orgUnitsResponse] = await Promise.all([
+          API.get('users'),
+          API.get('teams'),
+          API.get('org-units'),
+        ]);
+
+        const apiUsers = Array.isArray(usersResponse?.data) ? usersResponse.data : [];
+        const apiTeams = Array.isArray(teamsResponse?.data) ? teamsResponse.data : [];
+        const apiOrgUnits = Array.isArray(orgUnitsResponse?.data) ? orgUnitsResponse.data : [];
+
+        if (apiUsers.length) {
+          const normalizedUsers = apiUsers.map((row, index) => ({
+            id: String(row?.id || row?.userId || `U${index + 1}`),
+            userId: String(row?.userId || row?.employeeCode || row?.id || `C${index + 1}`),
+            fullName: row?.fullName || row?.name || 'Unknown User',
+            email: row?.email || '-',
+            mobileNumber: row?.mobileNumber || row?.phoneE164 || '',
+            countryCode: '+91',
+            userRole: row?.userRole || row?.role || 'Recruiter',
+            manager: row?.manager || 'None',
+            department: row?.department || row?.orgUnitName || 'Operations',
+            avatar: row?.avatar || `https://i.pravatar.cc/150?img=${(index % 70) + 1}`,
+            comments: row?.comments || '',
+          }));
+          setUsers(normalizedUsers);
+
+          const roleOptions = [...new Set(normalizedUsers.map((item) => item.userRole).filter(Boolean))];
+          if (roleOptions.length) {
+            setUserRoles(roleOptions);
+          }
+        }
+
+        const deptOptions = [
+          ...new Set([
+            ...apiTeams.map((row) => row?.teamName || row?.name || '').filter(Boolean),
+            ...apiOrgUnits.map((row) => row?.orgUnitName || row?.name || '').filter(Boolean),
+          ]),
+        ];
+        if (deptOptions.length) {
+          setDepartments(deptOptions);
+        }
+      } catch (error) {
+        // Keep local seed users/options when APIs are unavailable.
+      }
+    };
+
+    loadUsersMetadata();
+  }, []);
 
   const getManagers = () => {
     return ["None", ...users.map(u => u.fullName)];

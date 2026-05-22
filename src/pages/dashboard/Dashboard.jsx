@@ -15,6 +15,21 @@ export default function Dashboard() {
   const mountRef = React.useRef(null);
   const [embedError, setEmbedError] = React.useState("");
 
+  const resolveRoleDashboardUuid = React.useCallback(() => {
+    const rawRole = String(localStorage.getItem("userRole") || "").trim().toLowerCase();
+    if (!rawRole) {
+      return "";
+    }
+
+    const normalizedRole = rawRole.replace(/[_\s-]+/g, "");
+
+    return (
+      DASHBOARD_UUID_MAP[rawRole] ||
+      DASHBOARD_UUID_MAP[normalizedRole] ||
+      ""
+    );
+  }, []);
+
   React.useEffect(() => {
     let isDisposed = false;
     const mountPoint = mountRef.current;
@@ -28,12 +43,12 @@ export default function Dashboard() {
         setEmbedError("");
         mountPoint.innerHTML = "";
 
-        const bootstrap = await fetchDashboardGuestToken();
+        const roleDashboardUuid = resolveRoleDashboardUuid();
+        const bootstrap = await fetchDashboardGuestToken(roleDashboardUuid);
 
-        const userRole = localStorage.getItem("userRole");
         const dashboardId =
+          roleDashboardUuid ||
           bootstrap.dashboardUuid ||
-          (userRole && DASHBOARD_UUID_MAP[userRole.toLowerCase()]) ||
           FALLBACK_EMBED_UUID;
 
         const supersetDomain = resolveEmbedSupersetDomain(
@@ -47,7 +62,7 @@ export default function Dashboard() {
         }
 
         const getGuestToken = async () => {
-          const { token } = await fetchDashboardGuestToken();
+          const { token } = await fetchDashboardGuestToken(dashboardId);
 
           if (!token) {
             throw new Error("Unable to generate Superset guest token.");
@@ -85,7 +100,7 @@ export default function Dashboard() {
         mountPoint.innerHTML = "";
       }
     };
-  }, []);
+  }, [resolveRoleDashboardUuid]);
 
   return (
     <div className={styles.fullViewWrap}>

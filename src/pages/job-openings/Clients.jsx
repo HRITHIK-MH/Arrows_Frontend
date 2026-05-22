@@ -3,11 +3,26 @@ import { FiChevronDown, FiFilter, FiMail, FiMapPin, FiPhone, FiSearch, FiTrash2,
 import DataTable from "../../components/forms/DataTable";
 import { clientConfig } from "../../components/forms/formConfigs";
 import ReusableForm from "../../components/forms/ReusableForm";
-import { loadClientRows, saveClientRows } from "../../utils/clientStore";
+import { createClient, deleteClient, fetchClients, normalizeClientRecord, updateClient } from "../../api/jobClientService";
 import styles from "./Clients.module.scss";
 
 const CLIENT_DRAFT_STORAGE_KEY = "clients:add-draft:v1";
 const createClientDraftId = () => `draft-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+const readClientDrafts = () => {
+  try {
+    const rawDrafts = localStorage.getItem(CLIENT_DRAFT_STORAGE_KEY);
+    if (!rawDrafts) return [];
+    const parsedDrafts = JSON.parse(rawDrafts);
+    if (!Array.isArray(parsedDrafts)) return [];
+    return parsedDrafts
+      .filter((draft) => draft && typeof draft === "object" && draft.id)
+      .sort((a, b) => new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0));
+  } catch (error) {
+    console.error("Failed to read client drafts:", error);
+    return [];
+  }
+};
 
 export default function Clients() {
   const currentUserRole = React.useMemo(() => {
@@ -29,7 +44,7 @@ export default function Clients() {
 
   const [showClientForm, setShowClientForm] = React.useState(false);
   const [showDataTable, setShowDataTable] = React.useState(true);
-  const [submittedData, setSubmittedData] = React.useState(() => loadClientRows());
+  const [submittedData, setSubmittedData] = React.useState([]);
   const [entriesPerPage, setEntriesPerPage] = React.useState(10);
   const [currentPage, setCurrentPage] = React.useState(1);
   const [editingIndex, setEditingIndex] = React.useState(null);
@@ -38,7 +53,7 @@ export default function Clients() {
   const [successMessageText, setSuccessMessageText] = React.useState("Client added successfully");
   const [isViewDrawerOpen, setIsViewDrawerOpen] = React.useState(false);
   const [selectedClient, setSelectedClient] = React.useState(null);
-  const [clientDrafts, setClientDrafts] = React.useState([]);
+  const [clientDrafts, setClientDrafts] = React.useState(() => readClientDrafts());
   const [activeDraftId, setActiveDraftId] = React.useState(null);
   const [isAddClientMenuOpen, setIsAddClientMenuOpen] = React.useState(false);
   const [clientFormKey, setClientFormKey] = React.useState(0);
@@ -78,24 +93,17 @@ export default function Clients() {
     });
   }, []);
 
-  const normalizeClientRecord = React.useCallback((data) => {
-    const contactEmail = data.contactEmail || "";
-    const contactNumber = String(data.contactNumber || "").trim();
-
-    return {
-      ...data,
-      clientId: data.clientId || "",
-      clientName: data.clientName || "",
-      contactEmail,
-      contactNumber,
-      primaryContactPerson: data.primaryContactPerson || "",
-      secondaryContactPerson: data.secondaryContactPerson || "",
-      accountManager: data.accountManager || "",
-      activeFrom: data.activeFrom || "",
-      comments: data.comments || "",
-      clientStatus: data.clientStatus || "Active",
-      clientLocation: data.clientLocation || "-",
+  React.useEffect(() => {
+    const loadClientsFromApi = async () => {
+      try {
+        const rows = await fetchClients();
+        setSubmittedData(rows.map((row, index) => normalizeClientRecord(row, index)));
+      } catch {
+        setSubmittedData([]);
+      }
     };
+
+    loadClientsFromApi();
   }, []);
 
   const mapClientToFormData = React.useCallback((row) => ({
@@ -109,10 +117,6 @@ export default function Clients() {
     activeFrom: row.activeFrom || "",
     comments: row.comments || "",
   }), []);
-
-  React.useEffect(() => {
-    saveClientRows(submittedData);
-  }, [submittedData]);
 
   React.useEffect(() => {
     if (!isViewDrawerOpen) return undefined;
@@ -144,25 +148,6 @@ export default function Clients() {
   const persistClientDrafts = React.useCallback((drafts) => {
     localStorage.setItem(CLIENT_DRAFT_STORAGE_KEY, JSON.stringify(drafts));
   }, []);
-
-  const getClientDrafts = React.useCallback(() => {
-    try {
-      const rawDrafts = localStorage.getItem(CLIENT_DRAFT_STORAGE_KEY);
-      if (!rawDrafts) return [];
-      const parsedDrafts = JSON.parse(rawDrafts);
-      if (!Array.isArray(parsedDrafts)) return [];
-      return parsedDrafts
-        .filter((draft) => draft && typeof draft === "object" && draft.id)
-        .sort((a, b) => new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0));
-    } catch (error) {
-      console.error("Failed to read client drafts:", error);
-      return [];
-    }
-  }, []);
-
-  React.useEffect(() => {
-    setClientDrafts(getClientDrafts());
-  }, [getClientDrafts]);
 
   React.useEffect(() => {
     if (!isAddClientMenuOpen) return undefined;
@@ -259,6 +244,7 @@ export default function Clients() {
 
   const totalRecords = filteredData.length;
   const totalPages = Math.max(1, Math.ceil(totalRecords / entriesPerPage));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
 
   const generateNextClientId = React.useCallback(() => {
     const maxNumericId = submittedData.reduce((maxValue, item) => {
@@ -272,25 +258,21 @@ export default function Clients() {
     return `CL${String(nextNumericId).padStart(3, "0")}`;
   }, [submittedData]);
 
-  React.useEffect(() => {
-    setCurrentPage((previousPage) => Math.min(previousPage, totalPages));
-  }, [totalPages]);
-
   const paginatedData = React.useMemo(() => {
-    const startIndex = (currentPage - 1) * entriesPerPage;
+    const startIndex = (safeCurrentPage - 1) * entriesPerPage;
     return filteredData.slice(startIndex, startIndex + entriesPerPage).map((item, offset) => ({
       ...item,
       _sourceIndex: startIndex + offset,
     }));
-  }, [currentPage, entriesPerPage, filteredData]);
+  }, [entriesPerPage, filteredData, safeCurrentPage]);
 
   const pageNumbers = React.useMemo(
     () => Array.from({ length: totalPages }, (_, index) => index + 1),
     [totalPages]
   );
 
-  const startEntry = totalRecords === 0 ? 0 : (currentPage - 1) * entriesPerPage + 1;
-  const endEntry = Math.min(currentPage * entriesPerPage, totalRecords);
+  const startEntry = totalRecords === 0 ? 0 : (safeCurrentPage - 1) * entriesPerPage + 1;
+  const endEntry = Math.min(safeCurrentPage * entriesPerPage, totalRecords);
 
   const handleEntriesPerPageChange = React.useCallback((event) => {
     setEntriesPerPage(Number(event.target.value));
@@ -347,9 +329,9 @@ export default function Clients() {
   }, [generateNextClientId]);
 
   const handleAddClientMenuToggle = React.useCallback(() => {
-    setClientDrafts(getClientDrafts());
+    setClientDrafts(readClientDrafts());
     setIsAddClientMenuOpen((prev) => !prev);
-  }, [getClientDrafts]);
+  }, []);
 
   const getClientDraftTitle = React.useCallback((formData, fallbackCount) => {
     if (formData?.clientName) return String(formData.clientName);
@@ -444,7 +426,7 @@ export default function Clients() {
       setSelectedClient(normalizeClientRecord(row));
       setIsViewDrawerOpen(true);
     },
-    [normalizeClientRecord]
+    []
   );
 
   const handleEditClient = React.useCallback(
@@ -461,23 +443,60 @@ export default function Clients() {
   const handleDeleteClient = React.useCallback((row, index) => {
     const resolvedIndex = Number.isInteger(row?._sourceIndex) ? row._sourceIndex : index;
     if (window.confirm("Are you sure you want to delete this client?")) {
+      const clientId = String(row?.clientId || "").trim();
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(clientId);
+
+      if (isUuid) {
+        deleteClient(clientId)
+          .then(() => {
+            setSubmittedData((prev) => prev.filter((item, itemIndex) => itemIndex !== resolvedIndex));
+          })
+          .catch((error) => {
+            console.error("Failed to delete client:", error);
+            alert(error?.response?.data?.message || error?.message || "Unable to delete client");
+          });
+        return;
+      }
+
       setSubmittedData((prev) => prev.filter((item, itemIndex) => itemIndex !== resolvedIndex));
     }
   }, []);
 
   const handleClientSubmit = React.useCallback(
-    (data) => {
+    async (data) => {
       const normalized = normalizeClientRecord({
         ...data,
         clientId: String(data?.clientId || "").trim() || generateNextClientId(),
       });
       const isEditMode = editingIndex !== null;
 
-      setSubmittedData((prev) =>
-        isEditMode
-          ? prev.map((item, idx) => (idx === editingIndex ? { ...item, ...normalized } : item))
-          : [...prev, normalized]
-      );
+      try {
+        let savedClient = null;
+        if (isEditMode && submittedData[editingIndex]?.clientId) {
+          const currentClientId = String(submittedData[editingIndex].clientId || "").trim();
+          const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(currentClientId);
+          if (isUuid) {
+            savedClient = await updateClient(currentClientId, normalized);
+          } else {
+            savedClient = await createClient(normalized);
+          }
+        } else {
+          savedClient = await createClient(normalized);
+        }
+
+        const responseClient = savedClient?.data?.data || savedClient?.data || normalized;
+        const nextRow = normalizeClientRecord({ ...normalized, ...responseClient });
+
+        setSubmittedData((prev) =>
+          isEditMode
+            ? prev.map((item, idx) => (idx === editingIndex ? nextRow : item))
+            : [...prev, nextRow]
+        );
+      } catch (error) {
+        const backendMessage = error?.response?.data?.message || error?.response?.data?.error || error?.message || "Unable to save client";
+        alert(backendMessage);
+        return;
+      }
 
       setShowClientForm(false);
       setShowDataTable(true);
@@ -487,7 +506,7 @@ export default function Clients() {
       setIsAddClientMenuOpen(false);
       showTransientMessage(isEditMode ? "Client updated successfully" : "Client added successfully");
     },
-    [editingIndex, generateNextClientId, normalizeClientRecord, showTransientMessage]
+    [editingIndex, generateNextClientId, showTransientMessage, submittedData]
   );
 
   const closeViewDrawer = React.useCallback(() => {
@@ -724,7 +743,7 @@ export default function Clients() {
                   className={styles.pageBtn}
                   aria-label="Previous page"
                   onClick={handlePreviousPage}
-                  disabled={currentPage === 1}
+                  disabled={safeCurrentPage === 1}
                 >
                   {"<"}
                 </button>
@@ -732,10 +751,10 @@ export default function Clients() {
                   <button
                     key={pageNumber}
                     type="button"
-                    className={`${styles.pageBtn}${currentPage === pageNumber ? ` ${styles.pageBtnActive}` : ""}`}
+                    className={`${styles.pageBtn}${safeCurrentPage === pageNumber ? ` ${styles.pageBtnActive}` : ""}`}
                     onClick={() => handlePageChange(pageNumber)}
                     aria-label={`Page ${pageNumber}`}
-                    aria-current={currentPage === pageNumber ? "page" : undefined}
+                    aria-current={safeCurrentPage === pageNumber ? "page" : undefined}
                   >
                     {pageNumber}
                   </button>
@@ -745,7 +764,7 @@ export default function Clients() {
                   className={styles.pageBtn}
                   aria-label="Next page"
                   onClick={handleNextPage}
-                  disabled={currentPage === totalPages}
+                  disabled={safeCurrentPage === totalPages}
                 >
                   {">"}
                 </button>

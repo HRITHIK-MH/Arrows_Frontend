@@ -1,5 +1,6 @@
 import * as React from "react";
 import { FiCalendar } from "react-icons/fi";
+import API from "../../api/axiosConfig";
 import styles from "./Reports.module.scss";
 
 export default function Reports() {
@@ -9,7 +10,7 @@ export default function Reports() {
   const [loading, setLoading] = React.useState(false);
 
   // Sample data
-  const [metricsData] = React.useState([
+  const [metricsData, setMetricsData] = React.useState([
     { label: "Profile", value: 1048 },
     { label: "MH Pre Screen", value: 583 },
     { label: "HackerEarth", value: 136 },
@@ -18,7 +19,7 @@ export default function Reports() {
     { label: "MH Interview", value: 156 }
   ]);
 
-  const [chartData] = React.useState([
+  const [chartData, setChartData] = React.useState([
     { name: "Vinayak Hiremath", value: 53, skills: ["Java Developer, Responsive"] },
     { name: "Vaishnavi R", value: 118, skills: ["Java Developer, TransUnion", "Python De"] },
     { name: "Vaishnavi G", value: 43, skills: ["Java Developer"] },
@@ -34,7 +35,42 @@ export default function Reports() {
     const fetchReports = async () => {
       setLoading(true);
       try {
-        // TODO: Replace with actual API call
+        const [skillsResponse, candidatesResponse, jobsResponse] = await Promise.all([
+          API.get('skills'),
+          API.get('candidates'),
+          API.get('jobs'),
+        ]);
+
+        const skills = Array.isArray(skillsResponse?.data) ? skillsResponse.data : [];
+        const candidates = Array.isArray(candidatesResponse?.data) ? candidatesResponse.data : [];
+        const jobs = Array.isArray(jobsResponse?.data) ? jobsResponse.data : [];
+
+        if (skills.length || candidates.length || jobs.length) {
+          setMetricsData([
+            { label: 'Skills', value: skills.length },
+            { label: 'Candidates', value: candidates.length },
+            { label: 'Open Jobs', value: jobs.length },
+            { label: 'Screening', value: candidates.filter((c) => String(c?.stage || '').toLowerCase().includes('screen')).length },
+            { label: 'Interviews', value: candidates.filter((c) => String(c?.stage || '').toLowerCase().includes('interview')).length },
+            { label: 'Hired', value: candidates.filter((c) => String(c?.stage || '').toLowerCase().includes('hired')).length },
+          ]);
+
+          const skillBuckets = new Map();
+          candidates.forEach((row) => {
+            const label = row?.role || row?.candidateRole || row?.candidateName || 'Unknown';
+            skillBuckets.set(label, (skillBuckets.get(label) || 0) + 1);
+          });
+
+          if (skillBuckets.size) {
+            setChartData(
+              Array.from(skillBuckets.entries()).map(([name, value]) => ({
+                name,
+                value,
+                skills: [name],
+              }))
+            );
+          }
+        }
         setLoading(false);
       } catch (error) {
         console.error("Error fetching reports:", error);

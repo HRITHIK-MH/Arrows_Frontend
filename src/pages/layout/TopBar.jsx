@@ -89,7 +89,7 @@ export default function TopBar({ isSidebarOpen, setSidebarOpen }) {
   const profileDisplay = useMemo(() => {
     if (currentUserRole === "accountmanager") {
       return {
-        name: "Surya",
+        name: "Surya Account Manager",
         role: "Account Manager",
       };
     }

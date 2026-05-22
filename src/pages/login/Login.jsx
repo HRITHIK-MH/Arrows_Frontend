@@ -12,13 +12,19 @@ import loginCircle from "../../assets/login/login_circle.png";
 import loginCircle2 from "../../assets/login/login_circle2.png";
 import './Login.css';
 
-const LOGIN_CREDENTIALS_BY_ROLE = {
-  recruiter: [
-    { email: 'recruiter@method-hub.com', password: 'recruiter' }
-  ],
-  accountManager: [
-    { email: 'accmanager@method-hub.com', password: 'accmanager' }
-  ]
+const LOCAL_LOGIN_ACCOUNTS = {
+  recruiter: {
+    email: 'recruiter@method-hub.com',
+    password: 'recruiter',
+    roleLabel: 'Recruiter',
+    storedRole: 'recruiter',
+  },
+  accountManager: {
+    email: 'accmanager@method-hub.com',
+    password: 'accmanager',
+    roleLabel: 'Account Manager',
+    storedRole: 'account_manager',
+  },
 };
 
 const Login = () => {
@@ -57,28 +63,26 @@ const Login = () => {
     setLoading(true);
     setError('');
 
-    // Simulate AJAX validation
     try {
-      const response = await new Promise((resolve, reject) => {
-        setTimeout(() => {
-          const roleCredentials = LOGIN_CREDENTIALS_BY_ROLE[role] || [];
-          const isValid = roleCredentials.some(
-            (item) => item.email.toLowerCase() === email.toLowerCase().trim() && item.password === password
-          );
+      const selectedAccount = LOCAL_LOGIN_ACCOUNTS[role];
+      const enteredEmail = email.toLowerCase().trim();
+      const enteredPassword = password;
 
-          if (isValid) {
-            resolve({ ok: true, role });
-          } else {
-            reject(new Error('Invalid credentials for selected role'));
-          }
-        }, 1000); // Simulate network delay
-      });
-
-      if (response.ok) {
-        localStorage.setItem('userRole', response.role);
-        localStorage.setItem('userEmail', email.toLowerCase().trim());
-        navigate('/dashboard');
+      if (!selectedAccount) {
+        throw new Error('Please select a valid login role.');
       }
+
+      if (
+        enteredEmail !== selectedAccount.email ||
+        enteredPassword !== selectedAccount.password
+      ) {
+        throw new Error('Invalid credentials for the selected role');
+      }
+
+      localStorage.setItem('userRole', selectedAccount.storedRole);
+      localStorage.setItem('userEmail', selectedAccount.email);
+      localStorage.setItem('authMode', 'local-login');
+      navigate('/dashboard');
     } catch (err) {
       setError(err.message);
     } finally {
@@ -113,6 +117,11 @@ If you've forgotten your password, use the "Forgot Password" option<br></br> to 
               <option value="recruiter">Recruiter</option>
               <option value="accountManager">Account Manager</option>
             </select>
+          </div>
+          <div className="form-group" style={{ marginTop: 8 }}>
+            <div className="error-message" style={{ color: '#6b7280', fontSize: 13, lineHeight: 1.5 }}>
+              Recruiter: recruiter@method-hub.com / recruiter. Account Manager: accmanager@method-hub.com / accmanager.
+            </div>
           </div>
           <div className="form-group email-group">
             <label htmlFor="email">Email Address</label>

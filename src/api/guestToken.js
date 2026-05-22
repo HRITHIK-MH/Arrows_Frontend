@@ -59,8 +59,16 @@ function guestTokenFromEnv() {
   };
 }
 
-async function fetchViaInternalDevEndpoint() {
-  const response = await fetch(INTERNAL_DEV_TOKEN_PATH, {
+async function fetchViaInternalDevEndpoint(dashboardUuid = '') {
+  const query = new URLSearchParams();
+  if (dashboardUuid) {
+    query.set('embedId', dashboardUuid);
+  }
+  const endpoint = query.toString()
+    ? `${INTERNAL_DEV_TOKEN_PATH}?${query.toString()}`
+    : INTERNAL_DEV_TOKEN_PATH;
+
+  const response = await fetch(endpoint, {
     method: 'GET',
     credentials: 'same-origin',
   });
@@ -77,9 +85,10 @@ async function fetchViaInternalDevEndpoint() {
   return normalizeGuestTokenPayload(data);
 }
 
-export const fetchDashboardGuestToken = async () => {
+export const fetchDashboardGuestToken = async (dashboardUuid = '') => {
   try {
     const proxyResponse = await API.get(SUPERSET_TOKEN_PATH, {
+      params: dashboardUuid ? { embedId: dashboardUuid } : undefined,
       skipAuth: true,
       skipAuthRedirect: true,
     });
@@ -95,7 +104,7 @@ export const fetchDashboardGuestToken = async () => {
         console.warn(
           '[superset] GET /api/superset-token failed. Falling back to Vite internal endpoint /internal/superset/guest-token for local development.',
         );
-        return await fetchViaInternalDevEndpoint();
+        return await fetchViaInternalDevEndpoint(dashboardUuid);
       } catch (internalError) {
         console.warn(
           '[superset] Internal dev token endpoint also failed:',

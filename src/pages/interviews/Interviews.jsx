@@ -15,6 +15,7 @@ import {
   FiTrash2,
   FiX,
 } from "react-icons/fi";
+import API from "../../api/axiosConfig";
 import styles from "./Interviews.module.scss";
 
 const PROFILE_TABS = [
@@ -266,10 +267,23 @@ export default function Interviews() {
     const fetchInterviews = async () => {
       setLoading(true);
       try {
-        // TODO: Replace with actual API call
-        // const response = await fetch('/api/interviews');
-        // const data = await response.json();
-        // setInterviews(data);
+        const response = await API.get('interviews');
+        const data = Array.isArray(response?.data) ? response.data : [];
+        if (data.length) {
+          const normalized = data.map((row, index) => ({
+            candidateId: row?.candidateId || row?.id || `INT-${index + 1}`,
+            candidateName: row?.candidateName || row?.candidate?.candidateName || row?.candidate?.name || '-',
+            roleJobTitle: row?.roleJobTitle || row?.jobTitle || row?.postingTitle || '-',
+            dateTime: row?.dateTime || row?.scheduledAt || row?.interviewDate || '-',
+            company: row?.company || row?.clientName || '-',
+            interviewType: row?.interviewType || row?.type || 'Technical',
+            mode: row?.mode || 'Online',
+            status: row?.status || 'Upcoming',
+            ...row,
+          }));
+          setInterviews(normalized);
+          return;
+        }
         
         // Interview list is built from candidate records + job opening interview statuses.
         const interviewTypeByStatus = {
