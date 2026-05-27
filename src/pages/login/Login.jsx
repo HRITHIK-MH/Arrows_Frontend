@@ -11,6 +11,8 @@ import arrowLogo from "../../assets/login/arrow_logo.png";
 import loginLeftImage from "../../assets/login/login-bg.jpeg";
 import './Login.css';
 
+const USE_LOGIN_API = false;
+
 const LOGIN_CREDENTIALS_BY_ROLE = {
   recruiter: [
     { email: 'recruiter@method-hub.com', password: 'recruiter' },
@@ -208,16 +210,42 @@ const Login = () => {
     setError('');
 
     try {
-      const response = await loginWithPassword({
-        email: email.toLowerCase().trim(),
-        password,
-      });
+      const normalizedEmail = email.toLowerCase().trim();
+      const roleCredentials = LOGIN_CREDENTIALS_BY_ROLE[role] || [];
 
-      persistAuthSession(response, role);
+      if (!USE_LOGIN_API) {
+        const localMatch = roleCredentials.some(
+          (item) => item.email.toLowerCase() === normalizedEmail && item.password === password,
+        );
+
+        if (!localMatch) {
+          throw new Error('Invalid email or password.');
+        }
+
+        persistAuthSession(
+          {
+            email: normalizedEmail,
+            role: STORED_ROLE_BY_LOGIN_ROLE[role],
+            token: `local-${role}-token`,
+            name: role === 'accountManager' ? 'Account Manager' : 'Recruiter',
+          },
+          role,
+        );
+      } else {
+        const response = await loginWithPassword({
+          email: normalizedEmail,
+          password,
+        });
+        persistAuthSession(response, role);
+      }
 
       navigate('/dashboard');
     } catch (err) {
-      setError(getAuthErrorMessage(err, 'Login failed'));
+      if (USE_LOGIN_API) {
+        setError(getAuthErrorMessage(err, 'Login failed'));
+      } else {
+        setError(err?.message || 'Login failed');
+      }
     } finally {
       setLoading(false);
     }
