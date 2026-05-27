@@ -1,352 +1,58 @@
-.applications-page {
-  padding: 16px;
-}
-
-.applications-summary-card {
-  background: #ffffff;
-  border: 1px solid #e5edf6;
-  border-radius: 12px;
-  padding: 12px 16px;
-  margin-bottom: 12px;
-}
-
-.applications-summary-title {
-  margin: 0;
-  font-size: 13px;
-  font-weight: 400;
-  color: #4b5563;
-  line-height: 1.5;
-}
-
-.applications-legend {
-  margin-top: 10px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.legend-item {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  color: #4c5b70;
-  padding: 2px 8px;
-  border-radius: 999px;
-}
-
-.legend-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 999px;
-  background: currentColor;
-}
-
-.applications-filter-bar {
-  border: 1px solid #bfc8d1;
-  border-radius: 12px;
-  padding: 6px;
-  background: #e6eaef;
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 12px;
-}
-
-.applications-filter-left {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-  flex: 1;
-}
-
-.filter-icon {
-  color: #8191a6;
-  font-size: 18px;
-  flex-shrink: 0;
-}
-
-.applications-search-wrap {
-  position: relative;
-  flex: 1;
-  min-width: 240px;
-}
-
-.search-icon {
-  position: absolute;
-  left: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #91a0b2;
-  font-size: 17px;
-}
-
-.applications-search {
-  width: 100%;
-  height: 28px;
-  border: 1px solid #bfc8d1;
-  border-radius: 8px;
-  padding: 0 12px 0 34px;
-  font-size: 13px;
-  color: #2c3135;
-  background: #ffffff;
-}
-
-.applications-search:focus {
-  outline: none;
-  border-color: #3f90f6;
-}
-
-.applications-filter-right {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
-.select-wrap {
-  position: relative;
-}
-
-.select-wrap select,
-.entries-select-wrap select {
-  appearance: none;
-  height: 28px;
-  border: 1px solid #bfc8d1;
-  border-radius: 8px;
-  padding: 0 34px 0 12px;
-  font-size: 13px;
-  color: #2c3135;
-  background: #ffffff;
-  min-width: 160px;
-}
-
-.select-icon {
-  position: absolute;
-  right: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #7f8ea3;
-  pointer-events: none;
-}
-
-.clear-btn {
-  height: 28px;
-  border: 1px solid #bfc8d1;
-  border-radius: 8px;
-  padding: 0 14px;
-  font-size: 12px;
-  color: #64748b;
-  background: #f8fafc;
-}
-
-.clear-btn:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-}
-
-.applications-table-wrap {
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  overflow: auto;
-  background: #ffffff;
-}
-
-.applications-table {
-  width: 100%;
-  min-width: 1200px;
-  border-collapse: separate;
-  border-spacing: 0;
-}
-
-.applications-table th {
-  background: #eef2f6;
-  color: #374151;
-  font-size: 12px;
-  font-weight: 600;
-  padding: 0 12px;
-  height: 44px;
-  text-align: left;
-  border-bottom: 1px solid #e2e8f0;
-  white-space: nowrap;
-  vertical-align: middle;
-}
-
-.applications-table td {
-  color: #2c3135;
-  font-size: 13px;
-  padding: 0 10px;
-  height: 46px;
-  border-bottom: 1px dashed #e2e8f0;
-  white-space: nowrap;
-  vertical-align: middle;
-  line-height: 1.4;
-}
-
-.applications-table tr:hover {
-  background-color: #f8fafc;
-}
-
-.stage-pill,
-.status-pill {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 999px;
-  font-size: 13px;
-  padding: 4px 12px;
-  border: 1px solid transparent;
-}
-
-.stage-pill {
-  font-size: 11px;
-}
-
-.stage-sourced {
-  color: #6d28d9;
-}
-
-.stage-pill.stage-sourced {
-  border-color: #c4b5fd;
-  background: #ede9fe;
-}
-
-.stage-screening {
-  color: #c2410c;
-}
-
-.stage-pill.stage-screening {
-  border-color: #fdba74;
-  background: #ffedd5;
-}
-
-.stage-assessment {
-  color: #047857;
-}
-
-.stage-pill.stage-assessment {
-  border-color: #86efac;
-  background: #dcfce7;
-}
-
-.stage-interview {
-  color: #475569;
-}
-
-.stage-pill.stage-interview {
-  border-color: #cbd5e1;
-  background: #e2e8f0;
-}
-
-.stage-default {
-  color: #334155;
-}
-
-.stage-pill.stage-default {
-  border-color: #cbd5e1;
-  background: #f1f5f9;
-}
-
-.status-pill.status-progress {
-  color: #0f172a;
-}
-
-.status-pill.status-completed {
-  color: #166534;
-}
-
-.status-pill.status-default {
-  color: #334155;
-}
-
-.applications-empty {
-  text-align: center;
-  color: #64748b;
-  font-size: 15px;
+.application-form-page {
   padding: 20px;
+  max-width: 100%;
 }
 
-.applications-footer {
-  margin-top: 12px;
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
-  align-items: center;
-  flex-wrap: wrap;
+.application-form-page h1 {
+  text-align: center;
+  margin-bottom: 30px;
+  font-size: clamp(1.35rem, 2.2vw, 2rem);
+  line-height: 1.25;
 }
 
-.entries-wrap {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  color: #6b7280;
-  font-size: 12px;
+.application-form-page h2 {
+  margin-top: 40px;
+  font-size: clamp(1.05rem, 1.6vw, 1.4rem);
 }
 
-.entries-select-wrap {
-  position: relative;
-}
+@media (max-width: 1024px) {
+  .application-form-page {
+    padding: 16px;
+  }
 
-.entries-select-wrap select {
-  min-width: 70px;
-  height: 28px;
-}
+  .application-form-page h1 {
+    margin-bottom: 24px;
+  }
 
-.pagination-wrap {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.pagination-btn,
-.pagination-current {
-  width: 32px;
-  height: 32px;
-  border: 1px solid #dbe3ee;
-  border-radius: 8px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: #ffffff;
-  color: #475569;
-  font-size: 12px;
-}
-
-.pagination-current {
-  background: #334155;
-  color: #ffffff;
-  border-color: #334155;
-}
-
-.pagination-btn:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-}
-
-@media (max-width: 1280px) {
-  .applications-table th,
-  .applications-table td {
-    font-size: 12px;
+  .application-form-page h2 {
+    margin-top: 32px;
   }
 }
 
-@media (max-width: 900px) {
-  .applications-page {
+@media (max-width: 768px) {
+  .application-form-page {
     padding: 12px;
   }
 
-  .applications-filter-bar {
-    flex-direction: column;
+  .application-form-page h1 {
+    margin-bottom: 18px;
   }
 
-  .applications-filter-right {
-    flex-wrap: wrap;
+  .application-form-page h2 {
+    margin-top: 24px;
+  }
+}
+
+@media (max-width: 480px) {
+  .application-form-page {
+    padding: 10px;
   }
 
-  .select-wrap,
-  .select-wrap select,
-  .clear-btn {
-    width: 100%;
+  .application-form-page h1 {
+    margin-bottom: 14px;
+  }
+
+  .application-form-page h2 {
+    margin-top: 18px;
   }
 }

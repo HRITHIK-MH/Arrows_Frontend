@@ -18,7 +18,6 @@ import {
 } from "react-icons/fi";
 import ReusableForm from "../../components/forms/ReusableForm";
 import { candidateConfig } from "../../components/forms/formConfigs";
-import API from "../../api/axiosConfig";
 import styles from "./Candidates.module.scss";
 
 
@@ -281,37 +280,6 @@ export default function Candidates() {
       status: "In Progress"
     }
   ]);
-
-  React.useEffect(() => {
-    const loadCandidates = async () => {
-      try {
-        const response = await API.get('candidates');
-        const rows = Array.isArray(response?.data) ? response.data : [];
-        if (!rows.length) return;
-
-        const normalizedRows = rows.map((row, index) => {
-          const fallbackName = row?.fullName || row?.name || `Candidate ${index + 1}`;
-          return {
-            candidateId: row?.candidateId || row?.id || `C${String(index + 1).padStart(3, '0')}`,
-            candidateName: row?.candidateName || fallbackName,
-            candidateEmail: row?.candidateEmail || row?.email || '-',
-            modifiedTime: row?.modifiedTime || row?.updatedAt || row?.createdAt || '-',
-            source: row?.source || 'Portal',
-            rating: row?.rating || '0/5',
-            stage: row?.stage || 'Sourced',
-            status: row?.status || 'In Progress',
-            ...row,
-          };
-        });
-
-        setSubmittedData(normalizedRows);
-      } catch (error) {
-        // Preserve existing sample rows as fallback.
-      }
-    };
-
-    loadCandidates();
-  }, []);
   const [editingIndex, setEditingIndex] = React.useState(null);
   const [editingData, setEditingData] = React.useState(null);
   const [successMessage, setSuccessMessage] = React.useState("");
@@ -1391,7 +1359,7 @@ export default function Candidates() {
       return (
         <div className={styles.profileGrid}>
           <div className={styles.profileItem}>
-            <span className={styles.profileLabel}>Application ID</span>
+            <span className={styles.profileLabel}>Candidate ID</span>
             <span className={styles.profileValue}>{selectedCandidate.candidateId}</span>
           </div>
           <div className={styles.profileItem}>

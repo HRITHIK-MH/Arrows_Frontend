@@ -70,9 +70,6 @@ const RECRUITER_OPTIONS = RECRUITER_DIRECTORY.map(({ id, name }) => ({
   label: `${id} - ${name}`,
 }));
 
-const ENABLE_BACKEND_JOB_POSITION_VALIDATION =
-  String(import.meta.env.VITE_ENABLE_JOB_POSITION_SERVER_VALIDATION || "").toLowerCase() === "true";
-
 // Example configurations for different forms
 // Job Application Form Configuration
 export const jobApplicationConfig = {
@@ -520,9 +517,9 @@ export const jobOpeningConfig = {
         },
         {
           name: "clientName",
-          label: "Client Name",
+          label: "Client Name *",
           type: "select",
-          required: false,
+          required: true,
           cssClass: "grid-col-1 grid-row-1",
           placeholder: "Select Client Name",
           options: [
@@ -742,10 +739,6 @@ export const jobOpeningConfig = {
             isValid: false,
             message: 'Job Position ID must be 1-20 characters (alphanumeric, hyphens, underscores only)'
           };
-        }
-
-        if (!ENABLE_BACKEND_JOB_POSITION_VALIDATION) {
-          return { isValid: true };
         }
 
         try {

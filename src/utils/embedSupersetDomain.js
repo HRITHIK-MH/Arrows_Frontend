@@ -9,77 +9,74 @@ function isLoopbackHost(hostname) {
   return LOOPBACK_HOSTS.has(hostname);
 }
 
-/** Vite dev/preview ports where /embedded is proxied to Superset (see vite.config.js). */
-const LOCAL_EMBED_PROXY_PORTS = new Set(["5173", "4173"]);
+/** Vite dev/preview/Docker ports where /embedded is proxied to Superset. */
+const LOCAL_EMBED_PROXY_PORTS = new Set(["5173", "4173", "8080"]);
 
 /**
  * Resolves the origin passed to @superset-ui/embedded-sdk as `supersetDomain`.
  * postMessage(..., targetOrigin) must equal the iframe document origin exactly.
  *
- * Precedence:
- * 1. VITE_SUPERSET_EMBED_ORIGIN — use when you know the browser load origin (e.g. http://localhost:5173 with Vite proxy).
- * 2. VITE_SUPERSET_EMBED_SAME_ORIGIN=true — force window.location.origin.
- * 3. Dev heuristic: API says loopback :8080 but the page is :5173/:4173 → same-origin proxy (iframe must hit Vite).
- * 4. Loopback: same port as page → window.origin (localhost vs 127.0.0.1).
- * 5. Loopback: different port → keep API port, match page hostname spelling.
+ * With Vite or nginx, /embedded is proxied on the same host as the React app, so the
+ * iframe MUST use window.location.origin — not a hardcoded IP from .env.
  */
 export function resolveEmbedSupersetDomain(apiDomain) {
+  if (typeof window !== "undefined") {
+    const pageOrigin = window.location.origin.replace(/\/+$/, "");
+
+    if (import.meta.env.VITE_SUPERSET_EMBED_SAME_ORIGIN === "true") {
+      return pageOrigin;
+    }
+
+    const explicit = String(import.meta.env.VITE_SUPERSET_EMBED_ORIGIN || "")
+      .trim()
+      .replace(/\/+$/, "");
+
+    // If .env points at another host than where the user opened the app, prefer the page origin.
+    if (explicit) {
+      try {
+        const configured = new URL(explicit);
+        const page = new URL(pageOrigin);
+        if (
+          configured.protocol === page.protocol &&
+          configured.hostname === page.hostname &&
+          configured.port === page.port
+        ) {
+          return explicit;
+        }
+      } catch {
+        // ignore invalid explicit URL
+      }
+    }
+
+    return pageOrigin;
+  }
+
   const explicit = String(import.meta.env.VITE_SUPERSET_EMBED_ORIGIN || "").trim();
   if (explicit) {
     return explicit.replace(/\/+$/, "");
   }
 
-  if (
-    import.meta.env.VITE_SUPERSET_EMBED_SAME_ORIGIN === "true" &&
-    typeof window !== "undefined"
-  ) {
-    return window.location.origin.replace(/\/+$/, "");
-  }
-
   const normalized = String(apiDomain || "").replace(/\/+$/, "");
-  if (typeof window === "undefined") return normalized;
+  if (!normalized) {
+    return normalized;
+  }
 
   try {
     const u = new URL(normalized);
-    const win = new URL(window.location.href);
 
     if (
       import.meta.env.DEV &&
       isLoopbackHost(u.hostname) &&
-      isLoopbackHost(win.hostname) &&
-      u.protocol === win.protocol
+      u.protocol === "http:"
     ) {
-      const apiPort = u.port || (u.protocol === "https:" ? "443" : "80");
-      const pagePort =
-        win.port || (win.protocol === "https:" ? "443" : "80");
-      if (
-        apiPort === "8080" &&
-        LOCAL_EMBED_PROXY_PORTS.has(pagePort) &&
-        apiPort !== pagePort
-      ) {
-        return win.origin.replace(/\/+$/, "");
+      const apiPort = u.port || "80";
+      if (LOCAL_EMBED_PROXY_PORTS.has(apiPort)) {
+        return normalized;
       }
     }
-
-    if (!isLoopbackHost(u.hostname)) {
-      return normalized;
-    }
-
-    if (!isLoopbackHost(win.hostname) || u.protocol !== win.protocol) {
-      return normalized;
-    }
-
-    const apiPort = u.port || (u.protocol === "https:" ? "443" : "80");
-    const pagePort =
-      win.port || (win.protocol === "https:" ? "443" : "80");
-
-    if (apiPort === pagePort) {
-      return win.origin.replace(/\/+$/, "");
-    }
-
-    const portSuffix = u.port ? `:${u.port}` : "";
-    return `${u.protocol}//${win.hostname}${portSuffix}`.replace(/\/+$/, "");
   } catch {
-    return normalized;
+    // fall through
   }
+
+  return normalized;
 }

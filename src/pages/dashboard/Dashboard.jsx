@@ -5,30 +5,15 @@ import { fetchDashboardGuestToken } from "../../api/guestToken";
 import { resolveEmbedSupersetDomain } from "../../utils/embedSupersetDomain";
 import { DASHBOARD_UUID_MAP } from "../../utils/constants";
 
-const FALLBACK_EMBED_UUID =
-  import.meta.env.VITE_SUPERSET_EMBED_ID || DASHBOARD_UUID_MAP.default;
 const FALLBACK_SUPERSET_URL =
   import.meta.env.VITE_SUPERSET_URL || "http://172.174.201.208:8088";
 
+const FALLBACK_EMBED_UUID =
+  import.meta.env.VITE_SUPERSET_EMBED_ID || DASHBOARD_UUID_MAP.default;
 
 export default function Dashboard() {
   const mountRef = React.useRef(null);
   const [embedError, setEmbedError] = React.useState("");
-
-  const resolveRoleDashboardUuid = React.useCallback(() => {
-    const rawRole = String(localStorage.getItem("userRole") || "").trim().toLowerCase();
-    if (!rawRole) {
-      return "";
-    }
-
-    const normalizedRole = rawRole.replace(/[_\s-]+/g, "");
-
-    return (
-      DASHBOARD_UUID_MAP[rawRole] ||
-      DASHBOARD_UUID_MAP[normalizedRole] ||
-      ""
-    );
-  }, []);
 
   React.useEffect(() => {
     let isDisposed = false;
@@ -43,14 +28,18 @@ export default function Dashboard() {
         setEmbedError("");
         mountPoint.innerHTML = "";
 
-        const roleDashboardUuid = resolveRoleDashboardUuid();
-        const bootstrap = await fetchDashboardGuestToken(roleDashboardUuid);
+        const rawRole = String(localStorage.getItem("userRole") || "").trim().toLowerCase();
+        const normalizedRole = rawRole.replace(/[_\s-]+/g, "");
+        const roleDashboardUuid =
+          DASHBOARD_UUID_MAP[rawRole] ||
+          DASHBOARD_UUID_MAP[normalizedRole] ||
+          "";
 
+        const bootstrap = await fetchDashboardGuestToken(roleDashboardUuid);
         const dashboardId =
           roleDashboardUuid ||
           bootstrap.dashboardUuid ||
           FALLBACK_EMBED_UUID;
-
         const supersetDomain = resolveEmbedSupersetDomain(
           bootstrap.supersetDomain || FALLBACK_SUPERSET_URL,
         );
@@ -76,6 +65,7 @@ export default function Dashboard() {
           supersetDomain,
           mountPoint,
           fetchGuestToken: getGuestToken,
+          referrerPolicy: "strict-origin-when-cross-origin",
           debug:
             import.meta.env.DEV ||
             import.meta.env.VITE_SUPERSET_EMBED_DEBUG === "true",
@@ -100,7 +90,7 @@ export default function Dashboard() {
         mountPoint.innerHTML = "";
       }
     };
-  }, [resolveRoleDashboardUuid]);
+  }, []);
 
   return (
     <div className={styles.fullViewWrap}>
@@ -110,7 +100,7 @@ export default function Dashboard() {
             {embedError}
           </div>
         ) : null}
-        <div ref={mountRef} style={{ width: "100%", height: "100%" }} />
+        <div ref={mountRef} style={{ width: "100%", height: "100vh" }} />
       </div>
     </div>
   );

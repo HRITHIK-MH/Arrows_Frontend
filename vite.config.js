@@ -37,26 +37,24 @@ function attachSessionCookieIfMissing(proxy, sessionCookie) {
   });
 }
 
-/** Keep Host as the browser sent it (localhost vs 127.0.0.1) so iframe origin matches postMessage targetOrigin. */
-function preserveRequestHostHeader(proxy) {
-  proxy.on('proxyReq', (proxyReq, req) => {
-    const host = req.headers.host;
-    if (host) {
-      proxyReq.setHeader('Host', host);
-    }
-  });
-}
-
-function configureSupersetDevProxy(proxy, sessionCookie) {
-  attachSessionCookieIfMissing(proxy, sessionCookie);
-  preserveRequestHostHeader(proxy);
-}
-
 function supersetGuestTokenPlugin(env) {
   const supersetBaseUrl = trimTrailingSlash(env.VITE_SUPERSET_URL || DEFAULT_SUPERSET_URL);
   const sessionCookie = env.SUPERSET_SESSION_COOKIE || '';
   const defaultEmbedId = env.VITE_SUPERSET_EMBED_ID || '';
   const defaultResourceId = env.VITE_SUPERSET_DASHBOARD_ID || '';
+  const resourceMapEntries = String(env.VITE_SUPERSET_RESOURCE_ID_MAP || '')
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter(Boolean)
+    .map((entry) => entry.split(':').map((part) => part.trim()))
+    .filter((parts) => parts.length === 2 && parts[0] && parts[1]);
+  const resourceIdByEmbedUuid = Object.fromEntries(
+    resourceMapEntries.map(([uuid, resourceId]) => [uuid.toLowerCase(), String(resourceId)]),
+  );
+
+  if (defaultEmbedId && defaultResourceId) {
+    resourceIdByEmbedUuid[String(defaultEmbedId).toLowerCase()] = String(defaultResourceId);
+  }
 
   function isUuidLike(value) {
     return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
@@ -64,10 +62,65 @@ function supersetGuestTokenPlugin(env) {
     );
   }
 
-  async function resolveDashboardResourceId(dashboardId) {
+  async function resolveDashboardResourceId(dashboardId, explicitResourceId = '') {
+    if (explicitResourceId) {
+      return String(explicitResourceId);
+    }
+
     const normalized = String(dashboardId || '').trim();
-    if (!normalized) return '';
+    if (!normalized) {
+      return defaultResourceId ? String(defaultResourceId) : '';
+    }
+
+    const mappedResourceId = resourceIdByEmbedUuid[normalized.toLowerCase()];
+    if (mappedResourceId) {
+      return String(mappedResourceId);
+    }
+
+    if (defaultResourceId && defaultEmbedId && normalized.toLowerCase() === String(defaultEmbedId).toLowerCase()) {
+      return String(defaultResourceId);
+    }
     if (!isUuidLike(normalized)) return normalized;
+
+    const authHeaders = { Cookie: `session=${sessionCookie}` };
+
+    // Best effort: query Superset by UUID directly.
+    try {
+      const query = encodeURIComponent(
+        JSON.stringify({
+          filters: [{ col: 'uuid', opr: 'eq', value: normalized }],
+          columns: ['id', 'uuid'],
+          page: 0,
+          page_size: 1,
+        }),
+      );
+      const byUuidRes = await fetch(`${supersetBaseUrl}/api/v1/dashboard/?q=${query}`, {
+        headers: authHeaders,
+      });
+      const byUuidBody = await readJsonSafely(byUuidRes);
+      if (byUuidRes.ok && Array.isArray(byUuidBody.json?.result) && byUuidBody.json.result[0]?.id != null) {
+        return String(byUuidBody.json.result[0].id);
+      }
+    } catch {
+      // fall through to other lookup strategies
+    }
+
+    try {
+      const listRes = await fetch(`${supersetBaseUrl}/api/v1/dashboard/`, {
+        headers: authHeaders,
+      });
+      const listBody = await readJsonSafely(listRes);
+      if (listRes.ok && Array.isArray(listBody.json?.result)) {
+        const match = listBody.json.result.find(
+          (row) => String(row?.uuid || '').toLowerCase() === normalized.toLowerCase(),
+        );
+        if (match?.id != null) {
+          return String(match.id);
+        }
+      }
+    } catch {
+      // fall through
+    }
 
     const candidateUrls = [
       `${supersetBaseUrl}/api/v1/dashboard/${normalized}`,
@@ -76,11 +129,7 @@ function supersetGuestTokenPlugin(env) {
 
     for (const url of candidateUrls) {
       try {
-        const response = await fetch(url, {
-          headers: {
-            Cookie: `session=${sessionCookie}`,
-          },
-        });
+        const response = await fetch(url, { headers: authHeaders });
         const payload = await readJsonSafely(response);
         if (!response.ok || !payload.json) {
           continue;
@@ -98,7 +147,7 @@ function supersetGuestTokenPlugin(env) {
       }
     }
 
-    return normalized;
+    return '';
   }
 
   const embeddedUser = {
@@ -166,8 +215,7 @@ function supersetGuestTokenPlugin(env) {
 
         const requestUrl = new URL(req.url || '', 'http://localhost');
         const dashboardId = requestUrl.searchParams.get('embedId') || defaultEmbedId;
-        const requestedResourceId =
-          requestUrl.searchParams.get('resourceId') || defaultResourceId;
+        const requestedResourceId = requestUrl.searchParams.get('resourceId') || '';
 
         if (!dashboardId) {
           sendJson(res, 400, {
@@ -176,8 +224,10 @@ function supersetGuestTokenPlugin(env) {
           return;
         }
 
-        const resourceId =
-          requestedResourceId || (await resolveDashboardResourceId(dashboardId));
+        const resourceId = await resolveDashboardResourceId(
+          dashboardId,
+          requestedResourceId,
+        );
 
         if (!resourceId) {
           sendJson(res, 400, {
@@ -222,9 +272,15 @@ function supersetGuestTokenPlugin(env) {
           const guestBody = await readJsonSafely(guestRes);
 
           if (!guestRes.ok || !guestBody.json?.token) {
+            const details = guestBody.json || guestBody.raw;
+            const hint =
+              details?.message === 'EmbeddedDashboard not found.'
+                ? 'Wrong embed/dashboard id. Set VITE_SUPERSET_DASHBOARD_ID to the numeric dashboard id (e.g. 10 for Recruiter Dashboard) and update VITE_SUPERSET_EMBED_ID from Superset → Embed dashboard.'
+                : undefined;
             sendJson(res, guestRes.status || 500, {
               error: 'Unable to fetch Superset guest token.',
-              details: guestBody.json || guestBody.raw,
+              hint,
+              details,
             });
             return;
           }
@@ -233,7 +289,7 @@ function supersetGuestTokenPlugin(env) {
             token: guestBody.json.token,
             dashboardUuid: dashboardId,
             resourceId: String(resourceId),
-            supersetDomain: supersetBaseUrl,
+            supersetDomain: env.VITE_SUPERSET_URL || supersetBaseUrl,
           });
         } catch (error) {
           sendJson(res, 500, {
@@ -288,13 +344,13 @@ export default defineConfig(({ mode }) => {
           protocolRewrite: 'http',
             configure: (proxy) => attachSessionCookieIfMissing(proxy, supersetSessionCookie),
         },
+        // Guest JWT only — do not send admin session cookie on /embedded
         '/embedded': {
           target: env.VITE_SUPERSET_URL || DEFAULT_SUPERSET_URL,
           changeOrigin: true,
           autoRewrite: true,
           hostRewrite: 'localhost:5173',
           protocolRewrite: 'http',
-            configure: (proxy) => attachSessionCookieIfMissing(proxy, supersetSessionCookie),
         },
         '/login': {
           target: env.VITE_SUPERSET_URL || DEFAULT_SUPERSET_URL,
@@ -306,7 +362,7 @@ export default defineConfig(({ mode }) => {
         },
         // Keep this last so /api/v1 continues to proxy to Superset.
         '/api': {
-          target: env.VITE_BACKEND_URL || 'http://localhost:8080',
+          target: env.VITE_BACKEND_URL || 'http://localhost:3001',
           changeOrigin: true,
         },
       },

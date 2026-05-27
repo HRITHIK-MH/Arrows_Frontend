@@ -1,18 +1,8 @@
 import axios from 'axios';
 
-function isLikelyJwt(token) {
-  const value = String(token || '').trim();
-  if (!value) {
-    return false;
-  }
-
-  // Azure access tokens are JWTs with 3 base64url segments.
-  return /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(value);
-}
-
 function resolveApiBaseUrl() {
   const configured = String(import.meta.env.VITE_API_URL || '').trim();
-  const fallback = '/api';
+  const fallback = 'http://localhost:3001/api';
 
   if (!configured) {
     return fallback;
@@ -39,15 +29,9 @@ const API = axios.create({
 API.interceptors.request.use(
   (config) => {
     const skipAuth = Boolean(config?.skipAuth);
-    const rawToken = localStorage.getItem('authToken') || localStorage.getItem('token');
-    if (rawToken && !skipAuth) {
-      if (isLikelyJwt(rawToken)) {
-        config.headers.Authorization = `Bearer ${rawToken}`;
-      } else {
-        // Avoid poisoning requests with stale/non-JWT values that break backend auth parsing.
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('token');
-      }
+    const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+    if (token && !skipAuth) {
+      config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },

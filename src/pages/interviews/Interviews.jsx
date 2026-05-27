@@ -15,7 +15,6 @@ import {
   FiTrash2,
   FiX,
 } from "react-icons/fi";
-import API from "../../api/axiosConfig";
 import styles from "./Interviews.module.scss";
 
 const PROFILE_TABS = [
@@ -267,23 +266,10 @@ export default function Interviews() {
     const fetchInterviews = async () => {
       setLoading(true);
       try {
-        const response = await API.get('interviews');
-        const data = Array.isArray(response?.data) ? response.data : [];
-        if (data.length) {
-          const normalized = data.map((row, index) => ({
-            candidateId: row?.candidateId || row?.id || `INT-${index + 1}`,
-            candidateName: row?.candidateName || row?.candidate?.candidateName || row?.candidate?.name || '-',
-            roleJobTitle: row?.roleJobTitle || row?.jobTitle || row?.postingTitle || '-',
-            dateTime: row?.dateTime || row?.scheduledAt || row?.interviewDate || '-',
-            company: row?.company || row?.clientName || '-',
-            interviewType: row?.interviewType || row?.type || 'Technical',
-            mode: row?.mode || 'Online',
-            status: row?.status || 'Upcoming',
-            ...row,
-          }));
-          setInterviews(normalized);
-          return;
-        }
+        // TODO: Replace with actual API call
+        // const response = await fetch('/api/interviews');
+        // const data = await response.json();
+        // setInterviews(data);
         
         // Interview list is built from candidate records + job opening interview statuses.
         const interviewTypeByStatus = {
@@ -878,64 +864,6 @@ export default function Interviews() {
           members: updatedTeamMembers.length,
         };
       })
-    );
-  };
-
-  const handleEditMember = (groupId, memberIndex) => {
-    const targetGroup = groups.find((group) => group.id === groupId);
-    const targetMember = targetGroup?.teamMembers?.[memberIndex];
-    if (!targetMember) return;
-
-    showPromptPopup(
-      "Edit Panelist",
-      "Update panelist name",
-      targetMember.name,
-      (nextName) => {
-        const normalizedName = String(nextName || "").trim();
-        if (!normalizedName || normalizedName === targetMember.name) return;
-
-        const interviewerMeta = INTERVIEWER_DIRECTORY[normalizedName] || null;
-
-        setGroups((prev) =>
-          prev.map((group) => {
-            if (group.id !== groupId) return group;
-
-            const duplicateMember = group.teamMembers.some(
-              (member, index) =>
-                index !== memberIndex &&
-                member.round.toLowerCase() === String(targetMember.round || "").toLowerCase() &&
-                member.name.toLowerCase() === normalizedName.toLowerCase()
-            );
-
-            if (duplicateMember) {
-              showInfoPopup(
-                "This panelist already exists for the selected round.",
-                "Duplicate Member"
-              );
-              return group;
-            }
-
-            const updatedTeamMembers = group.teamMembers.map((member, index) => {
-              if (index !== memberIndex) return member;
-
-              return {
-                ...member,
-                name: normalizedName,
-                email: interviewerMeta?.email || member.email,
-                mobile: interviewerMeta?.mobile || member.mobile,
-                designation: interviewerMeta?.designation || member.designation,
-                availability: interviewerMeta?.availability || member.availability,
-              };
-            });
-
-            return {
-              ...group,
-              teamMembers: updatedTeamMembers,
-              members: updatedTeamMembers.length,
-            };
-          })
-        );
-      }
     );
   };
 
@@ -1578,7 +1506,7 @@ export default function Interviews() {
               className={`${styles.tab} ${activeTab === "group" ? styles.activeTab : ""}`}
               onClick={() => setActiveTab("group")}
             >
-              Interview Panel Members
+              Interview Members Panel
             </button>
           </div>
         </div>
@@ -1895,32 +1823,27 @@ export default function Interviews() {
 
                     {expandedGroups.includes(group.id) && (
                       <div className={styles.roundsList}>
-                        {group.teamMembers.map((member, memberIndex) => (
-                          <div key={`${group.id}-${member.name}-${memberIndex}`} className={styles.roundItem}>
-                            <span className={styles.roundName}>{member.name}</span>
+                        {group.rounds.map((round) => (
+                          <div key={round} className={styles.roundItem}>
+                            <span className={styles.roundName}>{round}</span>
                             <div className={styles.roundActions}>
                               <button
                                 className={styles.roundActionBtn}
-                                onClick={() => handleEditMember(group.id, memberIndex)}
-                                aria-label="Edit panelist"
+                                onClick={() => handleEditRound(group.id, round)}
+                                aria-label="Edit round"
                               >
                                 <FiEdit2 size={14} />
                               </button>
                               <button
                                 className={styles.roundActionBtn}
-                                onClick={() => handleDeleteMember(group.id, memberIndex)}
-                                aria-label="Delete panelist"
+                                onClick={() => handleDeleteRound(group.id, round)}
+                                aria-label="Delete round"
                               >
                                 <FiTrash2 size={14} />
                               </button>
                             </div>
                           </div>
                         ))}
-                        {group.teamMembers.length === 0 && (
-                          <div className={styles.roundItem}>
-                            <span className={styles.roundName}>No panelists assigned</span>
-                          </div>
-                        )}
                       </div>
                     )}
                   </div>

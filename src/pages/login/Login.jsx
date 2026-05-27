@@ -12,19 +12,19 @@ import loginCircle from "../../assets/login/login_circle.png";
 import loginCircle2 from "../../assets/login/login_circle2.png";
 import './Login.css';
 
-const LOCAL_LOGIN_ACCOUNTS = {
-  recruiter: {
-    email: 'recruiter@method-hub.com',
-    password: 'recruiter',
-    roleLabel: 'Recruiter',
-    storedRole: 'recruiter',
-  },
-  accountManager: {
-    email: 'accmanager@method-hub.com',
-    password: 'accmanager',
-    roleLabel: 'Account Manager',
-    storedRole: 'account_manager',
-  },
+const LOGIN_CREDENTIALS_BY_ROLE = {
+  recruiter: [
+    { email: 'recruiter@method-hub.com', password: 'recruiter' },
+    { email: 'recruiter@@method-hub.com', password: 'recruiter' }
+  ],
+  accountManager: [
+    { email: 'accmanager@method-hub.com', password: 'accmanager' }
+  ]
+};
+
+const STORED_ROLE_BY_LOGIN_ROLE = {
+  recruiter: 'recruiter',
+  accountManager: 'account_manager',
 };
 
 const Login = () => {
@@ -40,12 +40,16 @@ const Login = () => {
   const validateEmail = async () => {
     if (!email) return;
     setEmailError('Validating email...');
-    // Simulate AJAX validation for email format
+    // Accept known local-login emails even if they don't match strict email regex.
     try {
       await new Promise((resolve, reject) => {
         setTimeout(() => {
+          const allAllowedEmails = Object.values(LOGIN_CREDENTIALS_BY_ROLE)
+            .flat()
+            .map((item) => item.email.toLowerCase());
+          const currentEmail = email.toLowerCase().trim();
           const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-          if (emailRegex.test(email)) {
+          if (allAllowedEmails.includes(currentEmail) || emailRegex.test(currentEmail)) {
             resolve();
           } else {
             reject(new Error('Invalid email format'));
@@ -63,26 +67,28 @@ const Login = () => {
     setLoading(true);
     setError('');
 
+    // Simulate AJAX validation
     try {
-      const selectedAccount = LOCAL_LOGIN_ACCOUNTS[role];
-      const enteredEmail = email.toLowerCase().trim();
-      const enteredPassword = password;
+      const response = await new Promise((resolve, reject) => {
+        setTimeout(() => {
+          const roleCredentials = LOGIN_CREDENTIALS_BY_ROLE[role] || [];
+          const isValid = roleCredentials.some(
+            (item) => item.email.toLowerCase() === email.toLowerCase().trim() && item.password === password
+          );
 
-      if (!selectedAccount) {
-        throw new Error('Please select a valid login role.');
+          if (isValid) {
+            resolve({ ok: true, role });
+          } else {
+            reject(new Error('Invalid credentials for selected role'));
+          }
+        }, 1000); // Simulate network delay
+      });
+
+      if (response.ok) {
+        localStorage.setItem('userRole', STORED_ROLE_BY_LOGIN_ROLE[response.role] || response.role);
+        localStorage.setItem('userEmail', email.toLowerCase().trim());
+        navigate('/dashboard');
       }
-
-      if (
-        enteredEmail !== selectedAccount.email ||
-        enteredPassword !== selectedAccount.password
-      ) {
-        throw new Error('Invalid credentials for the selected role');
-      }
-
-      localStorage.setItem('userRole', selectedAccount.storedRole);
-      localStorage.setItem('userEmail', selectedAccount.email);
-      localStorage.setItem('authMode', 'local-login');
-      navigate('/dashboard');
     } catch (err) {
       setError(err.message);
     } finally {
@@ -118,17 +124,12 @@ If you've forgotten your password, use the "Forgot Password" option<br></br> to 
               <option value="accountManager">Account Manager</option>
             </select>
           </div>
-          <div className="form-group" style={{ marginTop: 8 }}>
-            <div className="error-message" style={{ color: '#6b7280', fontSize: 13, lineHeight: 1.5 }}>
-              Recruiter: recruiter@method-hub.com / recruiter. Account Manager: accmanager@method-hub.com / accmanager.
-            </div>
-          </div>
           <div className="form-group email-group">
             <label htmlFor="email">Email Address</label>
             <div className="input-wrapper">
               <MdOutlineEmail className="input-icon" size="20" />
               <input
-                type="email"
+                type="text"
                 id="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -171,6 +172,9 @@ If you've forgotten your password, use the "Forgot Password" option<br></br> to 
           <button type="submit" className="login-btn" disabled={loading}>
             {loading ? 'Signing In...' : 'Sign In'}
           </button>
+          <p className="login-hint">
+            Recruiter: recruiter@method-hub.com / recruiter | Account Manager: accmanager@method-hub.com / accmanager
+          </p>
         </form>
       </div>
     </div>
