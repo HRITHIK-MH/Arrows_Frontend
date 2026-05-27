@@ -169,26 +169,53 @@ const extractLatestExperienceEntry = (text) => {
   );
 
   const scopedLines = experienceIndex >= 0 ? lines.slice(experienceIndex + 1) : lines;
-  const dateRangePattern = /^(?:\d{1,2}[/-]\d{4}|\d{4})\s*(?:to|–|-|—)\s*(?:present|current|now|\d{1,2}[/-]\d{4}|\d{4})$/i;
-  const singleDatePattern = /^(?:\d{1,2}[/-]\d{4}|\d{4})$/i;
+  const datePrefixPattern = /^(\d{1,2}[/-]\d{4}|\d{4})\s*(?:to|–|-|—)?\s*(present|current|now|\d{1,2}[/-]\d{4}|\d{4})?/i;
+  const scoreDateText = (dateText) => {
+    const lower = String(dateText || "").toLowerCase();
+    if (/present|current|now/.test(lower)) return Number.MAX_SAFE_INTEGER;
+    const match = lower.match(/(\d{1,2})[/-](\d{4})|(\d{4})/);
+    if (!match) return 0;
+    if (match[2]) {
+      return Number.parseInt(match[2], 10) * 12 + Number.parseInt(match[1], 10);
+    }
+    return Number.parseInt(match[3], 10) * 12;
+  };
+
+  const candidates = [];
 
   for (let index = 0; index < scopedLines.length; index += 1) {
     const line = scopedLines[index];
-    if (!dateRangePattern.test(line) && !singleDatePattern.test(line)) continue;
+    const dateMatch = line.match(datePrefixPattern);
+    if (!dateMatch) continue;
 
-    const nextLine = scopedLines[index + 1] || "";
-    if (!nextLine || /@|http|linkedin/i.test(nextLine)) continue;
+    const matchedDateText = dateMatch[0] || "";
+    const inlineRemainder = line.slice(matchedDateText.length).replace(/^[\s,:-]+/, "").trim();
+    const candidateLine = inlineRemainder || (scopedLines[index + 1] || "").trim();
+    if (!candidateLine || /@|http|linkedin/i.test(candidateLine)) continue;
 
-    const parts = nextLine
+    const parts = candidateLine
       .split(",")
       .map((part) => cleanRoleOrCompanyValue(part))
       .filter(Boolean);
-
     if (parts.length === 0) continue;
 
-    return {
+    candidates.push({
       company: parts[0] || "",
       role: parts.slice(1).join(", ") || "",
+      score: scoreDateText(matchedDateText),
+      index,
+    });
+  }
+
+  if (candidates.length > 0) {
+    candidates.sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      return a.index - b.index;
+    });
+
+    return {
+      company: candidates[0].company,
+      role: candidates[0].role,
     };
   }
 
@@ -273,6 +300,14 @@ const extractCompanyAndRole = (text) => {
   const lines = getResumeLines(text);
   if (lines.length === 0) return { company: "", role: "" };
 
+  const latestExperience = extractLatestExperienceEntry(text);
+  if (latestExperience.company) {
+    return {
+      company: cleanRoleOrCompanyValue(latestExperience.company),
+      role: cleanRoleOrCompanyValue(latestExperience.role || ""),
+    };
+  }
+
   const companyLine = lines.find((line) => /^(?:current\s+company|company|organization|employer)\s*[:\-]/i.test(line));
   const roleLine = lines.find((line) => /^(?:current\s+(?:designation|role)|designation|job\s*title|title|role)\s*[:\-]/i.test(line));
 
@@ -300,16 +335,6 @@ const extractCompanyAndRole = (text) => {
       if (!company && meaningfulLines[1]) {
         company = cleanRoleOrCompanyValue(meaningfulLines[1]);
       }
-    }
-  }
-
-  if (!company) {
-    const latestExperience = extractLatestExperienceEntry(text);
-    if (latestExperience.company) {
-      company = latestExperience.company;
-    }
-    if (!role && latestExperience.role) {
-      role = latestExperience.role;
     }
   }
 
