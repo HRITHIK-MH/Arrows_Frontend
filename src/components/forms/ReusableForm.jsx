@@ -260,7 +260,9 @@ const FIELD_ALIAS_MAP = {
   positionLevel: ['position level', 'seniority level'],
   technicalSkills: ['technical skills', 'primary skills', 'mandatory skills'],
   softSkills: ['soft skills', 'behavioral skills'],
-  additionalSkills: ['additional skills', 'other skills']
+  additionalSkills: ['additional skills', 'other skills'],
+  targetDate: ['target', 'target date', 'joining target date'],
+  jobActivationDate: ['job activation date', 'validity upto', 'validity up to', 'validity date']
 };
 
 const buildFieldAliases = (field) => {
@@ -313,7 +315,7 @@ const readDocxText = async (file) => {
   const mammoth = await import('mammoth/mammoth.browser');
   const arrayBuffer = await file.arrayBuffer();
   const result = await mammoth.extractRawText({ arrayBuffer });
-  return normalizeText(result?.value || '');
+  return String(result?.value || '').replace(/\u00A0/g, ' ');
 };
 
 const readPdfText = async (file) => {
@@ -335,8 +337,7 @@ const readPdfText = async (file) => {
     pageTexts.push(pageText);
   }
 
-  const extractedText = normalizeText(pageTexts.join('\n'));
-  return extractedText;
+  return pageTexts.join('\n');
 };
 
 const getUploadedFileExtension = (file) => String(file?.name || '').split('.').pop()?.toLowerCase() || '';
@@ -365,7 +366,7 @@ const readUploadedFileText = async (file) => {
   }
 
   if (extension === 'txt') {
-    return normalizeText(await file.text());
+    return String(await file.text() || '').replace(/\u00A0/g, ' ');
   }
 
   return '';
