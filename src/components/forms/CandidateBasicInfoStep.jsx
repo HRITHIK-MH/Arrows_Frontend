@@ -1,4 +1,6 @@
 import React, { useEffect, useMemo } from "react";
+import * as pdfjsLib from "pdfjs-dist";
+import pdfjsWorkerSrc from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 import FormField from "./FormField";
 
 const normalizeText = (value) => String(value || "").replace(/\s+/g, " ").trim();
@@ -36,10 +38,79 @@ const readDocxText = async (file) => {
   return normalizeResumeDocument(result?.value || "");
 };
 
+const readPdfText = async (file) => {
+  if (pdfjsLib.GlobalWorkerOptions.workerSrc !== pdfjsWorkerSrc) {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorkerSrc;
+  }
+
+  const arrayBuffer = await file.arrayBuffer();
+  const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+  const pdfDocument = await loadingTask.promise;
+  const pages = [];
+
+  const buildPageText = (textItems = []) => {
+    const positionedItems = textItems
+      .map((item) => {
+        if (!("str" in item)) return null;
+        return {
+          text: String(item.str || ""),
+          x: Number(item.transform?.[4] || 0),
+          y: Number(item.transform?.[5] || 0),
+          hasEOL: Boolean(item.hasEOL),
+        };
+      })
+      .filter(Boolean)
+      .sort((a, b) => {
+        if (Math.abs(b.y - a.y) > 2) return b.y - a.y;
+        return a.x - b.x;
+      });
+
+    const lines = [];
+    let currentLine = [];
+    let currentY = null;
+
+    positionedItems.forEach((item) => {
+      const startsNewLine = currentY !== null && Math.abs(item.y - currentY) > 2;
+      if (startsNewLine && currentLine.length > 0) {
+        lines.push(currentLine.join(" "));
+        currentLine = [];
+      }
+
+      currentY = item.y;
+
+      if (item.text.trim()) {
+        currentLine.push(item.text.trim());
+      }
+
+      if (item.hasEOL && currentLine.length > 0) {
+        lines.push(currentLine.join(" "));
+        currentLine = [];
+        currentY = null;
+      }
+    });
+
+    if (currentLine.length > 0) {
+      lines.push(currentLine.join(" "));
+    }
+
+    return lines.join("\n");
+  };
+
+  for (let pageNumber = 1; pageNumber <= pdfDocument.numPages; pageNumber += 1) {
+    const page = await pdfDocument.getPage(pageNumber);
+    const textContent = await page.getTextContent();
+    const pageText = buildPageText(textContent.items);
+    pages.push(pageText);
+  }
+
+  return normalizeResumeDocument(pages.join("\n"));
+};
+
 const readResumeText = async (file) => {
   const extension = String(file?.name || "").split(".").pop()?.toLowerCase();
 
   if (!extension) return "";
+  if (extension === "pdf") return readPdfText(file);
   if (extension === "docx") return readDocxText(file);
   if (extension === "doc" || extension === "txt") return normalizeResumeDocument(await file.text());
 
@@ -352,36 +423,55 @@ const extractCompanyAndRole = (text) => {
 };
 
 const extractExperienceYears = (text) => {
-  const normalized = normalizeText(text);
   const lines = getResumeLines(text);
-  if (!normalized) return null;
+  const normalized = normalizeText(text);
+  const currentYear = new Date().getFullYear();
 
-  const explicitRangeMatch = normalized.match(/(\d+(?:\.\d+)?)\s*(?:to|\-|–)\s*(\d+(?:\.\d+)?)\s*(?:years?|yrs?)/i);
-  if (explicitRangeMatch?.[2]) {
-    return Number.parseFloat(explicitRangeMatch[2]);
-  }
+  const toValidYears = (value) => {
+    const years = Number.parseFloat(value);
+    if (!Number.isFinite(years)) return null;
+    if (years < 0 || years > 45) return null;
+    return years;
+  };
 
-  const yearsMonthsMatch = normalized.match(/(\d+(?:\.\d+)?)\s*(?:years?|yrs?)\s*(\d{1,2})\s*(?:months?|mos?)/i);
-  if (yearsMonthsMatch?.[1]) {
-    const years = Number.parseFloat(yearsMonthsMatch[1]);
-    const months = Number.parseFloat(yearsMonthsMatch[2] || "0");
-    return years + months / 12;
-  }
+  const parseYearsFromText = (value) => {
+    const source = String(value || "");
+    if (!source) return null;
 
-  const standardMatch = normalized.match(/(\d+(?:\.\d+)?)\s*\+?\s*(?:years?|yrs?)(?:\s+of\s+experience)?/i);
-  if (standardMatch?.[1]) {
-    return Number.parseFloat(standardMatch[1]);
-  }
+    const yearsMonthsMatch = source.match(/(\d+(?:\.\d+)?)\s*(?:years?|yrs?)\s*(\d{1,2})\s*(?:months?|mos?)/i);
+    if (yearsMonthsMatch?.[1]) {
+      const years = Number.parseFloat(yearsMonthsMatch[1]);
+      const months = Number.parseFloat(yearsMonthsMatch[2] || "0");
+      return toValidYears(years + months / 12);
+    }
 
-  const labelledMatch = normalized.match(/(?:total\s+)?experience\s*[:\-]?\s*(\d+(?:\.\d+)?)/i);
-  if (labelledMatch?.[1]) {
-    return Number.parseFloat(labelledMatch[1]);
-  }
+    const explicitRangeMatch = source.match(/(\d+(?:\.\d+)?)\s*(?:to|-|–)\s*(\d+(?:\.\d+)?)\s*(?:years?|yrs?)/i);
+    if (explicitRangeMatch?.[2]) {
+      return toValidYears(explicitRangeMatch[2]);
+    }
 
-  const monthYearMatches = Array.from(
-    normalized.matchAll(/(\d{1,2})[/-](\d{4})\s*(?:to|-|–)\s*(present|current|now|\d{1,2}[/-]\d{4})/gi)
-  );
-  if (monthYearMatches.length > 0) {
+    const labelledMatch = source.match(/(?:total|overall|relevant)?\s*experience\s*[:\-]?\s*(\d+(?:\.\d+)?)/i);
+    if (labelledMatch?.[1]) {
+      return toValidYears(labelledMatch[1]);
+    }
+
+    const standardMatch = source.match(/(\d+(?:\.\d+)?)\s*\+?\s*(?:years?|yrs?)(?:\s+of\s+experience)?/i);
+    if (standardMatch?.[1]) {
+      return toValidYears(standardMatch[1]);
+    }
+
+    return null;
+  };
+
+  const parseRangesFromText = (value) => {
+    const source = String(value || "");
+    if (!source) return null;
+
+    const monthYearMatches = Array.from(
+      source.matchAll(/(\d{1,2})[/-](\d{4})\s*(?:to|-|–)\s*(present|current|now|\d{1,2}[/-]\d{4})/gi)
+    );
+    if (monthYearMatches.length === 0) return null;
+
     const ranges = monthYearMatches
       .map((match) => {
         const startMonth = Number.parseInt(match[1], 10);
@@ -389,7 +479,8 @@ const extractExperienceYears = (text) => {
         const endRaw = String(match[3] || "").toLowerCase();
 
         let endMonth = new Date().getMonth() + 1;
-        let endYear = new Date().getFullYear();
+        let endYear = currentYear;
+
         if (!/present|current|now/.test(endRaw)) {
           const endMatch = endRaw.match(/(\d{1,2})[/-](\d{4})/);
           if (!endMatch) return null;
@@ -397,34 +488,80 @@ const extractExperienceYears = (text) => {
           endYear = Number.parseInt(endMatch[2], 10);
         }
 
-        return { startMonth, startYear, endMonth, endYear };
+        if (
+          startMonth < 1 ||
+          startMonth > 12 ||
+          endMonth < 1 ||
+          endMonth > 12 ||
+          startYear < 1980 ||
+          startYear > currentYear + 1 ||
+          endYear < 1980 ||
+          endYear > currentYear + 1
+        ) {
+          return null;
+        }
+
+        const startTotal = startYear * 12 + startMonth;
+        const endTotal = endYear * 12 + endMonth;
+        if (endTotal <= startTotal) return null;
+
+        return { startTotal, endTotal };
       })
       .filter(Boolean);
 
-    if (ranges.length > 0) {
-      const earliest = ranges.reduce((min, current) => {
-        const minValue = min.startYear * 12 + min.startMonth;
-        const currentValue = current.startYear * 12 + current.startMonth;
-        return currentValue < minValue ? current : min;
-      });
-      const latest = ranges.reduce((max, current) => {
-        const maxValue = max.endYear * 12 + max.endMonth;
-        const currentValue = current.endYear * 12 + current.endMonth;
-        return currentValue > maxValue ? current : max;
-      });
+    if (ranges.length === 0) return null;
 
-      const totalMonths = latest.endYear * 12 + latest.endMonth - (earliest.startYear * 12 + earliest.startMonth);
-      if (totalMonths > 0) {
-        return totalMonths / 12;
-      }
-    }
+    const earliest = ranges.reduce((min, current) => (current.startTotal < min.startTotal ? current : min));
+    const latest = ranges.reduce((max, current) => (current.endTotal > max.endTotal ? current : max));
+    const totalMonths = latest.endTotal - earliest.startTotal;
+
+    if (totalMonths <= 0 || totalMonths > 45 * 12) return null;
+    return Number((totalMonths / 12).toFixed(1));
+  };
+
+  if (!normalized) return null;
+
+  const labelledLineMatch = lines
+    .map((line) => parseYearsFromText(line))
+    .find((value, index) => {
+      if (!Number.isFinite(value)) return false;
+      return /(?:total|overall|relevant)?\s*experience\s*[:\-]?/i.test(lines[index]);
+    });
+  if (Number.isFinite(labelledLineMatch)) {
+    return labelledLineMatch;
   }
 
-  const lineYearsMatch = lines
-    .map((line) => line.match(/(?:experience|exp)\s*[:\-]?\s*(\d+(?:\.\d+)?)\s*(?:years?|yrs?)/i))
-    .find(Boolean);
-  if (lineYearsMatch?.[1]) {
-    return Number.parseFloat(lineYearsMatch[1]);
+  const directYears = parseYearsFromText(normalized);
+  if (Number.isFinite(directYears)) {
+    return directYears;
+  }
+
+  const experienceStartIndex = lines.findIndex((line) =>
+    /^(?:experience|work experience|professional experience|employment history)$/i.test(line) ||
+    /professional\s+experience|work\s+experience|employment\s+history/i.test(line)
+  );
+  const sectionTail = experienceStartIndex >= 0 ? lines.slice(experienceStartIndex + 1) : lines;
+  const sectionEndOffset = sectionTail.findIndex((line) =>
+    /^(?:education|skills|projects|certifications?|summary|profile|objective|achievements?)$/i.test(line)
+  );
+  const scopedLines =
+    experienceStartIndex >= 0
+      ? sectionTail.slice(0, sectionEndOffset >= 0 ? sectionEndOffset : undefined)
+      : lines;
+
+  const scopedRanges = parseRangesFromText(scopedLines.join(" "));
+  if (Number.isFinite(scopedRanges)) {
+    return scopedRanges;
+  }
+
+  const fallbackRanges = parseRangesFromText(normalized);
+  if (Number.isFinite(fallbackRanges)) {
+    return fallbackRanges;
+  }
+
+  const lineYears = lines.map((line) => parseYearsFromText(line)).find((value) => Number.isFinite(value));
+  if (Number.isFinite(lineYears)) {
+    return lineYears;
   }
 
   return null;
@@ -551,7 +688,7 @@ const CandidateBasicInfoStep = ({
       }
 
         if (!normalizeText(formData.yearsExperience)) {
-          const yearsNumber = extractExperienceYears(normalized);
+          const yearsNumber = extractExperienceYears(extractedText);
           const mappedExperience = mapYearsToBucket(yearsNumber ?? Number.NaN);
           if (mappedExperience) {
             updates.yearsExperience = mappedExperience;
@@ -585,7 +722,7 @@ const CandidateBasicInfoStep = ({
 
         const primarySkillOptions = Array.isArray(fieldMap.primarySkill?.options) ? fieldMap.primarySkill.options : [];
         const matchedSkills = collectMatchedSkillValues(extractedText, primarySkillOptions);
-        const yearsNumber = extractExperienceYears(normalized);
+        const yearsNumber = extractExperienceYears(extractedText);
         const effectiveYearsBucket = updates.yearsExperience || formData.yearsExperience;
         const skillDefaults = getSkillDefaultsFromExperience(effectiveYearsBucket, yearsNumber);
 
