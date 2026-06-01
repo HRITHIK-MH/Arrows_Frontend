@@ -10,12 +10,12 @@ export default function Reports() {
 
   // Sample data
   const [metricsData] = React.useState([
-    { label: "Profile", value: 1048 },
-    { label: "MH Pre Screen", value: 583 },
-    { label: "HackerEarth", value: 136 },
-    { label: "HackerEarth Test", value: 63 },
-    { label: "MH Interview", value: 482 },
-    { label: "MH Interview", value: 156 }
+    { label: "Sourced", value: 1048 },
+    { label: "Pre Screened", value: 583 },
+    { label: "Client Interviews", value: 482 },
+    { label: "Client Submissions", value: 220},
+    { label: "Offers", value: 70 },
+    { label: "Hires", value: 32 }
   ]);
 
   const [chartData] = React.useState([

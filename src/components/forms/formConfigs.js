@@ -49,7 +49,8 @@ const SOURCE_DIRECTORY = [
   { id: "SRC-002", name: "Employee Referral" },
   { id: "SRC-003", name: "LinkedIn" },
   { id: "SRC-004", name: "Seek" },
-  { id: "SRC-005", name: "Added by User" }
+  { id: "SRC-005", name: "Naukri" },
+  { id: "SRC-006", name: "Through Website" }
 ];
 
 const RECRUITER_DIRECTORY = [
@@ -914,7 +915,7 @@ export const candidateConfig = {
         },
         {
           name: "candidateId",
-          label: "Application Id *",
+          label: "Candidate Id *",
           type: "text",
           required: true,
           validationRule: "requiredField",
@@ -922,27 +923,11 @@ export const candidateConfig = {
           disabled: true
         },
         {
-          name: "namePrefix",
-          label: "Title",
-          type: "select",
-          required: true,
-          validationRule: "namePrefixRequired",
-          hideLabel: true,
-          placeholder: "None",
-          options: [
-            { value: "none", label: "None" },
-            { value: "mr", label: "Mr." },
-            { value: "mrs", label: "Mrs." },
-            { value: "ms", label: "Ms." }
-          ]
-        },
-        {
           name: "firstName",
           label: "First Name *",
           type: "text",
           required: true,
           validationRule: "requiredField",
-          hideLabel: true,
           placeholder: "Enter First Name"
         },
         {
@@ -1315,7 +1300,7 @@ export const candidateConfig = {
         if (!/^[A-Za-z][A-Za-z0-9\-]{3,19}$/.test(trimmedValue)) {
           return {
             isValid: false,
-            message: 'Application ID must be 4-20 characters, start with a letter and contain only letters, numbers, or hyphens'
+            message: 'Candidate ID must be 4-20 characters, start with a letter and contain only letters, numbers, or hyphens'
           };
         }
       }
