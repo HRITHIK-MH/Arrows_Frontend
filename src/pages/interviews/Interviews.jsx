@@ -15,6 +15,7 @@ import {
   FiTrash2,
   FiX,
 } from "react-icons/fi";
+import { fetchInterviews } from "../../api/interviewService";
 import styles from "./Interviews.module.scss";
 
 const PROFILE_TABS = [
@@ -263,41 +264,32 @@ export default function Interviews() {
 
   // Fetch interviews data
   React.useEffect(() => {
-    const fetchInterviews = async () => {
+    const loadInterviews = async () => {
       setLoading(true);
       try {
-        // TODO: Replace with actual API call
-        // const response = await fetch('/api/interviews');
-        // const data = await response.json();
-        // setInterviews(data);
-        
-        // Interview list is built from candidate records + job opening interview statuses.
-        const interviewTypeByStatus = {
-          "pre-screening": "HR",
-          "client interview": "Managerial",
-          rejected: "Technical",
-          assessment: "Technical",
-        };
-        const modeCycle = ["Online", "In-Person", "Online", "Online"];
-        const timeSlots = ["11:00 AM", "04:00 PM", "05:30 PM", "11:30 AM"];
-
-        const derivedInterviews = CANDIDATE_INTERVIEW_SOURCE.map((candidate, index) => {
-          const mappedJob = JOB_OPENING_OPTIONS[index % JOB_OPENING_OPTIONS.length];
-          const normalizedInterviewStatus = String(mappedJob?.jobOpeningStatus || "").toLowerCase();
-
-          return {
-            candidateId: candidate.candidateId,
-            candidateName: candidate.candidateName,
-            roleJobTitle: mappedJob?.postingTitle || "-",
-            dateTime: `${mappedJob?.appliedDate || "12/10/2025"} ${timeSlots[index % timeSlots.length]}`,
-            company: mappedJob?.company || "-",
-            interviewType: interviewTypeByStatus[normalizedInterviewStatus] || "Technical",
-            mode: modeCycle[index % modeCycle.length],
-            status: mappedJob?.jobOpeningStatus || candidate.stage || "Upcoming",
-          };
+        const response = await fetchInterviews({
+          page: 1,
+          limit: 100,
+          sortBy: 'interviewDateTime',
+          sortOrder: 'asc',
         });
 
-        setInterviews(derivedInterviews);
+        const mappedInterviews = Array.isArray(response.items)
+          ? response.items.map((item) => ({
+              candidateId: item.candidateId,
+              candidateName: item.candidateName,
+              roleJobTitle: item.postingTitle || '-',
+              dateTime: item.interviewDateTime ? new Date(item.interviewDateTime).toLocaleString() : '-',
+              company: item.jobOpeningId || '-',
+              interviewType: item.interviewType || item.interviewStatus || '-',
+              mode: item.mode || 'Online',
+              status: item.interviewStatus || '-',
+              interviewer: item.interviewer || '-',
+              interviewId: item.interviewId,
+            }))
+          : [];
+
+        setInterviews(mappedInterviews);
       } catch (error) {
         console.error("Error fetching interviews:", error);
       } finally {
@@ -305,7 +297,7 @@ export default function Interviews() {
       }
     };
 
-    fetchInterviews();
+    loadInterviews();
   }, []);
 
   React.useEffect(() => {

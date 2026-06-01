@@ -358,7 +358,12 @@ export default defineConfig(({ mode }) => {
           autoRewrite: true,
           hostRewrite: 'localhost:5173',
           protocolRewrite: 'http',
-            configure: (proxy) => attachSessionCookieIfMissing(proxy, supersetSessionCookie),
+          configure: (proxy) => attachSessionCookieIfMissing(proxy, supersetSessionCookie),
+          bypass: (req) => {
+            if (req.headers.accept && req.headers.accept.includes('text/html')) {
+              return req.url;
+            }
+          },
         },
         // Keep this last so /api/v1 continues to proxy to Superset.
         '/api': {

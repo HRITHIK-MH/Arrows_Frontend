@@ -18,6 +18,12 @@ import {
 } from "react-icons/fi";
 import ReusableForm from "../../components/forms/ReusableForm";
 import { candidateConfig } from "../../components/forms/formConfigs";
+import {
+  createCandidate,
+  deleteCandidate,
+  fetchCandidates,
+  updateCandidate,
+} from "../../api/candidateService";
 import styles from "./Candidates.module.scss";
 
 
@@ -238,48 +244,9 @@ const getFileExtension = (fileName = "") => {
 export default function Candidates() {
   const [showCandidateForm, setShowCandidateForm] = React.useState(false);
   const [showDataTable, setShowDataTable] = React.useState(true);
-  const [submittedData, setSubmittedData] = React.useState([
-    {
-      candidateId: "C001",
-      candidateName: "Raghul Mehta",
-      candidateEmail: "raghul.mehta@email.com",
-      modifiedTime: "11/10/2025 05:30 PM",
-      source: "Resume Inbox",
-      rating: "3/5",
-      stage: "Sourced",
-      status: "In Progress"
-    },
-    {
-      candidateId: "C002",
-      candidateName: "Priya Sharma",
-      candidateEmail: "priya.sharma@email.com",
-      modifiedTime: "11/10/2025 05:30 PM",
-      source: "Added by User",
-      rating: "4/5",
-      stage: "Pre-Screening",
-      status: "In Progress"
-    },
-    {
-      candidateId: "C003",
-      candidateName: "Arjun Rao",
-      candidateEmail: "arjun.rao@email.com",
-      modifiedTime: "11/10/2025 05:30 PM",
-      source: "Seek",
-      rating: "4/5",
-      stage: "Assessment",
-      status: "Completed"
-    },
-    {
-      candidateId: "C004",
-      candidateName: "Sneha Nair",
-      candidateEmail: "sneha.nair@email.com",
-      modifiedTime: "11/10/2025 05:30 PM",
-      source: "Resume Inbox",
-      rating: "2/5",
-      stage: "Client Interview",
-      status: "In Progress"
-    }
-  ]);
+  const [submittedData, setSubmittedData] = React.useState([]);
+  const [loading, setLoading] = React.useState(false);
+  const [pagination, setPagination] = React.useState({ page: 1, limit: 100, totalRecords: 0, totalPages: 1 });
   const [editingIndex, setEditingIndex] = React.useState(null);
   const [editingData, setEditingData] = React.useState(null);
   const [successMessage, setSuccessMessage] = React.useState("");
@@ -387,9 +354,38 @@ export default function Candidates() {
     }
   }, []);
 
+  const loadCandidates = React.useCallback(async () => {
+    setLoading(true);
+    try {
+      const response = await fetchCandidates({
+        page: pagination.page,
+        limit: pagination.limit,
+        sortBy: 'modifiedTime',
+        sortOrder: 'desc',
+      });
+
+      setSubmittedData(Array.isArray(response.items) ? response.items : []);
+      setPagination((prev) => ({
+        ...prev,
+        page: response.pagination?.page ?? prev.page,
+        limit: response.pagination?.limit ?? prev.limit,
+        totalRecords: response.pagination?.totalRecords ?? prev.totalRecords,
+        totalPages: response.pagination?.totalPages ?? prev.totalPages,
+      }));
+    } catch (error) {
+      console.error('Failed to load candidate list:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [pagination.limit, pagination.page]);
+
   React.useEffect(() => {
     setCandidateDrafts(getCandidateDrafts());
   }, [getCandidateDrafts]);
+
+  React.useEffect(() => {
+    loadCandidates();
+  }, [loadCandidates]);
 
   const getDraftTitle = React.useCallback((formData, fallbackCount) => {
     const name = `${String(formData?.firstName || "").trim()} ${String(formData?.lastName || "").trim()}`.trim();
@@ -1149,45 +1145,82 @@ export default function Candidates() {
     setCandidateFormKey((prev) => prev + 1);
   }, []);
 
-  const handleDeleteCandidate = React.useCallback((row, index) => {
+  const handleDeleteCandidate = React.useCallback(async (row, index) => {
     console.log('Delete candidate:', row);
-    if (window.confirm('Are you sure you want to delete this candidate?')) {
-      setSubmittedData(prev => prev.filter((_, i) => i !== index));
-    }
-  }, []);
+    if (!window.confirm('Are you sure you want to delete this candidate?')) return;
 
-  const handleCandidateSubmit = React.useCallback((data) => {
-    const generatedCandidateId = generateNextCandidateId();
-    const firstName = data.firstName || "";
-    const lastName = data.lastName || "";
-    const candidateName = data.candidateName || `${firstName} ${lastName}`.trim();
-    const normalized = {
-      ...data,
-      candidateId: String(data.candidateId || data.candidateCode || "").trim() || generatedCandidateId,
-      candidateName,
-      candidateEmail: data.primaryEmail || data.candidateEmail || "",
-      candidateDocuments: Array.isArray(data.candidateDocuments) ? data.candidateDocuments : [],
-      modifiedTime: data.modifiedTime || formatTimestamp(new Date()),
-      source: data.sourceName || data.sourceId || data.source || "",
-      rating: data.rating || "3/5",
-      stage: data.stage || "Added",
-      status: data.status || "In Progress"
-    };
-    if (editingIndex !== null) {
-      console.log('Candidate updated:', normalized);
-      setSubmittedData(prev => prev.map((item, idx) => (idx === editingIndex ? normalized : item)));
-    } else {
-      console.log('Candidate added:', normalized);
-      setSubmittedData(prev => [...prev, normalized]);
+    try {
+      setLoading(true);
+      await deleteCandidate(row.candidateId, { softDelete: true });
+      setSubmittedData((prev) => prev.filter((_, i) => i !== index));
+      showTransientMessage('Candidate deleted successfully');
+    } catch (error) {
+      console.error('Candidate delete failed:', error);
+      alert('Unable to delete candidate right now. Please try again.');
+    } finally {
+      setLoading(false);
     }
+  }, [showTransientMessage]);
+
+  const closeCandidateForm = React.useCallback(() => {
     setShowCandidateForm(false);
     setShowDataTable(true);
-    showTransientMessage(editingIndex !== null ? "Candidate updated successfully" : "Candidate added successfully");
     setEditingIndex(null);
     setActiveDraftId(null);
     setEditingData(null);
-    // Here you would typically send the data to your backend API
-  }, [formatTimestamp, editingIndex, showTransientMessage, generateNextCandidateId]);
+  }, []);
+
+  const handleCandidateSubmit = React.useCallback(async (data) => {
+    setLoading(true);
+    const firstName = data.firstName || "";
+    const lastName = data.lastName || "";
+    const candidateName = data.candidateName || `${firstName} ${lastName}`.trim();
+
+    const parseExperienceYearsAsInteger = (value) => {
+      if (value === null || value === undefined || value === "") return undefined;
+      const normalized = String(value).trim();
+      // "12+" -> 12
+      if (/^\d+\+$/.test(normalized)) return Number.parseInt(normalized.replace('+', ''), 10);
+      // "3-5" -> average -> rounded
+      const rangeMatch = normalized.match(/^(\d+)-(\d+)$/);
+      if (rangeMatch) {
+        const min = Number.parseInt(rangeMatch[1], 10);
+        const max = Number.parseInt(rangeMatch[2], 10);
+        if (!Number.isNaN(min) && !Number.isNaN(max)) return Math.round((min + max) / 2);
+      }
+      const parsed = Number.parseFloat(normalized);
+      if (Number.isNaN(parsed)) return undefined;
+      return Math.round(parsed);
+    };
+
+    const candidatePayload = {
+      firstName: data.firstName || "",
+      lastName: data.lastName || "",
+      primaryEmail: data.primaryEmail || data.candidateEmail || "",
+      primaryPhone: data.phoneNumber || data.primaryPhoneE164 || data.phone || "",
+      currentLocation: data.currentLocation || data.currentCompanyName || "",
+      totalExperience: parseExperienceYearsAsInteger(data.yearsExperience),
+    };
+
+    try {
+      if (editingIndex !== null && editingData?.candidateId) {
+        // For updates, the controller expects CandidateUpdateRequest at PUT /api/candidates/{id}
+        await updateCandidate(editingData.candidateId, candidatePayload);
+        showTransientMessage('Candidate updated successfully');
+      } else {
+        await createCandidate(candidatePayload);
+        showTransientMessage('Candidate added successfully');
+      }
+      await loadCandidates();
+      closeCandidateForm();
+    } catch (error) {
+      console.error('Candidate save failed:', error);
+      alert('Unable to save candidate right now. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  }, [closeCandidateForm, editingData?.candidateId, editingIndex, generateNextCandidateId, loadCandidates, showTransientMessage]);
+
 
   const closeViewDrawer = React.useCallback(() => {
     setIsViewDrawerOpen(false);
