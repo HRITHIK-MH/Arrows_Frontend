@@ -22,7 +22,7 @@ const flexDiv = `<div style={{ display: 'flex', alignItems: 'center', justifyCon
 
 const headersNew = `                <thead>
                   <tr>
-                    <th onClick={() => handleSort('candidateId')} ${thStyle}>${flexDiv}<span>Application Id</span>{getSortArrow('candidateId')}</div></th>
+                    <th onClick={() => handleSort('candidateId')} ${thStyle}>${flexDiv}<span>Candidate Id</span>{getSortArrow('candidateId')}</div></th>
                     <th onClick={() => handleSort('candidateName')} ${thStyle}>${flexDiv}<span>Candidate Name</span>{getSortArrow('candidateName')}</div></th>
                     <th onClick={() => handleSort('candidateEmail')} ${thStyle}>${flexDiv}<span>Email Address</span>{getSortArrow('candidateEmail')}</div></th>
                     <th onClick={() => handleSort('modifiedTime')} ${thStyle}>${flexDiv}<span>Modified Time</span>{getSortArrow('modifiedTime')}</div></th>

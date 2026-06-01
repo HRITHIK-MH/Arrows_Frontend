@@ -227,11 +227,11 @@ export default function Interviews() {
     }
 
     if (currentUserRole === "recruiter") {
-      return <><strong>Schedule, track, and manage interviews</strong> with quick access to candidates, panels, stages, and <strong>actions</strong>.</>;
+      return <><strong>Schedule, Track, and manage Interviews</strong> with quick access to <strong>Candidates, Panels, Stages and Actions</strong>.</>;
     }
 
     if (currentUserRole === "accountmanager" || currentUserRole === "manager" || currentUserRole === "management") {
-      return <><strong>Manage interview schedules, panel coordination,</strong> and <strong>candidate progress</strong> from a single workspace.</>;
+      return <>Manage <strong>Interview Schedules, Panel Coordination,</strong> and <strong>Candidate Progress</strong> from a single workspace.</>;
     }
 
     return "Manage interview schedules, panel coordination, and candidate progress from a single workspace.";
@@ -991,7 +991,7 @@ export default function Interviews() {
       return (
         <div className={styles.profileGrid}>
           <div className={styles.profileItem}>
-            <span className={styles.profileLabel}>Application ID</span>
+            <span className={styles.profileLabel}>Candidate ID</span>
             <span className={styles.profileValue}>{selectedCandidate.candidateId}</span>
           </div>
           <div className={styles.profileItem}>
@@ -1363,7 +1363,7 @@ export default function Interviews() {
 
   // Define table columns
   const columns = [
-    { key: "candidateId", label: "Application Id" },
+    { key: "candidateId", label: "Candidate Id" },
     { key: "candidateName", label: "Candidate Name" },
     { key: "roleJobTitle", label: "Role / Job Title" },
     { key: "dateTime", label: "Date & Time" },
@@ -1659,7 +1659,7 @@ export default function Interviews() {
                   <tbody>
                     {paginatedInterviews.map((row, index) => (
                       <tr key={`${row.candidateId}-${index}`}>
-                        <td data-label="Application ID">{row.candidateId}</td>
+                        <td data-label="Candidate ID">{row.candidateId}</td>
                         <td data-label="Candidate Name">{row.candidateName}</td>
                         <td data-label="Role / Job Title">{row.roleJobTitle}</td>
                         <td data-label="Date & Time">{row.dateTime}</td>

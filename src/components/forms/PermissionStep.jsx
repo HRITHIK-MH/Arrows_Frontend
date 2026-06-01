@@ -339,7 +339,7 @@ const PermissionStep = ({ formData, onChange, onSetStepFields, fields = [], vali
   );
 
   const hiringProcessFlow = [
-    { key: "sourced", label: "Sourced", meta: "" },
+    { key: "sourced", label: "Sourcing", meta: "" },
     { key: "screening", label: "Screening", meta: "1 stage" },
     ...interviewStages.map((stage) => ({
       key: stage,

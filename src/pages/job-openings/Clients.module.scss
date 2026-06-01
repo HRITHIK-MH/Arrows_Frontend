@@ -51,8 +51,9 @@
 .description {
   margin: 0;
   color: #334155;
-  font-size: 13px;
-  line-height: 1.5;
+  font-size: clamp(15px, 1vw, 18px);
+  line-height: 1.45;
+  font-weight: 500;
   padding: 12px 16px;
   border: 1px solid #e5edf6;
   border-radius: 12px;
@@ -886,6 +887,7 @@
   .description {
     padding: 10px 12px;
     border-radius: 10px;
+    font-size: 14px;
   }
 
   .addButton {
@@ -986,7 +988,7 @@
   }
 
   .description {
-    font-size: 12px;
+    font-size: 14px;
   }
 
   .tableFooter {

@@ -28,11 +28,11 @@ export default function Clients() {
 
   const clientsPageDescription = React.useMemo(() => {
     if (currentUserRole === "recruiter") {
-      return <><strong>Manage client accounts, monitor account ownership, engagement status,</strong> and <strong>coordination activity</strong> in one place.</>;
+      return <>Manage <strong>Client Accounts, Monitor Account Ownership, Engagement Status,</strong> and <strong>Co-ordination Activity</strong> in one place.</>;
     }
 
     if (currentUserRole === "accountmanager" || currentUserRole === "manager" || currentUserRole === "management") {
-      return <strong>Track client relationships, account ownership, and account activity with centralized visibility.</strong>;
+      return <>Track<strong> Client Relationships, Account Ownership, and Account Activity </strong>with centralized visibility.</>;
     }
 
     return <><strong>Track client relationships, account ownership,</strong> and <strong>account activity</strong> with centralized visibility.</>;
@@ -62,6 +62,21 @@ export default function Clients() {
   const deferredSearchTerm = React.useDeferredValue(searchTerm);
   const addClientMenuRef = React.useRef(null);
   const dateRangeRef = React.useRef(null);
+
+  React.useEffect(() => {
+    window.dispatchEvent(new CustomEvent("topbar-page-label-change", {
+      detail: showClientForm ? {
+        title: "Add client",
+        breadcrumbLabel: "Add client",
+      } : null,
+    }));
+
+    return () => {
+      window.dispatchEvent(new CustomEvent("topbar-page-label-change", {
+        detail: null,
+      }));
+    };
+  }, [showClientForm]);
 
   const showTransientMessage = React.useCallback((message) => {
     setSuccessMessageText(message);

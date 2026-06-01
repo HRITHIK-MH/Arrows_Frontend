@@ -95,8 +95,9 @@
 .description {
   margin: 0;
   color: #4b5563;
-  font-size: 13px;
-  line-height: 1.5;
+  font-size: clamp(15px, 1vw, 18px);
+  line-height: 1.45;
+  font-weight: 500;
   word-wrap: break-word;
 }
 
@@ -2125,7 +2126,7 @@
   }
 
   .description {
-    font-size: 12px;
+    font-size: 14px;
     line-height: 1.4;
   }
 
@@ -2439,7 +2440,7 @@
   }
 
   .description {
-    font-size: 12px;
+    font-size: 14px;
     line-height: 1.4;
   }
 
