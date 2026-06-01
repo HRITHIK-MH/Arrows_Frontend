@@ -335,8 +335,11 @@ const Login = () => {
           <button type="submit" className="login-btn" disabled={loading}>
             {loading ? 'Signing In...' : 'Sign In'}
           </button>
-          <button type="button" className="login-btn" onClick={handleSsoLogin} disabled={loading} style={{ display: 'none' }}>
-            Sign In With SSO
+          <div className="login-divider">
+            <span>or</span>
+          </div>
+          <button type="button" className="login-btn login-btn-secondary" onClick={handleSsoLogin} disabled={loading}>
+            {loading ? 'Starting SSO...' : 'Sign In With SSO'}
           </button>
         </form>
       </div>

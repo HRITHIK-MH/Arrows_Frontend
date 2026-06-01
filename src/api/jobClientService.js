@@ -33,7 +33,7 @@ const normalizeText = (value, fallback = '-') => {
 
 export const fetchJobs = async () =>
   unwrapList(
-    await API.get('/api/jobs', {
+    await API.get('/jobs', {
       skipAuth: true,
       skipAuthRedirect: true,
     })
@@ -108,26 +108,26 @@ export const toJobRequest = (row = {}) => {
 };
 
 export const createJob = async (row) =>
-  API.post('/api/jobs', toJobRequest(row), {
+  API.post('/jobs', toJobRequest(row), {
     skipAuth: true,
     skipAuthRedirect: true,
   });
 
 export const updateJob = async (jobId, row) =>
-  API.put(`/api/jobs/${encodeURIComponent(jobId)}`, toJobRequest(row), {
+  API.put(`/jobs/${encodeURIComponent(jobId)}`, toJobRequest(row), {
     skipAuth: true,
     skipAuthRedirect: true,
   });
 
 export const deleteJob = async (jobId) =>
-  API.delete(`/api/jobs/${encodeURIComponent(jobId)}`, {
+  API.delete(`/jobs/${encodeURIComponent(jobId)}`, {
     skipAuth: true,
     skipAuthRedirect: true,
   });
 
 export const fetchClients = async () =>
   unwrapList(
-    await API.get('/api/clients', {
+    await API.get('/clients', {
       // Client list endpoint currently fails when local login token is attached.
       // Skip auth header so dropdown options can still load.
       skipAuth: true,
@@ -146,19 +146,19 @@ export const toClientRequest = (row = {}) => ({
 });
 
 export const createClient = (payload) =>
-  API.post('/api/clients', toClientRequest(payload), {
+  API.post('/clients', toClientRequest(payload), {
     skipAuth: true,
     skipAuthRedirect: true,
   });
 
 export const updateClient = (clientId, payload) =>
-  API.put(`/api/clients/${encodeURIComponent(clientId)}`, toClientRequest(payload), {
+  API.put(`/clients/${encodeURIComponent(clientId)}`, toClientRequest(payload), {
     skipAuth: true,
     skipAuthRedirect: true,
   });
 
 export const deleteClient = (clientId) =>
-  API.delete(`/api/clients/${encodeURIComponent(clientId)}`, {
+  API.delete(`/clients/${encodeURIComponent(clientId)}`, {
     skipAuth: true,
     skipAuthRedirect: true,
   });
