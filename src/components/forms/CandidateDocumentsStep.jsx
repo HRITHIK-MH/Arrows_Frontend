@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState, useEffect, useRef } from "react";
 import * as pdfjsLib from "pdfjs-dist";
 import pdfjsWorkerSrc from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 
@@ -574,129 +574,27 @@ const CandidateDocumentsStep = ({ formData, onChange, onSetStepFields }) => {
     ? formData.candidateDocuments
     : [];
 
+  const [mappedResumeFields, setMappedResumeFields] = useState(new Set());
+  const previousDocsCountRef = useRef(documents.length);
+
+  const clearMappedResumeFields = () => {
+    mappedResumeFields.forEach((fieldName) => {
+      onChange(fieldName, "");
+    });
+    setMappedResumeFields(new Set());
+  };
+
+  // Clear mapped fields when all documents are removed
+  useEffect(() => {
+    if (previousDocsCountRef.current > 0 && documents.length === 0) {
+      clearMappedResumeFields();
+    }
+    previousDocsCountRef.current = documents.length;
+  }, [documents.length]);
+
   const isAllowedDocument = (file) => {
     const extension = file?.name?.split(".").pop()?.toLowerCase();
     return Boolean(extension && ALLOWED_EXTENSIONS.has(extension));
-  };
-
-  const mapResumeToFields = async (file) => {
-    if (!file) return;
-
-    const text = await readResumeText(file);
-    if (!text) return;
-
-    const updates = {};
-    const normalizedLower = normalizeText(text).toLowerCase();
-    const emailMatch = text.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
-    const phoneMatch = text.match(/(?:\+?\d{1,3}[\s-]?)?(?:\(?\d{3,5}\)?[\s-]?)?\d{3,5}[\s-]?\d{4,6}/);
-
-    if (!normalizeText(formData.primaryEmail) && emailMatch?.[0]) {
-      updates.primaryEmail = emailMatch[0];
-    }
-
-    if (!normalizeText(formData.phoneNumber) && phoneMatch?.[0]) {
-      const digits = phoneMatch[0].replace(/\D/g, "");
-      if (digits.length >= 10) {
-        updates.phoneNumber = digits.slice(-10);
-      }
-    }
-
-    if (!normalizeText(formData.yearsExperience)) {
-      const yearsValue = mapYearsToBucket(extractExperienceYears(text) ?? Number.NaN);
-      if (yearsValue) {
-        updates.yearsExperience = yearsValue;
-        if (!normalizeText(formData.candidateType)) {
-          updates.candidateType = yearsValue === "0-1" ? "fresher" : "experienced";
-        }
-      }
-    }
-
-    const extractedName = extractCandidateName(text);
-    if (!normalizeText(formData.firstName) && extractedName.firstName) {
-      updates.firstName = extractedName.firstName;
-    }
-    if (!normalizeText(formData.lastName) && extractedName.lastName) {
-      updates.lastName = extractedName.lastName;
-    }
-
-    if (!normalizeText(formData.dateOfBirth)) {
-      const extractedDob = extractDateOfBirthValue(text);
-      if (extractedDob) {
-        updates.dateOfBirth = extractedDob;
-      }
-    }
-
-    if (!normalizeText(formData.gender)) {
-      const extractedGender = extractGenderValue(text);
-      if (extractedGender) {
-        updates.gender = extractedGender;
-      }
-    }
-
-    const primarySkillOptions = [
-      ...(Array.isArray(formData.skills) ? [] : []),
-    ];
-
-    if (!normalizeText(formData.primarySkill)) {
-      const configSkillOptions = [
-        { value: "java", label: "Core Java" },
-        { value: "python", label: "Python" },
-        { value: "react", label: "React" },
-        { value: "node", label: "Node.js" },
-        { value: "aws", label: "AWS" },
-        { value: "html5", label: "HTML5" },
-        { value: "css3", label: "CSS3" },
-        { value: "javascript", label: "JavaScript" },
-        { value: "jquery", label: "jQuery" },
-        { value: "bootstrap", label: "Bootstrap" },
-        { value: "react-js", label: "React.js" },
-        { value: "angular-4", label: "Angular 4" },
-        { value: "backbone-js", label: "Backbone.js" },
-      ];
-      const matchedSkills = collectMatchedSkillValues(text, configSkillOptions);
-      if (matchedSkills[0]) {
-        updates.primarySkill = matchedSkills[0];
-      }
-      if (!normalizeText(formData.secondarySkill) && matchedSkills[1]) {
-        updates.secondarySkill = matchedSkills[1];
-      }
-
-      if (matchedSkills.length > 0) {
-        const existingSkillRows = Array.isArray(formData.skills) ? formData.skills : [];
-        const hasExistingPrimarySkill = existingSkillRows.some((row) => normalizeText(row?.primarySkill));
-        const yearsNumber = extractExperienceYears(text);
-        const effectiveYearsBucket = updates.yearsExperience || formData.yearsExperience;
-        const skillDefaults = getSkillDefaultsFromExperience(effectiveYearsBucket, yearsNumber);
-
-        if (!hasExistingPrimarySkill) {
-          updates.skills = matchedSkills.map((skillValue) => createSkillRow(skillValue, skillDefaults));
-        }
-      }
-    }
-
-    const { company, role } = extractCompanyAndRole(text);
-    if (!normalizeText(formData.currentCompanyName) && company) {
-      updates.currentCompanyName = company;
-    }
-    if (!normalizeText(formData.jobTitleRole) && role) {
-      updates.jobTitleRole = role;
-    }
-
-    if (!normalizeText(formData.employmentType)) {
-      if (normalizedLower.includes("full time") || normalizedLower.includes("full-time")) {
-        updates.employmentType = "full-time";
-      } else if (normalizedLower.includes("contract")) {
-        updates.employmentType = "contract";
-      } else if (normalizedLower.includes("intern") || normalizedLower.includes("internship")) {
-        updates.employmentType = "internship";
-      }
-    }
-
-    Object.entries(updates).forEach(([fieldName, fieldValue]) => {
-      if (fieldValue !== undefined && fieldValue !== null && fieldValue !== "") {
-        onChange(fieldName, fieldValue);
-      }
-    });
   };
 
   const addFiles = (fileList) => {
@@ -749,8 +647,256 @@ const CandidateDocumentsStep = ({ formData, onChange, onSetStepFields }) => {
 
   const inputId = useMemo(() => "candidate-documents-input", []);
 
+  const mapResumeToFields = async (file) => {
+    if (!file) return;
+
+    let parsed;
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      const res = await fetch("/api/candidates/documents/parse", { method: "POST", body: form });
+      const json = await res.json();
+      parsed = json?.data || json;
+      if (!parsed) throw new Error("No parse result");
+    } catch (err) {
+      // fallback to client-side parsing if server-side fails
+      // eslint-disable-next-line no-console
+      console.warn("Server-side resume parse failed, falling back to client parsing:", err);
+    }
+
+    if (parsed) {
+      // --- server-side parsing: use API response directly ---
+      const updates = {};
+      const fieldNames = new Set();
+
+      if (!normalizeText(formData.firstName) && parsed.firstName) {
+        updates.firstName = parsed.firstName;
+        fieldNames.add("firstName");
+      }
+      if (!normalizeText(formData.lastName) && parsed.lastName) {
+        updates.lastName = parsed.lastName;
+        fieldNames.add("lastName");
+      }
+
+      if (!normalizeText(formData.primaryEmail) && parsed.email) {
+        updates.primaryEmail = parsed.email;
+        fieldNames.add("primaryEmail");
+      }
+
+      if (!normalizeText(formData.phoneNumber) && parsed.phone) {
+        const digits = String(parsed.phone).replace(/\D/g, "");
+        if (digits.length >= 10) {
+          updates.phoneNumber = digits.slice(-10);
+          fieldNames.add("phoneNumber");
+        }
+      }
+
+      if (!normalizeText(formData.yearsExperience) && parsed.totalExperienceYears) {
+        const yearsValue = mapYearsToBucket(parsed.totalExperienceYears);
+        if (yearsValue) {
+          updates.yearsExperience = yearsValue;
+          fieldNames.add("yearsExperience");
+          if (!normalizeText(formData.candidateType)) {
+            updates.candidateType = yearsValue === "0-1" ? "fresher" : "experienced";
+            fieldNames.add("candidateType");
+          }
+        }
+      }
+
+      if (!normalizeText(formData.primarySkill) && (parsed.skills?.length || 0) > 0) {
+        const configSkillOptions = [
+          { value: "java", label: "Core Java" },
+          { value: "python", label: "Python" },
+          { value: "react", label: "React" },
+          { value: "node", label: "Node.js" },
+          { value: "aws", label: "AWS" },
+          { value: "html5", label: "HTML5" },
+          { value: "css3", label: "CSS3" },
+          { value: "javascript", label: "JavaScript" },
+          { value: "jquery", label: "jQuery" },
+          { value: "bootstrap", label: "Bootstrap" },
+          { value: "react-js", label: "React.js" },
+          { value: "angular-4", label: "Angular 4" },
+          { value: "backbone-js", label: "Backbone.js" },
+        ];
+
+        // Match parsed skills against config options
+        const parsedSkillText = parsed.skills.join(" ");
+        const matchedSkills = collectMatchedSkillValues(parsedSkillText, configSkillOptions);
+
+        if (matchedSkills.length === 0 && parsed.skills[0]) {
+          // fallback: use first parsed skill as-is
+          updates.primarySkill = parsed.skills[0];
+          fieldNames.add("primarySkill");
+        } else if (matchedSkills.length > 0) {
+          updates.primarySkill = matchedSkills[0];
+          fieldNames.add("primarySkill");
+          if (!normalizeText(formData.secondarySkill) && matchedSkills[1]) {
+            updates.secondarySkill = matchedSkills[1];
+            fieldNames.add("secondarySkill");
+          }
+        }
+
+        if ((matchedSkills.length > 0 || parsed.skills.length > 0) && !Array.isArray(formData.skills)
+          || formData.skills?.every((row) => !normalizeText(row?.primarySkill))) {
+          const existingSkillRows = Array.isArray(formData.skills) ? formData.skills : [];
+          const hasExistingPrimarySkill = existingSkillRows.some((row) => normalizeText(row?.primarySkill));
+          const skillDefaults = getSkillDefaultsFromExperience(updates.yearsExperience || formData.yearsExperience, parsed.totalExperienceYears);
+
+          if (!hasExistingPrimarySkill) {
+            const skillsToAdd = matchedSkills.length > 0 ? matchedSkills : parsed.skills;
+            updates.skills = skillsToAdd.map((skillValue) => createSkillRow(skillValue, skillDefaults));
+            fieldNames.add("skills");
+          }
+        }
+      }
+
+      Object.entries(updates).forEach(([fieldName, fieldValue]) => {
+        if (fieldValue !== undefined && fieldValue !== null && fieldValue !== "") {
+          onChange(fieldName, fieldValue);
+        }
+      });
+
+      setMappedResumeFields(fieldNames);
+    } else {
+      // --- fallback: local parsing (previous behavior) ---
+      const text = await readResumeText(file);
+      if (!text) return;
+
+      const updates = {};
+      const fieldNames = new Set();
+      const normalizedLower = normalizeText(text).toLowerCase();
+      const emailMatch = text.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
+      const phoneMatch = text.match(/(?:\+?\d{1,3}[\s-]?)?(?:\(?\d{3,5}\)?[\s-]?)?\d{3,5}[\s-]?\d{4,6}/);
+
+      if (!normalizeText(formData.primaryEmail) && emailMatch?.[0]) {
+        updates.primaryEmail = emailMatch[0];
+        fieldNames.add("primaryEmail");
+      }
+
+      if (!normalizeText(formData.phoneNumber) && phoneMatch?.[0]) {
+        const digits = phoneMatch[0].replace(/\D/g, "");
+        if (digits.length >= 10) {
+          updates.phoneNumber = digits.slice(-10);
+          fieldNames.add("phoneNumber");
+        }
+      }
+
+      if (!normalizeText(formData.yearsExperience)) {
+        const yearsValue = mapYearsToBucket(extractExperienceYears(text) ?? Number.NaN);
+        if (yearsValue) {
+          updates.yearsExperience = yearsValue;
+          fieldNames.add("yearsExperience");
+          if (!normalizeText(formData.candidateType)) {
+            updates.candidateType = yearsValue === "0-1" ? "fresher" : "experienced";
+            fieldNames.add("candidateType");
+          }
+        }
+      }
+
+      const extractedName = extractCandidateName(text);
+      if (!normalizeText(formData.firstName) && extractedName.firstName) {
+        updates.firstName = extractedName.firstName;
+        fieldNames.add("firstName");
+      }
+      if (!normalizeText(formData.lastName) && extractedName.lastName) {
+        updates.lastName = extractedName.lastName;
+        fieldNames.add("lastName");
+      }
+
+      if (!normalizeText(formData.dateOfBirth)) {
+        const extractedDob = extractDateOfBirthValue(text);
+        if (extractedDob) {
+          updates.dateOfBirth = extractedDob;
+          fieldNames.add("dateOfBirth");
+        }
+      }
+
+      if (!normalizeText(formData.gender)) {
+        const extractedGender = extractGenderValue(text);
+        if (extractedGender) {
+          updates.gender = extractedGender;
+          fieldNames.add("gender");
+        }
+      }
+
+      if (!normalizeText(formData.primarySkill)) {
+        const configSkillOptions = [
+          { value: "java", label: "Core Java" },
+          { value: "python", label: "Python" },
+          { value: "react", label: "React" },
+          { value: "node", label: "Node.js" },
+          { value: "aws", label: "AWS" },
+          { value: "html5", label: "HTML5" },
+          { value: "css3", label: "CSS3" },
+          { value: "javascript", label: "JavaScript" },
+          { value: "jquery", label: "jQuery" },
+          { value: "bootstrap", label: "Bootstrap" },
+          { value: "react-js", label: "React.js" },
+          { value: "angular-4", label: "Angular 4" },
+          { value: "backbone-js", label: "Backbone.js" },
+        ];
+        const matchedSkills = collectMatchedSkillValues(text, configSkillOptions);
+        if (matchedSkills[0]) {
+          updates.primarySkill = matchedSkills[0];
+          fieldNames.add("primarySkill");
+        }
+        if (!normalizeText(formData.secondarySkill) && matchedSkills[1]) {
+          updates.secondarySkill = matchedSkills[1];
+          fieldNames.add("secondarySkill");
+        }
+
+        if (matchedSkills.length > 0) {
+          const existingSkillRows = Array.isArray(formData.skills) ? formData.skills : [];
+          const hasExistingPrimarySkill = existingSkillRows.some((row) => normalizeText(row?.primarySkill));
+          const yearsNumber = extractExperienceYears(text);
+          const effectiveYearsBucket = updates.yearsExperience || formData.yearsExperience;
+          const skillDefaults = getSkillDefaultsFromExperience(effectiveYearsBucket, yearsNumber);
+
+          if (!hasExistingPrimarySkill) {
+            updates.skills = matchedSkills.map((skillValue) => createSkillRow(skillValue, skillDefaults));
+            fieldNames.add("skills");
+          }
+        }
+      }
+
+      const { company, role } = extractCompanyAndRole(text);
+      if (!normalizeText(formData.currentCompanyName) && company) {
+        updates.currentCompanyName = company;
+        fieldNames.add("currentCompanyName");
+      }
+      if (!normalizeText(formData.jobTitleRole) && role) {
+        updates.jobTitleRole = role;
+        fieldNames.add("jobTitleRole");
+      }
+
+      if (!normalizeText(formData.employmentType)) {
+        if (normalizedLower.includes("full time") || normalizedLower.includes("full-time")) {
+          updates.employmentType = "full-time";
+          fieldNames.add("employmentType");
+        } else if (normalizedLower.includes("contract")) {
+          updates.employmentType = "contract";
+          fieldNames.add("employmentType");
+        } else if (normalizedLower.includes("intern") || normalizedLower.includes("internship")) {
+          updates.employmentType = "internship";
+          fieldNames.add("employmentType");
+        }
+      }
+
+      Object.entries(updates).forEach(([fieldName, fieldValue]) => {
+        if (fieldValue !== undefined && fieldValue !== null && fieldValue !== "") {
+          onChange(fieldName, fieldValue);
+        }
+      });
+
+      setMappedResumeFields(fieldNames);
+    }
+  };
+
   return (
     <div className="candidate-documents-step">
+      {/* Resume parsing is performed server-side — uploaded files are sent to the backend */}
+
       <div className="document-upload-header">Upload Document</div>
       <label
         htmlFor={inputId}

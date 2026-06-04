@@ -200,7 +200,18 @@ export default function TopBar({ isSidebarOpen, setSidebarOpen }) {
             <ul className="profileMenu" role="menu" aria-label="Profile menu">
               <li role="menuitem" className="profileMenuItem" onClick={() => { setMenuOpen(false); setProfileOpen(true); }}>Profile</li>
               <li role="menuitem" className="profileMenuItem" onClick={() => { setMenuOpen(false); setSettingsOpen(true); }}>Settings</li>
-              <li role="menuitem" className="profileMenuItem profileMenuDanger" onClick={() => { setMenuOpen(false); navigate('/login'); }}>Logout</li>
+              <li
+                role="menuitem"
+                className="profileMenuItem profileMenuDanger"
+                onClick={() => {
+                  setMenuOpen(false);
+                  localStorage.removeItem('authToken');
+                  localStorage.removeItem('token');
+                  navigate('/login');
+                }}
+              >
+                Logout
+              </li>
             </ul>
           )}
 

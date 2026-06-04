@@ -36,6 +36,17 @@ const LoadingFallback = () => (
   </div>
 );
 
+const isAuthenticated = () => Boolean(localStorage.getItem('authToken') || localStorage.getItem('token'));
+
+function RequireAuth({ children }) {
+  const location = useLocation();
+  return isAuthenticated() ? (
+    children
+  ) : (
+    <Navigate to="/login" replace state={{ from: location }} />
+  );
+}
+
 export default function App() {
   const [isSidebarOpen, setSidebarOpen] = React.useState(false);
   const location = useLocation();
@@ -133,22 +144,22 @@ export default function App() {
             <Route path="/" element={<Navigate to="/login" replace />} />
             <Route path="/login" element={<Login />} />
             <Route path="/sso/callback" element={<Login />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/job-openings" element={<JobOpenings />} />
-            <Route path="/candidates" element={<Candidates />} />
-            <Route path="/applications" element={<Applications />} />
-            <Route path="/interviews" element={<Interviews />} />
-            <Route path="/clients" element={<Clients />} />
-            <Route path="/job-openings/edit" element={<JobOpenings />} />
-            <Route path="/job-openings/create" element={<JobOpenings createMode={true} />} />
-            <Route path="/job-openings/:jobId" element={<JobDescription />} />
-            <Route path="/reports" element={<Reports />} />
-            <Route path="/calendar" element={<Calendar />} />
-            <Route path="/users" element={<UserRoles />} />
-            <Route path="/application" element={<ApplicationForm />} />
+            <Route path="/dashboard" element={<RequireAuth><Dashboard /></RequireAuth>} />
+            <Route path="/job-openings" element={<RequireAuth><JobOpenings /></RequireAuth>} />
+            <Route path="/candidates" element={<RequireAuth><Candidates /></RequireAuth>} />
+            <Route path="/applications" element={<RequireAuth><Applications /></RequireAuth>} />
+            <Route path="/interviews" element={<RequireAuth><Interviews /></RequireAuth>} />
+            <Route path="/clients" element={<RequireAuth><Clients /></RequireAuth>} />
+            <Route path="/job-openings/edit" element={<RequireAuth><JobOpenings /></RequireAuth>} />
+            <Route path="/job-openings/create" element={<RequireAuth><JobOpenings createMode={true} /></RequireAuth>} />
+            <Route path="/job-openings/:jobId" element={<RequireAuth><JobDescription /></RequireAuth>} />
+            <Route path="/reports" element={<RequireAuth><Reports /></RequireAuth>} />
+            <Route path="/calendar" element={<RequireAuth><Calendar /></RequireAuth>} />
+            <Route path="/users" element={<RequireAuth><UserRoles /></RequireAuth>} />
+            <Route path="/application" element={<RequireAuth><ApplicationForm /></RequireAuth>} />
 
             {/* TODO: add /chat route */}
-            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+            <Route path="*" element={isAuthenticated() ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />} />
           </Routes>
         </Suspense>
       </main>

@@ -103,7 +103,7 @@ const getAuthErrorMessage = (err, fallbackMessage) => {
 };
 
 const Login = () => {
-  const [role, setRole] = useState('recruiter');
+  // Role is inferred from the email; remove manual selection
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -211,9 +211,16 @@ const Login = () => {
 
     try {
       const normalizedEmail = email.toLowerCase().trim();
-      const roleCredentials = LOGIN_CREDENTIALS_BY_ROLE[role] || [];
+
+      // Infer role from known demo credentials; if none match, leave undefined
+      const inferredRole = Object.keys(LOGIN_CREDENTIALS_BY_ROLE).find((r) =>
+        LOGIN_CREDENTIALS_BY_ROLE[r].some((item) => String(item.email || '').toLowerCase() === normalizedEmail),
+      );
+
+      const roleCredentials = inferredRole ? (LOGIN_CREDENTIALS_BY_ROLE[inferredRole] || []) : [];
 
       if (!USE_LOGIN_API) {
+        // For local demo, require that the email exists in our demo lists and password matches
         const localMatch = roleCredentials.some(
           (item) => item.email.toLowerCase() === normalizedEmail && item.password === password,
         );
@@ -225,18 +232,18 @@ const Login = () => {
         persistAuthSession(
           {
             email: normalizedEmail,
-            role: STORED_ROLE_BY_LOGIN_ROLE[role],
-            token: `local-${role}-token`,
-            name: role === 'accountManager' ? 'Account Manager' : 'Recruiter',
+            role: STORED_ROLE_BY_LOGIN_ROLE[inferredRole],
+            token: `local-${inferredRole}-token`,
+            name: inferredRole === 'accountManager' ? 'Account Manager' : 'Recruiter',
           },
-          role,
+          inferredRole,
         );
       } else {
         const response = await loginWithPassword({
           email: normalizedEmail,
           password,
         });
-        persistAuthSession(response, role);
+        persistAuthSession(response, inferredRole);
       }
 
       navigate('/dashboard');
@@ -313,18 +320,7 @@ const Login = () => {
               </button>
             </div>
           </div>
-          <div className="form-group">
-            <label htmlFor="role">Login As</label>
-            <select
-              id="role"
-              value={role}
-              onChange={(e) => setRole(e.target.value)}
-              aria-label="Select login role"
-            >
-              <option value="recruiter">Recruiter</option>
-              <option value="accountManager">Account Manager</option>
-            </select>
-          </div>
+          {/* Role is inferred automatically from the email address; no manual selector */}
           <div className="form-options">
             <label className="remember-me">
               <input type="checkbox" /> Remember me

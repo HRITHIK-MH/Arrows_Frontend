@@ -2,6 +2,7 @@ import React, { useEffect, useMemo } from "react";
 import * as pdfjsLib from "pdfjs-dist";
 import pdfjsWorkerSrc from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 import FormField from "./FormField";
+import { parseResume, mapResumeToFormFields } from "../../api/resumeParserService";
 
 const normalizeText = (value) => String(value || "").replace(/\s+/g, " ").trim();
 
@@ -663,12 +664,96 @@ const CandidateBasicInfoStep = ({
 
     const parseAndMapResume = async () => {
       try {
-        const extractedText = await readResumeText(sourceFile);
+        const parsedData = await parseResume(sourceFile);
         if (isCancelled) return;
 
         parsedResumeRef.current = fileKey;
+        if (parsedData && typeof parsedData === "object") {
+          const mappedData = parsedData.personal_information || parsedData.professional_information
+            ? mapResumeToFormFields(parsedData)
+            : parsedData;
+
+          const updates = {};
+
+          if (!normalizeText(formData.firstName) && normalizeText(mappedData.firstName)) {
+            updates.firstName = mappedData.firstName;
+          }
+          if (!normalizeText(formData.lastName) && normalizeText(mappedData.lastName)) {
+            updates.lastName = mappedData.lastName;
+          }
+
+          if (!normalizeText(formData.primaryEmail) && normalizeText(mappedData.email)) {
+            updates.primaryEmail = mappedData.email;
+          }
+
+          if (!normalizeText(formData.phoneNumber) && normalizeText(mappedData.phone)) {
+            const digits = String(mappedData.phone).replace(/\D/g, "");
+            if (digits.length >= 10) {
+              updates.phoneNumber = digits.slice(-10);
+            }
+          }
+
+          if (!normalizeText(formData.dateOfBirth) && normalizeText(mappedData.dateOfBirth)) {
+            updates.dateOfBirth = mappedData.dateOfBirth;
+          }
+
+          if (!normalizeText(formData.gender) && normalizeText(mappedData.gender)) {
+            updates.gender = mappedData.gender;
+          }
+
+          if (!normalizeText(formData.yearsExperience) && Number.isFinite(Number(mappedData.totalExperience))) {
+            const years = Number(mappedData.totalExperience);
+            const mappedExperience = mapYearsToBucket(years);
+            if (mappedExperience) {
+              updates.yearsExperience = mappedExperience;
+              if (!normalizeText(formData.candidateType)) {
+                updates.candidateType = years > 0 ? "experienced" : "fresher";
+              }
+            }
+          }
+
+          if (!normalizeText(formData.currentCompanyName) && normalizeText(mappedData.currentCompany)) {
+            updates.currentCompanyName = mappedData.currentCompany;
+          }
+          if (!normalizeText(formData.jobTitleRole) && normalizeText(mappedData.currentDesignation)) {
+            updates.jobTitleRole = mappedData.currentDesignation;
+          }
+          if (!normalizeText(formData.employmentType) && normalizeText(mappedData.employmentType)) {
+            updates.employmentType = mappedData.employmentType;
+          }
+
+          if (!normalizeText(formData.primarySkill) && normalizeText(mappedData.skills)) {
+            const skillsList = String(mappedData.skills || "").split(/[;,]+/).map((skill) => skill.trim()).filter(Boolean);
+            if (skillsList[0]) {
+              updates.primarySkill = skillsList[0];
+            }
+            if (!normalizeText(formData.secondarySkill) && skillsList[1]) {
+              updates.secondarySkill = skillsList[1];
+            }
+          }
+
+          Object.entries(updates).forEach(([fieldName, fieldValue]) => {
+            if (fieldValue !== undefined && fieldValue !== null && fieldValue !== "") {
+              onChange(fieldName, fieldValue);
+            }
+          });
+
+          // If GPT parse succeeded, skip the local heuristic parser.
+          if (Object.keys(updates).length > 0) {
+            return;
+          }
+        }
+      } catch (error) {
+        console.error("GPT resume parsing failed, falling back to local parse:", error);
+      }
+
+      try {
+        const extractedText = await readResumeText(sourceFile);
+        if (isCancelled) return;
+
         if (!extractedText) return;
 
+        parsedResumeRef.current = fileKey;
         const normalized = normalizeText(extractedText);
         const normalizedLower = toLower(normalized);
         const updates = {};
@@ -676,16 +761,16 @@ const CandidateBasicInfoStep = ({
         const emailMatch = normalized.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
         const phoneMatch = normalized.match(/(?:\+?\d{1,3}[\s-]?)?(?:\(?\d{3,5}\)?[\s-]?)?\d{3,5}[\s-]?\d{4,6}/);
 
-      if (!normalizeText(formData.primaryEmail) && emailMatch?.[0]) {
-        updates.primaryEmail = emailMatch[0];
-      }
-
-      if (!normalizeText(formData.phoneNumber) && phoneMatch?.[0]) {
-        const digits = phoneMatch[0].replace(/\D/g, "");
-        if (digits.length >= 10) {
-          updates.phoneNumber = digits.slice(-10);
+        if (!normalizeText(formData.primaryEmail) && emailMatch?.[0]) {
+          updates.primaryEmail = emailMatch[0];
         }
-      }
+
+        if (!normalizeText(formData.phoneNumber) && phoneMatch?.[0]) {
+          const digits = phoneMatch[0].replace(/\D/g, "");
+          if (digits.length >= 10) {
+            updates.phoneNumber = digits.slice(-10);
+          }
+        }
 
         if (!normalizeText(formData.yearsExperience)) {
           const yearsNumber = extractExperienceYears(extractedText);
@@ -949,6 +1034,23 @@ const CandidateBasicInfoStep = ({
                     onChange={() => {
                       onChange("candidateTemplateMode", "no");
                       onChange("candidateTemplateFile", "");
+                      // Clear auto-filled resume fields
+                      onChange("firstName", "");
+                      onChange("lastName", "");
+                      onChange("primaryEmail", "");
+                      onChange("phoneNumber", "");
+                      onChange("dateOfBirth", "");
+                      onChange("gender", "");
+                      onChange("yearsExperience", "");
+                      onChange("candidateType", "");
+                      onChange("primarySkill", "");
+                      onChange("secondarySkill", "");
+                      onChange("skills", []);
+                      onChange("currentCompanyName", "");
+                      onChange("jobTitleRole", "");
+                      onChange("employmentType", "");
+                      onChange("candidateDocuments", []);
+                      onChange("candidateResume", "");
                     }}
                   />
                   <span>No</span>
