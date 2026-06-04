@@ -145,8 +145,9 @@
 .description {
   margin: 0;
   color: #4b5563;
-  font-size: 13px;
-  line-height: 1.5;
+  font-size: clamp(15px, 1vw, 18px);
+  line-height: 1.45;
+  font-weight: 500;
   flex: 1 1 auto;
 }
 
@@ -449,6 +450,64 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   overflow: hidden;
+}
+
+.dateRangeAnchor {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.dateRangeToggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  background-image: none !important;
+  padding-right: 10px;
+  min-width: 140px;
+}
+
+.dateRangeToggleActive {
+  border-color: #3b82f6;
+  background-color: #f8fafc;
+}
+
+.dropdownIcon {
+  color: #94a3b8;
+  transition: transform 0.2s ease;
+}
+
+.dateRangeToggleActive .dropdownIcon {
+  transform: rotate(180deg);
+  color: #3b82f6;
+}
+
+.dateRangeMenu {
+  position: absolute;
+  left: 0;
+  top: calc(100% + 8px);
+  width: 280px;
+  background: #fff;
+  border: 1px solid #dfe5ef;
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+  z-index: 60;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dateRangeItem {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dateRangeLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
 }
 
 .dateField {
@@ -1449,7 +1508,7 @@
   }
 
   .description {
-    font-size: 12px;
+    font-size: 14px;
   }
 
   .createButton {
@@ -1804,7 +1863,7 @@
   }
 
   .description {
-    font-size: 12px;
+    font-size: 14px;
     line-height: 1.4;
   }
 

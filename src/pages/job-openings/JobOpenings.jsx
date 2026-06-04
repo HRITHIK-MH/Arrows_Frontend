@@ -130,8 +130,10 @@ const FilterBar = React.memo(({
   onSearchChange,
   filterPostingTitle,
   onFilterPostingTitleChange,
-  filterTargetDate,
-  onFilterTargetDateChange,
+  filterTargetDateStart,
+  onFilterTargetDateStartChange,
+  filterTargetDateEnd,
+  onFilterTargetDateEndChange,
   filterJobStatus,
   onFilterJobStatusChange,
   filterPriority,
@@ -142,6 +144,20 @@ const FilterBar = React.memo(({
   hasFilters,
   onClearFilters
 }) => {
+  const [isDateRangeOpen, setIsDateRangeOpen] = React.useState(false);
+  const dateRangeRef = React.useRef(null);
+
+  React.useEffect(() => {
+    if (!isDateRangeOpen) return undefined;
+    const handleOutsideClick = (event) => {
+      if (dateRangeRef.current && !dateRangeRef.current.contains(event.target)) {
+        setIsDateRangeOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, [isDateRangeOpen]);
+
   return (
     <div className={styles.filtersBar}>
       <div className={styles.filtersLeft}>
@@ -168,12 +184,39 @@ const FilterBar = React.memo(({
           ))}
         </select>
 
-        <input
-          type="date"
-          value={filterTargetDate}
-          onChange={onFilterTargetDateChange}
-          className={styles.dateField}
-        />
+        <div ref={dateRangeRef} className={styles.dateRangeAnchor}>
+          <button
+            type="button"
+            className={`${styles.selectField} ${styles.dateRangeToggle}${isDateRangeOpen ? ` ${styles.dateRangeToggleActive}` : ""}`}
+            onClick={() => setIsDateRangeOpen((prev) => !prev)}
+          >
+            Target Date
+            <FiChevronDown size={14} className={styles.dropdownIcon} />
+          </button>
+
+          {isDateRangeOpen && (
+            <div className={styles.dateRangeMenu}>
+              <div className={styles.dateRangeItem}>
+                <label className={styles.dateRangeLabel}>From Date</label>
+                <input
+                  type="date"
+                  value={filterTargetDateStart}
+                  onChange={onFilterTargetDateStartChange}
+                  className={styles.dateField}
+                />
+              </div>
+              <div className={styles.dateRangeItem}>
+                <label className={styles.dateRangeLabel}>To Date</label>
+                <input
+                  type="date"
+                  value={filterTargetDateEnd}
+                  onChange={onFilterTargetDateEndChange}
+                  className={styles.dateField}
+                />
+              </div>
+            </div>
+          )}
+        </div>
 
         <select
           value={filterJobStatus}
@@ -228,10 +271,10 @@ export default function JobOpenings({ createMode = false }) {
     }
 
     if (currentUserRole === "accountmanager" || currentUserRole === "manager" || currentUserRole === "management") {
-      return <><strong>Centralize hiring demands, application pipelines,</strong> and <strong> recruitment progress</strong> across all openings.</>;
+      return <>Centralize<strong> Hiring Demands, Application Pipelines,</strong> and <strong> Recruitment Progress</strong> across all openings.</>;
     }
 
-    return <strong>Centralize hiring demands, application pipelines, and recruitment progress across all openings.</strong>;
+    return <strong>Centralize Hiring Demands, Application Pipelines, and Recruitment Progress Across All Openings.</strong>;
   }, [currentUserRole]);
   const isRecruiter = currentUserRole === "recruiter";
   const [showJobOpeningForm, setShowJobOpeningForm] = React.useState(false);
@@ -411,7 +454,8 @@ export default function JobOpenings({ createMode = false }) {
   const [jobOpeningFormKey, setJobOpeningFormKey] = React.useState(0);
   const [searchTerm, setSearchTerm] = React.useState('');
   const [filterPostingTitle, setFilterPostingTitle] = React.useState('');
-  const [filterTargetDate, setFilterTargetDate] = React.useState('');
+  const [filterTargetDateStart, setFilterTargetDateStart] = React.useState('');
+  const [filterTargetDateEnd, setFilterTargetDateEnd] = React.useState('');
   const [filterJobStatus, setFilterJobStatus] = React.useState('');
   const [filterPriority, setFilterPriority] = React.useState('');
   const [entriesPerPage, setEntriesPerPage] = React.useState(10);
@@ -626,8 +670,13 @@ export default function JobOpenings({ createMode = false }) {
     setCurrentPage(1);
   }, []);
 
-  const handleFilterTargetDateChange = React.useCallback((e) => {
-    setFilterTargetDate(e.target.value);
+  const handleFilterTargetDateStartChange = React.useCallback((e) => {
+    setFilterTargetDateStart(e.target.value);
+    setCurrentPage(1);
+  }, []);
+
+  const handleFilterTargetDateEndChange = React.useCallback((e) => {
+    setFilterTargetDateEnd(e.target.value);
     setCurrentPage(1);
   }, []);
 
@@ -692,7 +741,12 @@ export default function JobOpenings({ createMode = false }) {
         );
 
       const matchesPostingTitle = !filterPostingTitle || item.postingTitle === filterPostingTitle;
-      const matchesTargetDate = !filterTargetDate || item.targetDate === filterTargetDate;
+      const hasTargetDateFilter = Boolean(filterTargetDateStart || filterTargetDateEnd);
+      const matchesTargetDate =
+        !hasTargetDateFilter ||
+        (item.targetDate &&
+          (!filterTargetDateStart || item.targetDate >= filterTargetDateStart) &&
+          (!filterTargetDateEnd || item.targetDate <= filterTargetDateEnd));
       const matchesJobStatus = !filterJobStatus || item.jobOpeningStatus === filterJobStatus;
       const matchesPriority = !filterPriority || item.priority === filterPriority;
 
@@ -719,13 +773,14 @@ export default function JobOpenings({ createMode = false }) {
 
     return result;
   },
-    [normalizedData, deferredSearchTerm, filterPostingTitle, filterTargetDate, filterJobStatus, filterPriority, sortConfig]
+    [normalizedData, deferredSearchTerm, filterPostingTitle, filterTargetDateStart, filterTargetDateEnd, filterJobStatus, filterPriority, sortConfig]
   );
 
   const hasFilters = Boolean(
     searchTerm ||
     filterPostingTitle ||
-    filterTargetDate ||
+    filterTargetDateStart ||
+    filterTargetDateEnd ||
     filterJobStatus ||
     filterPriority
   );
@@ -733,7 +788,8 @@ export default function JobOpenings({ createMode = false }) {
   const clearFilters = React.useCallback(() => {
     setSearchTerm('');
     setFilterPostingTitle('');
-    setFilterTargetDate('');
+    setFilterTargetDateStart('');
+    setFilterTargetDateEnd('');
     setFilterJobStatus('');
     setFilterPriority('');
     setCurrentPage(1);
@@ -1378,8 +1434,10 @@ export default function JobOpenings({ createMode = false }) {
               onSearchChange={handleSearchChange}
               filterPostingTitle={filterPostingTitle}
               onFilterPostingTitleChange={handleFilterPostingTitleChange}
-              filterTargetDate={filterTargetDate}
-              onFilterTargetDateChange={handleFilterTargetDateChange}
+              filterTargetDateStart={filterTargetDateStart}
+              onFilterTargetDateStartChange={handleFilterTargetDateStartChange}
+              filterTargetDateEnd={filterTargetDateEnd}
+              onFilterTargetDateEndChange={handleFilterTargetDateEndChange}
               filterJobStatus={filterJobStatus}
               onFilterJobStatusChange={handleFilterJobStatusChange}
               filterPriority={filterPriority}

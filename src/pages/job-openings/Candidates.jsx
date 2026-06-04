@@ -107,7 +107,6 @@ CandidateFilterBar.displayName = 'CandidateFilterBar';
 const PROFILE_TABS = [
   "Basic Info",
   "Skills",
-  "Resume",
   "Timeline",
   "Rating",
   "Attachment",
@@ -275,6 +274,21 @@ export default function Candidates() {
   const addCandidateMenuRef = React.useRef(null);
   const resumeUploadRef = React.useRef(null);
 
+  React.useEffect(() => {
+    window.dispatchEvent(new CustomEvent("topbar-page-label-change", {
+      detail: showCandidateForm ? {
+        title: "Add candidate",
+        breadcrumbLabel: "Add candidate",
+      } : null,
+    }));
+
+    return () => {
+      window.dispatchEvent(new CustomEvent("topbar-page-label-change", {
+        detail: null,
+      }));
+    };
+  }, [showCandidateForm]);
+
   const currentUserRole = React.useMemo(() => {
     if (typeof window === "undefined") return "";
     return String(window.localStorage.getItem("userRole") || "").trim().toLowerCase();
@@ -291,7 +305,7 @@ export default function Candidates() {
 
     return (
       <>
-        <strong>Centralize candidate profiles</strong> and <strong>monitor recruitment progress</strong> from sourcing to final selection.
+        Centralize<strong> Candidate Profiles</strong> and <strong>Monitor Recruitment Progress</strong> from sourcing to final selection.
       </>
     );
   }, [currentUserRole]);
@@ -2067,7 +2081,7 @@ export default function Candidates() {
                 ))}
               </div>
 
-              <div className={styles.mapActionBar}>
+              <div className={styles.mapActionBar} hidden aria-hidden="true">
                 <div className={styles.mapSelectWrap} ref={mapDropdownRef}>
                   <button
                     type="button"
@@ -2126,4 +2140,3 @@ export default function Candidates() {
     </div>
   );
 }
-

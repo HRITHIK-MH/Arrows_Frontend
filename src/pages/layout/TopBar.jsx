@@ -21,6 +21,16 @@ function buildLabelMap() {
   return map;
 }
 
+const pageTitleMap = {
+  "/candidates": "Candidates List",
+  "/clients": "Clients List",
+};
+
+const routeLabelMap = {
+  "/job-openings/create": "Create Job Opening",
+  "/jobs/create": "Create Job Opening",
+};
+
 
 /** Create crumbs from pathname and ALWAYS start with Dashboard */
 function useDashboardFirstCrumbs() {
@@ -60,7 +70,7 @@ function useDashboardFirstCrumbs() {
 
     parts.forEach((seg) => {
       accPath += `/${seg}`;
-      const label = labelMap[seg] || seg.charAt(0).toUpperCase() + seg.slice(1);
+      const label = routeLabelMap[accPath] || labelMap[seg] || seg.charAt(0).toUpperCase() + seg.slice(1);
       crumbs.push({
         label,
         path: accPath,
@@ -78,8 +88,25 @@ function useDashboardFirstCrumbs() {
 
 
 export default function TopBar({ isSidebarOpen, setSidebarOpen }) {
+  const location = useLocation();
   const crumbs = useDashboardFirstCrumbs();
-  const pageTitle = crumbs.length ? crumbs[crumbs.length - 1].label : "Dashboard";
+  const [pageLabelOverride, setPageLabelOverride] = useState(null);
+  const displayCrumbs = useMemo(() => {
+    if (!pageLabelOverride?.breadcrumbLabel || crumbs.length === 0) return crumbs;
+    const nextCrumbs = crumbs.map((crumb, idx) => (
+      idx === crumbs.length - 1 ? { ...crumb, isHighlighted: true, isLast: false } : crumb
+    ));
+
+    nextCrumbs.push({
+      label: pageLabelOverride.breadcrumbLabel,
+      path: `${location.pathname}#${pageLabelOverride.breadcrumbLabel}`,
+      isLast: true,
+      isPlain: true,
+    });
+
+    return nextCrumbs;
+  }, [crumbs, location.pathname, pageLabelOverride]);
+  const pageTitle = pageLabelOverride?.title || pageTitleMap[location.pathname] || (crumbs.length ? crumbs[crumbs.length - 1].label : "Dashboard");
   const isDashboardOnly = crumbs.length === 1 && crumbs[0]?.path === "/dashboard";
   const navigate = useNavigate();
   const currentUserRole = useMemo(() => {
@@ -107,6 +134,19 @@ export default function TopBar({ isSidebarOpen, setSidebarOpen }) {
   const menuRef = useRef(null);
   const [profileOpen, setProfileOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+
+  useEffect(() => {
+    setPageLabelOverride(null);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    const handlePageLabelChange = (event) => {
+      setPageLabelOverride(event.detail || null);
+    };
+
+    window.addEventListener("topbar-page-label-change", handlePageLabelChange);
+    return () => window.removeEventListener("topbar-page-label-change", handlePageLabelChange);
+  }, []);
 
 
   // Close profile menu when clicking outside
@@ -149,14 +189,18 @@ export default function TopBar({ isSidebarOpen, setSidebarOpen }) {
         {!isDashboardOnly && (
           <nav className="breadcrumb" aria-label="Breadcrumb">
             <ol className="breadcrumbList">
-              {crumbs.map((c, i) => (
+              {displayCrumbs.map((c, i) => (
                 <li key={c.path} className="breadcrumbItem">
                   {/* Separator only between items */}
                   {i > 0 && <span className="breadcrumbSep" aria-hidden="true">/</span>}
 
 
-                  {c.isLast ? (
+                  {c.isHighlighted ? (
+                    <span className="breadcrumbCurrent">{c.label}</span>
+                  ) : c.isLast ? (
                     <span className="breadcrumbCurrent" aria-current="page">{c.label}</span>
+                  ) : c.isPlain ? (
+                    <span>{c.label}</span>
                   ) : (
                     <Link to={c.path} className="breadcrumbLink">{c.label}</Link>
                   )}
@@ -222,8 +266,3 @@ export default function TopBar({ isSidebarOpen, setSidebarOpen }) {
     </header>
   );
 }
-
-
-
-
-
