@@ -143,6 +143,7 @@ export default function App() {
           <Routes key={location.pathname}>
             <Route path="/" element={<Navigate to="/login" replace />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/login/sso-callback" element={<Login />} />
             <Route path="/sso/callback" element={<Login />} />
             <Route path="/dashboard" element={<RequireAuth><Dashboard /></RequireAuth>} />
             <Route path="/job-openings" element={<RequireAuth><JobOpenings /></RequireAuth>} />
