@@ -30,7 +30,7 @@ const LOGIN_CREDENTIALS_BY_ROLE = {
 const STORED_ROLE_BY_LOGIN_ROLE = {
   recruiter: 'recruiter',
   accountManager: 'accountmanager',
-  businessStakeholder: 'accountmanager',
+  businessStakeholder: 'businessstakeholder',
 };
 
 const STORED_PERSONA_BY_LOGIN_ROLE = {
@@ -42,10 +42,10 @@ const ROLE_ALIAS_MAP = {
   accountmanager: 'accountmanager',
   account_manager: 'accountmanager',
   'account manager': 'accountmanager',
-  businessstakeholder: 'accountmanager',
-  business_stakeholder: 'accountmanager',
-  'business stakeholder': 'accountmanager',
-  stakeholder: 'accountmanager',
+  businessstakeholder: 'businessstakeholder',
+  business_stakeholder: 'businessstakeholder',
+  'business stakeholder': 'businessstakeholder',
+  stakeholder: 'businessstakeholder',
   manager: 'accountmanager',
   management: 'accountmanager',
 };
