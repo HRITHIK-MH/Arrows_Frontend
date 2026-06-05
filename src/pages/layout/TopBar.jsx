@@ -113,7 +113,18 @@ export default function TopBar({ isSidebarOpen, setSidebarOpen }) {
     if (typeof window === "undefined") return "";
     return String(window.localStorage.getItem("userRole") || "").toLowerCase();
   }, []);
+  const currentUserPersona = useMemo(() => {
+    if (typeof window === "undefined") return "";
+    return String(window.localStorage.getItem("userPersona") || "").toLowerCase();
+  }, []);
   const profileDisplay = useMemo(() => {
+    if (currentUserPersona === "businessstakeholder") {
+      return {
+        name: "Stakeholder",
+        role: "Business Stakeholder",
+      };
+    }
+
     if (currentUserRole === "accountmanager") {
       return {
         name: "Surya",
@@ -123,9 +134,9 @@ export default function TopBar({ isSidebarOpen, setSidebarOpen }) {
 
     return {
       name: "Saravanan",
-      role: "Team Lead",
+      role: "Recruiter",
     };
-  }, [currentUserRole]);
+  }, [currentUserPersona, currentUserRole]);
   const profileInitial = (profileDisplay.name || "S").charAt(0).toUpperCase();
 
 
@@ -214,9 +225,6 @@ export default function TopBar({ isSidebarOpen, setSidebarOpen }) {
       <div className="topActions">
         <NotificationBell />
 
-
-
-
         {/* Profile */}
         <div className="profile" ref={menuRef}>
           <button
@@ -251,6 +259,7 @@ export default function TopBar({ isSidebarOpen, setSidebarOpen }) {
                   setMenuOpen(false);
                   localStorage.removeItem('authToken');
                   localStorage.removeItem('token');
+                  localStorage.removeItem('userPersona');
                   navigate('/login');
                 }}
               >
