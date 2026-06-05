@@ -6,9 +6,11 @@ import { useEffect, Suspense, lazy } from "react";
 import TopBar from "./pages/layout/TopBar.jsx";
 import Sidebar from "./pages/layout/Sidebar.jsx";
 import Login from "./pages/login/Login.jsx";
+import { isBusinessStakeholder } from "./pages/layout/routesConfig.js";
 
 // Lazy load page components for code splitting
 const Dashboard = lazy(() => import("./pages/dashboard/Dashboard.jsx"));
+const Headcount = lazy(() => import("./pages/headcount/Headcount.jsx"));
 const JobOpenings = lazy(() => import("./pages/job-openings/JobOpenings.jsx"));
 const Candidates = lazy(() =>
   import("./pages/job-openings/Candidates.jsx").catch(err => {
@@ -44,6 +46,14 @@ function RequireAuth({ children }) {
     children
   ) : (
     <Navigate to="/login" replace state={{ from: location }} />
+  );
+}
+
+function RequireBusinessStakeholder({ children }) {
+  return isAuthenticated() && isBusinessStakeholder() ? (
+    children
+  ) : (
+    <Navigate to="/dashboard" replace />
   );
 }
 
@@ -146,6 +156,7 @@ export default function App() {
             <Route path="/login/sso-callback" element={<Login />} />
             <Route path="/sso/callback" element={<Login />} />
             <Route path="/dashboard" element={<RequireAuth><Dashboard /></RequireAuth>} />
+            <Route path="/headcount" element={<RequireBusinessStakeholder><Headcount /></RequireBusinessStakeholder>} />
             <Route path="/job-openings" element={<RequireAuth><JobOpenings /></RequireAuth>} />
             <Route path="/candidates" element={<RequireAuth><Candidates /></RequireAuth>} />
             <Route path="/applications" element={<RequireAuth><Applications /></RequireAuth>} />

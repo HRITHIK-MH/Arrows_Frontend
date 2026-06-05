@@ -1,7 +1,7 @@
 import '@fontsource/poppins/400.css';
 import '@fontsource/poppins/500.css';
 import '@fontsource/poppins/700.css';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { FiEye, FiEyeOff } from "react-icons/fi";
 import { MdOutlineEmail } from "react-icons/md";
 import { TbLockPassword } from "react-icons/tb";
@@ -20,12 +20,21 @@ const LOGIN_CREDENTIALS_BY_ROLE = {
   ],
   accountManager: [
     { email: 'accmanager@method-hub.com', password: 'accmanager' }
+  ],
+  businessStakeholder: [
+    { email: 'businessstakeholder@method-hub.com', password: 'businessstakeholder' },
+    { email: 'stakeholder@method-hub.com', password: 'stakeholder' }
   ]
 };
 
 const STORED_ROLE_BY_LOGIN_ROLE = {
   recruiter: 'recruiter',
   accountManager: 'accountmanager',
+  businessStakeholder: 'accountmanager',
+};
+
+const STORED_PERSONA_BY_LOGIN_ROLE = {
+  businessStakeholder: 'businessstakeholder',
 };
 
 const ROLE_ALIAS_MAP = {
@@ -33,6 +42,10 @@ const ROLE_ALIAS_MAP = {
   accountmanager: 'accountmanager',
   account_manager: 'accountmanager',
   'account manager': 'accountmanager',
+  businessstakeholder: 'accountmanager',
+  business_stakeholder: 'accountmanager',
+  'business stakeholder': 'accountmanager',
+  stakeholder: 'accountmanager',
   manager: 'accountmanager',
   management: 'accountmanager',
 };
@@ -66,6 +79,32 @@ const extractRoleValue = (response = {}) => {
     }
     if (firstAuthority && typeof firstAuthority === 'object') {
       return normalizeRoleValue(firstAuthority.authority || firstAuthority.name || '');
+    }
+  }
+
+  return '';
+};
+
+const extractPersonaValue = (response = {}) => {
+  const readPersona = (value) => {
+    const text = String(value || '').trim().toLowerCase();
+    const compact = text.replace(/[\s_-]+/g, '');
+    return text === 'business stakeholder' || compact === 'businessstakeholder' || compact === 'stakeholder'
+      ? 'businessstakeholder'
+      : '';
+  };
+
+  const directPersona = readPersona(response?.persona || response?.role);
+  if (directPersona) return directPersona;
+
+  const roleCollections = [response?.roles, response?.authorities].filter(Array.isArray);
+  for (const collection of roleCollections) {
+    for (const role of collection) {
+      const roleValue = typeof role === 'string'
+        ? role
+        : role?.role || role?.name || role?.authority || '';
+      const persona = readPersona(roleValue);
+      if (persona) return persona;
     }
   }
 
@@ -112,7 +151,7 @@ const Login = () => {
   const [emailError, setEmailError] = useState('');
   const navigate = useNavigate();
 
-  const persistAuthSession = (response = {}, fallbackRole = '') => {
+  const persistAuthSession = useCallback((response = {}, fallbackRole = '') => {
     const emailValue = String(response?.email || email || '').toLowerCase().trim();
     const roleValue = extractRoleValue(response) || STORED_ROLE_BY_LOGIN_ROLE[fallbackRole] || normalizeRoleValue(fallbackRole);
 
@@ -122,6 +161,12 @@ const Login = () => {
     if (roleValue) {
       localStorage.setItem('userRole', roleValue);
     }
+    const personaValue = extractPersonaValue(response) || STORED_PERSONA_BY_LOGIN_ROLE[fallbackRole] || '';
+    if (personaValue) {
+      localStorage.setItem('userPersona', personaValue);
+    } else {
+      localStorage.removeItem('userPersona');
+    }
     if (response?.name) {
       localStorage.setItem('userName', String(response.name).trim());
     }
@@ -129,7 +174,7 @@ const Login = () => {
       localStorage.setItem('token', response.token);
       localStorage.setItem('authToken', response.token);
     }
-  };
+  }, [email]);
 
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
@@ -177,11 +222,10 @@ const Login = () => {
     return () => {
       active = false;
     };
-  }, [navigate]);
+  }, [navigate, persistAuthSession]);
 
   const validateEmail = async () => {
-    if (!email) return;
-    setEmailError('Validating email...');
+    
     // Accept known local-login emails even if they don't match strict email regex.
     try {
       await new Promise((resolve, reject) => {
@@ -233,8 +277,13 @@ const Login = () => {
           {
             email: normalizedEmail,
             role: STORED_ROLE_BY_LOGIN_ROLE[inferredRole],
+            persona: STORED_PERSONA_BY_LOGIN_ROLE[inferredRole],
             token: `local-${inferredRole}-token`,
-            name: inferredRole === 'accountManager' ? 'Account Manager' : 'Recruiter',
+            name: inferredRole === 'businessStakeholder'
+              ? 'Business Stakeholder'
+              : STORED_ROLE_BY_LOGIN_ROLE[inferredRole] === 'accountmanager'
+                ? 'Account Manager'
+                : 'Recruiter',
           },
           inferredRole,
         );
@@ -330,12 +379,6 @@ const Login = () => {
           {error && <p className="error-message">{error}</p>}
           <button type="submit" className="login-btn" disabled={loading}>
             {loading ? 'Signing In...' : 'Sign In'}
-          </button>
-          <div className="login-divider">
-            <span>or</span>
-          </div>
-          <button type="button" className="login-btn login-btn-secondary" onClick={handleSsoLogin} disabled={loading}>
-            {loading ? 'Starting SSO...' : 'Sign In With SSO'}
           </button>
         </form>
       </div>
