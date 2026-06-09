@@ -1,4 +1,4 @@
-﻿import { FiTrash2 } from 'react-icons/fi';
+import { FiTrash2 } from 'react-icons/fi';
 import { useEffect, useRef, useState } from 'react';
 import { validateMandatoryField } from '../../utils/formValidation';
 import './FormField.css';
@@ -462,6 +462,25 @@ const FormField = ({
               )}
             </div>
           )}
+        </div>
+      ) : type === 'radio' ? (
+        <div className="radio-option-group" role="radiogroup" aria-label={cleanedLabel}>
+          {normalizedSelectOptions.map((option) => (
+            <label key={option.key} className={`radio-option${String(option.value) === String(value) ? ' selected' : ''}`}>
+              <input
+                type="radio"
+                name={name}
+                value={option.value}
+                checked={String(option.value) === String(value)}
+                onChange={() => {
+                  onChange(name, option.value);
+                  triggerFieldValidation(option.value);
+                }}
+                disabled={disabled}
+              />
+              <span>{option.label}</span>
+            </label>
+          ))}
         </div>
       ) : type === 'textarea' ? (
         <textarea

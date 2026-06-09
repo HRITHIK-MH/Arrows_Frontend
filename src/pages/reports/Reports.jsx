@@ -3,7 +3,6 @@ import { FiCalendar } from "react-icons/fi";
 import styles from "./Reports.module.scss";
 
 export default function Reports() {
-  const [activeTab, setActiveTab] = React.useState("overall");
   const [fromDate, setFromDate] = React.useState("");
   const [toDate, setToDate] = React.useState("");
   const [loading, setLoading] = React.useState(false);
@@ -13,7 +12,7 @@ export default function Reports() {
     { label: "Sourced", value: 1048 },
     { label: "Pre Screened", value: 583 },
     { label: "Client Interviews", value: 482 },
-    { label: "Client Submissions", value: 220},
+    { label: "Client Submissions", value: 220 },
     { label: "Offers", value: 70 },
     { label: "Hires", value: 32 }
   ]);
@@ -89,21 +88,6 @@ export default function Reports() {
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className={styles.tabsSection}>
-        <button
-          className={`${styles.tab} ${activeTab === "overall" ? styles.activeTab : ""}`}
-          onClick={() => setActiveTab("overall")}
-        >
-          Over all
-        </button>
-        <button
-          className={`${styles.tab} ${activeTab === "client" ? styles.activeTab : ""}`}
-          onClick={() => setActiveTab("client")}
-        >
-          Client Round Status
-        </button>
-      </div>
 
       {/* Content Area */}
       <div className={styles.contentArea}>
@@ -126,12 +110,12 @@ export default function Reports() {
             {/* Chart Section */}
             <div className={styles.chartSection}>
               <h2 className={styles.chartTitle}>Profile Sourced by Each</h2>
-              
+
               <div className={styles.chartContainer}>
                 {chartData.map((item, index) => {
                   const maxValue = getMaxValue();
                   const percentage = (item.value / maxValue) * 100;
-                  
+
                   return (
                     <div key={index} className={styles.chartRow}>
                       <div className={styles.chartLabel}>{item.name}</div>

@@ -68,9 +68,12 @@ function useDashboardFirstCrumbs() {
     const parts = hasDashboardPrefix ? rawParts.slice(1) : rawParts;
     let accPath = hasDashboardPrefix ? "/dashboard" : "";
 
-    parts.forEach((seg) => {
+    parts.forEach((seg, index) => {
       accPath += `/${seg}`;
-      const label = routeLabelMap[accPath] || labelMap[seg] || seg.charAt(0).toUpperCase() + seg.slice(1);
+      const isHeadcountDetails = parts[0] === "headcount" && index === 1;
+      const label = isHeadcountDetails
+        ? "Employee Details"
+        : routeLabelMap[accPath] || labelMap[seg] || seg.charAt(0).toUpperCase() + seg.slice(1);
       crumbs.push({
         label,
         path: accPath,
