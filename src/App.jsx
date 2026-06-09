@@ -7,6 +7,7 @@ import TopBar from "./pages/layout/TopBar.jsx";
 import Sidebar from "./pages/layout/Sidebar.jsx";
 import Login from "./pages/login/Login.jsx";
 import { isBusinessStakeholder } from "./pages/layout/routesConfig.js";
+import { hasAuthSession } from "./utils/authSession.js";
 
 // Lazy load page components for code splitting
 const Dashboard = lazy(() => import("./pages/dashboard/Dashboard.jsx"));
@@ -39,7 +40,7 @@ const LoadingFallback = () => (
   </div>
 );
 
-const isAuthenticated = () => Boolean(localStorage.getItem('authToken') || localStorage.getItem('token'));
+const isAuthenticated = () => hasAuthSession();
 
 function RequireAuth({ children }) {
   const location = useLocation();

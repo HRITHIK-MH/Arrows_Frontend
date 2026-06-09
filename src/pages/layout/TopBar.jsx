@@ -7,6 +7,7 @@ import NotificationBell from "../notification/NotificationBell";
 import ProfileModal from "../../components/ProfileModal";
 import SettingsModal from "../../components/SettingsModal";
 import { LINKS } from "./routesConfig";
+import { clearAuthSession } from "../../utils/authSession";
 
 
 /** Build segment -> label map from Sidebar LINKS */
@@ -260,9 +261,7 @@ export default function TopBar({ isSidebarOpen, setSidebarOpen }) {
                 className="profileMenuItem profileMenuDanger"
                 onClick={() => {
                   setMenuOpen(false);
-                  localStorage.removeItem('authToken');
-                  localStorage.removeItem('token');
-                  localStorage.removeItem('userPersona');
+                  clearAuthSession();
                   navigate('/login');
                 }}
               >

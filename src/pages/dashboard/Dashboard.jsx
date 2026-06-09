@@ -11,9 +11,55 @@ const FALLBACK_SUPERSET_URL =
 const FALLBACK_EMBED_UUID =
   import.meta.env.VITE_SUPERSET_EMBED_ID || DASHBOARD_UUID_MAP.default;
 
+const STAKEHOLDER_EMAILS = new Set([
+  "stakeholder@method-hub.com",
+  "businessstakeholder@method-hub.com",
+]);
+
+const STAKEHOLDER_DASHBOARD_TABS = [
+  {
+    key: "headcount",
+    label: "Head count",
+    dashboardUuid:
+      DASHBOARD_UUID_MAP.business_stakeholder ||
+      DASHBOARD_UUID_MAP.businessstakeholder,
+  },
+  {
+    key: "accountManager",
+    label: "Account Manager",
+    dashboardUuid:
+      DASHBOARD_UUID_MAP.account_manager ||
+      DASHBOARD_UUID_MAP.accountmanager,
+  },
+];
+
+const normalizeStoredValue = (value) =>
+  String(value || "").trim().toLowerCase();
+
+const compactRole = (value) => normalizeStoredValue(value).replace(/[_\s-]+/g, "");
+
+const isStakeholderDashboardUser = () => {
+  const email = normalizeStoredValue(localStorage.getItem("userEmail"));
+  const persona = compactRole(localStorage.getItem("userPersona"));
+  const role = compactRole(localStorage.getItem("userRole"));
+
+  return (
+    STAKEHOLDER_EMAILS.has(email) ||
+    persona === "businessstakeholder" ||
+    role === "businessstakeholder" ||
+    role === "stakeholder"
+  );
+};
+
 export default function Dashboard() {
   const mountRef = React.useRef(null);
   const [embedError, setEmbedError] = React.useState("");
+  const [activeTab, setActiveTab] = React.useState(STAKEHOLDER_DASHBOARD_TABS[0].key);
+
+  const showStakeholderTabs = React.useMemo(() => isStakeholderDashboardUser(), []);
+  const activeStakeholderTab =
+    STAKEHOLDER_DASHBOARD_TABS.find((tab) => tab.key === activeTab) ||
+    STAKEHOLDER_DASHBOARD_TABS[0];
 
   React.useEffect(() => {
     let isDisposed = false;
@@ -28,16 +74,19 @@ export default function Dashboard() {
         setEmbedError("");
         mountPoint.innerHTML = "";
 
-        const rawRole = String(localStorage.getItem("userRole") || "").trim().toLowerCase();
-        const normalizedRole = rawRole.replace(/[_\s-]+/g, "");
+        const rawRole = normalizeStoredValue(localStorage.getItem("userRole"));
+        const normalizedRole = compactRole(rawRole);
         const roleDashboardUuid =
-          DASHBOARD_UUID_MAP[rawRole] ||
-          DASHBOARD_UUID_MAP[normalizedRole] ||
+          (showStakeholderTabs
+            ? activeStakeholderTab.dashboardUuid
+            : DASHBOARD_UUID_MAP[rawRole] ||
+              DASHBOARD_UUID_MAP[normalizedRole]) ||
           "";
 
         console.debug("Superset embed debug:", {
           rawRole,
           normalizedRole,
+          activeDashboardTab: showStakeholderTabs ? activeStakeholderTab.key : "",
           roleDashboardUuid,
           fallbackEmbedUuid: FALLBACK_EMBED_UUID,
         });
@@ -97,17 +146,33 @@ export default function Dashboard() {
         mountPoint.innerHTML = "";
       }
     };
-  }, []);
+  }, [activeStakeholderTab.dashboardUuid, activeStakeholderTab.key, showStakeholderTabs]);
 
   return (
     <div className={styles.fullViewWrap}>
+      {showStakeholderTabs ? (
+        <div className={styles.dashboardTabs} role="tablist" aria-label="Stakeholder dashboards">
+          {STAKEHOLDER_DASHBOARD_TABS.map((tab) => (
+            <button
+              key={tab.key}
+              type="button"
+              role="tab"
+              aria-selected={activeTab === tab.key}
+              className={`${styles.dashboardTab} ${activeTab === tab.key ? styles.dashboardTabActive : ""}`}
+              onClick={() => setActiveTab(tab.key)}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      ) : null}
       <div className={styles.embedFull}>
         {embedError ? (
           <div style={{ padding: 16, color: "#b91c1c" }}>
             {embedError}
           </div>
         ) : null}
-        <div ref={mountRef} style={{ width: "100%", height: "100vh" }} />
+        <div ref={mountRef} style={{ width: "100%", height: "100%" }} />
       </div>
     </div>
   );

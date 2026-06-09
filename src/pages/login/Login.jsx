@@ -9,6 +9,7 @@ import { useNavigate } from 'react-router-dom';
 import { exchangeSsoCallback, fetchSsoAuthorizeUrl, loginWithPassword } from '../../api/authService';
 import arrowLogo from "../../assets/login/arrow_logo.png";
 import loginLeftImage from "../../assets/login/login-bg.jpeg";
+import { startAuthSession } from '../../utils/authSession';
 import './Login.css';
 
 const USE_LOGIN_API = false;
@@ -173,6 +174,7 @@ const Login = () => {
     if (response?.token) {
       localStorage.setItem('token', response.token);
       localStorage.setItem('authToken', response.token);
+      startAuthSession();
     }
   }, [email]);
 
