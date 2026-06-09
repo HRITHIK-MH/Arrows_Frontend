@@ -35,6 +35,13 @@ export default function Dashboard() {
           DASHBOARD_UUID_MAP[normalizedRole] ||
           "";
 
+        console.debug("Superset embed debug:", {
+          rawRole,
+          normalizedRole,
+          roleDashboardUuid,
+          fallbackEmbedUuid: FALLBACK_EMBED_UUID,
+        });
+
         const bootstrap = await fetchDashboardGuestToken(roleDashboardUuid);
         const dashboardId =
           roleDashboardUuid ||

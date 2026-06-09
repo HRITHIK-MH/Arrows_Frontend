@@ -68,9 +68,12 @@ function useDashboardFirstCrumbs() {
     const parts = hasDashboardPrefix ? rawParts.slice(1) : rawParts;
     let accPath = hasDashboardPrefix ? "/dashboard" : "";
 
-    parts.forEach((seg) => {
+    parts.forEach((seg, index) => {
       accPath += `/${seg}`;
-      const label = routeLabelMap[accPath] || labelMap[seg] || seg.charAt(0).toUpperCase() + seg.slice(1);
+      const isHeadcountDetails = parts[0] === "headcount" && index === 1;
+      const label = isHeadcountDetails
+        ? "Employee Details"
+        : routeLabelMap[accPath] || labelMap[seg] || seg.charAt(0).toUpperCase() + seg.slice(1);
       crumbs.push({
         label,
         path: accPath,
@@ -113,7 +116,18 @@ export default function TopBar({ isSidebarOpen, setSidebarOpen }) {
     if (typeof window === "undefined") return "";
     return String(window.localStorage.getItem("userRole") || "").toLowerCase();
   }, []);
+  const currentUserPersona = useMemo(() => {
+    if (typeof window === "undefined") return "";
+    return String(window.localStorage.getItem("userPersona") || "").toLowerCase();
+  }, []);
   const profileDisplay = useMemo(() => {
+    if (currentUserPersona === "businessstakeholder") {
+      return {
+        name: "Stakeholder",
+        role: "Business Stakeholder",
+      };
+    }
+
     if (currentUserRole === "accountmanager") {
       return {
         name: "Surya",
@@ -123,9 +137,9 @@ export default function TopBar({ isSidebarOpen, setSidebarOpen }) {
 
     return {
       name: "Saravanan",
-      role: "Team Lead",
+      role: "Recruiter",
     };
-  }, [currentUserRole]);
+  }, [currentUserPersona, currentUserRole]);
   const profileInitial = (profileDisplay.name || "S").charAt(0).toUpperCase();
 
 
@@ -214,9 +228,6 @@ export default function TopBar({ isSidebarOpen, setSidebarOpen }) {
       <div className="topActions">
         <NotificationBell />
 
-
-
-
         {/* Profile */}
         <div className="profile" ref={menuRef}>
           <button
@@ -251,6 +262,7 @@ export default function TopBar({ isSidebarOpen, setSidebarOpen }) {
                   setMenuOpen(false);
                   localStorage.removeItem('authToken');
                   localStorage.removeItem('token');
+                  localStorage.removeItem('userPersona');
                   navigate('/login');
                 }}
               >

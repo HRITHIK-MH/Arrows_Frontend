@@ -3,6 +3,7 @@ import PermissionStep from "./PermissionStep";
 import CandidateBasicInfoStep from "./CandidateBasicInfoStep";
 import CandidateDocumentsStep from "./CandidateDocumentsStep";
 import ClientBasicInfoStep from "./ClientBasicInfoStep";
+import EmployeeBasicInfoStep from "./EmployeeBasicInfoStep";
 
 const isEmptyValue = (value) =>
   value === undefined ||
@@ -637,7 +638,7 @@ export const jobOpeningConfig = {
       }),
     salary: (value, fieldName, formData) => {
       const label = fieldName === "maxSalary" ? "Max salary" : "Min salary";
-      
+
       // Validate as lakh values (e.g., 5.5 lakhs for 550000)
       const integerValidation = validateIntegerValue(value, {
         label,
@@ -1651,5 +1652,214 @@ export const clientConfig = {
     { key: 'primaryContactPerson', label: 'Primary Contact Person' },
     { key: 'accountManager', label: 'Account Manager' },
     { key: 'activeFrom', label: 'Active From' }
+  ]
+};
+
+// Employee Configuration
+export const employeeConfig = {
+  title: "Add Employee",
+  itemName: "Employees",
+  formClassName: "employee-form",
+  hideTitle: true,
+  showDraftAction: false,
+  submitLabel: "Save Employee",
+  hideStepper: true,
+  steps: [
+    {
+      title: "Employee Information",
+      component: EmployeeBasicInfoStep,
+      fields: [
+        {
+          name: "consultantName",
+          label: "Consultant Name *",
+          type: "text",
+          required: true,
+          validationRule: "requiredField",
+          placeholder: "Enter consultant name"
+        },
+        {
+          name: "joiningDate",
+          label: "Joining Date *",
+          type: "date",
+          required: true,
+          validationRule: "requiredField"
+        },
+        {
+          name: "entity",
+          label: "Entity *",
+          type: "select",
+          required: true,
+          validationRule: "requiredField",
+          placeholder: "Select option",
+          options: [
+            { value: "S&R Professional LLC", label: "S&R Professional LLC" },
+            { value: "SEW Tech Inc DBA Methodhub", label: "SEW Tech Inc DBA Methodhub" },
+            { value: "MethodHub Consulting Inc.", label: "MethodHub Consulting Inc." },
+            { value: "Zortech Solutions Inc. - Canada", label: "Zortech Solutions Inc. - Canada" },
+            { value: "Zortech Solutions Inc. - USA", label: "Zortech Solutions Inc. - USA" },
+            { value: "MethodHub Software Ltd", label: "MethodHub Software Ltd" },
+            { value: "Nemera Group", label: "Nemera Group" }
+          ]
+        },
+        {
+          name: "workLocation",
+          label: "Work Location *",
+          type: "select",
+          required: true,
+          validationRule: "requiredField",
+          placeholder: "Select option",
+          options: [
+            { value: "USA", label: "USA" },
+            { value: "Canada", label: "Canada" },
+            { value: "India", label: "India" },
+            { value: "Thailand", label: "Thailand" }
+          ]
+        },
+        {
+          name: "mode",
+          label: "Mode *",
+          type: "select",
+          required: true,
+          validationRule: "requiredField",
+          placeholder: "Select option",
+          options: [
+            { value: "1099", label: "1099" },
+            { value: "C2C", label: "C2C" },
+            { value: "Consultant", label: "Consultant" },
+            { value: "Intern", label: "Intern" },
+            { value: "Permanent", label: "Permanent" },
+            { value: "T4", label: "T4" },
+            { value: "Vendor", label: "Vendor" },
+            { value: "W2", label: "W2" }
+
+          ]
+        },
+        {
+          name: "cost",
+          label: "Cost *",
+          type: "select",
+          required: true,
+          validationRule: "requiredField",
+          placeholder: "Select option",
+          options: [
+            { value: "Direct", label: "Direct" }
+          ]
+        },
+        {
+          name: "customer",
+          label: "Customer *",
+          type: "select",
+          required: true,
+          validationRule: "requiredField",
+          placeholder: "Select option",
+          options: [
+            { value: "AIS", label: "AIS" },
+            { value: "Altimetrik Corp", label: "Altimetrik Corp" },
+            { value: "Atos IT Solutions Inc.", label: "Atos IT Solutions Inc." },
+            { value: "Avanade", label: "Avanade" },
+            { value: "Axtria", label: "Axtria" },
+            { value: "AYCAP", label: "AYCAP" },
+            { value: "Bi-Soft LLC", label: "Bi-Soft LLC" },
+            { value: "Centra Credit Union", label: "Centra Credit Union" },
+            { value: "Cigniti Technologies Inc. (A Coforge Company)", label: "Cigniti Technologies Inc. (A Coforge Company)" },
+            { value: "CX Sphere", label: "CX Sphere" },
+            { value: "Deloitte", label: "Deloitte" },
+            { value: "DITS Inc", label: "DITS Inc" },
+            { value: "ESSILOR", label: "ESSILOR" },
+            { value: "Expleo", label: "Expleo" },
+            { value: "EY", label: "EY" },
+            { value: "Factorized Technology Solutions Private Limited", label: "Factorized Technology Solutions Private Limited" },
+            { value: "First Meridian Business Services Pvt. Ltd.", label: "First Meridian Business Services Pvt. Ltd." },
+            { value: "Focused Forward Inc", label: "Focused Forward Inc" },
+            { value: "Halliburton Energy Services ,Inc.", label: "Halliburton Energy Services ,Inc." },
+            { value: "IMERYS", label: "IMERYS" },
+            { value: "Internal", label: "Internal" },
+            { value: "Infosys", label: "Infosys" },
+            { value: "ISUZU", label: "ISUZU" },
+            { value: "KBTG", label: "KBTG" },
+            { value: "Kinder Morgan, Inc.", label: "Kinder Morgan, Inc." },
+            { value: "Kindred", label: "Kindred" },
+            { value: "Kovan Technologies", label: "Kovan Technologies" },
+            { value: "LH BANK", label: "LH BANK" },
+            { value: "Logix Guru", label: "Logix Guru" },
+            { value: "Mindboard, Inc", label: "Mindboard, Inc" },
+            { value: "MAPMYID INC", label: "MAPMYID INC" },
+            { value: "Ness USA, Inc.", label: "Ness USA, Inc." },
+            { value: "Nitor Infotech Inc", label: "Nitor Infotech Inc" },
+            { value: "Nucore Corporation", label: "Nucore Corporation" },
+            { value: "Objects On Net Inc.", label: "Objects On Net Inc." },
+            { value: "PTT", label: "PTT" },
+            { value: "Palace Gate Corporation", label: "Palace Gate Corporation" },
+            { value: "PWC", label: "PWC" },
+            { value: "RFPIO Inc DBA Responsive", label: "RFPIO Inc DBA Responsive" },
+            { value: "SCG", label: "SCG" },
+            { value: "SEW-Tech Inc.", label: "SEW-Tech Inc." },
+            { value: "OnPoint Warranty Solutions LLC", label: "OnPoint Warranty Solutions LLC" },
+            { value: "S&R Professionals LLC", label: "S&R Professionals LLC" },
+            { value: "Softility Inc", label: "Softility Inc" },
+            { value: "TransUnion LLC", label: "TransUnion LLC" },
+            { value: "Smart Folks Inc", label: "Smart Folks Inc" },
+            { value: "Social Finance, Inc.", label: "Social Finance, Inc." },
+            { value: "SRB Systems LLC", label: "SRB Systems LLC" },
+            { value: "SUMMIT", label: "SUMMIT" },
+            { value: "Synersys Technologies Inc", label: "Synersys Technologies Inc" },
+            { value: "Tao Digital Solutions Inc.", label: "Tao Digital Solutions Inc." },
+            { value: "TCRB", label: "TCRB" },
+            { value: "Tekizma", label: "Tekizma" },
+            { value: "TELUS", label: "TELUS" },
+            { value: "THAI INS. RES.", label: "THAI INS. RES." },
+            { value: "TIRD", label: "TIRD" },
+            { value: "TISCO", label: "TISCO" },
+            { value: "UniqueHire Consulting LLP", label: "UniqueHire Consulting LLP" },
+            { value: "UST GLOBAL", label: "UST GLOBAL" },
+            { value: "V-Soft", label: "V-Soft" },
+            { value: "Yupp Video Services India Pvt. Ltd.(Apalya)", label: "Yupp Video Services India Pvt. Ltd.(Apalya)" },
+            { value: "Zortech Solutions Inc. - Canada", label: "Zortech Solutions Inc. - Canada" },
+            { value: "Zortech", label: "Zortech" },
+            { value: "TRUE", label: "TRUE" }
+          ]
+        },
+        {
+          name: "billingType",
+          label: "Billing Type *",
+          type: "radio",
+          required: true,
+          validationRule: "requiredField",
+          options: [
+            { value: "Billable", label: "Billable" },
+            { value: "Non-billable", label: "Non-billable" }
+          ]
+        }
+      ]
+    }
+  ],
+  validationRules: {
+    requiredField: async (value, fieldName) => {
+      if (isEmptyValue(value)) {
+        const fieldLabels = {
+          joiningDate: 'Joining Date',
+          consultantName: 'Consultant Name',
+          entity: 'Entity',
+          workLocation: 'Work Location',
+          mode: 'Mode',
+          cost: 'Cost',
+          customer: 'Customer',
+          billingType: 'Billing Type'
+        };
+        const fieldLabel = fieldLabels[fieldName] || fieldName;
+        return { isValid: false, message: `${fieldLabel} is required` };
+      }
+      return { isValid: true };
+    }
+  },
+  columns: [
+    { key: "joiningDate", label: "Joining Date" },
+    { key: "consultantName", label: "Consultant Name" },
+    { key: "entity", label: "Entity" },
+    { key: "workLocation", label: "Work Location" },
+    { key: "mode", label: "Mode" },
+    { key: "cost", label: "Cost" },
+    { key: "customer", label: "Customer" },
+    { key: "billingType", label: "Billing Type" }
   ]
 };
