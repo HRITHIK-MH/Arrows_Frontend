@@ -148,6 +148,7 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [ssoLoading, setSsoLoading] = useState(false);
   const [error, setError] = useState('');
   const [emailError, setEmailError] = useState('');
   const navigate = useNavigate();
@@ -311,6 +312,7 @@ const Login = () => {
 
   const handleSsoLogin = async () => {
     setError('');
+    setSsoLoading(true);
     try {
       const url = await fetchSsoAuthorizeUrl();
       if (!url) {
@@ -319,6 +321,7 @@ const Login = () => {
       window.location.href = url;
     } catch (err) {
       setError(getAuthErrorMessage(err, 'Unable to start SSO login'));
+      setSsoLoading(false);
     }
   };
 
@@ -381,6 +384,15 @@ const Login = () => {
           {error && <p className="error-message">{error}</p>}
           <button type="submit" className="login-btn" disabled={loading}>
             {loading ? 'Signing In...' : 'Sign In'}
+          </button>
+          <div className="login-divider">or</div>
+          <button
+            type="button"
+            className="login-btn login-btn-secondary"
+            disabled={loading || ssoLoading}
+            onClick={handleSsoLogin}
+          >
+            {ssoLoading ? 'Opening SSO...' : 'Sign in with SSO'}
           </button>
         </form>
       </div>
