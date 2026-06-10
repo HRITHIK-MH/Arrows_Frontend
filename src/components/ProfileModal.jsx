@@ -32,15 +32,15 @@ export default function ProfileModal({ onClose }) {
           <div className="profileModalInfo">
             <div className="profileModalRow">
               <label className="profileModalLabel">Full Name</label>
-              <input className="profileModalInput" type="text" defaultValue="Saravanan" readOnly/>
+              <input className="profileModalInput" type="text" defaultValue="Admin" readOnly/>
             </div>
             <div className="profileModalRow">
               <label className="profileModalLabel">Role</label>
-              <input className="profileModalInput" type="text" defaultValue="Recruiter" readOnly />
+              <input className="profileModalInput" type="text" defaultValue="Demo Admin" readOnly />
             </div>
             <div className="profileModalRow">
               <label className="profileModalLabel">Email</label>
-              <input className="profileModalInput" type="email" defaultValue="saravanan@arrows.com" readOnly />
+              <input className="profileModalInput" type="email" defaultValue="demo-admin@method-hub.com" readOnly />
             </div>
             <div className="profileModalRow">
               <label className="profileModalLabel">Phone</label>

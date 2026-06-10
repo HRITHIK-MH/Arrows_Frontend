@@ -12,8 +12,7 @@ const FALLBACK_EMBED_UUID =
   import.meta.env.VITE_SUPERSET_EMBED_ID || DASHBOARD_UUID_MAP.default;
 
 const STAKEHOLDER_EMAILS = new Set([
-  "stakeholder@method-hub.com",
-  "businessstakeholder@method-hub.com",
+  "demo-admin@method-hub.com",
 ]);
 
 const STAKEHOLDER_DASHBOARD_TABS = [
@@ -26,7 +25,7 @@ const STAKEHOLDER_DASHBOARD_TABS = [
   },
   {
     key: "accountManager",
-    label: "Account Manager",
+    label: "Recruitment",
     dashboardUuid:
       DASHBOARD_UUID_MAP.account_manager ||
       DASHBOARD_UUID_MAP.accountmanager,
