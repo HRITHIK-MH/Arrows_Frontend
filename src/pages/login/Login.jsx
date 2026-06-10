@@ -3,12 +3,12 @@ import '@fontsource/poppins/500.css';
 import '@fontsource/poppins/700.css';
 import { useCallback, useEffect, useState } from 'react';
 import { FiEye, FiEyeOff } from "react-icons/fi";
+import { FaFacebookF, FaLinkedinIn, FaInstagram, FaTwitter } from "react-icons/fa";
 import { MdOutlineEmail } from "react-icons/md";
 import { TbLockPassword } from "react-icons/tb";
 import { useNavigate } from 'react-router-dom';
 import { exchangeSsoCallback, fetchSsoAuthorizeUrl, loginWithPassword } from '../../api/authService';
 import arrowLogo from "../../assets/login/arrow_logo.png";
-import loginLeftImage from "../../assets/login/login-bg.jpeg";
 import { startAuthSession } from '../../utils/authSession';
 import './Login.css';
 
@@ -143,7 +143,6 @@ const getAuthErrorMessage = (err, fallbackMessage) => {
 };
 
 const Login = () => {
-  // Role is inferred from the email; remove manual selection
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -228,8 +227,6 @@ const Login = () => {
   }, [navigate, persistAuthSession]);
 
   const validateEmail = async () => {
-    
-    // Accept known local-login emails even if they don't match strict email regex.
     try {
       await new Promise((resolve, reject) => {
         setTimeout(() => {
@@ -258,16 +255,12 @@ const Login = () => {
 
     try {
       const normalizedEmail = email.toLowerCase().trim();
-
-      // Infer role from known demo credentials; if none match, leave undefined
       const inferredRole = Object.keys(LOGIN_CREDENTIALS_BY_ROLE).find((r) =>
         LOGIN_CREDENTIALS_BY_ROLE[r].some((item) => String(item.email || '').toLowerCase() === normalizedEmail),
       );
-
       const roleCredentials = inferredRole ? (LOGIN_CREDENTIALS_BY_ROLE[inferredRole] || []) : [];
 
       if (!USE_LOGIN_API) {
-        // For local demo, require that the email exists in our demo lists and password matches
         const localMatch = roleCredentials.some(
           (item) => item.email.toLowerCase() === normalizedEmail && item.password === password,
         );
@@ -327,74 +320,81 @@ const Login = () => {
 
   return (
     <div className="login-container">
-      <div className="login-left">
-        <img src={loginLeftImage} alt="Team" className="login-left-image" />
-        <h1 className="login-left-title">Welcome to Arrows</h1>
-      </div>
       <div className="login-right">
-        <div className="logo-wrapper">
-        <img src={arrowLogo} alt="Arrow Logo" className="arrow-logo" />
+        <div className="hero-copy">
+          <h1>Method-Hub Admin Dashboard</h1>
+          <p>Manage sales, inventory, billing, and reports from one smart dashboard. Method-Hub helps you run your business faster, smarter.</p>
+          
         </div>
-        <form onSubmit={handleSubmit} className="login-form">
-          <div className="form-group email-group">
-            <label htmlFor="email">Email Address</label>
-            <div className="input-wrapper">
-              <MdOutlineEmail className="input-icon" size="20" />
-              <input
-                type="text"
-                id="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                onBlur={validateEmail}
-                placeholder="Enter your email address"
-                required
-              />
+        <div className="footer-copy">© 2026 Methodhub. All rights reserved</div>
+      </div>
+      <div className="login-left">
+        <img src={arrowLogo} alt="GotPOS Logo" className="login-logo" />
+        <div className="login-card">
+          <div className="login-card-heading">
+            <h4>WELCOME TO Method-Hub!</h4>
+            <p>Sign in to access your methodhub dashboard</p>
+          </div>
+          <form onSubmit={handleSubmit} className="login-form">
+            <div className="form-group email-group">
+              <label htmlFor="email">Email Address</label>
+              <div className="input-wrapper">
+                <MdOutlineEmail className="input-icon" size="20" />
+                <input
+                  type="text"
+                  id="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  onBlur={validateEmail}
+                  placeholder="Enter your email or username"
+                  required
+                />
+              </div>
             </div>
-          </div>
-          {emailError && <p className="error-message">{emailError}</p>}
-          <div className="form-group password-group">
-            <label htmlFor="password">Password</label>
-            <div className="input-wrapper">
-              <TbLockPassword className="input-icon" />
-              <input
-                type={showPassword ? "text" : "password"}
-                id="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter your password"
-                required
-              />
-              <button
-                type="button"
-                className="toggle-password"
-                aria-label={showPassword ? "Hide password" : "Show password"}
-                onClick={() => setShowPassword((prev) => !prev)}
-              >
-                {showPassword ? <FiEyeOff size={18} /> : <FiEye size={18} />}
-              </button>
+            {emailError && <p className="error-message">{emailError}</p>}
+            <div className="form-group password-group">
+              <label htmlFor="password">Password</label>
+              <div className="input-wrapper">
+                <TbLockPassword className="input-icon" />
+                <input
+                  type={showPassword ? "text" : "password"}
+                  id="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter your password"
+                  required
+                />
+                <button
+                  type="button"
+                  className="toggle-password"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  onClick={() => setShowPassword((prev) => !prev)}
+                >
+                  {showPassword ? <FiEyeOff size={18} /> : <FiEye size={18} />}
+                </button>
+              </div>
             </div>
-          </div>
-          {/* Role is inferred automatically from the email address; no manual selector */}
-          <div className="form-options">
-            <label className="remember-me">
-              <input type="checkbox" /> Remember me
-            </label>
-            <a href="#" className="forgot-password">Forgot password?</a>
-          </div>
-          {error && <p className="error-message">{error}</p>}
-          <button type="submit" className="login-btn" disabled={loading}>
-            {loading ? 'Signing In...' : 'Sign In'}
-          </button>
-          <div className="login-divider">or</div>
-          <button
-            type="button"
-            className="login-btn login-btn-secondary"
-            disabled={loading || ssoLoading}
-            onClick={handleSsoLogin}
-          >
-            {ssoLoading ? 'Opening SSO...' : 'Sign in with SSO'}
-          </button>
-        </form>
+            <div className="form-options">
+              <label className="remember-me">
+                <input type="checkbox" /> Remember me
+              </label>
+              <a href="#" className="forgot-password">Forgot password?</a>
+            </div>
+            {error && <p className="error-message">{error}</p>}
+            <button type="submit" className="login-btn" disabled={loading}>
+              {loading ? 'Signing In...' : 'Sign In'}
+            </button>
+            <div className="login-divider">or</div>
+            <button
+              type="button"
+              className="login-btn login-btn-secondary"
+              disabled={loading || ssoLoading}
+              onClick={handleSsoLogin}
+            >
+              {ssoLoading ? 'Opening SSO...' : 'Sign in with SSO'}
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   );
