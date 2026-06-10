@@ -8,7 +8,7 @@ import { MdOutlineEmail } from "react-icons/md";
 import { TbLockPassword } from "react-icons/tb";
 import { useNavigate } from 'react-router-dom';
 import { exchangeSsoCallback, fetchSsoAuthorizeUrl, loginWithPassword } from '../../api/authService';
-import arrowLogo from "../../assets/login/arrow_logo.png";
+import arrowLogo from "../../assets/login/logo_login.png";
 import { startAuthSession } from '../../utils/authSession';
 import './Login.css';
 
@@ -325,14 +325,14 @@ const Login = () => {
           <p>Manage sales, inventory, billing, and reports from one smart dashboard. Method-Hub helps you run your business faster, smarter.</p>
           
         </div>
-        <div className="footer-copy">© 2026 Methodhub. All rights reserved</div>
+        <div className="footer-copy">© 2026, Powered by MethodHub</div>
       </div>
       <div className="login-left">
         <img src={arrowLogo} alt="GotPOS Logo" className="login-logo" />
         <div className="login-card">
           <div className="login-card-heading">
-            <h4>WELCOME TO Method-Hub!</h4>
-            <p>Sign in to access your methodhub dashboard</p>
+            <h4>WELCOME TO ARROWS!</h4>
+            <p>Sign in to access your dashboard</p>
           </div>
           <form onSubmit={handleSubmit} className="login-form">
             <div className="form-group email-group">
@@ -386,7 +386,7 @@ const Login = () => {
             <div className="login-divider">or</div>
             <button
               type="button"
-              className="login-btn login-btn-secondary"
+              className="login-btn"
               disabled={loading || ssoLoading}
               onClick={handleSsoLogin}
             >

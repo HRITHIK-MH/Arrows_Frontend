@@ -24,7 +24,6 @@
   align-items: center;
   justify-content: center;
   flex-direction: column;
-  padding: 3rem 2rem 2rem 1rem;
   background: #f4f7fb;
   color: #111827;
   position: relative;
@@ -35,6 +34,7 @@
   object-fit: contain;
   margin-bottom: 2rem;
   margin-left: -22.5rem;
+  width: 200px;
 }
 
 .login-card {
@@ -85,6 +85,8 @@
 
 .hero-copy {
   max-width: 540px;
+  text-align: center;
+  position:absolute;
 }
 
 .hero-copy h1 {
@@ -232,7 +234,7 @@
 .login-btn {
   width: 100%;
   padding: 1rem;
-  background: #f97316;
+  background: linear-gradient(280deg, #035297 , #ff5722);
   color: #ffffff;
   border: none;
   border-radius: 16px;
