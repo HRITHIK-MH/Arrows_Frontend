@@ -32,21 +32,21 @@
 
 .login-logo {
   object-fit: contain;
-  margin-bottom: 2rem;
+  margin-bottom: 1rem;
   margin-left: -22.5rem;
-  width: 200px;
+  width: 110px;
 }
 
 .login-card {
   width: 100%;
   max-width: 520px;
-  padding: 2.5rem;
+  padding: 2.3rem;
   border-radius: 24px;
   background: #ffffff;
   box-shadow: 0 32px 80px rgba(15, 23, 42, 0.08);
   position: relative;
   z-index: 3;
-  margin-left: -22.5rem;
+  margin-left: -15.5rem;
 }
 
 .login-card-heading h4 {
@@ -55,7 +55,7 @@
   letter-spacing: 0.28em;
   text-transform: uppercase;
   color: #f97316;
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
 }
 
 .login-right .hero-copy h1 {
