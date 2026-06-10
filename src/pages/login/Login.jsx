@@ -23,8 +23,7 @@ const LOGIN_CREDENTIALS_BY_ROLE = {
     { email: 'accmanager@method-hub.com', password: 'accmanager' }
   ],
   businessStakeholder: [
-    { email: 'businessstakeholder@method-hub.com', password: 'businessstakeholder' },
-    { email: 'stakeholder@method-hub.com', password: 'stakeholder' }
+    { email: 'demo-admin@method-hub.com', password: 'Arrows@2026' }
   ]
 };
 

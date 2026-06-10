@@ -290,7 +290,7 @@ const FormField = ({
   const selectionPlaceholder = safeLabel.toLowerCase().includes('skill')
     ? 'Select skills'
     : 'Select options';
-  const hasOpenDropdown = isDropdownOpen && (type === 'select' || type === 'multiselect');
+  const hasOpenDropdown = isDropdownOpen && (type === 'select' || type === 'multiselect' || type === 'searchable-select');
 
   const baseOptions = safeOptions;
   const mergedOptions = [...baseOptions, ...customOptions].filter(
@@ -419,6 +419,70 @@ const FormField = ({
                 />
                 <button type="button" onClick={handleAddCustomOption}>Add</button>
               </div>
+            </div>
+          )}
+        </div>
+      ) : type === 'searchable-select' ? (
+        <div className={`searchable-select-field${isDropdownOpen ? ' open' : ''}`} ref={dropdownRef}>
+          <input
+            type="text"
+            id={name}
+            name={name}
+            value={
+              isDropdownOpen
+                ? searchTerm
+                : normalizedSelectOptions.find((opt) => String(opt.value) === String(value))?.label || ''
+            }
+            onChange={(event) => {
+              setSearchTerm(event.target.value);
+              if (!disabled) {
+                setIsDropdownOpen(true);
+              }
+            }}
+            onFocus={() => {
+              if (!disabled) {
+                setSearchTerm('');
+                setIsDropdownOpen(true);
+              }
+            }}
+            onKeyDown={(event) => {
+              if (event.key === 'Escape') {
+                setIsDropdownOpen(false);
+              }
+            }}
+            className={`searchable-select-input${displayError ? ' error' : ''}`}
+            placeholder={placeholder || 'Search...'}
+            autoComplete="off"
+            disabled={disabled}
+            role="combobox"
+            aria-autocomplete="list"
+            aria-expanded={isDropdownOpen}
+            aria-controls={`${name}-dropdown`}
+          />
+          <span className="select-chevron searchable-select-chevron" aria-hidden="true" />
+          {isDropdownOpen && (
+            <div id={`${name}-dropdown`} className="select-dropdown" role="listbox">
+              {filteredOptions.length === 0 ? (
+                <div className="select-empty">No results found</div>
+              ) : (
+                filteredOptions.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    className={`select-option${String(option.value) === String(value) ? ' selected' : ''}`}
+                    onClick={() => {
+                      onChange(name, option.value);
+                      triggerFieldValidation(option.value);
+                      setSearchTerm('');
+                      setIsDropdownOpen(false);
+                    }}
+                    role="option"
+                    aria-selected={String(option.value) === String(value)}
+                  >
+                    {option.label}
+                  </button>
+                ))
+              )}
             </div>
           )}
         </div>

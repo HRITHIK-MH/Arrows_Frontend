@@ -1748,7 +1748,7 @@ export const employeeConfig = {
         {
           name: "customer",
           label: "Customer *",
-          type: "select",
+          type: "searchable-select",
           required: true,
           validationRule: "requiredField",
           placeholder: "Select option",
