@@ -144,7 +144,16 @@
   width: 100%;
 }
 
+.searchable-select-field {
+  position: relative;
+  width: 100%;
+}
+
 .select-field.open {
+  z-index: 3001;
+}
+
+.searchable-select-field.open {
   z-index: 3001;
 }
 
@@ -164,6 +173,37 @@
   justify-content: space-between;
   gap: 8px;
   overflow: hidden;
+}
+
+.searchable-select-input {
+  width: 100%;
+  min-height: 40px;
+  padding: 10px 36px 10px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #eef2f6;
+  color: #334155;
+  font-size: 12px;
+  box-sizing: border-box;
+}
+
+.searchable-select-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.searchable-select-input:focus {
+  outline: none;
+  border-color: #93c5fd;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+}
+
+.searchable-select-chevron {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  transform: translateY(-50%);
+  pointer-events: none;
 }
 
 .select-trigger:disabled {
@@ -662,6 +702,7 @@
   .form-field select,
   .form-field textarea,
   .select-trigger,
+  .searchable-select-input,
   .field-control.has-prefix input,
   .file-visual-input {
     font-size: 13px;
@@ -677,6 +718,7 @@
   .form-field select,
   .form-field textarea,
   .select-trigger,
+  .searchable-select-input,
   .field-control.has-prefix input,
   .file-visual-input {
     min-height: 42px;
@@ -685,7 +727,8 @@
   }
 
   .form-field select,
-  .select-trigger {
+  .select-trigger,
+  .searchable-select-input {
     padding-right: 34px;
   }
 
@@ -753,6 +796,7 @@
   .form-field select,
   .form-field textarea,
   .select-trigger,
+  .searchable-select-input,
   .field-control.has-prefix input,
   .file-visual-input {
     font-size: 12px;

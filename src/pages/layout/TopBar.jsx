@@ -124,8 +124,8 @@ export default function TopBar({ isSidebarOpen, setSidebarOpen }) {
   const profileDisplay = useMemo(() => {
     if (currentUserPersona === "businessstakeholder") {
       return {
-        name: "Stakeholder",
-        role: "Business Stakeholder",
+        name: "Demo Admin",
+        // role: "Business Stakeholder",
       };
     }
 

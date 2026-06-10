@@ -1,5 +1,5 @@
 import styles from "./Headcount.module.scss";
-import { FiEdit2, FiX } from "react-icons/fi";
+import { FiChevronLeft, FiEdit2, FiX } from "react-icons/fi";
 import { useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 
@@ -22,6 +22,25 @@ const loadEmployeeById = (employeeId) => {
 const isExitedEmployee = (employee) =>
   Boolean(employee?.isExited || employee?.status === "exited" || employee?.exitDetails);
 
+const monthYearFormatter = new Intl.DateTimeFormat("en-US", {
+  month: "short",
+  year: "numeric",
+});
+
+const formatMonthYear = (value) => {
+  if (!value) return "";
+
+  const dateText = String(value);
+  const isoDateMatch = dateText.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const parsedDate = isoDateMatch
+    ? new Date(Number(isoDateMatch[1]), Number(isoDateMatch[2]) - 1, Number(isoDateMatch[3]))
+    : new Date(dateText);
+
+  if (Number.isNaN(parsedDate.getTime())) return dateText;
+
+  return monthYearFormatter.format(parsedDate);
+};
+
 export default function HeadcountDetails() {
   const navigate = useNavigate();
   const { state } = useLocation();
@@ -31,6 +50,10 @@ export default function HeadcountDetails() {
   const [exitForm, setExitForm] = useState({ exitDate: "", exitReason: "" });
   const [exitErrors, setExitErrors] = useState({});
   const isExited = isExitedEmployee(employee);
+
+  const handleBack = () => {
+    navigate("/headcount", { state: { headcountTab: isExited ? "exited" : "active" } });
+  };
 
   const handleEdit = () => {
     if (!employee) return;
@@ -122,9 +145,18 @@ export default function HeadcountDetails() {
 
   return (
     <div className={styles.page} aria-label="Employee details">
-      <section className={styles.header}>
-        <div>
-          <span className={styles.kicker}><b>Employee Details</b></span>
+      <section className={styles.detailTopBar}>
+        <button
+          type="button"
+          className={styles.backButton}
+          onClick={handleBack}
+          aria-label="Back to headcount"
+          title="Back"
+        >
+          <FiChevronLeft aria-hidden="true" />
+        </button>
+        <div className={styles.detailTopBarText}>
+          <span>Employee Details</span>
         </div>
       </section>
 
@@ -132,24 +164,49 @@ export default function HeadcountDetails() {
         {employee ? (
           <>
             <div className={styles.detailHero}>
-              <div className={styles.detailAvatar}>
-                {(employee.consultantName || "E").charAt(0).toUpperCase()}
+              <div className={styles.detailIdentity}>
+                <div className={styles.detailAvatar}>
+                  {(employee.consultantName || "E").charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <h2 className={styles.detailEmployeeName}>{employee.consultantName || "Employee"}</h2>
+                </div>
               </div>
-              <div>
-                <h2 className={styles.detailEmployeeName}>{employee.consultantName || "Employee"}</h2>
-              </div>
+
+              {!isExited ? (
+                <div className={styles.displayActionBar}>
+                  <button
+                    type="button"
+                    className={styles.primaryButton}
+                    onClick={handleEdit}
+                    disabled={!employee}
+                  >
+                    <FiEdit2 aria-hidden="true" />
+                    Edit
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.secondaryButton}
+                    onClick={handleExit}
+                    disabled={!employee}
+                  >
+                    <FiX aria-hidden="true" />
+                    Exit
+                  </button>
+                </div>
+              ) : null}
             </div>
 
             <div className={styles.detailsBody}>
               {[
-                ["Joining Date", employee.joiningDate],
+                ["Joining Date", formatMonthYear(employee.joiningDate)],
                 ["Entity", employee.entity],
                 ["Work Location", employee.workLocation],
                 ["Mode", employee.mode],
                 ["Cost", employee.cost],
                 ["Customer", employee.customer],
                 ["Billing Type", employee.billingType],
-                ["Exit Date", employee.exitDetails?.exitDate],
+                ["Exit Date", formatMonthYear(employee.exitDetails?.exitDate)],
                 ["Exit Reason", employee.exitDetails?.exitReason],
               ]
                 .filter(([, value]) => value !== undefined && value !== "" && value !== null)
@@ -168,28 +225,6 @@ export default function HeadcountDetails() {
           </div>
         )}
 
-        {!isExited ? (
-          <div className={styles.displayActionBar}>
-            <button
-              type="button"
-              className={styles.primaryButton}
-              onClick={handleEdit}
-              disabled={!employee}
-            >
-              <FiEdit2 aria-hidden="true" />
-              Edit
-            </button>
-            <button
-              type="button"
-              className={styles.secondaryButton}
-              onClick={handleExit}
-              disabled={!employee}
-            >
-              <FiX aria-hidden="true" />
-              Exit
-            </button>
-          </div>
-        ) : null}
       </section>
 
       {isExitModalOpen ? (
