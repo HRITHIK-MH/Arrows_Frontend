@@ -1,124 +1,77 @@
-import { useCallback, useState } from 'react';
-import { MdOutlineEmail } from 'react-icons/md';
-import { IoCloseSharp } from 'react-icons/io5';
-import './ForgotPasswordModal.css';
+import React, { useState } from 'react'
+import './ForgotPasswordModal.css'
 
-const ForgotPasswordModal = ({ isOpen, onClose }) => {
-  const [email, setEmail] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [successMessage, setSuccessMessage] = useState('');
-  const [errorMessage, setErrorMessage] = useState('');
+export default function ForgotPasswordModal({ isOpen, onClose, onSent }) {
+  const [email, setEmail] = useState('')
+  const [status, setStatus] = useState('idle')
+  const [emailError, setEmailError] = useState('')
 
-  const handleSubmit = useCallback(async (e) => {
-    e.preventDefault();
-    setErrorMessage('');
-    setSuccessMessage('');
-    setLoading(true);
+  if (!isOpen) return null
 
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+
+    const normalizedEmail = String(email || '').trim()
+    const isMethodHubEmail = /^[^\s@]+@method-hub\.com$/i.test(normalizedEmail)
+
+    if (!isMethodHubEmail) {
+      setEmailError('Please enter a valid @method-hub.com email address.')
+      return
+    }
+
+    setEmailError('')
+    setStatus('sending')
     try {
-      if (!email.trim()) {
-        throw new Error('Please enter your email address');
+      const base = import.meta.env.VITE_API_URL || ''
+      const res = await fetch(`${base}/api/auth/forgot-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: normalizedEmail }),
+      })
+
+      if (res.ok) {
+        setStatus('sent')
+        if (onSent) onSent(email)
+      } else {
+        const text = await res.text()
+        setStatus(`error: ${text || res.statusText}`)
       }
-
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email.trim())) {
-        throw new Error('Please enter a valid email address');
-      }
-
-      // Simulate API call - replace with actual backend call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      setSuccessMessage(
-        `Password reset instructions have been sent to ${email}. Please check your email.`
-      );
-      
-      setTimeout(() => {
-        setEmail('');
-        setSuccessMessage('');
-        onClose();
-      }, 3000);
-    } catch (err) {
-      setErrorMessage(err.message || 'Failed to process password reset request');
-    } finally {
-      setLoading(false);
+    } catch {
+      setStatus('error')
     }
-  }, [email, onClose]);
-
-  const handleBackdropClick = (e) => {
-    if (e.target === e.currentTarget) {
-      onClose();
-    }
-  };
-
-  if (!isOpen) return null;
+  }
 
   return (
-    <div className="forgot-password-backdrop" onClick={handleBackdropClick}>
-      <div className="forgot-password-modal">
-        <div className="modal-header">
-          <h2>Forgot Password?</h2>
-          <button
-            type="button"
-            className="close-button"
-            onClick={onClose}
-            aria-label="Close modal"
-          >
-            <IoCloseSharp size={24} />
-          </button>
-        </div>
+    <div className="fp-overlay" role="dialog" aria-modal="true">
+      <div className="fp-modal">
+        <h3>Reset your password</h3>
+        <p className="fp-sub">Enter the email address for your account.</p>
 
-        <div className="modal-body">
-          <p className="modal-description">
-            Enter your email address and we'll send you instructions to reset your password.
-          </p>
+        <form className="fp-form" onSubmit={handleSubmit}>
+          <label className="fp-label">Email</label>
+          <input
+            className="fp-input"
+            type="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="example@method-hub.com"
+          />
+          {emailError && <p className="fp-error">{emailError}</p>}
 
-          <form onSubmit={handleSubmit} className="forgot-password-form">
-            <div className="form-group">
-              <label htmlFor="reset-email">Email Address</label>
-              <div className="input-wrapper">
-                <MdOutlineEmail className="input-icon" size={20} />
-                <input
-                  type="email"
-                  id="reset-email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Enter your email address"
-                  required
-                  disabled={loading}
-                />
-              </div>
-            </div>
+          <div className="fp-actions">
+            <button type="button" className="fp-btn fp-btn-ghost" onClick={onClose}>
+              Cancel
+            </button>
+            <button type="submit" className="fp-btn fp-btn-primary" disabled={status === 'sending'}>
+              {status === 'sending' ? 'Sending…' : 'Send reset link'}
+            </button>
+          </div>
+        </form>
 
-            {errorMessage && (
-              <div className="error-message">{errorMessage}</div>
-            )}
-
-            {successMessage && (
-              <div className="success-message">{successMessage}</div>
-            )}
-
-            <div className="modal-actions">
-              <button
-                type="button"
-                className="btn-secondary"
-                onClick={onClose}
-                disabled={loading}
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="btn-primary"
-                disabled={loading || !email.trim()}
-              >
-                {loading ? 'Sending...' : 'Send Reset Link'}
-              </button>
-            </div>
-          </form>
-        </div>
+        {status === 'sent' && <p className="fp-success">If that email exists, a reset link was sent.</p>}
+        {status.startsWith('error') && <p className="fp-error">Unable to send reset link.</p>}
       </div>
     </div>
-  );
-};
-
-export default ForgotPasswordModal;
+  )
+}
