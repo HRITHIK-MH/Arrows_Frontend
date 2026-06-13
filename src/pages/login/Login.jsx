@@ -1,7 +1,7 @@
 import '@fontsource/poppins/400.css';
 import '@fontsource/poppins/500.css';
 import '@fontsource/poppins/700.css';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { FiEye, FiEyeOff } from "react-icons/fi";
 import { FaFacebookF, FaLinkedinIn, FaInstagram, FaTwitter } from "react-icons/fa";
 import { MdOutlineEmail } from "react-icons/md";
@@ -10,6 +10,7 @@ import { useNavigate } from 'react-router-dom';
 import { exchangeSsoCallback, fetchSsoAuthorizeUrl, loginWithPassword } from '../../api/authService';
 import arrowLogo from "../../assets/login/logo_login.png";
 import { startAuthSession } from '../../utils/authSession';
+import ForgotPasswordModal from './ForgotPasswordModal';
 import './Login.css';
 
 const USE_LOGIN_API = false;
@@ -149,7 +150,10 @@ const Login = () => {
   const [ssoLoading, setSsoLoading] = useState(false);
   const [error, setError] = useState('');
   const [emailError, setEmailError] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
+  const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
   const navigate = useNavigate();
+  const hasInitialized = useRef(false);
 
   const persistAuthSession = useCallback((response = {}, fallbackRole = '') => {
     const emailValue = String(response?.email || email || '').toLowerCase().trim();
@@ -176,6 +180,23 @@ const Login = () => {
       startAuthSession();
     }
   }, [email]);
+
+  // Load remembered credentials on mount
+  useEffect(() => {
+    if (hasInitialized.current) return;
+    hasInitialized.current = true;
+    
+    const savedEmail = localStorage.getItem('rememberedEmail');
+    const savedPassword = localStorage.getItem('rememberedPassword');
+    
+    if (savedEmail && savedPassword) {
+      Promise.resolve().then(() => {
+        setEmail(savedEmail);
+        setPassword(savedPassword);
+        setRememberMe(true);
+      });
+    }
+  }, []);
 
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
@@ -268,6 +289,15 @@ const Login = () => {
           throw new Error('Invalid email or password.');
         }
 
+        // Handle remember me
+        if (rememberMe) {
+          localStorage.setItem('rememberedEmail', normalizedEmail);
+          localStorage.setItem('rememberedPassword', password);
+        } else {
+          localStorage.removeItem('rememberedEmail');
+          localStorage.removeItem('rememberedPassword');
+        }
+
         persistAuthSession(
           {
             email: normalizedEmail,
@@ -283,6 +313,15 @@ const Login = () => {
           inferredRole,
         );
       } else {
+        // Handle remember me
+        if (rememberMe) {
+          localStorage.setItem('rememberedEmail', normalizedEmail);
+          localStorage.setItem('rememberedPassword', password);
+        } else {
+          localStorage.removeItem('rememberedEmail');
+          localStorage.removeItem('rememberedPassword');
+        }
+
         const response = await loginWithPassword({
           email: normalizedEmail,
           password,
@@ -375,9 +414,20 @@ const Login = () => {
             </div>
             <div className="form-options">
               <label className="remember-me">
-                <input type="checkbox" /> Remember me
+                <input 
+                  type="checkbox" 
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                /> 
+                Remember me
               </label>
-              <a href="#" className="forgot-password">Forgot password?</a>
+              <button
+                type="button"
+                className="forgot-password"
+                onClick={() => setShowForgotPasswordModal(true)}
+              >
+                Forgot password?
+              </button>
             </div>
             {error && <p className="error-message">{error}</p>}
             <button type="submit" className="login-btn" disabled={loading}>
@@ -395,6 +445,10 @@ const Login = () => {
           </form>
         </div>
       </div>
+      <ForgotPasswordModal 
+        isOpen={showForgotPasswordModal}
+        onClose={() => setShowForgotPasswordModal(false)}
+      />
     </div>
   );
 };
