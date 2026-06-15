@@ -357,130 +357,114 @@ const Login = () => {
   };
 
   return (
-    <div className="login-container">
-      <div className="login-right">
-        <div className="hero-copy">
-          <h1>Method-Hub Admin Dashboard</h1>
-          <p>Manage sales, inventory, billing, and reports from one smart dashboard. Method-Hub helps you run your business faster, smarter.</p>
-          
-        </div>
-        <div className="footer-copy">© 2026, Powered by MethodHub</div>
+  <div className="login-container">
+    <div className="login-right">
+      <div className="hero-copy">
+        <h1>Method-Hub Admin Dashboard</h1>
+        <p>
+          Manage sales, inventory, billing, and reports from one smart dashboard.
+          Method-Hub helps you run your business faster, smarter.
+        </p>
       </div>
-      <div className="login-left">
-        <img src={arrowLogo} alt="GotPOS Logo" className="login-logo" />
-        <div className="login-card">
-          <div className="login-card-heading">
-            <h4>WELCOME TO ARROWS!</h4>
-            <p>Sign in to access your dashboard</p>
+      <div className="footer-copy">© 2026, Powered by MethodHub</div>
+    </div>
+
+    <div className="login-left">
+      <img src={arrowLogo} alt="GotPOS Logo" className="login-logo" />
+
+      <div className="login-card">
+        <div className="login-card-heading">
+          <h4>WELCOME TO ARROWS!</h4>
+          <p>Sign in to access your dashboard</p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="login-form">
+          <div className="form-group email-group">
+            <label htmlFor="email">Email Address</label>
+            <div className="input-wrapper">
+              <MdOutlineEmail className="input-icon" size="20" />
+              <input
+                type="text"
+                id="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                onBlur={validateEmail}
+                placeholder="Enter your email or username"
+                required
+              />
+            </div>
           </div>
-          <form onSubmit={handleSubmit} className="login-form">
-            <div className="form-group email-group">
-              <label htmlFor="email">Email Address</label>
-              <div className="input-wrapper">
-                <MdOutlineEmail className="input-icon" size="20" />
-                <input
-                  type="text"
-                  id="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  onBlur={validateEmail}
-                  placeholder="Enter your email or username"
-                  required
-                />
-              </div>
-            </div>
-            {emailError && <p className="error-message">{emailError}</p>}
-            <div className="form-group password-group">
-              <label htmlFor="password">Password</label>
-              <div className="input-wrapper">
-                <TbLockPassword className="input-icon" />
-                <input
-                  type={showPassword ? "text" : "password"}
-                  id="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter your password"
-                  required
-                />
-                <button
-                  type="button"
-                  className="toggle-password"
-                  aria-label={showPassword ? "Hide password" : "Show password"}
-                  onClick={() => setShowPassword((prev) => !prev)}
-                >
-                  {showPassword ? <FiEyeOff size={18} /> : <FiEye size={18} />}
-                </button>
-              </div>
-            </div>
-            <div className="form-options">
-              <label className="remember-me">
-                <input type="checkbox" /> Remember me
-              </label>
-              <a href="#" className="forgot-password">Forgot password?</a>
-            </div>
-            </div>
-            {emailError && <p className="error-message">{emailError}</p>}
-            <div className="form-group password-group">
-              <label htmlFor="password">Password</label>
-              <div className="input-wrapper">
-                <TbLockPassword className="input-icon" />
-                <input
-                  type={showPassword ? "text" : "password"}
-                  id="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter your password"
-                  required
-                />
-                <button
-                  type="button"
-                  className="toggle-password"
-                  aria-label={showPassword ? "Hide password" : "Show password"}
-                  onClick={() => setShowPassword((prev) => !prev)}
-                >
-                  {showPassword ? <FiEyeOff size={18} /> : <FiEye size={18} />}
-                </button>
-              </div>
-            </div>
-            <div className="form-options">
-              <label className="remember-me">
-                <input 
-                  type="checkbox" 
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                /> 
-                Remember me
-              </label>
+
+          {emailError && <p className="error-message">{emailError}</p>}
+
+          <div className="form-group password-group">
+            <label htmlFor="password">Password</label>
+            <div className="input-wrapper">
+              <TbLockPassword className="input-icon" />
+              <input
+                type={showPassword ? "text" : "password"}
+                id="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter your password"
+                required
+              />
               <button
                 type="button"
-                className="forgot-password"
-                onClick={() => setShowForgotPasswordModal(true)}
+                className="toggle-password"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                onClick={() => setShowPassword((prev) => !prev)}
               >
-                Forgot password?
+                {showPassword ? <FiEyeOff size={18} /> : <FiEye size={18} />}
               </button>
             </div>
-            {error && <p className="error-message">{error}</p>}
-            <button type="submit" className="login-btn" disabled={loading}>
-              {loading ? 'Signing In...' : 'Sign In'}
-            </button>
-            <div className="login-divider">or</div>
+          </div>
+
+          <div className="form-options">
+            <label className="remember-me">
+              <input
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+              />
+              Remember me
+            </label>
+
             <button
               type="button"
-              className="login-btn"
-              disabled={loading || ssoLoading}
-              onClick={handleSsoLogin}
+              className="forgot-password"
+              onClick={() => setShowForgotPasswordModal(true)}
             >
-              {ssoLoading ? 'Opening SSO...' : 'Sign in with SSO'}
+              Forgot password?
             </button>
-          </form>
-        </div>
+          </div>
+
+          {error && <p className="error-message">{error}</p>}
+
+          <button type="submit" className="login-btn" disabled={loading}>
+            {loading ? "Signing In..." : "Sign In"}
+          </button>
+
+          <div className="login-divider">or</div>
+
+          <button
+            type="button"
+            className="login-btn"
+            disabled={loading || ssoLoading}
+            onClick={handleSsoLogin}
+          >
+            {ssoLoading ? "Opening SSO..." : "Sign in with SSO"}
+          </button>
+        </form>
       </div>
-      <ForgotPasswordModal 
-        isOpen={showForgotPasswordModal}
-        onClose={() => setShowForgotPasswordModal(false)}
-      />
     </div>
-  );
+
+    <ForgotPasswordModal
+      isOpen={showForgotPasswordModal}
+      onClose={() => setShowForgotPasswordModal(false)}
+    />
+  </div>
+);
 };
 
 export default Login;
