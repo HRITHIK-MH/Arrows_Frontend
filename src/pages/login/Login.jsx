@@ -414,6 +414,36 @@ const Login = () => {
             </div>
             <div className="form-options">
               <label className="remember-me">
+                <input type="checkbox" /> Remember me
+              </label>
+              <a href="#" className="forgot-password">Forgot password?</a>
+            </div>
+            </div>
+            {emailError && <p className="error-message">{emailError}</p>}
+            <div className="form-group password-group">
+              <label htmlFor="password">Password</label>
+              <div className="input-wrapper">
+                <TbLockPassword className="input-icon" />
+                <input
+                  type={showPassword ? "text" : "password"}
+                  id="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter your password"
+                  required
+                />
+                <button
+                  type="button"
+                  className="toggle-password"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  onClick={() => setShowPassword((prev) => !prev)}
+                >
+                  {showPassword ? <FiEyeOff size={18} /> : <FiEye size={18} />}
+                </button>
+              </div>
+            </div>
+            <div className="form-options">
+              <label className="remember-me">
                 <input 
                   type="checkbox" 
                   checked={rememberMe}
