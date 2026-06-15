@@ -576,6 +576,43 @@
   flex: 0 0 auto;
 }
 
+.detailNameRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.detailEmployeeName {
+  min-width: 0;
+  word-break: break-word;
+}
+
+.employeeStatusTag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 24px;
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.employeeStatusActive {
+  background: #d6ffec;
+  border: 1.75px solid #48de7d;
+  color: black;
+}
+
+.employeeStatusExited {
+  background: #f9dcdc;
+  border: 1.75px solid #d34242;
+}
+
 .detailMissing {
   border: 1px solid #e5edf6;
   border-radius: 8px;

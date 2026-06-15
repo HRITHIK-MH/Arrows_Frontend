@@ -22,23 +22,27 @@ const loadEmployeeById = (employeeId) => {
 const isExitedEmployee = (employee) =>
   Boolean(employee?.isExited || employee?.status === "exited" || employee?.exitDetails);
 
-const monthYearFormatter = new Intl.DateTimeFormat("en-US", {
-  month: "short",
-  year: "numeric",
-});
-
-const formatMonthYear = (value) => {
-  if (!value) return "";
-
+const parseDateValue = (value) => {
   const dateText = String(value);
   const isoDateMatch = dateText.match(/^(\d{4})-(\d{2})-(\d{2})$/);
   const parsedDate = isoDateMatch
     ? new Date(Number(isoDateMatch[1]), Number(isoDateMatch[2]) - 1, Number(isoDateMatch[3]))
     : new Date(dateText);
 
-  if (Number.isNaN(parsedDate.getTime())) return dateText;
+  return Number.isNaN(parsedDate.getTime()) ? null : parsedDate;
+};
 
-  return monthYearFormatter.format(parsedDate);
+const formatDayMonthYear = (value) => {
+  if (!value) return "";
+
+  const parsedDate = parseDateValue(value);
+  if (!parsedDate) return String(value);
+
+  const day = parsedDate.getDate();
+  const month = new Intl.DateTimeFormat("en-US", { month: "short" }).format(parsedDate);
+  const year = parsedDate.getFullYear();
+
+  return `${day} ${month} ${year}`;
 };
 
 export default function HeadcountDetails() {
@@ -168,8 +172,15 @@ export default function HeadcountDetails() {
                 <div className={styles.detailAvatar}>
                   {(employee.consultantName || "E").charAt(0).toUpperCase()}
                 </div>
-                <div>
+                <div className={styles.detailNameRow}>
                   <h2 className={styles.detailEmployeeName}>{employee.consultantName || "Employee"}</h2>
+                  <span
+                    className={`${styles.employeeStatusTag} ${
+                      isExited ? styles.employeeStatusExited : styles.employeeStatusActive
+                    }`}
+                  >
+                    {isExited ? "Exited" : "Active"}
+                  </span>
                 </div>
               </div>
 
@@ -199,14 +210,14 @@ export default function HeadcountDetails() {
 
             <div className={styles.detailsBody}>
               {[
-                ["Joining Date", formatMonthYear(employee.joiningDate)],
+                ["Joining Date", formatDayMonthYear(employee.joiningDate)],
                 ["Entity", employee.entity],
                 ["Work Location", employee.workLocation],
                 ["Mode", employee.mode],
                 ["Cost", employee.cost],
                 ["Customer", employee.customer],
                 ["Billing Type", employee.billingType],
-                ["Exit Date", formatMonthYear(employee.exitDetails?.exitDate)],
+                ["Exit Date", formatDayMonthYear(employee.exitDetails?.exitDate)],
                 ["Exit Reason", employee.exitDetails?.exitReason],
               ]
                 .filter(([, value]) => value !== undefined && value !== "" && value !== null)
