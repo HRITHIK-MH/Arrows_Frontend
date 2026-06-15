@@ -1,14 +1,16 @@
 import '@fontsource/poppins/400.css';
 import '@fontsource/poppins/500.css';
 import '@fontsource/poppins/700.css';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { FiEye, FiEyeOff } from "react-icons/fi";
+import { FaFacebookF, FaLinkedinIn, FaInstagram, FaTwitter } from "react-icons/fa";
 import { MdOutlineEmail } from "react-icons/md";
 import { TbLockPassword } from "react-icons/tb";
 import { useNavigate } from 'react-router-dom';
 import { exchangeSsoCallback, fetchSsoAuthorizeUrl, loginWithPassword } from '../../api/authService';
 import arrowLogo from "../../assets/login/logo_login.png";
 import { startAuthSession } from '../../utils/authSession';
+import ForgotPasswordModal from './ForgotPasswordModal';
 import './Login.css';
 
 const USE_LOGIN_API = false;
@@ -141,7 +143,6 @@ const getAuthErrorMessage = (err, fallbackMessage) => {
 };
 
 const Login = () => {
-  // Role is inferred from the email; remove manual selection
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -149,7 +150,10 @@ const Login = () => {
   const [ssoLoading, setSsoLoading] = useState(false);
   const [error, setError] = useState('');
   const [emailError, setEmailError] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
+  const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
   const navigate = useNavigate();
+  const hasInitialized = useRef(false);
 
   const persistAuthSession = useCallback((response = {}, fallbackRole = '') => {
     const emailValue = String(response?.email || email || '').toLowerCase().trim();
@@ -176,6 +180,23 @@ const Login = () => {
       startAuthSession();
     }
   }, [email]);
+
+  // Load remembered credentials on mount
+  useEffect(() => {
+    if (hasInitialized.current) return;
+    hasInitialized.current = true;
+    
+    const savedEmail = localStorage.getItem('rememberedEmail');
+    const savedPassword = localStorage.getItem('rememberedPassword');
+    
+    if (savedEmail && savedPassword) {
+      Promise.resolve().then(() => {
+        setEmail(savedEmail);
+        setPassword(savedPassword);
+        setRememberMe(true);
+      });
+    }
+  }, []);
 
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
@@ -226,8 +247,6 @@ const Login = () => {
   }, [navigate, persistAuthSession]);
 
   const validateEmail = async () => {
-    
-    // Accept known local-login emails even if they don't match strict email regex.
     try {
       await new Promise((resolve, reject) => {
         setTimeout(() => {
@@ -256,22 +275,27 @@ const Login = () => {
 
     try {
       const normalizedEmail = email.toLowerCase().trim();
-
-      // Infer role from known demo credentials; if none match, leave undefined
       const inferredRole = Object.keys(LOGIN_CREDENTIALS_BY_ROLE).find((r) =>
         LOGIN_CREDENTIALS_BY_ROLE[r].some((item) => String(item.email || '').toLowerCase() === normalizedEmail),
       );
-
       const roleCredentials = inferredRole ? (LOGIN_CREDENTIALS_BY_ROLE[inferredRole] || []) : [];
 
       if (!USE_LOGIN_API) {
-        // For local demo, require that the email exists in our demo lists and password matches
         const localMatch = roleCredentials.some(
           (item) => item.email.toLowerCase() === normalizedEmail && item.password === password,
         );
 
         if (!localMatch) {
           throw new Error('Invalid email or password.');
+        }
+
+        // Handle remember me
+        if (rememberMe) {
+          localStorage.setItem('rememberedEmail', normalizedEmail);
+          localStorage.setItem('rememberedPassword', password);
+        } else {
+          localStorage.removeItem('rememberedEmail');
+          localStorage.removeItem('rememberedPassword');
         }
 
         persistAuthSession(
@@ -289,6 +313,15 @@ const Login = () => {
           inferredRole,
         );
       } else {
+        // Handle remember me
+        if (rememberMe) {
+          localStorage.setItem('rememberedEmail', normalizedEmail);
+          localStorage.setItem('rememberedPassword', password);
+        } else {
+          localStorage.removeItem('rememberedEmail');
+          localStorage.removeItem('rememberedPassword');
+        }
+
         const response = await loginWithPassword({
           email: normalizedEmail,
           password,
@@ -385,6 +418,47 @@ const Login = () => {
               </label>
               <a href="#" className="forgot-password">Forgot password?</a>
             </div>
+            </div>
+            {emailError && <p className="error-message">{emailError}</p>}
+            <div className="form-group password-group">
+              <label htmlFor="password">Password</label>
+              <div className="input-wrapper">
+                <TbLockPassword className="input-icon" />
+                <input
+                  type={showPassword ? "text" : "password"}
+                  id="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter your password"
+                  required
+                />
+                <button
+                  type="button"
+                  className="toggle-password"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  onClick={() => setShowPassword((prev) => !prev)}
+                >
+                  {showPassword ? <FiEyeOff size={18} /> : <FiEye size={18} />}
+                </button>
+              </div>
+            </div>
+            <div className="form-options">
+              <label className="remember-me">
+                <input 
+                  type="checkbox" 
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                /> 
+                Remember me
+              </label>
+              <button
+                type="button"
+                className="forgot-password"
+                onClick={() => setShowForgotPasswordModal(true)}
+              >
+                Forgot password?
+              </button>
+            </div>
             {error && <p className="error-message">{error}</p>}
             <button type="submit" className="login-btn" disabled={loading}>
               {loading ? 'Signing In...' : 'Sign In'}
@@ -401,6 +475,10 @@ const Login = () => {
           </form>
         </div>
       </div>
+      <ForgotPasswordModal 
+        isOpen={showForgotPasswordModal}
+        onClose={() => setShowForgotPasswordModal(false)}
+      />
     </div>
   );
 };
