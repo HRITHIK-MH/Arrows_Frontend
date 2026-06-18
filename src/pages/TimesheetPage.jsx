@@ -90,16 +90,17 @@ export default function TimesheetPage() {
           </div>
         </div>
 
-        <aside className="sidebar">
+        <aside className="ts-sidebar">
           <div className="day-panel">
             <div className="day-panel-header">
-              <div>Jun 17, 2026</div>
+              <div>Jun 18, 2026</div>
               <div className="status completed">Completed</div>
             </div>
+            <p className="day-panel-subtitle">Day details and quick options.</p>
 
             <div className="entry-card">
-              <div className="entry-title">HRMS Portal</div>
-              <div className="entry-sub">Backend Development</div>
+              <div className="entry-title">Internal Automation</div>
+              <div className="entry-sub">Documentation</div>
               <div className="entry-row"><div>Start</div><div>09:00</div></div>
               <div className="entry-row"><div>End</div><div>17:00</div></div>
               <div className="entry-row"><div>Hours</div><div>8h</div></div>
@@ -112,6 +113,86 @@ export default function TimesheetPage() {
             </div>
 
             <button className="btn primary full">+ Create entry for this date</button>
+          </div>
+
+          <div className="ts-sidebar-card weekly-summary">
+            <h3>Weekly summary</h3>
+            <p className="section-subtitle">Visual weekly totals and missing days.</p>
+            <div className="weekly-bars">
+              <div className="weekly-row">
+                <span className="week-label">W1</span>
+                <div className="bar-container">
+                  <div className="bar" style={{width: '80%'}}></div>
+                </div>
+                <span className="hours">32h</span>
+              </div>
+              <div className="weekly-row">
+                <span className="week-label">W2</span>
+                <div className="bar-container">
+                  <div className="bar" style={{width: '100%'}}></div>
+                </div>
+                <span className="hours">40h</span>
+              </div>
+              <div className="weekly-row">
+                <span className="week-label">W3</span>
+                <div className="bar-container">
+                  <div className="bar" style={{width: '80%'}}></div>
+                </div>
+                <span className="hours">32h</span>
+              </div>
+              <div className="weekly-row">
+                <span className="week-label">W4</span>
+                <div className="bar-container">
+                  <div className="bar" style={{width: '0%'}}></div>
+                </div>
+                <span className="hours">0h</span>
+              </div>
+              <div className="weekly-row">
+                <span className="week-label">W5</span>
+                <div className="bar-container">
+                  <div className="bar" style={{width: '0%'}}></div>
+                </div>
+                <span className="hours">0h</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="ts-sidebar-card project-distribution">
+            <h3>Project distribution</h3>
+            <p className="section-subtitle">Current month logged hours.</p>
+            <div className="project-bars">
+              <div className="project-row">
+                <span className="project-name">HRMS Portal</span>
+                <span className="hours">48h</span>
+              </div>
+              <div className="bar-container">
+                <div className="bar" style={{width: '100%'}}></div>
+              </div>
+
+              <div className="project-row">
+                <span className="project-name">Internal Automation</span>
+                <span className="hours">32h</span>
+              </div>
+              <div className="bar-container">
+                <div className="bar" style={{width: '66.7%'}}></div>
+              </div>
+
+              <div className="project-row">
+                <span className="project-name">Client Analytics</span>
+                <span className="hours">16h</span>
+              </div>
+              <div className="bar-container">
+                <div className="bar" style={{width: '33.3%'}}></div>
+              </div>
+
+              <div className="project-row">
+                <span className="project-name">Payroll Modernization</span>
+                <span className="hours">8h</span>
+              </div>
+              <div className="bar-container">
+                <div className="bar" style={{width: '16.7%'}}></div>
+              </div>
+            </div>
           </div>
         </aside>
       </main>
