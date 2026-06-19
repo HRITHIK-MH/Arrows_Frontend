@@ -8,7 +8,6 @@ import {
   Edit3,
   Eye,
   FileCheck2,
-  Filter,
   Plus,
   Send,
   Trash2,
@@ -376,7 +375,7 @@ export function TimesheetsPage() {
           </div>
         </div>
 
-        <div className="sidebar">
+        <div className="ts-sidebar">
           <div className="day-panel">
             <div className="day-panel-header">
               <div style={{ fontWeight: 700 }}>
@@ -517,25 +516,6 @@ export function TimesheetsPage() {
         </div>
       </div>
 
-      <div className="section-card api-card">
-        <div className="section-header">
-          <div>
-            <h2>Timesheet APIs</h2>
-            <p>Frontend integration contract retained for backend handoff.</p>
-          </div>
-          <Filter size={16} />
-        </div>
-        <div className="api-grid">
-          <span>GET /timesheets/calendar</span>
-          <span>GET /timesheets/day/{selectedDate}</span>
-          <span>POST /timesheets/daily</span>
-          <span>POST /timesheets/weekly</span>
-          <span>POST /timesheets/monthly</span>
-          <span>POST /timesheets/submit-approval</span>
-          <span>POST /timesheets/approve</span>
-          <span>POST /timesheets/reject</span>
-        </div>
-      </div>
     </div>
   );
 }

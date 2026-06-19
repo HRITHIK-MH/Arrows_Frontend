@@ -135,6 +135,52 @@ export const fetchClients = async () =>
     })
   );
 
+const toSlug = (value) =>
+  String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+
+export const fetchSkills = async () =>
+  unwrapList(
+    await API.get('/skills', {
+      skipAuth: true,
+      skipAuthRedirect: true,
+    })
+  );
+
+export const fetchJobInformationMeta = async () => {
+  const response = await API.get('/jobs/job-information/meta', {
+    skipAuth: true,
+    skipAuthRedirect: true,
+  });
+  return response?.data ?? null;
+};
+
+export const fetchClientRequirementMeta = async () => {
+  const response = await API.get('/jobs/client-requirement/meta', {
+    skipAuth: true,
+    skipAuthRedirect: true,
+  });
+  return response?.data ?? null;
+};
+
+export const toSkillOption = (row) => {
+  const skillName = String(row?.skillName || row?.name || '').trim();
+  const skillCode = String(row?.skillCode || '').trim();
+  const skillId = String(row?.skillId || row?.id || '').trim();
+
+  if (!skillName && !skillCode && !skillId) {
+    return null;
+  }
+
+  return {
+    value: skillCode || toSlug(skillName) || skillId,
+    label: skillName || skillCode || skillId,
+  };
+};
+
 export const toClientRequest = (row = {}) => ({
   clientName: String(row.clientName || row.name || '').trim(),
   primaryLocationId: null,
