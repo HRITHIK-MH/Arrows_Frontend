@@ -1,6 +1,7 @@
 import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react-swc'
 import process from 'node:process'
+import path from 'node:path'
 
 const DEFAULT_SUPERSET_URL = 'http://172.174.201.208:8088';
 
@@ -308,6 +309,11 @@ export default defineConfig(({ mode }) => {
   const supersetSessionCookie = env.SUPERSET_SESSION_COOKIE || '';
 
   return {
+    resolve: {
+      alias: {
+        '@': path.resolve(__dirname, 'src')
+      }
+    },
     plugins: [react(), supersetGuestTokenPlugin(env)],
     css: {
       modules: {

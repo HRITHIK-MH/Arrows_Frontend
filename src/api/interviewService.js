@@ -15,6 +15,28 @@ export const fetchInterviews = async ({ page = 1, limit = 100, search, candidate
   return response?.data?.data || { items: [], pagination: { page, limit, totalRecords: 0, totalPages: 0 } };
 };
 
+export const fetchInterviewFiltersMeta = async () => {
+  const response = await API.get('/interviews/meta/filters', {
+    skipAuthRedirect: true,
+  });
+  return response?.data?.data || response?.data || null;
+};
+
+const unwrapArray = (payload) => {
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload?.items)) return payload.items;
+  if (Array.isArray(payload?.data?.items)) return payload.data.items;
+  if (Array.isArray(payload?.data)) return payload.data;
+  return [];
+};
+
+export const fetchAvailableInterviewers = async () => {
+  const response = await API.get('/interview-groups/available-users', {
+    skipAuthRedirect: true,
+  });
+  return unwrapArray(response?.data);
+};
+
 export const fetchInterviewDetail = async (interviewId) => {
   const response = await API.get(`/interviews/${encodeURIComponent(interviewId)}`);
   return response?.data?.data || null;

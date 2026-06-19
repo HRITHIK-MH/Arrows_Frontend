@@ -25,6 +25,8 @@ const Clients = lazy(() => import("./pages/job-openings/Clients.jsx"));
 const Interviews = lazy(() => import("./pages/interviews/Interviews.jsx"));
 const JobDescription = lazy(() => import("./pages/job-openings/JobDescription.jsx"));
 const Reports = lazy(() => import("./pages/reports/Reports.jsx"));
+const Timesheet = lazy(() => import("./pages/timesheet/Timesheet.jsx"));
+const TimesheetEntry = lazy(() => import("./pages/timesheet/TimesheetEntry.jsx"));
 const UserRoles = lazy(() => import("./pages/user-roles/UserRoles.jsx"));
 const Calendar = lazy(() => import("./pages/calendar/Calendar.jsx"));
 const ApplicationForm = lazy(() => import("./pages/application/ApplicationForm.jsx"));
@@ -169,6 +171,8 @@ export default function App() {
             <Route path="/job-openings/create" element={<RequireAuth><JobOpenings createMode={true} /></RequireAuth>} />
             <Route path="/job-openings/:jobId" element={<RequireAuth><JobDescription /></RequireAuth>} />
             <Route path="/reports" element={<RequireAuth><Reports /></RequireAuth>} />
+            <Route path="/timesheet" element={<RequireAuth><Timesheet /></RequireAuth>} />
+            <Route path="/timesheet/new" element={<RequireAuth><TimesheetEntry /></RequireAuth>} />
             <Route path="/calendar" element={<RequireAuth><Calendar /></RequireAuth>} />
             <Route path="/users" element={<RequireAuth><UserRoles /></RequireAuth>} />
             <Route path="/application" element={<RequireAuth><ApplicationForm /></RequireAuth>} />

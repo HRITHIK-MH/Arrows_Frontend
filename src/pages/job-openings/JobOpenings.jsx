@@ -19,9 +19,13 @@ import ReusableForm from "../../components/forms/ReusableForm";
 import {
   createJob as createJobApi,
   deleteJob as deleteJobApi,
+  fetchClientRequirementMeta,
   fetchClients,
+  fetchJobInformationMeta,
   fetchJobs,
+  fetchSkills,
   normalizeJobRecord as normalizeApiJob,
+  toSkillOption,
   updateJob as updateJobApi,
 } from "../../api/jobClientService";
 import { saveTeamMembers as saveTeamMembersApi } from "../../api/teamService";
@@ -72,6 +76,139 @@ const getJobOpeningSequence = (value) => {
 
 const getJobOpeningIdValue = (item) =>
   item?.jobPositionId || item?.openingJobId || item?.jobId || "";
+
+const normalizeOptionKey = (value) =>
+  String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "")
+    .replace(/(options?|dropdown|values?|list)$/g, "");
+
+const toOptionRecord = (item) => {
+  if (item === null || item === undefined) return null;
+
+  if (typeof item === "string" || typeof item === "number" || typeof item === "boolean") {
+    const rawValue = String(item).trim();
+    if (!rawValue) return null;
+    return { value: rawValue, label: rawValue };
+  }
+
+  if (typeof item !== "object") return null;
+
+  const rawValue =
+    item.value ??
+    item.code ??
+    item.key ??
+    item.id ??
+    item.skillCode ??
+    item.clientId ??
+    item.name ??
+    item.label;
+
+  const rawLabel =
+    item.label ??
+    item.name ??
+    item.displayName ??
+    item.title ??
+    item.skillName ??
+    item.clientName ??
+    rawValue;
+
+  const valueText = String(rawValue ?? "").trim();
+  const labelText = String(rawLabel ?? "").trim();
+
+  if (!valueText && !labelText) return null;
+
+  return {
+    value: valueText || labelText,
+    label: labelText || valueText,
+  };
+};
+
+const mergeOptionsByKey = (current = [], incoming = []) => {
+  const merged = [...current];
+  incoming.forEach((option) => {
+    if (!option || !option.value) return;
+    if (!merged.some((item) => String(item.value) === String(option.value))) {
+      merged.push(option);
+    }
+  });
+  return merged;
+};
+
+const buildMetaOptionMap = (...metaPayloads) => {
+  const map = {};
+
+  const saveOptions = (rawKey, rawOptions) => {
+    const normalizedKey = normalizeOptionKey(rawKey);
+    if (!normalizedKey || !Array.isArray(rawOptions)) return;
+
+    const normalizedOptions = rawOptions
+      .map((option) => toOptionRecord(option))
+      .filter(Boolean);
+
+    if (normalizedOptions.length === 0) return;
+    map[normalizedKey] = mergeOptionsByKey(map[normalizedKey], normalizedOptions);
+  };
+
+  const visit = (node, hintedKey = "") => {
+    if (node === null || node === undefined) return;
+
+    if (Array.isArray(node)) {
+      node.forEach((item) => visit(item, hintedKey));
+      return;
+    }
+
+    if (typeof node !== "object") return;
+
+    const nodeKey =
+      node.fieldName ||
+      node.name ||
+      node.key ||
+      node.id ||
+      hintedKey;
+
+    [node.options, node.values, node.allowedValues, node.choices, node.dropdownOptions].forEach((candidate) => {
+      saveOptions(nodeKey, candidate);
+    });
+
+    Object.entries(node).forEach(([key, value]) => {
+      if (Array.isArray(value) && value.length > 0) {
+        const looksLikeOptions = value.every((entry) => toOptionRecord(entry));
+        if (looksLikeOptions) {
+          saveOptions(key, value);
+        }
+      }
+      visit(value, key);
+    });
+  };
+
+  metaPayloads.forEach((payload) => visit(payload));
+  return map;
+};
+
+const getMetaOptionsForField = (metaOptionMap, fieldName) => {
+  const key = normalizeOptionKey(fieldName);
+  const aliases = {
+    location: ["location", "city"],
+    jobtype: ["jobtype", "employmenttype", "employment"],
+    hiringtype: ["hiringtype", "worktype", "workmode"],
+    technicalskills: ["technicalskills", "skills", "skill"],
+    addtechnicalskills: ["addtechnicalskills", "technicalskills", "skills", "skill"],
+    softskills: ["softskills"],
+    priority: ["priority"],
+    clientname: ["clientname", "clients"],
+  };
+
+  const candidates = aliases[key] || [key];
+  for (const candidate of candidates) {
+    if (Array.isArray(metaOptionMap[candidate]) && metaOptionMap[candidate].length > 0) {
+      return metaOptionMap[candidate];
+    }
+  }
+
+  return [];
+};
 
 const getNextJobOpeningId = (rows = []) => {
   const usedSequences = new Set(
@@ -468,6 +605,8 @@ export default function JobOpenings({ createMode = false }) {
   const [drawerTab, setDrawerTab] = React.useState("Job Information");
   const [sortConfig, setSortConfig] = React.useState({ key: null, direction: 'asc' });
   const [clientOptions, setClientOptions] = React.useState(() => getClientOptions(loadClientRows()));
+  const [technicalSkillOptions, setTechnicalSkillOptions] = React.useState([]);
+  const [metaDropdownOptions, setMetaDropdownOptions] = React.useState({});
   const addJobOpeningMenuRef = React.useRef(null);
   const createModeInitializedRef = React.useRef(false);
 
@@ -520,7 +659,13 @@ export default function JobOpenings({ createMode = false }) {
 
     const syncWithBackend = async () => {
       try {
-        const [jobs, clients] = await Promise.all([fetchJobs(), fetchClients()]);
+        const [jobs, clients, skills, jobInfoMeta, clientRequirementMeta] = await Promise.all([
+          fetchJobs(),
+          fetchClients(),
+          fetchSkills(),
+          fetchJobInformationMeta(),
+          fetchClientRequirementMeta(),
+        ]);
 
         if (!isMounted) return;
 
@@ -537,8 +682,24 @@ export default function JobOpenings({ createMode = false }) {
           }));
           setClientOptions(getClientOptions(clientRows));
         }
+
+        if (Array.isArray(skills) && skills.length > 0) {
+          const mappedSkills = skills
+            .map((skill) => toSkillOption(skill))
+            .filter(Boolean)
+            .filter((option, index, list) => list.findIndex((item) => item.value === option.value) === index);
+
+          if (mappedSkills.length > 0) {
+            setTechnicalSkillOptions(mappedSkills);
+          }
+        }
+
+        const mappedMetaOptions = buildMetaOptionMap(jobInfoMeta, clientRequirementMeta);
+        if (Object.keys(mappedMetaOptions).length > 0) {
+          setMetaDropdownOptions(mappedMetaOptions);
+        }
       } catch (error) {
-        console.warn("Job/Client API sync failed, using cached local data:", error);
+        console.warn("Job form metadata sync failed, using cached local data:", error);
       }
     };
 
@@ -1265,14 +1426,35 @@ export default function JobOpenings({ createMode = false }) {
       submitLabel: editingIndex !== null ? "Save JD" : (jobOpeningConfig.submitLabel || "Create JD"),
       steps: jobOpeningConfig.steps.map((step) => ({
         ...step,
-        fields: (step.fields || []).map((field) =>
-          field.name === "clientName"
-            ? {
+        fields: (step.fields || []).map((field) => {
+          if (field.type !== "select" && field.type !== "multiselect") {
+            return field;
+          }
+
+          const metaOptions = getMetaOptionsForField(metaDropdownOptions, field.name);
+          if (metaOptions.length > 0) {
+            return {
+              ...field,
+              options: metaOptions,
+            };
+          }
+
+          if (field.name === "clientName") {
+            return {
               ...field,
               options: clientOptions,
-            }
-            : field
-        ),
+            };
+          }
+
+          if ((field.name === "technicalSkills" || field.name === "addTechnicalSkills") && technicalSkillOptions.length > 0) {
+            return {
+              ...field,
+              options: technicalSkillOptions,
+            };
+          }
+
+          return field;
+        }),
       })),
       localSubmitOnly: true,
       showDraftAction: editingIndex === null,
@@ -1281,7 +1463,7 @@ export default function JobOpenings({ createMode = false }) {
       onCancel: handleCancelJobOpeningForm,
       onSaveDraft: saveJobOpeningDraft,
     }),
-    [clientOptions, editingIndex, handleCancelJobOpeningForm, saveJobOpeningDraft]
+    [clientOptions, editingIndex, handleCancelJobOpeningForm, metaDropdownOptions, saveJobOpeningDraft, technicalSkillOptions]
   );
 
   React.useEffect(() => {

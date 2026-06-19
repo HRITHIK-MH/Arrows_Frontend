@@ -16,6 +16,13 @@ export const fetchCandidates = async ({ page = 1, limit = 100, search, source, r
   return response?.data?.data || { items: [], pagination: { page, limit, totalRecords: 0, totalPages: 0 } };
 };
 
+export const fetchCandidateFiltersMeta = async () => {
+  const response = await API.get('/candidates/meta/filters', {
+    skipAuthRedirect: true,
+  });
+  return response?.data?.data || response?.data || null;
+};
+
 export const fetchCandidateDetail = async (candidateId) => {
   const response = await API.get(`/candidates/${encodeURIComponent(candidateId)}`);
   return response?.data?.data || null;
