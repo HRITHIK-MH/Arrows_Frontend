@@ -1,4 +1,5 @@
 import { PROMPT_ARROWS_MAPPING, PROMPT_ARROWS_PARSE } from './resumePrompts';
+import { mapParsedSkills } from './skillMapper';
 
 const normalizeValue = (value) => {
   if (value === null || value === undefined) return '';
@@ -245,7 +246,8 @@ export const parseResume = async (file) => {
       resumeJson,
       candidateForm,
     };
-    const normalizedResponse = normalizeParsedResumePayload(parsedResponse);
+    const mappedResponse = mapParsedSkills(parsedResponse);
+    const normalizedResponse = normalizeParsedResumePayload(mappedResponse);
     console.debug('[ResumeDebug] Combined parsed JSON:', parsedResponse);
     console.debug('[ResumeDebug] Normalized candidate form JSON:', normalizedResponse);
     return normalizedResponse;
