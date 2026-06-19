@@ -222,7 +222,6 @@ const createSkillDraft = () => ({
   experience: EXPERIENCE_OPTIONS[0],
   rating: 0,
   lastUsed: LAST_USED_OPTIONS[0],
-  comments: "",
 });
 
 const formatFileSize = (bytes) => {
@@ -930,7 +929,6 @@ export default function Candidates() {
             experience: displayExperience || "-",
             rating: ratingValue,
             lastUsed: skill.skillLastUsed || "-",
-            comments: String(skill.skillComments || "").trim(),
           };
         })
       : [];
@@ -961,7 +959,6 @@ export default function Candidates() {
             experience: displayExperience || "-",
             rating: ratingValue,
             lastUsed: skill.secondarySkillLastUsed || "-",
-            comments: String(skill.secondarySkillComments || "").trim(),
           };
         })
       : [];
@@ -975,7 +972,6 @@ export default function Candidates() {
         experience: "2 Years",
         rating: 4,
         lastUsed: "2025",
-        comments: "The candidate has good understanding of Java coding and concepts",
       },
       {
         id: "primary-2",
@@ -983,7 +979,6 @@ export default function Candidates() {
         experience: "1 Year",
         rating: 4,
         lastUsed: "2025",
-        comments: "He has sound experience of Spring Boot",
       },
       {
         id: "primary-3",
@@ -991,7 +986,6 @@ export default function Candidates() {
         experience: "3 Years",
         rating: 3,
         lastUsed: "2025",
-        comments: "He has working experience of Microservices",
       },
       {
         id: "primary-4",
@@ -999,7 +993,6 @@ export default function Candidates() {
         experience: "2 Years",
         rating: 3,
         lastUsed: "2022",
-        comments: "He has experience of Rest API",
       },
     ];
 
@@ -1010,7 +1003,6 @@ export default function Candidates() {
         experience: "5 Years",
         rating: 4,
         lastUsed: "2025",
-        comments: "Ability to clearly share ideas, listen actively, and align with teams and stakeholders.",
       },
       {
         id: "secondary-2",
@@ -1018,7 +1010,6 @@ export default function Candidates() {
         experience: "5 Years",
         rating: 4,
         lastUsed: "2025",
-        comments: "Effectively prioritizing tasks and meeting deadlines without compromising quality.",
       },
       {
         id: "secondary-3",
@@ -1026,7 +1017,6 @@ export default function Candidates() {
         experience: "5 Years",
         rating: 3,
         lastUsed: "2025",
-        comments: "Identifying issues quickly and finding practical, effective solutions.",
       },
       {
         id: "secondary-4",
@@ -1034,7 +1024,6 @@ export default function Candidates() {
         experience: "5 Years",
         rating: 4,
         lastUsed: "2025",
-        comments: "Working smoothly with cross-functional teams to achieve shared goals.",
       },
       {
         id: "secondary-5",
@@ -1042,7 +1031,6 @@ export default function Candidates() {
         experience: "5 Years",
         rating: 4,
         lastUsed: "2025",
-        comments: "Quickly adjusting to change and continuously upgrading skills.",
       },
     ];
 
@@ -1368,7 +1356,6 @@ export default function Candidates() {
       gender: row.gender || "",
       yearsExperience: row.yearsExperience || "",
       offersInHand: row.offersInHand || "",
-      comments: row.comments || "",
       currentCompanyName: row.currentCompanyName || "",
       jobTitleRole: row.jobTitleRole || "",
       employmentType: row.employmentType || "",
@@ -1729,7 +1716,6 @@ export default function Candidates() {
                   <th>{activeSkillType === "primary" ? "Primary Skill" : "Secondary Skill"}</th>
                   <th>Experience</th>
                   <th>Rating</th>
-                  <th>Comments</th>
                 </tr>
               </thead>
               <tbody>
@@ -1763,20 +1749,11 @@ export default function Candidates() {
                       </select>
                     </td>
                     <td>{renderRatingStars(skillDraft.rating, true, (value) => handleSkillDraftChange("rating", value))}</td>
-                    <td>
-                      <input
-                        type="text"
-                        className={styles.skillInput}
-                        value={skillDraft.comments}
-                        placeholder="Add comments"
-                        onChange={(event) => handleSkillDraftChange("comments", event.target.value)}
-                      />
-                    </td>
                   </tr>
                 )}
                 {currentSkills.length === 0 && !isAddingSkill && (
                   <tr>
-                    <td colSpan={4} className={styles.emptyCell}>
+                    <td colSpan={3} className={styles.emptyCell}>
                       No skills added.
                     </td>
                   </tr>
@@ -1786,7 +1763,6 @@ export default function Candidates() {
                     <td>{skill.name}</td>
                     <td>{skill.experience}</td>
                     <td>{renderRatingStars(skill.rating)}</td>
-                    <td>{skill.comments}</td>
                   </tr>
                 ))}
               </tbody>
@@ -2148,29 +2124,29 @@ export default function Candidates() {
                 <tbody>
                   {paginatedData.map(({ item: row, sourceIndex }) => (
                     <tr key={`${row.candidateId}-${sourceIndex}`}>
-                      <td>{row.candidateId}</td>
-                      <td>{row.candidateName}</td>
-                      <td>{row.candidateEmail}</td>
-                      <td>{row.modifiedTime}</td>
-                      <td>{row.source}</td>
-                      <td>
+                      <td data-label="Candidate ID">{row.candidateId}</td>
+                      <td data-label="Candidate Name">{row.candidateName}</td>
+                      <td data-label="Email Address">{row.candidateEmail}</td>
+                      <td data-label="Modified Time">{row.modifiedTime}</td>
+                      <td data-label="Source">{row.source}</td>
+                      <td data-label="Rating">
                         <span className={styles.rating}>
                           {row.rating}
                           <FiStar className={styles.ratingStar} />
                         </span>
                       </td>
-                      <td>
+                      <td data-label="Stage">
                         <span className={`${styles.stagePill} ${getStageClass(row.stage)}`}>
                           {row.stage}
                         </span>
                       </td>
-                      <td>
+                      <td data-label="Status">
                         <span className={`${styles.statusPill} ${getStatusClass(row.status)}`}>
                           <span className={styles.statusDot} />
                           {row.status}
                         </span>
                       </td>
-                      <td className={styles.actionsCol}>
+                      <td data-label="Actions" className={styles.actionsCol}>
                         <div className={styles.actionIcons}>
                           <button
                             type="button"

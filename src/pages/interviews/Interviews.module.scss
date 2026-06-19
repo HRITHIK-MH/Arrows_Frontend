@@ -2494,7 +2494,7 @@
   }
 
   .interviewsTable {
-    min-width: 900px;
+    min-width: 740px;
     width: 100%;
     table-layout: auto;
     border-collapse: separate;
@@ -2549,7 +2549,7 @@
   }
 
   .membersTable table {
-    min-width: 840px;
+    min-width: 700px;
     width: 100%;
     border-collapse: separate;
     border-spacing: 0;
@@ -2591,11 +2591,11 @@
 
 @media (max-width: 480px) {
   .interviewsTable {
-    min-width: 820px;
+    min-width: 640px;
   }
 
   .membersTable table {
-    min-width: 680px;
+    min-width: 560px;
   }
 
   .drawerAvatar {
@@ -2606,5 +2606,109 @@
 
   .drawerIdentity h3 {
     font-size: 20px;
+  }
+}
+
+@media (max-width: 600px) {
+  .tableWrap {
+    overflow: visible;
+    border: none;
+    background: transparent;
+  }
+
+  .interviewsTable {
+    width: 100%;
+    min-width: 0;
+    border-spacing: 0 10px;
+  }
+
+  .interviewsTable thead {
+    display: none;
+  }
+
+  .interviewsTable,
+  .interviewsTable tbody,
+  .interviewsTable tr,
+  .interviewsTable td {
+    display: block;
+    width: 100%;
+  }
+
+  .interviewsTable tbody tr {
+    background: #ffffff;
+    border: 1px solid #d8dde6;
+    border-radius: 14px;
+    padding: 12px;
+    margin-bottom: 10px;
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08);
+  }
+
+  .interviewsTable tbody td {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 7px 0;
+    border-bottom: 1px dashed #d8dde6;
+    height: auto;
+    white-space: normal;
+    line-height: 1.35;
+    overflow: visible;
+    text-overflow: clip;
+  }
+
+  .interviewsTable tbody td > * {
+    margin-left: auto;
+    max-width: 62%;
+    text-align: right;
+    overflow-wrap: anywhere;
+  }
+
+  .interviewsTable tbody td:last-child {
+    border-bottom: none;
+  }
+
+  .interviewsTable tbody td::before {
+    content: attr(data-label);
+    min-width: 118px;
+    font-size: 10.5px;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  .interviewsTable .actionsCol {
+    width: 100%;
+    text-align: left;
+  }
+
+  .interviewsTable .actionsCol .actionIcons {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .interviewsTable .actionsCol > * {
+    max-width: 100%;
+    margin-left: 0;
+    text-align: left;
+  }
+}
+
+@media (max-width: 420px) {
+  .interviewsTable tbody td {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .interviewsTable tbody td::before {
+    min-width: 0;
+  }
+
+  .interviewsTable tbody td > * {
+    max-width: 100%;
+    margin-left: 0;
+    text-align: left;
   }
 }

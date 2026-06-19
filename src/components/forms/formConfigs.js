@@ -1005,15 +1005,6 @@ export const candidateConfig = {
           ]
         },
         {
-          name: "comments",
-          label: "Comments / Remarks",
-          type: "textarea",
-          required: false,
-          placeholder: "Comments / Remarks",
-          maxLength: 1000,
-          validationRule: "comments"
-        },
-        {
           name: "currentCompanyName",
           label: "Current Company Name *",
           type: "text",
@@ -1157,20 +1148,6 @@ export const candidateConfig = {
             { value: "4", label: "4" },
             { value: "5", label: "5" }
           ]
-        },
-        {
-          name: "skillComments",
-          label: "Comments",
-          type: "text",
-          required: false,
-          placeholder: "Add comments"
-        },
-        {
-          name: "secondarySkillComments",
-          label: "Secondary Comments",
-          type: "text",
-          required: false,
-          placeholder: "Add comments"
         },
         {
           name: "skillExperienceYears",

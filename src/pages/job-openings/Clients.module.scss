@@ -901,20 +901,20 @@
   }
 
   .tableWrap :global(.data-table) {
-    min-width: 840px;
+    min-width: 700px;
   }
 
   .tableFooter {
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
     gap: 8px;
   }
 
   .footerLeft {
     width: auto;
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
     font-size: 12px;
     gap: 8px;
     line-height: 1;
@@ -978,7 +978,7 @@
 
 @media (max-width: 480px) {
   .tableWrap :global(.data-table) {
-    min-width: 740px;
+    min-width: 600px;
   }
 
   .tableWrap :global(.data-table tbody td:nth-child(2)) {
