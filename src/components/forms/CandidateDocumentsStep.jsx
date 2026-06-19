@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useEffect, useRef } from "react";
 import * as pdfjsLib from "pdfjs-dist";
 import pdfjsWorkerSrc from "pdfjs-dist/build/pdf.worker.min.mjs?url";
+import { normalizeParsedResumePayload } from "../../api/resumeParserService";
 
 const ALLOWED_EXTENSIONS = new Set(["pdf", "doc", "docx"]);
 
@@ -221,6 +222,16 @@ const mapYearsToBucket = (yearsNumber) => {
   return "12+";
 };
 
+const mapExperienceValueToBucket = (value) => {
+  const raw = normalizeText(value).toLowerCase();
+  if (!raw) return "";
+  if (["0-1", "1-3", "3-5", "5-8", "8-12", "12+"].includes(raw)) return raw;
+
+  const numericMatch = raw.match(/\d+(?:\.\d+)?/);
+  if (!numericMatch) return "";
+  return mapYearsToBucket(Number(numericMatch[0]));
+};
+
 const cleanResumeValue = (value) =>
   normalizeText(String(value || "").replace(/[|•]/g, " ").replace(/\s+/g, " ")).slice(0, 120);
 
@@ -297,8 +308,13 @@ const SKILL_ALIAS_MAP = {
   java: ["core java", "java", "spring boot", "spring"],
   python: ["python", "python3"],
   react: ["react", "reactjs", "react js"],
+  "react-js": ["react", "reactjs", "react js", "react.js"],
   node: ["node", "nodejs", "node js", "express"],
   aws: ["aws", "amazon web services"],
+  "angular-4": ["angular", "angularjs", "angular 2", "angular 4", "angular 5"],
+  css3: ["css", "css3"],
+  html5: ["html", "html5"],
+  javascript: ["javascript", "js"],
 };
 
 const collectMatchedSkillValues = (text, options = []) => {
@@ -319,6 +335,63 @@ const collectMatchedSkillValues = (text, options = []) => {
     })
     .map((option) => option.value);
 };
+
+const normalizeSkillInput = (skills) => {
+  if (Array.isArray(skills)) {
+    return skills
+      .map((skill) => {
+        if (typeof skill === "string") return skill;
+        return skill?.skill_name || skill?.name || skill?.primary_skill || "";
+      })
+      .map((skill) => String(skill || "").trim())
+      .filter(Boolean);
+  }
+
+  if (typeof skills === "string") {
+    return String(skills)
+      .split(/[;,/|&•·\n]/)
+      .map((skill) => String(skill || "").trim())
+      .filter(Boolean);
+  }
+
+  if (skills && typeof skills === "object") {
+    const extracted = [];
+    if (skills.primary_skill || skills.primarySkill) {
+      extracted.push(String(skills.primary_skill || skills.primarySkill).trim());
+    }
+    if (Array.isArray(skills.secondary_skills)) {
+      extracted.push(...skills.secondary_skills.map((skill) => String(skill || "").trim()));
+    }
+    if (Array.isArray(skills.skills)) {
+      extracted.push(...skills.skills.map((skill) => String(skill || "").trim()));
+    }
+    return extracted.filter(Boolean);
+  }
+
+  return [];
+};
+
+const mapSkillTextToValue = (skillText, options = []) => {
+  const normalizedText = String(skillText || "").trim();
+  if (!normalizedText) return "";
+
+  const matched = collectMatchedSkillValues(normalizedText, options);
+  if (matched.length > 0) return matched[0];
+
+  const lowerValue = normalizedText.toLowerCase();
+  const directOption = options.find((option) => {
+    const optionValue = String(option?.value || "").toLowerCase();
+    const optionLabel = String(option?.label || option?.value || "").toLowerCase();
+    return optionValue === lowerValue || optionLabel === lowerValue;
+  });
+
+  return directOption ? directOption.value : "";
+};
+
+const mapSkillTextsToValues = (skills, options = []) =>
+  normalizeSkillInput(skills)
+    .map((skill) => mapSkillTextToValue(skill, options))
+    .filter(Boolean);
 
 const getSkillDefaultsFromExperience = (yearsBucket, yearsNumber) => {
   let skillExperienceLevel = "";
@@ -360,7 +433,7 @@ const createSkillRow = (primarySkill, defaults = {}) => ({
   skillExperienceLevel: defaults.skillExperienceLevel || "",
   skillExperienceYears: defaults.skillExperienceYears || "",
   skillRating: defaults.skillRating || "",
-  skillComments: "",
+  skillComments: defaults.skillComments || "",
   secondarySkillExperienceLevel: "",
   secondarySkillExperienceYears: "",
   secondarySkillRating: "",
@@ -650,13 +723,36 @@ const CandidateDocumentsStep = ({ formData, onChange, onSetStepFields }) => {
   const mapResumeToFields = async (file) => {
     if (!file) return;
 
+    console.groupCollapsed("[ResumeDebug] Candidate Documents Auto Population");
+    console.debug("[ResumeDebug] Uploaded file received by documents step:", {
+      name: file?.name,
+      type: file?.type,
+      size: file?.size,
+      lastModified: file?.lastModified,
+    });
+
     let parsed;
     try {
       const form = new FormData();
       form.append("file", file);
+      console.debug("[ResumeDebug] GPT request payload handoff:", {
+        transport: "multipart/form-data",
+        url: "/api/candidates/documents/parse",
+        fieldName: "file",
+        fileName: file?.name,
+      });
       const res = await fetch("/api/candidates/documents/parse", { method: "POST", body: form });
+      console.debug("[ResumeDebug] API response status:", {
+        status: res.status,
+        statusText: res.statusText,
+        ok: res.ok,
+        contentType: res.headers.get("content-type"),
+      });
       const json = await res.json();
-      parsed = json?.data || json;
+      console.debug("[ResumeDebug] GPT/API raw response:", json);
+      parsed = normalizeParsedResumePayload(json?.data || json);
+      console.debug("[ResumeDebug] Parsed JSON:", json?.data || json);
+      console.debug("[ResumeDebug] Normalized candidate form JSON:", parsed);
       if (!parsed) throw new Error("No parse result");
     } catch (err) {
       // fallback to client-side parsing if server-side fails
@@ -668,6 +764,7 @@ const CandidateDocumentsStep = ({ formData, onChange, onSetStepFields }) => {
       // --- server-side parsing: use API response directly ---
       const updates = {};
       const fieldNames = new Set();
+      console.debug("[ResumeDebug] Candidate form JSON used for mapping:", parsed);
 
       if (!normalizeText(formData.firstName) && parsed.firstName) {
         updates.firstName = parsed.firstName;
@@ -691,8 +788,8 @@ const CandidateDocumentsStep = ({ formData, onChange, onSetStepFields }) => {
         }
       }
 
-      if (!normalizeText(formData.yearsExperience) && parsed.totalExperienceYears) {
-        const yearsValue = mapYearsToBucket(parsed.totalExperienceYears);
+      if (!normalizeText(formData.yearsExperience) && (parsed.totalExperienceYears || parsed.totalExperience)) {
+        const yearsValue = mapExperienceValueToBucket(parsed.totalExperienceYears || parsed.totalExperience);
         if (yearsValue) {
           updates.yearsExperience = yearsValue;
           fieldNames.add("yearsExperience");
@@ -703,7 +800,37 @@ const CandidateDocumentsStep = ({ formData, onChange, onSetStepFields }) => {
         }
       }
 
-      if (!normalizeText(formData.primarySkill) && (parsed.skills?.length || 0) > 0) {
+      if (!normalizeText(formData.candidateType) && parsed.candidateType) {
+        updates.candidateType = parsed.candidateType;
+        fieldNames.add("candidateType");
+      }
+      if (!normalizeText(formData.currentCompanyName) && parsed.currentCompany) {
+        updates.currentCompanyName = parsed.currentCompany;
+        fieldNames.add("currentCompanyName");
+      }
+      if (!normalizeText(formData.jobTitleRole) && parsed.currentDesignation) {
+        updates.jobTitleRole = parsed.currentDesignation;
+        fieldNames.add("jobTitleRole");
+      }
+      if (!normalizeText(formData.employmentType) && parsed.employmentType) {
+        updates.employmentType = parsed.employmentType;
+        fieldNames.add("employmentType");
+      }
+      if (!normalizeText(formData.noticePeriod) && parsed.noticePeriod) {
+        updates.noticePeriod = parsed.noticePeriod;
+        fieldNames.add("noticePeriod");
+      }
+      if (!normalizeText(formData.currentCtc) && parsed.currentCtc) {
+        updates.currentCtc = parsed.currentCtc;
+        fieldNames.add("currentCtc");
+      }
+      if (!normalizeText(formData.expectedCtc) && parsed.expectedCtc) {
+        updates.expectedCtc = parsed.expectedCtc;
+        fieldNames.add("expectedCtc");
+      }
+
+      const parsedSkills = normalizeSkillInput(parsed.skills);
+      if (!normalizeText(formData.primarySkill) && parsedSkills.length > 0) {
         const configSkillOptions = [
           { value: "java", label: "Core Java" },
           { value: "python", label: "Python" },
@@ -721,12 +848,17 @@ const CandidateDocumentsStep = ({ formData, onChange, onSetStepFields }) => {
         ];
 
         // Match parsed skills against config options
-        const parsedSkillText = parsed.skills.join(" ");
-        const matchedSkills = collectMatchedSkillValues(parsedSkillText, configSkillOptions);
+        const matchedSkills = mapSkillTextsToValues(parsedSkills, configSkillOptions);
+        console.debug("[ResumeDebug] Skills mapping result from GPT/API data:", {
+          rawSkills: parsed.skills,
+          parsedSkills,
+          matchedSkills,
+          configSkillOptions,
+        });
 
-        if (matchedSkills.length === 0 && parsed.skills[0]) {
+        if (matchedSkills.length === 0 && parsedSkills[0]) {
           // fallback: use first parsed skill as-is
-          updates.primarySkill = parsed.skills[0];
+          updates.primarySkill = parsedSkills[0];
           fieldNames.add("primarySkill");
         } else if (matchedSkills.length > 0) {
           updates.primarySkill = matchedSkills[0];
@@ -737,14 +869,20 @@ const CandidateDocumentsStep = ({ formData, onChange, onSetStepFields }) => {
           }
         }
 
-        if ((matchedSkills.length > 0 || parsed.skills.length > 0) && !Array.isArray(formData.skills)
+        if ((matchedSkills.length > 0 || parsedSkills.length > 0) && !Array.isArray(formData.skills)
           || formData.skills?.every((row) => !normalizeText(row?.primarySkill))) {
           const existingSkillRows = Array.isArray(formData.skills) ? formData.skills : [];
           const hasExistingPrimarySkill = existingSkillRows.some((row) => normalizeText(row?.primarySkill));
-          const skillDefaults = getSkillDefaultsFromExperience(updates.yearsExperience || formData.yearsExperience, parsed.totalExperienceYears);
+          const skillDefaults = {
+            ...getSkillDefaultsFromExperience(updates.yearsExperience || formData.yearsExperience, Number(parsed.totalExperienceYears || parsed.totalExperience) || 0),
+            skillExperienceLevel: parsed.skillExperienceLevel || undefined,
+            skillExperienceYears: parsed.skillExperienceYears || undefined,
+            skillRating: parsed.skillRating || undefined,
+            skillComments: parsed.skillComments || undefined,
+          };
 
           if (!hasExistingPrimarySkill) {
-            const skillsToAdd = matchedSkills.length > 0 ? matchedSkills : parsed.skills;
+            const skillsToAdd = matchedSkills.length > 0 ? matchedSkills : parsedSkills;
             updates.skills = skillsToAdd.map((skillValue) => createSkillRow(skillValue, skillDefaults));
             fieldNames.add("skills");
           }
@@ -758,10 +896,24 @@ const CandidateDocumentsStep = ({ formData, onChange, onSetStepFields }) => {
       });
 
       setMappedResumeFields(fieldNames);
+      console.debug("[ResumeDebug] Final form values from GPT/API path:", {
+        updates,
+        mappedFieldNames: Array.from(fieldNames),
+        nextFormValues: { ...formData, ...updates },
+      });
+      console.groupEnd();
     } else {
       // --- fallback: local parsing (previous behavior) ---
       const text = await readResumeText(file);
-      if (!text) return;
+      if (!text) {
+        console.debug("[ResumeDebug] Local extraction produced no text.");
+        console.groupEnd();
+        return;
+      }
+      console.debug("[ResumeDebug] Extracted resume text length:", {
+        length: text.length,
+        preview: text.slice(0, 500),
+      });
 
       const updates = {};
       const fieldNames = new Set();
@@ -837,6 +989,10 @@ const CandidateDocumentsStep = ({ formData, onChange, onSetStepFields }) => {
           { value: "backbone-js", label: "Backbone.js" },
         ];
         const matchedSkills = collectMatchedSkillValues(text, configSkillOptions);
+        console.debug("[ResumeDebug] Skills mapping result from local extraction:", {
+          matchedSkills,
+          configSkillOptions,
+        });
         if (matchedSkills[0]) {
           updates.primarySkill = matchedSkills[0];
           fieldNames.add("primarySkill");
@@ -890,6 +1046,12 @@ const CandidateDocumentsStep = ({ formData, onChange, onSetStepFields }) => {
       });
 
       setMappedResumeFields(fieldNames);
+      console.debug("[ResumeDebug] Final form values from local fallback path:", {
+        updates,
+        mappedFieldNames: Array.from(fieldNames),
+        nextFormValues: { ...formData, ...updates },
+      });
+      console.groupEnd();
     }
   };
 

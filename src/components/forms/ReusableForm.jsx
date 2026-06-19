@@ -3,6 +3,7 @@ import React, { useState, useMemo, useCallback } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
 import pdfjsWorkerSrc from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import { validateMandatoryField } from '../../utils/formValidation';
+import { buildJdSchemaFromForm, generateJdWithAzure, parseJdTextWithAzure } from '../../api/jdService';
 import FormField from './FormField';
 import MultiStepForm from './MultiStepForm';
 import './ReusableForm.css';
@@ -441,6 +442,182 @@ const readUploadedFileText = async (file) => {
   return '';
 };
 
+const normalizeJdOptionValue = (value, field, aliases = {}) => {
+  const raw = normalizeText(value);
+  if (!raw) return '';
+
+  const aliasKey = normalizeToken(raw);
+  const aliasedValue = aliases[aliasKey] || raw;
+  return findMatchingOptionValue(aliasedValue, field?.options || []);
+};
+
+const derivePositionLevel = (value, minimumExperience, maximumExperience, sourceText, field) => {
+  const explicit = normalizeJdOptionValue(value, field, {
+    fresher: 'entry',
+    graduate: 'entry',
+    'entry level': 'entry',
+    associate: 'junior',
+    'junior developer': 'junior',
+    'junior engineer': 'junior',
+    intermediate: 'mid',
+    'mid level': 'mid',
+    'mid-level': 'mid',
+    'senior developer': 'senior',
+    'senior engineer': 'senior',
+    sr: 'senior',
+    'sr developer': 'senior',
+    'sr engineer': 'senior',
+    'team lead': 'lead',
+    'technical lead': 'lead',
+    'tech lead': 'lead',
+    'project manager': 'manager',
+  });
+  if (explicit) return explicit;
+
+  const source = normalizeToken(sourceText);
+  const keywordRules = [
+    ['executive', 'executive'],
+    ['director', 'director'],
+    ['manager', 'manager'],
+    ['technical lead', 'lead'],
+    ['team lead', 'lead'],
+    ['tech lead', 'lead'],
+    ['senior', 'senior'],
+    ['sr ', 'senior'],
+    ['junior', 'junior'],
+    ['entry level', 'entry'],
+    ['fresher', 'entry'],
+  ];
+  const keywordMatch = keywordRules.find(([keyword]) => source.includes(keyword));
+  if (keywordMatch) return keywordMatch[1];
+
+  const minYears = Number(minimumExperience);
+  const maxYears = Number(maximumExperience);
+  const years = Number.isFinite(maxYears) && maxYears > 0 ? maxYears : minYears;
+  if (!Number.isFinite(years)) return '';
+  if (years <= 1) return 'entry';
+  if (years <= 3) return 'junior';
+  if (years <= 5) return 'mid';
+  if (years <= 8) return 'senior';
+  if (years <= 12) return 'lead';
+  return 'manager';
+};
+
+const deriveWorkType = (value, sourceText, field) => {
+  const explicit = normalizeJdOptionValue(value, field, {
+    'remote working': 'remote',
+    'work from home': 'remote',
+    wfh: 'remote',
+    telecommute: 'remote',
+    'hybrid working': 'hybrid',
+    onsite: 'on-site',
+    'on site': 'on-site',
+    office: 'on-site',
+  });
+  if (explicit) return explicit;
+
+  const source = normalizeToken(sourceText);
+  if (/\b(remote|work from home|wfh|telecommute)\b/.test(source)) return 'remote';
+  if (/\bhybrid\b/.test(source)) return 'hybrid';
+  if (/\b(on-site|onsite|on site|office based|office-based)\b/.test(source)) return 'on-site';
+  return '';
+};
+
+const deriveEmploymentType = (value, sourceText, field) => {
+  const explicit = normalizeJdOptionValue(value, field, {
+    permanent: 'full-time',
+    'permanent employment': 'full-time',
+    'full time': 'full-time',
+    fulltime: 'full-time',
+    'part time': 'part-time',
+    parttime: 'part-time',
+    contractual: 'contract',
+    contractor: 'contract',
+    intern: 'internship',
+    trainee: 'internship',
+  });
+  if (explicit) return explicit;
+
+  const source = normalizeToken(sourceText);
+  if (/\b(internship|intern|trainee)\b/.test(source)) return 'internship';
+  if (/\b(contract|contractual|contractor)\b/.test(source)) return 'contract';
+  if (/\b(part time|part-time|parttime)\b/.test(source)) return 'part-time';
+  if (/\b(full time|full-time|fulltime|permanent)\b/.test(source)) return 'full-time';
+
+  // ARROWS treats an unspecified standard job opening as full-time.
+  return 'full-time';
+};
+
+const mapParsedJdToFormUpdates = (jdJson, formData, availableFields, sourceText = '') => {
+  const job = jdJson?.job_information || {};
+  const experience = jdJson?.experience_requirements || {};
+  const compensation = jdJson?.compensation || {};
+  const skills = jdJson?.skills || {};
+  const fieldByName = new Map((availableFields || []).map((field) => [field.name, field]));
+  const updates = {};
+
+  const setIfEmpty = (fieldName, value) => {
+    if (!isEmptyValue(formData[fieldName])) return;
+    if (Array.isArray(value) && value.length === 0) return;
+    if (!Array.isArray(value) && isEmptyValue(value)) return;
+    updates[fieldName] = value;
+  };
+
+  const numberValue = (value) => String(value ?? '').match(/\d+(?:\.\d+)?/)?.[0] || '';
+  const listValue = (value) => Array.isArray(value) ? value : String(value || '').split(/[;,|/\n]/).map((item) => item.trim()).filter(Boolean);
+
+  setIfEmpty('jobPositionId', normalizeText(job.job_id));
+  setIfEmpty('positionName', normalizeText(job.job_name));
+  setIfEmpty('minExperience', numberValue(experience.minimum_experience));
+  setIfEmpty('maxExperience', numberValue(experience.maximum_experience));
+  setIfEmpty('noOfPositions', numberValue(job.number_of_positions));
+  setIfEmpty('minSalary', numberValue(compensation.minimum_ctc));
+  setIfEmpty('maxSalary', numberValue(compensation.maximum_ctc));
+
+  setIfEmpty(
+    'positionLevel',
+    derivePositionLevel(
+      job.position_level,
+      experience.minimum_experience,
+      experience.maximum_experience,
+      sourceText,
+      fieldByName.get('positionLevel')
+    )
+  );
+  setIfEmpty(
+    'hiringType',
+    deriveWorkType(job.work_type, sourceText, fieldByName.get('hiringType'))
+  );
+  setIfEmpty(
+    'jobType',
+    deriveEmploymentType(job.employment_type, sourceText, fieldByName.get('jobType'))
+  );
+
+  const locationText = listValue(job.location).join(' ');
+  setIfEmpty(
+    'location',
+    collectMatchingOptionValues(locationText, fieldByName.get('location')?.options || [])
+  );
+
+  const technicalText = listValue(skills.technical_skills).join(' ');
+  setIfEmpty(
+    'technicalSkills',
+    collectMatchingOptionValues(technicalText, fieldByName.get('technicalSkills')?.options || [])
+  );
+
+  const softText = listValue(skills.soft_skills).join(' ');
+  setIfEmpty(
+    'softSkills',
+    collectMatchingOptionValues(softText, fieldByName.get('softSkills')?.options || [])
+  );
+
+  const additionalSkills = listValue(skills.additional_skills);
+  setIfEmpty('additionalSkills', additionalSkills.join(', '));
+  setIfEmpty('generatedJd', normalizeText(jdJson?.job_description));
+
+  return updates;
+};
+
 // Reusable step component
 const FormStep = ({
   formData,
@@ -462,6 +639,7 @@ const FormStep = ({
     formData.jdAttachmentMode === 'yes' ? 'yes' : 'no'
   );
   const [jdExtractionStatus, setJdExtractionStatus] = React.useState({ state: 'idle', message: '' });
+  const [jdGenerationStatus, setJdGenerationStatus] = React.useState({ state: 'idle', message: '' });
 
   React.useEffect(() => {
     onChangeRef.current = onChange;
@@ -582,6 +760,53 @@ const FormStep = ({
           if (!Array.isArray(value) && isEmptyValue(value)) return;
           updates[fieldName] = value;
         };
+
+        try {
+          console.groupCollapsed('[JDDebug] JD Upload -> Azure Parse -> Form Mapping');
+          console.debug('[JDDebug] Uploaded JD:', {
+            name: uploadedFile.name,
+            type: uploadedFile.type,
+            size: uploadedFile.size,
+            extractedTextLength: rawDocumentText.length,
+          });
+
+          const parsedJd = await parseJdTextWithAzure(rawDocumentText);
+          const aiUpdates = mapParsedJdToFormUpdates(parsedJd, formData, availableFields, rawDocumentText);
+          if (isEmptyValue(formData.generatedJd)) {
+            try {
+              aiUpdates.generatedJd = await generateJdWithAzure(parsedJd, rawDocumentText);
+            } catch (generationError) {
+              console.error('[JDDebug] Uploaded JD enhancement failed; preserving source content:', generationError);
+              aiUpdates.generatedJd = rawDocumentText.trim();
+            }
+          }
+          console.debug('[JDDebug] Job form updates:', aiUpdates);
+
+          if (Object.keys(aiUpdates).length > 0) {
+            if (typeof onBulkChange === 'function') {
+              onBulkChange(aiUpdates);
+            } else {
+              Object.entries(aiUpdates).forEach(([key, value]) => {
+                onChangeRef.current(key, value);
+              });
+            }
+
+            setJdExtractionStatus({
+              state: 'success',
+              message: `${Object.keys(aiUpdates).length} field(s) auto-filled from uploaded JD.`,
+            });
+            console.groupEnd();
+            return;
+          }
+
+          console.warn('[JDDebug] Azure returned JD JSON, but no empty form fields matched.');
+          console.groupEnd();
+        } catch (azureError) {
+          console.error('[JDDebug] Azure JD parsing failed; using local extraction fallback:', azureError);
+          console.groupEnd();
+        }
+
+        setUpdateIfEmpty('generatedJd', rawDocumentText.trim());
 
         const jsonObjects = extractJsonObjectsFromText(rawDocumentText);
         const jdJson = jsonObjects.find((obj) => {
@@ -1197,9 +1422,36 @@ const FormStep = ({
       placeholder: addTechnicalConfig.placeholder || 'Select skills'
     };
 
-    const handleGenerateJd = () => {
-      const generatedText = buildGeneratedJobDescription(formData, fieldMap);
-      onChangeRef.current('generatedJd', generatedText);
+    const handleGenerateJd = async () => {
+      setJdGenerationStatus({ state: 'loading', message: 'Generating job description...' });
+
+      const labels = {
+        positionLevel: formatOptionLabels(formData.positionLevel, fieldMap.positionLevel?.options || [])[0] || '',
+        workType: formatOptionLabels(formData.hiringType, fieldMap.hiringType?.options || [])[0] || '',
+        employmentType: formatOptionLabels(formData.jobType, fieldMap.jobType?.options || [])[0] || '',
+        location: formatOptionLabels(formData.location, fieldMap.location?.options || []),
+        technicalSkills: formatOptionLabels(formData.technicalSkills, fieldMap.technicalSkills?.options || []),
+        softSkills: formatOptionLabels(formData.softSkills, fieldMap.softSkills?.options || []),
+      };
+      const jobFormJson = buildJdSchemaFromForm(formData, labels);
+
+      try {
+        console.groupCollapsed('[JDDebug] Manual Job Form -> Azure JD Generation');
+        console.debug('[JDDebug] Job form JSON:', jobFormJson);
+        const generatedText = await generateJdWithAzure(jobFormJson);
+        onChangeRef.current('generatedJd', generatedText);
+        setJdGenerationStatus({ state: 'success', message: 'Job description generated successfully.' });
+        console.groupEnd();
+      } catch (error) {
+        console.error('[JDDebug] Azure JD generation failed; using local fallback:', error);
+        const fallbackText = buildGeneratedJobDescription(formData, fieldMap);
+        onChangeRef.current('generatedJd', fallbackText);
+        setJdGenerationStatus({
+          state: 'warning',
+          message: 'Azure generation failed. A local draft was generated instead.',
+        });
+        console.groupEnd();
+      }
     };
 
     return (
@@ -1229,7 +1481,9 @@ const FormStep = ({
                         setJdTemplateMode("no");
                         onChange("jdAttachmentMode", "no");
                         onChange("jdAttachment", "");
+                        onChange("generatedJd", "");
                         setJdExtractionStatus({ state: 'idle', message: '' });
+                        setJdGenerationStatus({ state: 'idle', message: '' });
                       }}
                     />
                     <span>No</span>
@@ -1308,40 +1562,36 @@ const FormStep = ({
             </div>
             <div className="grid-cell grid-col-1 grid-row-6 grid-span-2">
               <div className="job-jd-generator">
-                <label className="job-jd-generator-label" htmlFor="jdPrompt">
-                  Generate Job Description
+                <label className="job-jd-generator-label" htmlFor="jobDescription">
+                  Job Description
                 </label>
                 <textarea
-                  id="jdPrompt"
+                  id="jobDescription"
                   className="job-jd-generator-textarea"
-                  value={String(formData.jdPrompt || '')}
-                  onChange={(event) => onChangeRef.current('jdPrompt', event.target.value)}
-                  placeholder="Enter role details, required skills, responsibilities, and hiring context..."
+                  value={String(formData.generatedJd || '')}
+                  onChange={(event) => onChangeRef.current('generatedJd', event.target.value)}
+                  placeholder={
+                    hasUploadedJdFile
+                      ? "Uploaded job description will appear here"
+                      : "Generated job description will appear here"
+                  }
                   disabled={disabled}
                 />
-                <div className="job-jd-generator-actions">
-                  <button
-                    type="button"
-                    className="job-jd-generator-button"
-                    onClick={handleGenerateJd}
-                    disabled={disabled || !String(formData.jdPrompt || '').trim()}
-                  >
-                    Generate JD
-                  </button>
-                </div>
-                {String(formData.generatedJd || '').trim() ? (
-                  <div className="job-jd-generator-preview">
-                    <label className="job-jd-generator-label" htmlFor="generatedJdPreview">
-                      Generated JD Preview
-                    </label>
-                    <textarea
-                      id="generatedJdPreview"
-                      className="job-jd-generator-textarea job-jd-generator-textarea--preview"
-                      value={String(formData.generatedJd || '')}
-                      onChange={(event) => onChangeRef.current('generatedJd', event.target.value)}
-                      placeholder="Generated job description will appear here"
-                      disabled={disabled}
-                    />
+                {!hasUploadedJdFile ? (
+                  <div className="job-jd-generator-actions">
+                    <button
+                      type="button"
+                      className="job-jd-generator-button"
+                      onClick={() => void handleGenerateJd()}
+                      disabled={disabled || jdGenerationStatus.state === 'loading' || !String(formData.positionName || '').trim()}
+                    >
+                      {jdGenerationStatus.state === 'loading' ? 'Generating...' : 'Generate JD'}
+                    </button>
+                  </div>
+                ) : null}
+                {jdGenerationStatus.state !== 'idle' ? (
+                  <div className={`jd-extraction-status jd-extraction-status--${jdGenerationStatus.state}`}>
+                    {jdGenerationStatus.message}
                   </div>
                 ) : null}
               </div>
