@@ -22,8 +22,11 @@ import {
   createCandidate,
   deleteCandidate,
   fetchCandidates,
+  fetchCandidateFiltersMeta,
   updateCandidate,
 } from "../../api/candidateService";
+import { fetchSkills, toSkillOption } from "../../api/jobClientService";
+import { fetchRecruiters } from "../../api/teamService";
 import styles from "./Candidates.module.scss";
 
 
@@ -219,7 +222,6 @@ const createSkillDraft = () => ({
   experience: EXPERIENCE_OPTIONS[0],
   rating: 0,
   lastUsed: LAST_USED_OPTIONS[0],
-  comments: "",
 });
 
 const formatFileSize = (bytes) => {
@@ -238,6 +240,115 @@ const formatFileSize = (bytes) => {
 const getFileExtension = (fileName = "") => {
   const parts = String(fileName).split(".");
   return parts.length > 1 ? String(parts.pop()).toLowerCase() : "file";
+};
+
+const normalizeOptionKey = (value) =>
+  String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "")
+    .replace(/(options?|dropdown|values?|list)$/g, "");
+
+const toOptionRecord = (item) => {
+  if (item === null || item === undefined) return null;
+
+  if (typeof item === "string" || typeof item === "number" || typeof item === "boolean") {
+    const value = String(item).trim();
+    return value ? { value, label: value } : null;
+  }
+
+  if (typeof item !== "object") return null;
+
+  const rawValue = item.value ?? item.code ?? item.key ?? item.id ?? item.name ?? item.label;
+  const rawLabel = item.label ?? item.name ?? item.displayName ?? item.title ?? rawValue;
+
+  const value = String(rawValue ?? "").trim();
+  const label = String(rawLabel ?? "").trim();
+  if (!value && !label) return null;
+
+  return {
+    value: value || label,
+    label: label || value,
+  };
+};
+
+const mergeOptionsByKey = (current = [], incoming = []) => {
+  const merged = [...current];
+  incoming.forEach((option) => {
+    if (!option || !option.value) return;
+    if (!merged.some((entry) => String(entry.value) === String(option.value))) {
+      merged.push(option);
+    }
+  });
+  return merged;
+};
+
+const buildMetaOptionMap = (payload) => {
+  const map = {};
+
+  const saveOptions = (rawKey, rawOptions) => {
+    const normalizedKey = normalizeOptionKey(rawKey);
+    if (!normalizedKey || !Array.isArray(rawOptions)) return;
+
+    const normalizedOptions = rawOptions
+      .map((option) => toOptionRecord(option))
+      .filter(Boolean);
+
+    if (normalizedOptions.length === 0) return;
+    map[normalizedKey] = mergeOptionsByKey(map[normalizedKey], normalizedOptions);
+  };
+
+  const visit = (node, hintedKey = "") => {
+    if (node === null || node === undefined) return;
+
+    if (Array.isArray(node)) {
+      node.forEach((item) => visit(item, hintedKey));
+      return;
+    }
+
+    if (typeof node !== "object") return;
+
+    const nodeKey = node.fieldName || node.name || node.key || node.id || hintedKey;
+    [node.options, node.values, node.allowedValues, node.choices, node.dropdownOptions].forEach((candidate) => {
+      saveOptions(nodeKey, candidate);
+    });
+
+    Object.entries(node).forEach(([key, value]) => {
+      if (Array.isArray(value) && value.length > 0) {
+        const looksLikeOptions = value.every((entry) => toOptionRecord(entry));
+        if (looksLikeOptions) {
+          saveOptions(key, value);
+        }
+      }
+      visit(value, key);
+    });
+  };
+
+  visit(payload);
+  return map;
+};
+
+const getMetaOptionsForField = (metaOptionMap, fieldName) => {
+  const key = normalizeOptionKey(fieldName);
+  const aliases = {
+    sourcename: ["sourcename", "source", "sources"],
+    skillrating: ["skillrating", "rating", "ratings"],
+    secondaryskillrating: ["secondaryskillrating", "rating", "ratings"],
+    primaryskill: ["primaryskill", "skills", "skill"],
+    secondaryskill: ["secondaryskill", "skills", "skill"],
+    stage: ["stage", "stages"],
+    status: ["status", "statuses"],
+    recruiterid: ["recruiterid", "recruiter", "recruiters"],
+  };
+
+  const candidates = aliases[key] || [key];
+  for (const candidate of candidates) {
+    if (Array.isArray(metaOptionMap[candidate]) && metaOptionMap[candidate].length > 0) {
+      return metaOptionMap[candidate];
+    }
+  }
+
+  return [];
 };
 
 export default function Candidates() {
@@ -270,6 +381,9 @@ export default function Candidates() {
   const [candidateDrafts, setCandidateDrafts] = React.useState([]);
   const [activeDraftId, setActiveDraftId] = React.useState(null);
   const [candidateFormKey, setCandidateFormKey] = React.useState(0);
+  const [candidateMetaOptions, setCandidateMetaOptions] = React.useState({});
+  const [candidateSkillOptions, setCandidateSkillOptions] = React.useState([]);
+  const [candidateRecruiterOptions, setCandidateRecruiterOptions] = React.useState([]);
   const mapDropdownRef = React.useRef(null);
   const addCandidateMenuRef = React.useRef(null);
   const resumeUploadRef = React.useRef(null);
@@ -401,6 +515,60 @@ export default function Candidates() {
     loadCandidates();
   }, [loadCandidates]);
 
+  React.useEffect(() => {
+    let isMounted = true;
+
+    const loadDropdownMetadata = async () => {
+      try {
+        const [candidateMeta, skills, recruiters] = await Promise.all([
+          fetchCandidateFiltersMeta(),
+          fetchSkills(),
+          fetchRecruiters(),
+        ]);
+
+        if (!isMounted) return;
+
+        const mappedMeta = buildMetaOptionMap(candidateMeta);
+        if (Object.keys(mappedMeta).length > 0) {
+          setCandidateMetaOptions(mappedMeta);
+        }
+
+        if (Array.isArray(skills) && skills.length > 0) {
+          const mappedSkills = skills
+            .map((skill) => toSkillOption(skill))
+            .filter(Boolean)
+            .filter((option, index, list) => list.findIndex((entry) => entry.value === option.value) === index);
+          if (mappedSkills.length > 0) {
+            setCandidateSkillOptions(mappedSkills);
+          }
+        }
+
+        if (Array.isArray(recruiters) && recruiters.length > 0) {
+          const recruiterOptions = recruiters
+            .map((recruiter) => {
+              const value = String(recruiter?.id || "").trim();
+              const label = String(recruiter?.name || "").trim();
+              if (!value || !label) return null;
+              return { value, label };
+            })
+            .filter(Boolean);
+
+          if (recruiterOptions.length > 0) {
+            setCandidateRecruiterOptions(recruiterOptions);
+          }
+        }
+      } catch (error) {
+        console.warn("Candidate dropdown metadata sync failed, using local fallback options:", error);
+      }
+    };
+
+    loadDropdownMetadata();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const getDraftTitle = React.useCallback((formData, fallbackCount) => {
     const name = `${String(formData?.firstName || "").trim()} ${String(formData?.lastName || "").trim()}`.trim();
     if (name) return name;
@@ -460,6 +628,38 @@ export default function Candidates() {
 
   const candidateFormWithDraft = React.useMemo(() => ({
     ...candidateConfig,
+    steps: (candidateConfig.steps || []).map((step) => ({
+      ...step,
+      fields: (step.fields || []).map((field) => {
+        if (field.type !== "select" && field.type !== "multiselect") {
+          return field;
+        }
+
+        if (field.name === "recruiterId" && candidateRecruiterOptions.length > 0) {
+          return {
+            ...field,
+            options: candidateRecruiterOptions,
+          };
+        }
+
+        if ((field.name === "primarySkill" || field.name === "secondarySkill") && candidateSkillOptions.length > 0) {
+          return {
+            ...field,
+            options: candidateSkillOptions,
+          };
+        }
+
+        const metaOptions = getMetaOptionsForField(candidateMetaOptions, field.name);
+        if (metaOptions.length > 0) {
+          return {
+            ...field,
+            options: metaOptions,
+          };
+        }
+
+        return field;
+      }),
+    })),
     showDraftAction: editingIndex === null,
     showCancelAction: true,
     cancelLabel: "Cancel",
@@ -472,7 +672,7 @@ export default function Candidates() {
       setIsAddCandidateMenuOpen(false);
     },
     onSaveDraft: saveCandidateDraft,
-  }), [editingIndex, saveCandidateDraft]);
+  }), [candidateMetaOptions, candidateRecruiterOptions, candidateSkillOptions, editingIndex, saveCandidateDraft]);
 
   const handleSearchChange = React.useCallback((e) => {
     setSearchTerm(e.target.value);
@@ -520,6 +720,34 @@ export default function Candidates() {
     [...new Set(submittedData.map(item => item.status).filter(Boolean))],
     [submittedData]
   );
+
+  const sourceFilterOptions = React.useMemo(() => {
+    const metaValues = getMetaOptionsForField(candidateMetaOptions, "sourceName")
+      .map((option) => String(option.value || "").trim())
+      .filter(Boolean);
+    return metaValues.length > 0 ? metaValues : uniqueSources;
+  }, [candidateMetaOptions, uniqueSources]);
+
+  const ratingFilterOptions = React.useMemo(() => {
+    const metaValues = getMetaOptionsForField(candidateMetaOptions, "skillRating")
+      .map((option) => String(option.value || "").trim())
+      .filter(Boolean);
+    return metaValues.length > 0 ? metaValues : uniqueRatings;
+  }, [candidateMetaOptions, uniqueRatings]);
+
+  const stageFilterOptions = React.useMemo(() => {
+    const metaValues = getMetaOptionsForField(candidateMetaOptions, "stage")
+      .map((option) => String(option.value || "").trim())
+      .filter(Boolean);
+    return metaValues.length > 0 ? metaValues : uniqueStages;
+  }, [candidateMetaOptions, uniqueStages]);
+
+  const statusFilterOptions = React.useMemo(() => {
+    const metaValues = getMetaOptionsForField(candidateMetaOptions, "status")
+      .map((option) => String(option.value || "").trim())
+      .filter(Boolean);
+    return metaValues.length > 0 ? metaValues : uniqueStatuses;
+  }, [candidateMetaOptions, uniqueStatuses]);
 
   // Memoized filter logic - only recalculates when dependencies change
   const filteredData = React.useMemo(() => {
@@ -701,7 +929,6 @@ export default function Candidates() {
             experience: displayExperience || "-",
             rating: ratingValue,
             lastUsed: skill.skillLastUsed || "-",
-            comments: String(skill.skillComments || "").trim(),
           };
         })
       : [];
@@ -732,7 +959,6 @@ export default function Candidates() {
             experience: displayExperience || "-",
             rating: ratingValue,
             lastUsed: skill.secondarySkillLastUsed || "-",
-            comments: String(skill.secondarySkillComments || "").trim(),
           };
         })
       : [];
@@ -746,7 +972,6 @@ export default function Candidates() {
         experience: "2 Years",
         rating: 4,
         lastUsed: "2025",
-        comments: "The candidate has good understanding of Java coding and concepts",
       },
       {
         id: "primary-2",
@@ -754,7 +979,6 @@ export default function Candidates() {
         experience: "1 Year",
         rating: 4,
         lastUsed: "2025",
-        comments: "He has sound experience of Spring Boot",
       },
       {
         id: "primary-3",
@@ -762,7 +986,6 @@ export default function Candidates() {
         experience: "3 Years",
         rating: 3,
         lastUsed: "2025",
-        comments: "He has working experience of Microservices",
       },
       {
         id: "primary-4",
@@ -770,7 +993,6 @@ export default function Candidates() {
         experience: "2 Years",
         rating: 3,
         lastUsed: "2022",
-        comments: "He has experience of Rest API",
       },
     ];
 
@@ -781,7 +1003,6 @@ export default function Candidates() {
         experience: "5 Years",
         rating: 4,
         lastUsed: "2025",
-        comments: "Ability to clearly share ideas, listen actively, and align with teams and stakeholders.",
       },
       {
         id: "secondary-2",
@@ -789,7 +1010,6 @@ export default function Candidates() {
         experience: "5 Years",
         rating: 4,
         lastUsed: "2025",
-        comments: "Effectively prioritizing tasks and meeting deadlines without compromising quality.",
       },
       {
         id: "secondary-3",
@@ -797,7 +1017,6 @@ export default function Candidates() {
         experience: "5 Years",
         rating: 3,
         lastUsed: "2025",
-        comments: "Identifying issues quickly and finding practical, effective solutions.",
       },
       {
         id: "secondary-4",
@@ -805,7 +1024,6 @@ export default function Candidates() {
         experience: "5 Years",
         rating: 4,
         lastUsed: "2025",
-        comments: "Working smoothly with cross-functional teams to achieve shared goals.",
       },
       {
         id: "secondary-5",
@@ -813,7 +1031,6 @@ export default function Candidates() {
         experience: "5 Years",
         rating: 4,
         lastUsed: "2025",
-        comments: "Quickly adjusting to change and continuously upgrading skills.",
       },
     ];
 
@@ -1139,7 +1356,6 @@ export default function Candidates() {
       gender: row.gender || "",
       yearsExperience: row.yearsExperience || "",
       offersInHand: row.offersInHand || "",
-      comments: row.comments || "",
       currentCompanyName: row.currentCompanyName || "",
       jobTitleRole: row.jobTitleRole || "",
       employmentType: row.employmentType || "",
@@ -1500,7 +1716,6 @@ export default function Candidates() {
                   <th>{activeSkillType === "primary" ? "Primary Skill" : "Secondary Skill"}</th>
                   <th>Experience</th>
                   <th>Rating</th>
-                  <th>Comments</th>
                 </tr>
               </thead>
               <tbody>
@@ -1534,20 +1749,11 @@ export default function Candidates() {
                       </select>
                     </td>
                     <td>{renderRatingStars(skillDraft.rating, true, (value) => handleSkillDraftChange("rating", value))}</td>
-                    <td>
-                      <input
-                        type="text"
-                        className={styles.skillInput}
-                        value={skillDraft.comments}
-                        placeholder="Add comments"
-                        onChange={(event) => handleSkillDraftChange("comments", event.target.value)}
-                      />
-                    </td>
                   </tr>
                 )}
                 {currentSkills.length === 0 && !isAddingSkill && (
                   <tr>
-                    <td colSpan={4} className={styles.emptyCell}>
+                    <td colSpan={3} className={styles.emptyCell}>
                       No skills added.
                     </td>
                   </tr>
@@ -1557,7 +1763,6 @@ export default function Candidates() {
                     <td>{skill.name}</td>
                     <td>{skill.experience}</td>
                     <td>{renderRatingStars(skill.rating)}</td>
-                    <td>{skill.comments}</td>
                   </tr>
                 ))}
               </tbody>
@@ -1893,10 +2098,10 @@ export default function Candidates() {
               onFilterStageChange={handleFilterStageChange}
               filterStatus={filterStatus}
               onFilterStatusChange={handleFilterStatusChange}
-              uniqueSources={uniqueSources}
-              uniqueRatings={uniqueRatings}
-              uniqueStages={uniqueStages}
-              uniqueStatuses={uniqueStatuses}
+              uniqueSources={sourceFilterOptions}
+              uniqueRatings={ratingFilterOptions}
+              uniqueStages={stageFilterOptions}
+              uniqueStatuses={statusFilterOptions}
               hasFilters={hasFilters}
               onClearFilters={clearFilters}
             />
@@ -1919,29 +2124,29 @@ export default function Candidates() {
                 <tbody>
                   {paginatedData.map(({ item: row, sourceIndex }) => (
                     <tr key={`${row.candidateId}-${sourceIndex}`}>
-                      <td>{row.candidateId}</td>
-                      <td>{row.candidateName}</td>
-                      <td>{row.candidateEmail}</td>
-                      <td>{row.modifiedTime}</td>
-                      <td>{row.source}</td>
-                      <td>
+                      <td data-label="Candidate ID">{row.candidateId}</td>
+                      <td data-label="Candidate Name">{row.candidateName}</td>
+                      <td data-label="Email Address">{row.candidateEmail}</td>
+                      <td data-label="Modified Time">{row.modifiedTime}</td>
+                      <td data-label="Source">{row.source}</td>
+                      <td data-label="Rating">
                         <span className={styles.rating}>
                           {row.rating}
                           <FiStar className={styles.ratingStar} />
                         </span>
                       </td>
-                      <td>
+                      <td data-label="Stage">
                         <span className={`${styles.stagePill} ${getStageClass(row.stage)}`}>
                           {row.stage}
                         </span>
                       </td>
-                      <td>
+                      <td data-label="Status">
                         <span className={`${styles.statusPill} ${getStatusClass(row.status)}`}>
                           <span className={styles.statusDot} />
                           {row.status}
                         </span>
                       </td>
-                      <td className={styles.actionsCol}>
+                      <td data-label="Actions" className={styles.actionsCol}>
                         <div className={styles.actionIcons}>
                           <button
                             type="button"

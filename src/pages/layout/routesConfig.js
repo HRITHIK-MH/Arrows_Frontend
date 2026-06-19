@@ -2,6 +2,7 @@ import {
   FiBarChart2,
   FiBriefcase,
   FiCalendar,
+  FiClock,
   FiFileText,
   FiHome,
   FiMessageSquare,
@@ -21,6 +22,7 @@ export const LINKS = [
   { to: "/interviews", label: "Interviews", icon: FiUserCheck },
   { to: "/clients", label: "Clients", icon: FiUser },
   { to: "/reports", label: "Reports", icon: FiBarChart2 },
+  { to: "/timesheet", label: "Timesheet", icon: FiClock },
   // { to: "/calendar", label: "Calendar", icon: FiCalendar }, // Disabled for later
   // { to: "/users", label: "User Roles", icon: FiUserPlus }, // Disabled for later
 ];

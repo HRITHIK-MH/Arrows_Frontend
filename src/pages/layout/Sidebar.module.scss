@@ -6,11 +6,16 @@
 .sidebar {
   /* padding inside the panel; global controls position/width */
   padding: var(--space-4) var(--space-3);
+  position: relative;
 
 
   @media (max-width: 768px) {
     padding: var(--space-3) var(--space-2);
   }
+}
+
+.closeBtn {
+  display: none;
 }
 
 
@@ -98,6 +103,27 @@
 @media (max-width: 768px) {
   .sidebar {
     padding: calc(var(--space-5) + env(safe-area-inset-top)) var(--space-3) var(--space-4);
+  }
+
+  .closeBtn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    top: calc(var(--space-2) + env(safe-area-inset-top));
+    right: var(--space-2);
+    width: 32px;
+    height: 32px;
+    border: 1px solid #dbe3ee;
+    border-radius: 8px;
+    background: #ffffff;
+    color: #334155;
+    cursor: pointer;
+    z-index: 2;
+  }
+
+  .closeBtn:hover {
+    background: #f1f5f9;
   }
 
   .item {

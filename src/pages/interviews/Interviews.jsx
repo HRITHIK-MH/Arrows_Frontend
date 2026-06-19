@@ -15,7 +15,11 @@ import {
   FiTrash2,
   FiX,
 } from "react-icons/fi";
-import { fetchInterviews } from "../../api/interviewService";
+import {
+  fetchAvailableInterviewers,
+  fetchInterviewFiltersMeta,
+  fetchInterviews,
+} from "../../api/interviewService";
 import styles from "./Interviews.module.scss";
 
 const PROFILE_TABS = [
@@ -165,6 +169,44 @@ const INTERVIEWER_DIRECTORY = {
 
 const INTERVIEWER_OPTIONS = Object.keys(INTERVIEWER_DIRECTORY);
 
+const toInterviewerDisplay = (item) => {
+  if (item === null || item === undefined) return null;
+
+  if (typeof item === "string") {
+    const name = String(item).trim();
+    if (!name) return null;
+    return {
+      name,
+      email: "",
+      mobile: "",
+      designation: "Panel",
+      availability: "Yes",
+    };
+  }
+
+  if (typeof item !== "object") return null;
+
+  const name = String(item.name || item.displayName || item.fullName || item.label || item.userName || "").trim();
+  if (!name) return null;
+
+  const role = String(item.designation || item.assignmentRole || item.role || "Panel")
+    .replace(/_/g, " ")
+    .trim();
+
+  const availability =
+    item.availability === undefined
+      ? "Yes"
+      : String(item.availability).trim() || "Yes";
+
+  return {
+    name,
+    email: String(item.email || item.mail || "").trim(),
+    mobile: String(item.mobile || item.phone || item.phoneNumber || "").trim(),
+    designation: role || "Panel",
+    availability,
+  };
+};
+
 const createSkillDraft = () => ({
   name: "",
   experience: EXPERIENCE_OPTIONS[0],
@@ -185,6 +227,9 @@ export default function Interviews() {
   const [currentPage, setCurrentPage] = React.useState(1);
   const [interviews, setInterviews] = React.useState([]);
   const [loading, setLoading] = React.useState(false);
+  const [interviewMetaOptions, setInterviewMetaOptions] = React.useState({ types: [], statuses: [] });
+  const [interviewerDirectory, setInterviewerDirectory] = React.useState(INTERVIEWER_DIRECTORY);
+  const [interviewerOptions, setInterviewerOptions] = React.useState(INTERVIEWER_OPTIONS);
   const [expandedGroups, setExpandedGroups] = React.useState(["Java"]);
   const [selectedGroup, setSelectedGroup] = React.useState("Java");
   const [showAddMemberModal, setShowAddMemberModal] = React.useState(false);
@@ -237,6 +282,11 @@ export default function Interviews() {
 
     return "Manage interview schedules, panel coordination, and candidate progress from a single workspace.";
   }, [activeTab, currentUserRole]);
+
+  const getInterviewerMeta = React.useCallback(
+    (interviewerName) => interviewerDirectory[interviewerName] || INTERVIEWER_DIRECTORY[interviewerName] || null,
+    [interviewerDirectory]
+  );
 
   // Sample groups data
   const [groups, setGroups] = React.useState([
@@ -298,6 +348,61 @@ export default function Interviews() {
     };
 
     loadInterviews();
+  }, []);
+
+  React.useEffect(() => {
+    let isMounted = true;
+
+    const loadInterviewDropdownMetadata = async () => {
+      try {
+        const [meta, availableUsers] = await Promise.all([
+          fetchInterviewFiltersMeta(),
+          fetchAvailableInterviewers(),
+        ]);
+
+        if (!isMounted) return;
+
+        const types = Array.isArray(meta?.types) ? meta.types.map((entry) => String(entry).trim()).filter(Boolean) : [];
+        const statuses = Array.isArray(meta?.statuses) ? meta.statuses.map((entry) => String(entry).trim()).filter(Boolean) : [];
+        if (types.length > 0 || statuses.length > 0) {
+          setInterviewMetaOptions({
+            types,
+            statuses,
+          });
+        }
+
+        const seedInterviewers = Array.isArray(meta?.interviewers) ? meta.interviewers : [];
+        const dynamicInterviewerRows = [...seedInterviewers, ...(Array.isArray(availableUsers) ? availableUsers : [])]
+          .map((item) => toInterviewerDisplay(item))
+          .filter(Boolean);
+
+        if (dynamicInterviewerRows.length > 0) {
+          const mergedDirectory = { ...INTERVIEWER_DIRECTORY };
+          const mergedNames = new Set(INTERVIEWER_OPTIONS);
+
+          dynamicInterviewerRows.forEach((interviewer) => {
+            mergedDirectory[interviewer.name] = {
+              email: interviewer.email || mergedDirectory[interviewer.name]?.email || "",
+              mobile: interviewer.mobile || mergedDirectory[interviewer.name]?.mobile || "",
+              designation: interviewer.designation || mergedDirectory[interviewer.name]?.designation || "Panel",
+              availability: interviewer.availability || mergedDirectory[interviewer.name]?.availability || "Yes",
+            };
+            mergedNames.add(interviewer.name);
+          });
+
+          setInterviewerDirectory(mergedDirectory);
+          setInterviewerOptions(Array.from(mergedNames));
+        }
+      } catch (error) {
+        console.warn("Interview dropdown metadata sync failed, using fallback options:", error);
+      }
+    };
+
+    loadInterviewDropdownMetadata();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   React.useEffect(() => {
@@ -656,7 +761,7 @@ export default function Interviews() {
       return;
     }
 
-    const interviewerMeta = INTERVIEWER_DIRECTORY[newGroupInterviewer] || null;
+    const interviewerMeta = getInterviewerMeta(newGroupInterviewer);
     const initialMembers = interviewerMeta
       ? [
           {
@@ -803,7 +908,7 @@ export default function Interviews() {
       return;
     }
 
-    const interviewerMeta = INTERVIEWER_DIRECTORY[newMemberInterviewer];
+    const interviewerMeta = getInterviewerMeta(newMemberInterviewer);
     if (!interviewerMeta) {
       return;
     }
@@ -1369,6 +1474,8 @@ export default function Interviews() {
   const uniqueRoles = [...new Set(interviews.map(i => i.roleJobTitle))];
   const uniqueInterviewTypes = [...new Set(interviews.map(i => i.interviewType))];
   const uniqueStatuses = [...new Set(interviews.map(i => i.status))];
+  const interviewTypeOptions = interviewMetaOptions.types.length > 0 ? interviewMetaOptions.types : uniqueInterviewTypes;
+  const interviewStatusOptions = interviewMetaOptions.statuses.length > 0 ? interviewMetaOptions.statuses : uniqueStatuses;
 
   const filteredInterviews = React.useMemo(() => {
     const normalizedSearch = searchTerm.trim().toLowerCase();
@@ -1539,7 +1646,7 @@ export default function Interviews() {
                 className={styles.selectField}
               >
                 <option value="">Interview Type</option>
-                {uniqueInterviewTypes.map((type) => (
+                {interviewTypeOptions.map((type) => (
                   <option key={type} value={type}>
                     {type}
                   </option>
@@ -1552,7 +1659,7 @@ export default function Interviews() {
                 className={styles.selectField}
               >
                 <option value="">Stage</option>
-                {uniqueStatuses.map((status) => (
+                {interviewStatusOptions.map((status) => (
                   <option key={status} value={status}>
                     {status}
                   </option>
@@ -1948,7 +2055,7 @@ export default function Interviews() {
                   onChange={(e) => setNewMemberInterviewer(e.target.value)}
                 >
                   <option value="">Select Round</option>
-                  {INTERVIEWER_OPTIONS.map((interviewer) => (
+                  {interviewerOptions.map((interviewer) => (
                     <option key={interviewer} value={interviewer}>{interviewer}</option>
                   ))}
                 </select>
@@ -2012,7 +2119,7 @@ export default function Interviews() {
                   onChange={(e) => setNewGroupInterviewer(e.target.value)}
                 >
                   <option value="">Interviewer Name</option>
-                  {INTERVIEWER_OPTIONS.map((interviewer) => (
+                  {interviewerOptions.map((interviewer) => (
                     <option key={interviewer} value={interviewer}>{interviewer}</option>
                   ))}
                 </select>
