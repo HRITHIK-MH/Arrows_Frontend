@@ -1083,7 +1083,6 @@ const CandidateBasicInfoStep = ({
           {renderField("dateOfBirth")}
           {renderField("yearsExperience")}
           {renderField("offersInHand")}
-          {renderField("comments", "candidate-span-2")}
         </div>
       </div>
 
@@ -1163,7 +1162,7 @@ const CandidateBasicInfoStep = ({
                 </div>
               </div>
               <div className="candidate-cell skill-split-cell">
-                <div className="skill-split-fields skill-rating-comments-fields">
+                <div className="skill-split-fields">
                   <div className="form-field skill-rating-field">
                     {index === 0 && (
                       <label>
@@ -1194,13 +1193,6 @@ const CandidateBasicInfoStep = ({
                       <div className="error-message">{validationErrors.skillRating}</div>
                     )}
                   </div>
-                  <FormField
-                    {...fieldMap.skillComments}
-                    value={skill.skillComments}
-                    onChange={(_, value) => handleSkillChange(index, "skillComments", value)}
-                    formData={formData}
-                    hideLabel={index > 0}
-                  />
                 </div>
                 {skills.length > 1 && (
                   <button
@@ -1247,7 +1239,7 @@ const CandidateBasicInfoStep = ({
                   </div>
                 </div>
                 <div className="candidate-cell skill-split-cell">
-                  <div className="skill-split-fields skill-rating-comments-fields">
+                  <div className="skill-split-fields">
                     <div className="form-field skill-rating-field">
                       {index === 0 && (
                         <label>
@@ -1275,13 +1267,6 @@ const CandidateBasicInfoStep = ({
                         })}
                       </div>
                     </div>
-                    <FormField
-                      {...fieldMap.secondarySkillComments}
-                      value={skill.secondarySkillComments || ""}
-                      onChange={(_, value) => handleSkillChange(index, "secondarySkillComments", value)}
-                      formData={formData}
-                      hideLabel={index > 0}
-                    />
                   </div>
                 </div>
                 <div className="candidate-cell secondary-skill-actions-cell">
