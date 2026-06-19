@@ -1900,7 +1900,7 @@
   }
 
   .jobTable {
-    min-width: 820px;
+    min-width: 700px;
     width: max-content;
     table-layout: auto;
   }
@@ -2058,19 +2058,19 @@
   .jobTable,
   .innerTable {
     width: max-content;
-    min-width: 720px;
+    min-width: 640px;
   }
 
   .tableFooter {
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
     gap: 12px;
   }
 
   .footerLeft {
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
     align-items: center;
     gap: 8px;
   }
@@ -2083,7 +2083,7 @@
   }
 
   .pagination {
-    justify-content: center;
+    justify-content: flex-end;
     gap: 8px;
     flex-wrap: nowrap;
   }
@@ -2105,6 +2105,6 @@
 
   .jobTable,
   .innerTable {
-    min-width: 640px;
+    min-width: 560px;
   }
 }

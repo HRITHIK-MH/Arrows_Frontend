@@ -2148,29 +2148,29 @@ export default function Candidates() {
                 <tbody>
                   {paginatedData.map(({ item: row, sourceIndex }) => (
                     <tr key={`${row.candidateId}-${sourceIndex}`}>
-                      <td>{row.candidateId}</td>
-                      <td>{row.candidateName}</td>
-                      <td>{row.candidateEmail}</td>
-                      <td>{row.modifiedTime}</td>
-                      <td>{row.source}</td>
-                      <td>
+                      <td data-label="Candidate ID">{row.candidateId}</td>
+                      <td data-label="Candidate Name">{row.candidateName}</td>
+                      <td data-label="Email Address">{row.candidateEmail}</td>
+                      <td data-label="Modified Time">{row.modifiedTime}</td>
+                      <td data-label="Source">{row.source}</td>
+                      <td data-label="Rating">
                         <span className={styles.rating}>
                           {row.rating}
                           <FiStar className={styles.ratingStar} />
                         </span>
                       </td>
-                      <td>
+                      <td data-label="Stage">
                         <span className={`${styles.stagePill} ${getStageClass(row.stage)}`}>
                           {row.stage}
                         </span>
                       </td>
-                      <td>
+                      <td data-label="Status">
                         <span className={`${styles.statusPill} ${getStatusClass(row.status)}`}>
                           <span className={styles.statusDot} />
                           {row.status}
                         </span>
                       </td>
-                      <td className={styles.actionsCol}>
+                      <td data-label="Actions" className={styles.actionsCol}>
                         <div className={styles.actionIcons}>
                           <button
                             type="button"
