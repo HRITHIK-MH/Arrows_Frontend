@@ -147,7 +147,7 @@ export default function App() {
       />
 
       {/* Sidebar: off‑canvas on small screens (controlled by isSidebarOpen) */}
-      {location.pathname !== '/login' && <Sidebar isOpen={isSidebarOpen} />}
+      {location.pathname !== '/login' && <Sidebar isOpen={isSidebarOpen} onClose={() => setSidebarOpen(false)} />}
 
       {/* TopBar: includes arrow to toggle the sidebar */}
       {location.pathname !== '/login' && <TopBar isSidebarOpen={isSidebarOpen} setSidebarOpen={setSidebarOpen} />}
