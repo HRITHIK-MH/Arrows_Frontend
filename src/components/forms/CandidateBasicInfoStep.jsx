@@ -2,7 +2,7 @@ import React, { useEffect, useMemo } from "react";
 import * as pdfjsLib from "pdfjs-dist";
 import pdfjsWorkerSrc from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 import FormField from "./FormField";
-import { parseResume, mapResumeToFormFields } from "../../api/resumeParserService";
+import { parseResume, mapResumeToFormFields, normalizeParsedResumePayload } from "../../api/resumeParserService";
 
 const normalizeText = (value) => String(value || "").replace(/\s+/g, " ").trim();
 
@@ -232,6 +232,16 @@ const mapYearsToBucket = (yearsNumber) => {
   return "12+";
 };
 
+const mapExperienceValueToBucket = (value) => {
+  const raw = normalizeText(value).toLowerCase();
+  if (!raw) return "";
+  if (["0-1", "1-3", "3-5", "5-8", "8-12", "12+"].includes(raw)) return raw;
+
+  const numericMatch = raw.match(/\d+(?:\.\d+)?/);
+  if (!numericMatch) return "";
+  return mapYearsToBucket(Number(numericMatch[0]));
+};
+
 const cleanResumeValue = (value) =>
   normalizeText(String(value || "").replace(/[|•]/g, " ").replace(/\s+/g, " ")).slice(0, 120);
 
@@ -308,8 +318,13 @@ const SKILL_ALIAS_MAP = {
   java: ["core java", "java", "spring boot", "spring"],
   python: ["python", "python3"],
   react: ["react", "reactjs", "react js"],
+  "react-js": ["react", "reactjs", "react js", "react.js"],
   node: ["node", "nodejs", "node js", "express"],
   aws: ["aws", "amazon web services"],
+  "angular-4": ["angular", "angularjs", "angular 2", "angular 4", "angular 5"],
+  css3: ["css", "css3"],
+  html5: ["html", "html5"],
+  javascript: ["javascript", "js"],
 };
 
 const collectMatchedSkillValues = (text, options = []) => {
@@ -330,6 +345,63 @@ const collectMatchedSkillValues = (text, options = []) => {
     })
     .map((option) => option.value);
 };
+
+const normalizeSkillInput = (skills) => {
+  if (Array.isArray(skills)) {
+    return skills
+      .map((skill) => {
+        if (typeof skill === "string") return skill;
+        return skill?.skill_name || skill?.name || skill?.primary_skill || "";
+      })
+      .map((skill) => String(skill || "").trim())
+      .filter(Boolean);
+  }
+
+  if (typeof skills === "string") {
+    return String(skills)
+      .split(/[;,/|&•·\n]/)
+      .map((skill) => String(skill || "").trim())
+      .filter(Boolean);
+  }
+
+  if (skills && typeof skills === "object") {
+    const extracted = [];
+    if (skills.primary_skill || skills.primarySkill) {
+      extracted.push(String(skills.primary_skill || skills.primarySkill).trim());
+    }
+    if (Array.isArray(skills.secondary_skills)) {
+      extracted.push(...skills.secondary_skills.map((skill) => String(skill || "").trim()));
+    }
+    if (Array.isArray(skills.skills)) {
+      extracted.push(...skills.skills.map((skill) => String(skill || "").trim()));
+    }
+    return extracted.filter(Boolean);
+  }
+
+  return [];
+};
+
+const mapSkillTextToValue = (skillText, options = []) => {
+  const normalizedText = String(skillText || "").trim();
+  if (!normalizedText) return "";
+
+  const matched = collectMatchedSkillValues(normalizedText, options);
+  if (matched.length > 0) return matched[0];
+
+  const lowerValue = normalizedText.toLowerCase();
+  const directOption = options.find((option) => {
+    const optionValue = String(option?.value || "").toLowerCase();
+    const optionLabel = String(option?.label || option?.value || "").toLowerCase();
+    return optionValue === lowerValue || optionLabel === lowerValue;
+  });
+
+  return directOption ? directOption.value : "";
+};
+
+const mapSkillTextsToValues = (skills, options = []) =>
+  normalizeSkillInput(skills)
+    .map((skill) => mapSkillTextToValue(skill, options))
+    .filter(Boolean);
 
 const getSkillDefaultsFromExperience = (yearsBucket, yearsNumber) => {
   let skillExperienceLevel = "";
@@ -371,7 +443,7 @@ const createSkillRow = (primarySkill, defaults = {}) => ({
   skillExperienceLevel: defaults.skillExperienceLevel || "",
   skillExperienceYears: defaults.skillExperienceYears || "",
   skillRating: defaults.skillRating || "",
-  skillComments: "",
+  skillComments: defaults.skillComments || "",
   secondarySkillExperienceLevel: "",
   secondarySkillExperienceYears: "",
   secondarySkillRating: "",
@@ -660,6 +732,20 @@ const CandidateBasicInfoStep = ({
     const fileKey = `${sourceFile.name || ""}-${sourceFile.size || 0}-${sourceFile.lastModified || 0}`;
     if (!fileKey || parsedResumeRef.current === fileKey) return;
 
+    console.groupCollapsed("[ResumeDebug] Candidate Basic Info Auto Population");
+    console.debug("[ResumeDebug] Uploaded file received by form:", {
+      name: sourceFile?.name,
+      type: sourceFile?.type,
+      size: sourceFile?.size,
+      lastModified: sourceFile?.lastModified,
+      source: getFileLike(formData.candidateTemplateFile)
+        ? "candidateTemplateFile"
+        : getFileLike(formData.candidateResume)
+          ? "candidateResume"
+          : "candidateDocuments",
+      fileKey,
+    });
+
     let isCancelled = false;
 
     const parseAndMapResume = async () => {
@@ -669,9 +755,12 @@ const CandidateBasicInfoStep = ({
 
         parsedResumeRef.current = fileKey;
         if (parsedData && typeof parsedData === "object") {
-          const mappedData = parsedData.personal_information || parsedData.professional_information
-            ? mapResumeToFormFields(parsedData)
-            : parsedData;
+          console.debug("[ResumeDebug] GPT/API parsed JSON received by form:", parsedData);
+          const normalizedParsedData = normalizeParsedResumePayload(parsedData);
+          const mappedData = normalizedParsedData.personal_information || normalizedParsedData.professional_information
+            ? mapResumeToFormFields(normalizedParsedData)
+            : normalizedParsedData;
+          console.debug("[ResumeDebug] Candidate form JSON used for mapping:", mappedData);
 
           const updates = {};
 
@@ -701,13 +790,12 @@ const CandidateBasicInfoStep = ({
             updates.gender = mappedData.gender;
           }
 
-          if (!normalizeText(formData.yearsExperience) && Number.isFinite(Number(mappedData.totalExperience))) {
-            const years = Number(mappedData.totalExperience);
-            const mappedExperience = mapYearsToBucket(years);
+          if (!normalizeText(formData.yearsExperience)) {
+            const mappedExperience = mapExperienceValueToBucket(mappedData.totalExperience || mappedData.totalExperienceYears);
             if (mappedExperience) {
               updates.yearsExperience = mappedExperience;
               if (!normalizeText(formData.candidateType)) {
-                updates.candidateType = years > 0 ? "experienced" : "fresher";
+                updates.candidateType = mappedExperience === "0-1" ? "fresher" : "experienced";
               }
             }
           }
@@ -721,14 +809,46 @@ const CandidateBasicInfoStep = ({
           if (!normalizeText(formData.employmentType) && normalizeText(mappedData.employmentType)) {
             updates.employmentType = mappedData.employmentType;
           }
+          if (!normalizeText(formData.noticePeriod) && normalizeText(mappedData.noticePeriod)) {
+            updates.noticePeriod = mappedData.noticePeriod;
+          }
+          if (!normalizeText(formData.currentCtc) && normalizeText(mappedData.currentCtc)) {
+            updates.currentCtc = mappedData.currentCtc;
+          }
+          if (!normalizeText(formData.expectedCtc) && normalizeText(mappedData.expectedCtc)) {
+            updates.expectedCtc = mappedData.expectedCtc;
+          }
 
-          if (!normalizeText(formData.primarySkill) && normalizeText(mappedData.skills)) {
-            const skillsList = String(mappedData.skills || "").split(/[;,]+/).map((skill) => skill.trim()).filter(Boolean);
-            if (skillsList[0]) {
-              updates.primarySkill = skillsList[0];
+          if (!normalizeText(formData.primarySkill) && normalizeSkillInput(mappedData.skills).length > 0) {
+            const skillsList = normalizeSkillInput(mappedData.skills);
+            const primarySkillOptions = Array.isArray(fieldMap.primarySkill?.options) ? fieldMap.primarySkill.options : [];
+            const mappedSkillValues = mapSkillTextsToValues(skillsList, primarySkillOptions);
+            const skillValuesForRows = mappedSkillValues.length > 0 ? mappedSkillValues : skillsList;
+            console.debug("[ResumeDebug] Skills mapping result from GPT/API data:", {
+              rawSkills: mappedData.skills,
+              skillsList,
+              mappedSkillValues,
+              selectedPrimarySkill: skillValuesForRows[0] || "",
+              selectedSecondarySkill: skillValuesForRows[1] || "",
+            });
+            if (skillValuesForRows[0]) {
+              updates.primarySkill = skillValuesForRows[0];
             }
-            if (!normalizeText(formData.secondarySkill) && skillsList[1]) {
-              updates.secondarySkill = skillsList[1];
+            if (!normalizeText(formData.secondarySkill) && skillValuesForRows[1]) {
+              updates.secondarySkill = skillValuesForRows[1];
+            }
+
+            const existingSkillRows = Array.isArray(formData.skills) ? formData.skills : [];
+            const hasExistingPrimarySkill = existingSkillRows.some((row) => normalizeText(row?.primarySkill));
+            if (!hasExistingPrimarySkill && skillValuesForRows.length > 0) {
+              const skillDefaults = {
+                ...getSkillDefaultsFromExperience(updates.yearsExperience || formData.yearsExperience, Number(mappedData.totalExperience) || 0),
+                skillExperienceLevel: mappedData.skillExperienceLevel || undefined,
+                skillExperienceYears: mappedData.skillExperienceYears || undefined,
+                skillRating: mappedData.skillRating || undefined,
+                skillComments: mappedData.skillComments || undefined,
+              };
+              updates.skills = skillValuesForRows.map((skillValue) => createSkillRow(skillValue, skillDefaults));
             }
           }
 
@@ -737,9 +857,14 @@ const CandidateBasicInfoStep = ({
               onChange(fieldName, fieldValue);
             }
           });
+          console.debug("[ResumeDebug] Final form values from GPT/API path:", {
+            updates,
+            nextFormValues: { ...formData, ...updates },
+          });
 
           // If GPT parse succeeded, skip the local heuristic parser.
           if (Object.keys(updates).length > 0) {
+            console.groupEnd();
             return;
           }
         }
@@ -751,7 +876,15 @@ const CandidateBasicInfoStep = ({
         const extractedText = await readResumeText(sourceFile);
         if (isCancelled) return;
 
-        if (!extractedText) return;
+        if (!extractedText) {
+          console.debug("[ResumeDebug] Local extraction produced no text.");
+          console.groupEnd();
+          return;
+        }
+        console.debug("[ResumeDebug] Extracted resume text length:", {
+          length: extractedText.length,
+          preview: extractedText.slice(0, 500),
+        });
 
         parsedResumeRef.current = fileKey;
         const normalized = normalizeText(extractedText);
@@ -810,6 +943,11 @@ const CandidateBasicInfoStep = ({
         const yearsNumber = extractExperienceYears(extractedText);
         const effectiveYearsBucket = updates.yearsExperience || formData.yearsExperience;
         const skillDefaults = getSkillDefaultsFromExperience(effectiveYearsBucket, yearsNumber);
+        console.debug("[ResumeDebug] Skills mapping result from local extraction:", {
+          matchedSkills,
+          skillDefaults,
+          primarySkillOptions,
+        });
 
         if (!normalizeText(formData.primarySkill) && matchedSkills[0]) {
           updates.primarySkill = matchedSkills[0];
@@ -875,8 +1013,14 @@ const CandidateBasicInfoStep = ({
             onChange(fieldName, fieldValue);
           }
         });
+        console.debug("[ResumeDebug] Final form values from local fallback path:", {
+          updates,
+          nextFormValues: { ...formData, ...updates },
+        });
+        console.groupEnd();
       } catch (error) {
         console.error("Resume parsing failed:", error);
+        console.groupEnd();
       }
     };
 
