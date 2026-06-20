@@ -1491,6 +1491,203 @@
   font-size: 14px;
 }
 
+:global([data-theme="dark"]) {
+  .title,
+  .description,
+  .searchInput,
+  .jobTable td,
+  .innerTable td,
+  .tableFooter,
+  .drawerTitleWrap h3,
+  .drawerField strong,
+  .candidateTitle,
+  .candidateField strong,
+  .pipelineTitle,
+  .pipelineJobTitle {
+    color: #f8fafc;
+  }
+
+  .breadcrumb,
+  .createJobMenuTitle,
+  .createJobMenuEmpty,
+  .createJobDraftMeta,
+  .dateRangeLabel,
+  .emptyTableCell,
+  .drawerTitleWrap p,
+  .drawerMeta,
+  .drawerField span,
+  .candidateSubtitle,
+  .candidateField span,
+  .pipelineSubtitle,
+  .pipelineJobMeta,
+  .pipelineStageLabel {
+    color: #cbd5e1;
+  }
+
+  .breadcrumbSeparator {
+    color: #64748b;
+  }
+
+  .breadcrumbCurrent,
+  .sortArrowActive,
+  .drawerField a,
+  .pipelineStageLabel strong {
+    color: #93c5fd;
+  }
+
+  .card,
+  .jobCard,
+  .infoRow,
+  .tableWrap,
+  .createJobMenu,
+  .createJobDraftRow,
+  .dateRangeMenu,
+  .viewDrawer,
+  .candidateDrawer,
+  .pipelineCard,
+  .pipelineItem,
+  .showPipelineBar {
+    background: #0f172a;
+    border-color: #334155;
+    box-shadow: none;
+  }
+
+  .createJobMenuOption {
+    background: #0f172a;
+    color: #e2e8f0;
+  }
+
+  .createJobMenuOption:hover {
+    background: #1e293b;
+    border-color: #334155;
+  }
+
+  .createJobDraftDelete {
+    color: #94a3b8;
+  }
+
+  .createJobDraftDelete:hover {
+    background: rgba(239, 68, 68, 0.16);
+    color: #fecaca;
+  }
+
+  .filtersBar {
+    background: #1e293b;
+    border-color: #334155;
+  }
+
+  .searchField,
+  .selectField,
+  .dateField,
+  .dateRangeToggle,
+  .entriesSelect,
+  .clearButton,
+  .pageBtn,
+  .expandBtn {
+    background: #0f172a;
+    border-color: #334155;
+    color: #e2e8f0;
+  }
+
+  .dateRangeToggleActive {
+    border-color: #60a5fa;
+    background-color: #1e293b;
+  }
+
+  .filterIcon,
+  .searchIcon,
+  .dropdownIcon,
+  .sortArrows,
+  .actionBtn,
+  .expandBtn,
+  .pipelineJobSeparator {
+    color: #94a3b8;
+  }
+
+  .jobTable th {
+    background-color: #1e293b;
+    color: #e2e8f0;
+    border-bottom-color: #334155;
+  }
+
+  .jobTable td {
+    border-bottom-color: #334155;
+  }
+
+  .jobTable tr:hover {
+    background-color: #1e293b;
+  }
+
+  .expandedRow td {
+    background: #111827;
+  }
+
+  .innerTable {
+    background: #0b1220;
+  }
+
+  .innerTable th {
+    background: #1e293b;
+    color: #e2e8f0;
+    border-bottom-color: #334155;
+  }
+
+  .innerTable td {
+    background: #111827;
+    border-bottom-color: #334155;
+  }
+
+  .actionBtn:hover,
+  .expandBtnActive,
+  .clearButton:hover,
+  .pageBtn:hover {
+    background: #1e293b;
+    color: #f8fafc;
+    border-color: #475569;
+  }
+
+  .pageBtnActive {
+    background: #1d4ed8;
+    border-color: #1d4ed8;
+    color: #ffffff;
+  }
+
+  .drawerHead,
+  .candidateHead,
+  .drawerTabs,
+  .pipelineHeader,
+  .pipelineJobInfo,
+  .pipelineStageLabel {
+    border-color: #334155;
+  }
+
+  .drawerTab {
+    color: #cbd5e1;
+  }
+
+  .drawerTabActive {
+    color: #93c5fd;
+    border-bottom-color: #93c5fd;
+  }
+
+  .togglePipelineBtn {
+    background: #0f172a;
+    color: #cbd5e1;
+    border-color: #334155;
+  }
+
+  .togglePipelineBtn:hover {
+    background: #1e293b;
+    color: #f8fafc;
+    border-color: #475569;
+  }
+
+  .pipelineItem:hover {
+    border-color: #60a5fa;
+    box-shadow: none;
+  }
+}
+
 /* Extra small devices (phones, 600px and down) */
 @media only screen and (max-width: 600px) {
   .page {

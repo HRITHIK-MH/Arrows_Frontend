@@ -1196,3 +1196,65 @@
     gap: 16px;
   }
 }
+
+:global([data-theme="dark"]) {
+  .userRolesContainer,
+  .headerSection,
+  .contentArea,
+  .viewToggle,
+  .cardInner,
+  .actionBtn,
+  .modalContent,
+  .viewModalContent,
+  .deleteConfirmModal,
+  .warningModal,
+  .formInput,
+  .formSelect,
+  .formTextarea {
+    background: #0f172a;
+    border-color: #334155;
+    color: #e2e8f0;
+  }
+
+  .pageTitle,
+  .userName,
+  .modalTitle,
+  .viewTitle,
+  .deleteConfirmTitle,
+  .warningTitle,
+  .formSectionTitle {
+    color: #f8fafc;
+  }
+
+  .pageDescription,
+  .userRole,
+  .toggleBtn,
+  .actionBtn,
+  .formLabel,
+  .emptyState p,
+  .deleteConfirmText,
+  .warningText {
+    color: #cbd5e1;
+  }
+
+  .toggleBtn.active {
+    background: #1e293b;
+    color: #f8fafc;
+  }
+
+  .contentArea,
+  .warningHeader,
+  .deleteConfirmHeader,
+  .formFooter,
+  .viewHeader,
+  .viewContent {
+    border-color: #334155;
+  }
+
+  .cancelBtn,
+  .deleteConfirmCancelBtn {
+    background: #0b1220;
+    border-color: #334155;
+    color: #e2e8f0;
+  }
+}

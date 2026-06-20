@@ -515,3 +515,63 @@
   font-size: 13px;
   flex-shrink: 0;
 }
+
+:global([data-theme="dark"]) {
+  .fullViewWrap,
+  .statsBar,
+  .card,
+  .tokenBox,
+  .embedWrap,
+  .dashboardTabs,
+  .statWide,
+  .statTasks,
+  .taskItem,
+  .recruitGrid,
+  .recruitItem,
+  .performerAvatar {
+    background: #0f172a;
+    border-color: #334155;
+    color: #e2e8f0;
+  }
+
+  .statBlue,
+  .statPeach,
+  .statPurple,
+  .statLavender,
+  .taskGreen,
+  .taskBlue,
+  .taskYellow {
+    background: #1e293b;
+  }
+
+  .h2,
+  .info,
+  .recruitTitle,
+  .recruitTotalNum,
+  .recruitItemNum,
+  .performerName,
+  .tasksTitle,
+  .taskName,
+  .dashboardTabActive {
+    color: #f8fafc;
+  }
+
+  .p,
+  .label,
+  .statCardLabel,
+  .statNumSub,
+  .recruitItemLabel,
+  .recruitTotalLabel,
+  .performerRole,
+  .performerScoreLabel,
+  .taskBadge,
+  .dashboardTab,
+  .viewAll {
+    color: #cbd5e1;
+  }
+
+  .dashboardTab:hover {
+    background: #1e293b;
+    color: #f8fafc;
+  }
+}

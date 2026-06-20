@@ -317,3 +317,39 @@
     word-break: break-word;
   }
 }
+
+:global([data-theme="dark"]) {
+  .reportsContainer,
+  .headerSection,
+  .dateRangeSection,
+  .tabsSection,
+  .contentArea,
+  .metricCard,
+  .chartBar,
+  .dateInputWrapper {
+    background-color: #0f172a;
+    border-color: #334155;
+  }
+
+  .pageTitle,
+  .dateLabel,
+  .activeTab,
+  .metricValue,
+  .chartTitle,
+  .chartValue {
+    color: #f8fafc;
+  }
+
+  .tab,
+  .dateInput,
+  .dateIcon,
+  .loadingState p,
+  .metricLabel,
+  .chartLabel {
+    color: #cbd5e1;
+  }
+
+  .chartBar {
+    background-color: #1e293b;
+  }
+}
