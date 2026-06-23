@@ -790,3 +790,73 @@
     font-size: 18px;
   }
 }
+
+:global([data-theme="dark"]) {
+  .card,
+  .calendarCard,
+  .eventPreview,
+  .microsoftHint,
+  .microsoftError,
+  .monthCell,
+  .monthCellOutside,
+  .weekTimeline,
+  .dayTimeline,
+  .eventDrawer,
+  .eventModal,
+  .eventForm input,
+  .eventForm textarea,
+  .eventForm select {
+    background: #0f172a;
+    border-color: #334155;
+    color: #e2e8f0;
+  }
+
+  .title,
+  .eventPreviewTitle,
+  .rangeLabel,
+  .monthCellDate,
+  .weekDayDate,
+  .eventDrawerTitle,
+  .eventModalTitle {
+    color: #f8fafc;
+  }
+
+  .breadcrumb,
+  .eventPreviewMeta,
+  .microsoftMeta,
+  .monthHeaderCell,
+  .monthMore,
+  .weekDayName,
+  .hourLabel,
+  .eventForm label {
+    color: #cbd5e1;
+  }
+
+  .separator,
+  .monthCellDay,
+  .navBtn,
+  .todayBtn,
+  .viewSelect,
+  .microsoftBtnSecondary {
+    color: #94a3b8;
+  }
+
+  .todayBtn,
+  .viewSelect,
+  .microsoftBtnSecondary,
+  .navBtn,
+  .eventDrawerClose,
+  .eventModalClose {
+    background: #0b1220;
+    border-color: #334155;
+  }
+
+  .monthGrid,
+  .monthHeaderCell,
+  .monthCell,
+  .weekTimelineHeader,
+  .weekTimelineBody,
+  .dayTimeline {
+    border-color: #334155;
+  }
+}

@@ -74,6 +74,13 @@
   --bg: rgba(15, 23, 42, 0.92);
   --text: #e2e8f0;
   --text-primary: #f1f5f9;
+  --surface-1: #0f172a;
+  --surface-2: #111827;
+  --surface-3: #1e293b;
+  --border-1: #334155;
+  --text-strong: #f8fafc;
+  --text-muted: #cbd5e1;
+  --text-dim: #94a3b8;
   --sidebar-bg: rgba(30, 41, 59, 0.95);
   --header-bg: rgba(15, 23, 42, 0.92);
   --divider: rgba(255, 255, 255, 0.08);
@@ -155,6 +162,119 @@ html[data-theme="dark"] body {
 
 [data-theme="dark"] .role {
   color: #94a3b8 !important;
+}
+
+/* Shared dark surfaces for consistent inner-page appearance */
+[data-theme="dark"] .card,
+[data-theme="dark"] .infoRow,
+[data-theme="dark"] .tableWrap,
+[data-theme="dark"] .filtersBar,
+[data-theme="dark"] .searchField,
+[data-theme="dark"] .selectField,
+[data-theme="dark"] .dateField,
+[data-theme="dark"] .dateRangeMenu,
+[data-theme="dark"] .modalContent,
+[data-theme="dark"] .viewDrawer,
+[data-theme="dark"] .detailsDrawer,
+[data-theme="dark"] .entriesSelect,
+[data-theme="dark"] .clearButton,
+[data-theme="dark"] .pageBtn,
+[data-theme="dark"] .back-button,
+[data-theme="dark"] .tab,
+[data-theme="dark"] .entry-panel {
+  background: var(--surface-1) !important;
+  border-color: var(--border-1) !important;
+  color: var(--text-muted) !important;
+}
+
+[data-theme="dark"] .jobTable th,
+[data-theme="dark"] .innerTable th,
+[data-theme="dark"] .applicationTable thead th,
+[data-theme="dark"] .headcountTable th,
+[data-theme="dark"] .interviewsTable thead th,
+[data-theme="dark"] .candidateTable th,
+[data-theme="dark"] .candidateTableMapped th {
+  background: var(--surface-3) !important;
+  border-bottom-color: var(--border-1) !important;
+  color: var(--text-strong) !important;
+}
+
+[data-theme="dark"] .jobTable td,
+[data-theme="dark"] .innerTable td,
+[data-theme="dark"] .applicationTable tbody td,
+[data-theme="dark"] .headcountTable td,
+[data-theme="dark"] .interviewsTable tbody td,
+[data-theme="dark"] .candidateTable td,
+[data-theme="dark"] .candidateTableMapped td {
+  background: var(--surface-1) !important;
+  border-bottom-color: var(--border-1) !important;
+  color: var(--text-strong) !important;
+}
+
+[data-theme="dark"] .title,
+[data-theme="dark"] .pageTitle,
+[data-theme="dark"] .jobId,
+[data-theme="dark"] .entry-title,
+[data-theme="dark"] .timesheet-header h1,
+[data-theme="dark"] .section-header h2,
+[data-theme="dark"] .detailValue {
+  color: var(--text-strong) !important;
+}
+
+[data-theme="dark"] .description,
+[data-theme="dark"] .pageDescription,
+[data-theme="dark"] .summaryText,
+[data-theme="dark"] .breadcrumb,
+[data-theme="dark"] .drawerSubtext,
+[data-theme="dark"] .tableFooter,
+[data-theme="dark"] .emptyCell,
+[data-theme="dark"] .lead,
+[data-theme="dark"] .metric-title,
+[data-theme="dark"] .metric-sub,
+[data-theme="dark"] .entry-description,
+[data-theme="dark"] .tab-subtitle {
+  color: var(--text-muted) !important;
+}
+
+[data-theme="dark"] .filterIcon,
+[data-theme="dark"] .searchIcon,
+[data-theme="dark"] .dropdownIcon,
+[data-theme="dark"] .sortArrows,
+[data-theme="dark"] .breadcrumbSeparator,
+[data-theme="dark"] .separator {
+  color: var(--text-dim) !important;
+}
+
+/* Global dark-mode readability fallback for all inner-page labels */
+[data-theme="dark"] label,
+[data-theme="dark"] .label,
+[data-theme="dark"] legend,
+[data-theme="dark"] .formLabel,
+[data-theme="dark"] .dateLabel,
+[data-theme="dark"] .detailLabel,
+[data-theme="dark"] .fieldLabel,
+[data-theme="dark"] .inputLabel {
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] th,
+[data-theme="dark"] thead th {
+  color: #f1f5f9;
+}
+
+[data-theme="dark"] ::placeholder {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .Clients-module__tableWrap .data-table {
+  background: #0f172a !important;
+}
+
+[data-theme="dark"] .reusable-form-page .form-buttons,
+[data-theme="dark"] .multi-step-form .form-buttons,
+[data-theme="dark"] .form-buttons {
+  border-top: none !important;
+  background: transparent !important;
 }
 
 html, body {

@@ -1773,6 +1773,119 @@
   .drawerIdentity h3 {
     font-size: 28px;
   }
+}
+
+:global([data-theme="dark"]) {
+  .card,
+  .infoRow,
+  .detailCard,
+  .searchBox,
+  .mapBtn,
+  .uploadBtn,
+  .tableWrap,
+  .skillTableWrap,
+  .jobApplicationTableWrap,
+  .previewModal,
+  .preScreenModal,
+  .addCandidateMenu,
+  .addCandidateDraftRow {
+    background: #0f172a;
+    border-color: #334155;
+    color: #e2e8f0;
+  }
+
+  .title,
+  .description,
+  .jobId,
+  .searchBox input,
+  .uploadedFileName,
+  .candidateTable td,
+  .candidateTableMapped td,
+  .skillTable td,
+  .jobApplicationTable td,
+  .previewFieldValue,
+  .timelineHead h4,
+  .ratingHead h5 {
+    color: #f8fafc;
+  }
+
+  .breadcrumb,
+  .jobSub,
+  .uploadedFileName,
+  .timelineHead span,
+  .timelineSummary,
+  .ratingBody p,
+  .ratingHead span,
+  .ratingSubHead span,
+  .addCandidateMenuTitle,
+  .addCandidateMenuEmpty,
+  .addCandidateDraftMeta {
+    color: #cbd5e1;
+  }
+
+  .breadcrumbSeparator,
+  .searchIcon,
+  .filterIcon,
+  .mapBtn,
+  .uploadedFileName {
+    color: #94a3b8;
+  }
+
+  .candidateTable th,
+  .candidateTableMapped th,
+  .skillTable th,
+  .jobApplicationTable th {
+    background: #1e293b;
+    color: #e2e8f0;
+    border-bottom-color: #334155;
+  }
+
+  .candidateTable td,
+  .candidateTableMapped td,
+  .skillTable td,
+  .jobApplicationTable td {
+    border-bottom-color: #334155;
+    background: #0f172a;
+  }
+
+  .candidateTable tr:hover,
+  .candidateTableMapped tr:hover,
+  .skillTable tr:hover,
+  .jobApplicationTable tr:hover {
+    background: #1e293b;
+  }
+
+  .stageTab {
+    color: #cbd5e1;
+  }
+
+  .stageTabActive {
+    color: #93c5fd;
+    border-bottom-color: #93c5fd;
+  }
+
+  .addCandidateMenuOption {
+    background: #0f172a;
+    color: #e2e8f0;
+  }
+
+  .addCandidateMenuOption:hover {
+    background: #1e293b;
+    border-color: #334155;
+  }
+
+  .mapSelectTrigger,
+  .moveSelect,
+  .preFieldGroup input,
+  .preFieldGroup select,
+  .preFieldGroup textarea {
+    background: #0b1220;
+    border-color: #334155;
+    color: #e2e8f0;
+  }
+}
+
+@media (max-width: 1400px) {
 
   .profileTab {
     font-size: 14px;

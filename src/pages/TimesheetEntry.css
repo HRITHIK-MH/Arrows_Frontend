@@ -118,6 +118,32 @@
   box-shadow: 0 2px 6px rgba(15, 23, 42, 0.06);
 }
 
+[data-theme="dark"] .timesheet-entry-root,
+[data-theme="dark"] .entry-header,
+[data-theme="dark"] .tab,
+[data-theme="dark"] .entry-panel,
+[data-theme="dark"] .back-button {
+  background: #0f172a;
+  border-color: #334155;
+  color: #e2e8f0;
+}
+
+[data-theme="dark"] .entry-title,
+[data-theme="dark"] .tab-title {
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .entry-description,
+[data-theme="dark"] .tab-subtitle,
+[data-theme="dark"] .entry-kicker {
+  color: #cbd5e1;
+}
+
+[data-theme="dark"] .tab-active {
+  border-color: #3b82f6 !important;
+  background: #1e293b !important;
+}
+
 .entry-section-header {
   margin-bottom: 24px;
 }

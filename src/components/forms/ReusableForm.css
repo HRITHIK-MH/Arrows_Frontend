@@ -619,6 +619,11 @@
   z-index: 5;
 }
 
+[data-theme="dark"] .reusable-form-page.job-opening-form .form-buttons {
+  border-top: none !important;
+  background: transparent !important;
+}
+
 .reusable-form-page.job-opening-form .form-buttons-right {
   margin-left: auto;
 }

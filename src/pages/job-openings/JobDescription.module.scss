@@ -1498,6 +1498,104 @@
     padding: 14px 14px 12px;
   }
 
+
+:global([data-theme="dark"]) {
+  .card,
+  .detailCard,
+  .searchBox,
+  .mapBtn,
+  .uploadBtn,
+  .uploadedFileName,
+  .tableWrap,
+  .previewModal,
+  .uploadModal,
+  .preScreenModal {
+    background: #0f172a;
+    border-color: #334155;
+    color: #e2e8f0;
+  }
+
+  .title,
+  .jobId,
+  .searchBox input,
+  .candidateTable td,
+  .candidateTableMapped td,
+  .previewFieldValue,
+  .uploadModalTitle,
+  .uploadFieldLabel,
+  .preFieldGroup input,
+  .preFieldGroup select,
+  .preFieldGroup textarea {
+    color: #f8fafc;
+  }
+
+  .breadcrumb,
+  .jobSub,
+  .uploadedFileName,
+  .uploadDropzoneText,
+  .uploadDropzoneHint,
+  .preFieldLabel,
+  .preRadioLabel,
+  .preStepLabel {
+    color: #cbd5e1;
+  }
+
+  .breadcrumbSeparator,
+  .searchIcon {
+    color: #94a3b8;
+  }
+
+  .stageTab {
+    color: #cbd5e1;
+  }
+
+  .stageTabActive {
+    color: #93c5fd;
+    border-bottom-color: #93c5fd;
+  }
+
+  .candidateTable th,
+  .candidateTableMapped th,
+  .skillTable th,
+  .jobApplicationTable th {
+    background: #1e293b;
+    color: #e2e8f0;
+    border-bottom-color: #334155;
+  }
+
+  .candidateTable td,
+  .candidateTableMapped td,
+  .skillTable td,
+  .jobApplicationTable td {
+    background: #0f172a;
+    border-bottom-color: #334155;
+  }
+
+  .candidateTable tr:hover,
+  .candidateTableMapped tr:hover,
+  .skillTable tr:hover,
+  .jobApplicationTable tr:hover {
+    background: #1e293b;
+  }
+
+  .uploadDropzone,
+  .uploadFileCard,
+  .preFieldGroup input,
+  .preFieldGroup select,
+  .preFieldGroup textarea {
+    background: #0b1220;
+    border-color: #334155;
+  }
+
+  .mapSelectTrigger,
+  .moveSelect,
+  .preBtn,
+  .preBtnGhost {
+    background: #0b1220;
+    border-color: #334155;
+    color: #e2e8f0;
+  }
+}
   .preScreenStepper {
     margin-bottom: 10px;
   }

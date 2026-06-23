@@ -653,6 +653,91 @@
   color: #fff;
 }
 
+:global([data-theme="dark"]) {
+  .card,
+  .description,
+  .infoRow,
+  .filtersBar,
+  .searchField,
+  .selectField,
+  .dateField,
+  .dateRangeMenu,
+  .tableWrap,
+  .viewDrawer,
+  .addClientMenu,
+  .addClientDraftRow {
+    background: #0f172a;
+    border-color: #334155;
+    color: #e2e8f0;
+  }
+
+  .description,
+  .searchInput,
+  .drawerIdentity h3,
+  .tableWrap :global(.data-table td) {
+    color: #f8fafc;
+  }
+
+  .addClientMenuOption {
+    background: #0f172a;
+    color: #e2e8f0;
+  }
+
+  .addClientMenuOption:hover {
+    background: #1e293b;
+    border-color: #334155;
+  }
+
+  .tableWrap :global(.data-table th) {
+    background: #1e293b;
+    color: #e2e8f0;
+    border-bottom-color: #334155;
+  }
+
+  .tableWrap :global(.data-table td) {
+    border-bottom-color: #334155;
+  }
+
+  .tableWrap :global(.data-table tr:hover) {
+    background-color: #1e293b;
+  }
+
+  .tableFooter,
+  .footerLeft,
+  .addClientMenuTitle,
+  .addClientMenuEmpty,
+  .addClientDraftMeta,
+  .dateRangeLabel,
+  .drawerIdentity p {
+    color: #cbd5e1;
+  }
+
+  .filterIcon,
+  .searchIcon,
+  .dropdownIcon,
+  .tableWrap :global(.action-btn) {
+    color: #94a3b8;
+  }
+
+  .clearButton,
+  .entriesSelect,
+  .pageBtn {
+    background: #0f172a;
+    border-color: #334155;
+    color: #e2e8f0;
+  }
+
+  .pageBtnActive {
+    background: #1d4ed8;
+    border-color: #1d4ed8;
+    color: #ffffff;
+  }
+
+  .drawerTop {
+    border-bottom-color: #334155;
+  }
+}
+
 .statusPill {
   display: inline-flex;
   align-items: center;
