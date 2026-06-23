@@ -2712,3 +2712,123 @@
     text-align: left;
   }
 }
+
+:global([data-theme="dark"]) {
+  .card,
+  .infoBox,
+  .pageDescription,
+  .filtersBar,
+  .searchField,
+  .selectField,
+  .tableWrap,
+  .contentArea,
+  .contentAreaLayout,
+  .contentAreaLayoutList,
+  .groupView,
+  .groupContent,
+  .groupContentHeader,
+  .groupsSidebar,
+  .sidebarHeader,
+  .groupHeader,
+  .groupHeader.selected,
+  .roundsList,
+  .membersTable table,
+  .modalContent,
+  .viewDrawer,
+  .detailsDrawer,
+  .exitModal {
+    background: #0f172a;
+    border-color: #334155;
+    color: #e2e8f0;
+  }
+
+  .pageDescription,
+  .searchInput,
+  .interviewsTable tbody td,
+  .membersTable tbody td,
+  .memberText,
+  .groupName,
+  .roundName,
+  .groupTitle,
+  .sidebarTitle,
+  .detailValue,
+  .formInput,
+  .formSelect,
+  .exitField input,
+  .exitField textarea {
+    color: #f8fafc;
+  }
+
+  .tabs .tab,
+  .tableFooter,
+  .emptyState,
+  .drawerEyebrow,
+  .drawerSubtext,
+  .detailLabel,
+  .formLabel,
+  .groupLabel,
+  .groupMeta,
+  .memberCount,
+  .noData {
+    color: #cbd5e1;
+  }
+
+  .activeTab {
+    color: #93c5fd;
+    border-bottom-color: #93c5fd;
+  }
+
+  .filterIcon,
+  .searchIcon,
+  .sortArrows,
+  .expandBtn,
+  .iconBtn,
+  .roundActionBtn,
+  .actionBtn,
+  .drawerClose,
+  .viewButton,
+  .deleteBtn {
+    color: #94a3b8;
+  }
+
+  .interviewsTable thead th,
+  .membersTable thead th {
+    background: #1e293b;
+    color: #e2e8f0;
+    border-bottom-color: #334155;
+  }
+
+  .interviewsTable tbody td,
+  .membersTable tbody td {
+    border-bottom-color: #334155;
+    background: #0f172a;
+  }
+
+  .actionBtn:hover,
+  .viewButton:hover,
+  .clearButton:hover,
+  .applyButton:hover,
+  .iconBtn:hover,
+  .roundItem:hover {
+    background: #1e293b;
+    color: #f8fafc;
+  }
+
+  .membersTable,
+  .drawerHeader,
+  .detailsBody,
+  .detailBlock,
+  .exitModalHeader,
+  .exitModalActions,
+  .modalFooter,
+  .groupItem,
+  .groupsSidebar,
+  .groupContentHeader,
+  .sidebarHeader {
+    border-color: #334155;
+  }
+
+  .detailBlock:nth-child(even) {
+    background: #111827;
+  }
+}

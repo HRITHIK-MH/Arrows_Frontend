@@ -114,3 +114,35 @@
   font-size: 13px;
   color: #64748b;
 }
+
+:global([data-theme="dark"]) {
+  .card,
+  .infoRow,
+  .searchInput,
+  .tableWrap,
+  .applicationTable tbody td {
+    background: #0f172a;
+    border-color: #334155;
+    color: #f8fafc;
+  }
+
+  .description,
+  .emptyCell,
+  .footer {
+    color: #cbd5e1;
+  }
+
+  .searchIcon {
+    color: #94a3b8;
+  }
+
+  .applicationTable thead th {
+    background: #1e293b;
+    color: #e2e8f0;
+    border-bottom-color: #334155;
+  }
+
+  .applicationTable tbody td {
+    border-bottom-color: #334155;
+  }
+}

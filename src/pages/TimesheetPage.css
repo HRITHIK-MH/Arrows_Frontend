@@ -134,3 +134,48 @@
   .filters{width:100%}
   .filters select{width:100%}
 }
+
+[data-theme="dark"] .timesheet-root,
+[data-theme="dark"] .calendar-card,
+[data-theme="dark"] .day-panel,
+[data-theme="dark"] .ts-sidebar-card,
+[data-theme="dark"] .section-card,
+[data-theme="dark"] .metric-card,
+[data-theme="dark"] .timesheet-table tr,
+[data-theme="dark"] .day-cell,
+[data-theme="dark"] .approval-tile {
+  background: #0f172a;
+  border-color: #334155;
+  color: #e2e8f0;
+}
+
+[data-theme="dark"] .timesheet-header h1,
+[data-theme="dark"] .entry-title,
+[data-theme="dark"] .day-title,
+[data-theme="dark"] .day-hours,
+[data-theme="dark"] .section-header h2,
+[data-theme="dark"] .timesheet-table td strong,
+[data-theme="dark"] .approval-tile strong {
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .lead,
+[data-theme="dark"] .metric-title,
+[data-theme="dark"] .metric-sub,
+[data-theme="dark"] .entry-sub,
+[data-theme="dark"] .section-header p,
+[data-theme="dark"] .timesheet-table th,
+[data-theme="dark"] .timesheet-table td span,
+[data-theme="dark"] .project-name,
+[data-theme="dark"] .hours {
+  color: #cbd5e1;
+}
+
+[data-theme="dark"] .btn,
+[data-theme="dark"] .btn.outline,
+[data-theme="dark"] .filters select,
+[data-theme="dark"] .manager-pill {
+  background: #0b1220;
+  border-color: #334155;
+  color: #e2e8f0;
+}

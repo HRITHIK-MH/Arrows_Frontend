@@ -56,3 +56,13 @@
     margin-top: 18px;
   }
 }
+
+[data-theme="dark"] .application-form-page {
+  background: #0f172a;
+  color: #e2e8f0;
+}
+
+[data-theme="dark"] .application-form-page h1,
+[data-theme="dark"] .application-form-page h2 {
+  color: #f8fafc;
+}

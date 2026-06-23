@@ -1130,3 +1130,78 @@
     }
   }
 }
+
+:global([data-theme="dark"]) {
+  .card,
+  .infoRow,
+  .filtersBar,
+  .searchField,
+  .selectField,
+  .tableWrap,
+  .detailsDrawer,
+  .detailsBody,
+  .detailBlock,
+  .exitModal,
+  .formPanel,
+  .formGrid input,
+  .formGrid select {
+    background: #0f172a;
+    border-color: #334155;
+    color: #e2e8f0;
+  }
+
+  .description,
+  .summaryText,
+  .headcountTable td,
+  .detailValue,
+  .drawerSubtext,
+  .formGroup label {
+    color: #f8fafc;
+  }
+
+  .tabButton,
+  .filterIcon,
+  .searchIcon,
+  .drawerEyebrow,
+  .detailLabel,
+  .footerLeft,
+  .tableFooter,
+  .emptyCell {
+    color: #cbd5e1;
+  }
+
+  .tabButtonActive {
+    color: #93c5fd;
+    border-bottom-color: #93c5fd;
+  }
+
+  .headcountTable th {
+    background: #1e293b;
+    color: #e2e8f0;
+    border-bottom-color: #334155;
+  }
+
+  .headcountTable td {
+    border-bottom-color: #334155;
+  }
+
+  .headcountTable tr:hover {
+    background: #1e293b;
+  }
+
+  .clearButton,
+  .entriesSelect,
+  .pageBtn,
+  .drawerClose,
+  .viewButton {
+    background: #0b1220;
+    border-color: #334155;
+    color: #e2e8f0;
+  }
+
+  .pageBtnActive {
+    background: #1d4ed8;
+    border-color: #1d4ed8;
+    color: #ffffff;
+  }
+}
