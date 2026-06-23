@@ -1,8 +1,8 @@
 import React, { Suspense } from "react";
 
 const TimesheetEntry = React.lazy(() =>
-  import("../../modules/timesheets/pages/TimesheetEntryPage.tsx").then(m => ({
-    default: m.TimesheetEntryPage
+  import("../../modules/timesheets/pages/NewTimesheetPage.jsx").then(m => ({
+    default: m.NewTimesheetPage
   }))
 );
 

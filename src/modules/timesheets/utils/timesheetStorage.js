@@ -1,19 +1,13 @@
-import type { TimesheetCalendarEntry, TimesheetDraft, TimesheetEntryStatus } from "@/modules/timesheets/types";
-
 const draftsStorageKey = "hrms-timesheet-drafts";
 const entriesStorageKey = "hrms-timesheet-calendar-entries";
-
 const defaultEmployeeId = "usr-001";
 const defaultEmployeeName = "Aarav Mehta";
-
 function getTodayMonth() {
-  return new Date().toISOString().slice(0, 7);
+  return (/* @__PURE__ */ new Date()).toISOString().slice(0, 7);
 }
-
-function toDate(month: string, day: number) {
+function toDate(month, day) {
   return `${month}-${String(day).padStart(2, "0")}`;
 }
-
 function calculateHours(startTime = "09:00", endTime = "17:00") {
   const [startHour, startMinute] = startTime.split(":").map(Number);
   const [endHour, endMinute] = endTime.split(":").map(Number);
@@ -21,20 +15,10 @@ function calculateHours(startTime = "09:00", endTime = "17:00") {
   const end = endHour * 60 + endMinute;
   return Math.max(0, (end - start) / 60);
 }
-
-function makeEntry(
-  id: string,
-  date: string,
-  status: TimesheetEntryStatus,
-  project = "HRMS Portal",
-  task = "Frontend Development",
-  employeeId = defaultEmployeeId,
-  employeeName = defaultEmployeeName
-): TimesheetCalendarEntry {
+function makeEntry(id, date, status, project = "HRMS Portal", task = "Frontend Development", employeeId = defaultEmployeeId, employeeName = defaultEmployeeName) {
   const startTime = "09:00";
   const endTime = "17:00";
   const hours = calculateHours(startTime, endTime);
-
   return {
     id,
     employeeId,
@@ -55,10 +39,8 @@ function makeEntry(
     notes: status === "rejected" ? "Needs task detail correction." : "Completed planned work."
   };
 }
-
-function getSeedEntries(): TimesheetCalendarEntry[] {
+function getSeedEntries() {
   const month = getTodayMonth();
-
   return [
     makeEntry("seed-001", toDate(month, 1), "approved"),
     makeEntry("seed-002", toDate(month, 2), "approved", "Client Analytics", "Code Review"),
@@ -74,79 +56,76 @@ function getSeedEntries(): TimesheetCalendarEntry[] {
     makeEntry("seed-012", toDate(month, 9), "rejected", "Internal Automation", "QA Testing", "usr-004", "Rahul Sen")
   ];
 }
-
-function persistEntries(entries: TimesheetCalendarEntry[]) {
+function persistEntries(entries) {
   localStorage.setItem(entriesStorageKey, JSON.stringify(entries));
 }
-
-export function getTimesheetEntries(): TimesheetCalendarEntry[] {
+function getTimesheetEntries() {
   const raw = localStorage.getItem(entriesStorageKey);
   if (!raw) {
     const seedEntries = getSeedEntries();
     persistEntries(seedEntries);
     return seedEntries;
   }
-
   try {
-    return JSON.parse(raw) as TimesheetCalendarEntry[];
+    return JSON.parse(raw);
   } catch {
     const seedEntries = getSeedEntries();
     persistEntries(seedEntries);
     return seedEntries;
   }
 }
-
-export function saveTimesheetEntries(entries: TimesheetCalendarEntry[]) {
+function saveTimesheetEntries(entries) {
   const existing = getTimesheetEntries();
   const incomingIds = new Set(entries.map((entry) => entry.id));
   persistEntries([...entries, ...existing.filter((entry) => !incomingIds.has(entry.id))]);
 }
-
-export function updateTimesheetEntry(nextEntry: TimesheetCalendarEntry) {
-  persistEntries(getTimesheetEntries().map((entry) => (entry.id === nextEntry.id ? nextEntry : entry)));
+function updateTimesheetEntry(nextEntry) {
+  persistEntries(getTimesheetEntries().map((entry) => entry.id === nextEntry.id ? nextEntry : entry));
 }
-
-export function deleteTimesheetEntry(entryId: string) {
+function deleteTimesheetEntry(entryId) {
   persistEntries(getTimesheetEntries().filter((entry) => entry.id !== entryId));
 }
-
-export function submitEntriesForApproval(entryIds: string[]) {
-  const submittedAt = new Date().toISOString();
+function submitEntriesForApproval(entryIds) {
+  const submittedAt = (/* @__PURE__ */ new Date()).toISOString();
   persistEntries(
-    getTimesheetEntries().map((entry) =>
-      entryIds.includes(entry.id) && (entry.status === "draft" || entry.status === "rejected")
-        ? { ...entry, status: "pending", submittedAt }
-        : entry
+    getTimesheetEntries().map(
+      (entry) => entryIds.includes(entry.id) && (entry.status === "draft" || entry.status === "rejected") ? { ...entry, status: "pending", submittedAt } : entry
     )
   );
 }
-
-export function approveTimesheetEntry(entryId: string, approvalComment?: string) {
+function approveTimesheetEntry(entryId, approvalComment) {
   persistEntries(
-    getTimesheetEntries().map((entry) => (entry.id === entryId ? { ...entry, status: "approved", approvalComment } : entry))
+    getTimesheetEntries().map((entry) => entry.id === entryId ? { ...entry, status: "approved", approvalComment } : entry)
   );
 }
-
-export function rejectTimesheetEntry(entryId: string, approvalComment?: string) {
+function rejectTimesheetEntry(entryId, approvalComment) {
   persistEntries(
-    getTimesheetEntries().map((entry) => (entry.id === entryId ? { ...entry, status: "rejected", approvalComment } : entry))
+    getTimesheetEntries().map((entry) => entry.id === entryId ? { ...entry, status: "rejected", approvalComment } : entry)
   );
 }
-
-export function saveTimesheetDraft(draft: TimesheetDraft) {
+function saveTimesheetDraft(draft) {
   const drafts = getTimesheetDrafts().filter((item) => item.id !== draft.id);
   localStorage.setItem(draftsStorageKey, JSON.stringify([draft, ...drafts]));
 }
-
-export function getTimesheetDrafts(): TimesheetDraft[] {
+function getTimesheetDrafts() {
   const raw = localStorage.getItem(draftsStorageKey);
   if (!raw) {
     return [];
   }
-
   try {
-    return JSON.parse(raw) as TimesheetDraft[];
+    return JSON.parse(raw);
   } catch {
     return [];
   }
 }
+export {
+  approveTimesheetEntry,
+  deleteTimesheetEntry,
+  getTimesheetDrafts,
+  getTimesheetEntries,
+  rejectTimesheetEntry,
+  saveTimesheetDraft,
+  saveTimesheetEntries,
+  submitEntriesForApproval,
+  updateTimesheetEntry
+};

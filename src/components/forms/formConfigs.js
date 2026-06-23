@@ -470,30 +470,6 @@ export const jobOpeningConfig = {
           ]
         },
         {
-          name: "additionalSkills",
-          label: "Additional Skill",
-          type: "text",
-          required: false,
-          cssClass: "grid-col-3 grid-row-5",
-          placeholder: "Select Skill"
-        },
-        {
-          name: "addTechnicalSkills",
-          label: "Add Technical Skill",
-          type: "multiselect",
-          required: false,
-          cssClass: "grid-col-1 grid-row-6",
-          options: [
-            { value: "machine-learning", label: "Machine Learning" },
-            { value: "deep-learning", label: "Deep Learning" },
-            { value: "nlp", label: "NLP" },
-            { value: "data-science", label: "Data Science" },
-            { value: "computer-vision", label: "Computer Vision" },
-            { value: "azure", label: "Microsoft Azure" },
-            { value: "gcp", label: "Google Cloud Platform" }
-          ]
-        },
-        {
           name: "accountManager",
           label: "Account Manager",
           type: "text",
@@ -1058,11 +1034,11 @@ export const candidateConfig = {
         },
         {
           name: "primarySkill",
-          label: "Primary Skill *",
-          type: "select",
+          label: "Skill Set *",
+          type: "multiselect",
           required: true,
           validationRule: "requiredField",
-          placeholder: "Select Primary Skill",
+          placeholder: "Select skills",
           options: [
             { value: "html5", label: "HTML5" },
             { value: "css3", label: "CSS3" },
@@ -1078,93 +1054,6 @@ export const candidateConfig = {
             { value: "node", label: "Node.js" },
             { value: "aws", label: "AWS" }
           ]
-        },
-        {
-          name: "secondarySkill",
-          label: "Secondary Skill",
-          type: "select",
-          required: false,
-          placeholder: "Select Secondary Skill",
-          options: [
-            { value: "java", label: "Core Java" },
-            { value: "python", label: "Python" },
-            { value: "react", label: "React" },
-            { value: "node", label: "Node.js" },
-            { value: "aws", label: "AWS" }
-          ]
-        },
-        {
-          name: "skillExperienceLevel",
-          label: "Experience Level *",
-          type: "select",
-          required: true,
-          validationRule: "requiredField",
-          placeholder: "Select Experience Level",
-          options: [
-            { value: "beginner", label: "Beginner" },
-            { value: "intermediate", label: "Intermediate" },
-            { value: "expert", label: "Expert" }
-          ]
-        },
-        {
-          name: "secondarySkillExperienceLevel",
-          label: "Secondary Experience Level",
-          type: "select",
-          required: false,
-          placeholder: "Select Experience Level",
-          options: [
-            { value: "beginner", label: "Beginner" },
-            { value: "intermediate", label: "Intermediate" },
-            { value: "expert", label: "Expert" }
-          ]
-        },
-        {
-          name: "skillRating",
-          label: "Ratings *",
-          type: "select",
-          required: true,
-          validationRule: "requiredField",
-          placeholder: "Select Rating",
-          options: [
-            { value: "0", label: "0" },
-            { value: "1", label: "1" },
-            { value: "2", label: "2" },
-            { value: "3", label: "3" },
-            { value: "4", label: "4" },
-            { value: "5", label: "5" }
-          ]
-        },
-        {
-          name: "secondarySkillRating",
-          label: "Secondary Ratings",
-          type: "select",
-          required: false,
-          placeholder: "Select Rating",
-          options: [
-            { value: "0", label: "0" },
-            { value: "1", label: "1" },
-            { value: "2", label: "2" },
-            { value: "3", label: "3" },
-            { value: "4", label: "4" },
-            { value: "5", label: "5" }
-          ]
-        },
-        {
-          name: "skillExperienceYears",
-          label: "Experience (Years) *",
-          type: "number",
-          required: true,
-          validationRule: "requiredField",
-          allowDecimal: true,
-          placeholder: "Enter years"
-        },
-        {
-          name: "secondarySkillExperienceYears",
-          label: "Secondary Experience (Years)",
-          type: "number",
-          required: false,
-          allowDecimal: true,
-          placeholder: "Enter years"
         },
         {
           name: "recruiterId",
@@ -1254,7 +1143,7 @@ export const candidateConfig = {
           noticePeriod: 'Notice Period',
           currentCtc: 'Current CTC',
           expectedCtc: 'Expected CTC',
-          primarySkill: 'Primary Skill',
+          primarySkill: 'Skill Set',
           secondarySkill: 'Secondary Skill',
           skillExperienceLevel: 'Experience Level',
           secondarySkillExperienceLevel: 'Secondary Experience Level',
