@@ -11,6 +11,7 @@ import {
 } from "react-icons/fi";
 import ReusableForm from "../../components/forms/ReusableForm";
 import { employeeConfig } from "../../components/forms/formConfigs";
+import { addEmployee, fetchActiveEmployees, updateEmployee, exitEmployee } from "../../api/headcountService";
 
 const HEADCOUNT_STORAGE_KEY = "headcount:employees:v1";
 
@@ -68,10 +69,12 @@ const getUniqueOptions = (employees, fieldName) =>
 export default function Headcount() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [employees, setEmployees] = useState(() => loadEmployees());
+  const [employees, setEmployees] = useState([]);
   const [isAddingEmployee, setIsAddingEmployee] = useState(false);
   const [formData, setFormData] = useState(() => getInitialForm());
   const [editingEmployeeId, setEditingEmployeeId] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState(() =>
     location.state?.headcountTab === "exited" ? "exited" : "active"
   );
@@ -256,33 +259,63 @@ export default function Headcount() {
     setCurrentPage(Math.min(totalPages, visiblePage + 1));
   };
 
-  const handleSubmit = (data) => {
-    const employeeData = { ...data };
-    delete employeeData.serialNumber;
-
-    const normalizedEmployee = {
-      ...employeeData,
-      employeeId: editingEmployeeId || data.employeeId || createEmployeeId(),
-      consultantName: String(employeeData.consultantName || "").trim(),
+  // Load employees from API on component mount
+  useEffect(() => {
+    const loadEmployees = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const data = await fetchActiveEmployees({ page: 1, limit: 1000 });
+        setEmployees(Array.isArray(data) ? data : (data?.content || []));
+      } catch (err) {
+        setError("Failed to load employees");
+        console.error("Error loading employees:", err);
+      } finally {
+        setIsLoading(false);
+      }
     };
 
-    setEmployees((current) => {
+    loadEmployees();
+  }, []);
+
+  const handleSubmit = async (data) => {
+    try {
+      const employeeData = { ...data };
+      delete employeeData.serialNumber;
+
+      const normalizedEmployee = {
+        ...employeeData,
+        consultantName: String(employeeData.consultantName || "").trim(),
+      };
+
       if (editingEmployeeId !== null) {
-        return current.map((employee) =>
-          String(getEmployeeId(employee)) === String(editingEmployeeId)
-            ? (() => {
-                const updatedEmployee = { ...employee, ...normalizedEmployee };
-                delete updatedEmployee.serialNumber;
-                return updatedEmployee;
-              })()
-            : employee
+        // Update existing employee via API
+        await updateEmployee(editingEmployeeId, normalizedEmployee);
+        setEmployees((current) =>
+          current.map((employee) =>
+            String(getEmployeeId(employee)) === String(editingEmployeeId)
+              ? { ...employee, ...normalizedEmployee }
+              : employee
+          )
         );
+      } else {
+        // Add new employee via API
+        const newEmployeeResponse = await addEmployee(normalizedEmployee);
+        const newEmployee = {
+          ...normalizedEmployee,
+          ...newEmployeeResponse,
+          isExited: false,
+          status: "active",
+        };
+        setEmployees((current) => [...current, newEmployee]);
       }
 
-      return [...current, { ...normalizedEmployee, isExited: false, status: "active" }];
-    });
-    setIsAddingEmployee(false);
-    setEditingEmployeeId(null);
+      setIsAddingEmployee(false);
+      setEditingEmployeeId(null);
+    } catch (err) {
+      setError("Failed to save employee. Please try again.");
+      console.error("Error saving employee:", err);
+    }
   };
 
   const employeeFormConfig = useMemo(
@@ -294,6 +327,20 @@ export default function Headcount() {
     }),
     []
   );
+
+  if (isLoading) {
+    return (
+      <div className={styles.page} aria-label="Headcount">
+        <section className={styles.card}>
+          <div className={styles.infoRow}>
+            <div className={styles.infoContent}>
+              <p className={styles.description}><strong>Loading Headcount Data...</strong></p>
+            </div>
+          </div>
+        </section>
+      </div>
+    );
+  }
 
   if (isAddingEmployee) {
     return (
@@ -325,6 +372,11 @@ export default function Headcount() {
   return (
     <div className={styles.page} aria-label="Headcount">
       <section className={styles.card}>
+        {error && (
+          <div className={styles.errorBanner} style={{ color: '#d32f2f', padding: '12px', marginBottom: '16px', backgroundColor: '#ffebee', borderRadius: '4px', border: '1px solid #ef5350' }}>
+            {error}
+          </div>
+        )}
         <div className={styles.tableSection}>
           <div className={styles.tabsHeader}>
             <div className={styles.tabs} role="tablist" aria-label="Headcount employee status">
