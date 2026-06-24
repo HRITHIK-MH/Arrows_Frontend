@@ -1546,6 +1546,89 @@
   margin-bottom: 0;
 }
 
+.candidate-skill-multiselect {
+  width: 100%;
+}
+
+.reusable-form-page.candidate-form .candidate-skill-multiselect .selected-items {
+  background: #eef2f6;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  color: #334155;
+  font-size: 12px;
+  min-height: 38px;
+  padding: 8px 36px 8px 12px;
+}
+
+.reusable-form-page.candidate-form .candidate-skill-multiselect .selected-item {
+  border-radius: 999px;
+  font-size: 11px;
+  padding: 3px 8px;
+}
+
+.reusable-form-page.candidate-form .candidate-skill-multiselect .selected-placeholder {
+  font-size: 12px;
+}
+
+.reusable-form-page.candidate-form .candidate-skill-multiselect .multiselect-dropdown {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 16px 30px rgba(15, 23, 42, 0.12);
+  padding: 14px;
+}
+
+.reusable-form-page.candidate-form .candidate-skill-multiselect .multiselect-search {
+  border-color: #bcd0ff;
+  font-size: 12px;
+  min-height: 38px;
+  padding: 8px 12px;
+}
+
+.reusable-form-page.candidate-form .candidate-skill-multiselect .multiselect-options {
+  gap: 8px;
+}
+
+.reusable-form-page.candidate-form .candidate-skill-multiselect .multiselect-option {
+  font-size: 12px;
+  line-height: 1.2;
+  margin-bottom: 0;
+  padding: 2px 4px;
+}
+
+.reusable-form-page.candidate-form .candidate-skill-multiselect .multiselect-option input {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 16px;
+  min-width: 16px;
+  height: 16px;
+  min-height: 16px;
+  padding: 0;
+  margin: 0;
+  flex: 0 0 16px;
+  border: 1px solid #565d64;
+  border-radius: 4px;
+  background: #eff1f4;
+  cursor: pointer;
+  position: relative;
+}
+
+.reusable-form-page.candidate-form .candidate-skill-multiselect .multiselect-option input:checked {
+  background: #1f6ad7;
+  border-color: #1f6ad7;
+}
+
+.reusable-form-page.candidate-form .candidate-skill-multiselect .multiselect-option input:checked::after {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 1px;
+  width: 5px;
+  height: 9px;
+  border: solid #ffffff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
 .secondary-skill-grid {
   margin-top: 10px;
 }

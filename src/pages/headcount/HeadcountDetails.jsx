@@ -2,6 +2,7 @@ import styles from "./Headcount.module.scss";
 import { FiChevronLeft, FiEdit2, FiX } from "react-icons/fi";
 import { useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { exitEmployee } from "../../api/headcountService";
 
 const HEADCOUNT_STORAGE_KEY = "headcount:employees:v1";
 
@@ -90,7 +91,7 @@ export default function HeadcountDetails() {
     }
   };
 
-  const saveExitDetails = (event) => {
+  const saveExitDetails = async (event) => {
     event.preventDefault();
 
     const nextErrors = {};
@@ -112,31 +113,16 @@ export default function HeadcountDetails() {
       savedAt: new Date().toISOString(),
     };
 
-    const employeeData = { ...employee };
-    delete employeeData.serialNumber;
-
-    const updatedEmployee = {
-      ...employeeData,
-      employeeId: getEmployeeId(employee),
-      exitDetails,
-      isExited: true,
-      status: "exited",
-    };
-
     try {
-      const rawEmployees = localStorage.getItem(HEADCOUNT_STORAGE_KEY);
-      const employees = rawEmployees ? JSON.parse(rawEmployees) : [];
-      const currentEmployees = Array.isArray(employees) ? employees : [];
-      const hasExistingEmployee = currentEmployees.some(
-        (item) => String(getEmployeeId(item)) === String(getEmployeeId(employee))
-      );
-      const updatedEmployees = hasExistingEmployee
-        ? currentEmployees.map((item) =>
-            String(getEmployeeId(item)) === String(getEmployeeId(employee)) ? updatedEmployee : item
-          )
-        : [...currentEmployees, updatedEmployee];
-
-      localStorage.setItem(HEADCOUNT_STORAGE_KEY, JSON.stringify(updatedEmployees));
+      await exitEmployee(getEmployeeId(employee), exitDetails);
+      
+      const updatedEmployee = {
+        ...employee,
+        exitDetails,
+        isExited: true,
+        status: "exited",
+      };
+      
       setEmployee(updatedEmployee);
       setIsExitModalOpen(false);
       setExitErrors({});

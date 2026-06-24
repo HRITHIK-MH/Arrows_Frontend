@@ -1446,7 +1446,7 @@ export default function JobOpenings({ createMode = false }) {
             };
           }
 
-          if ((field.name === "technicalSkills" || field.name === "addTechnicalSkills") && technicalSkillOptions.length > 0) {
+          if (field.name === "technicalSkills" && technicalSkillOptions.length > 0) {
             return {
               ...field,
               options: technicalSkillOptions,

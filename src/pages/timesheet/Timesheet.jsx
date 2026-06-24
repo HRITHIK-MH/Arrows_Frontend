@@ -1,7 +1,7 @@
 import React, { Suspense } from "react";
 
 const TimesheetsPage = React.lazy(() =>
-  import("../../modules/timesheets/pages/TimesheetsPage.tsx").then((m) => ({ default: m.TimesheetsPage }))
+  import("../../modules/timesheets/pages/TimesheetsPage.jsx").then((m) => ({ default: m.TimesheetsPage }))
 );
 
 export default function Timesheet() {

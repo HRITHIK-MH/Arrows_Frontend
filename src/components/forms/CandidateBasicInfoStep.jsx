@@ -1081,77 +1081,20 @@ const CandidateBasicInfoStep = ({
     );
   };
 
-  const skills = formData.skills || [
-    {
-      primarySkill: "",
-      enableSecondarySkill: false,
-      secondarySkill: "",
-      skillExperienceLevel: "",
-      skillExperienceYears: "",
-      skillRating: "",
-      skillComments: "",
-      secondarySkillExperienceLevel: "",
-      secondarySkillExperienceYears: "",
-      secondarySkillRating: "",
-      secondarySkillComments: ""
-    }
+  const selectedSkills = [
+    ...new Set(
+      (Array.isArray(formData.skills) ? formData.skills : [])
+        .map((skill) => skill?.primarySkill)
+        .filter(Boolean)
+    ),
   ];
 
-  const handleAddField = () => {
-    const newSkills = [
-      ...skills,
-      {
-        primarySkill: "",
-        enableSecondarySkill: false,
-        secondarySkill: "",
-        skillExperienceLevel: "",
-        skillExperienceYears: "",
-        skillRating: "",
-        skillComments: "",
-        secondarySkillExperienceLevel: "",
-        secondarySkillExperienceYears: "",
-        secondarySkillRating: "",
-        secondarySkillComments: ""
-      }
-    ];
-    onChange("skills", newSkills);
+  const handleSkillsChange = (_, values) => {
+    const nextSkills = (Array.isArray(values) ? values : []).map((primarySkill) => ({
+      primarySkill,
+    }));
+    onChange("skills", nextSkills);
   };
-
-  const handleRemoveField = (index) => {
-    const newSkills = skills.filter((_, i) => i !== index);
-    onChange("skills", newSkills);
-  };
-
-  const handleSkillChange = (index, fieldName, value) => {
-    const newSkills = [...skills];
-    newSkills[index] = { ...newSkills[index], [fieldName]: value };
-    onChange("skills", newSkills);
-  };
-
-  const toggleSecondarySkill = (index, enabled) => {
-    const newSkills = [...skills];
-    const current = newSkills[index] || {};
-
-    if (enabled) {
-      newSkills[index] = { ...current, enableSecondarySkill: true };
-    } else {
-      newSkills[index] = {
-        ...current,
-        enableSecondarySkill: false,
-        secondarySkill: "",
-        secondarySkillExperienceLevel: "",
-        secondarySkillExperienceYears: "",
-        secondarySkillRating: "",
-        secondarySkillComments: "",
-      };
-    }
-
-    onChange("skills", newSkills);
-  };
-
-  const isAddButtonDisabled = skills.some(
-    skill => !skill.primarySkill || !skill.skillExperienceLevel || !skill.skillExperienceYears || !skill.skillRating
-  );
 
   return (
     <div className="candidate-step">
@@ -1275,179 +1218,15 @@ const CandidateBasicInfoStep = ({
           <div className="candidate-section-divider" />
         </div>
 
-        {skills.map((skill, index) => (
-          <div key={index} className="skill-row-container">
-            <div className="candidate-grid">
-              <div className="candidate-cell">
-                <FormField
-                  {...fieldMap.primarySkill}
-                  value={skill.primarySkill}
-                  onChange={(_, value) => handleSkillChange(index, "primarySkill", value)}
-                  formData={formData}
-                  hideLabel={index > 0}
-                />
-              </div>
-              <div className="candidate-cell skill-split-cell">
-                <div className="skill-split-fields">
-                  <FormField
-                    {...fieldMap.skillExperienceLevel}
-                    value={skill.skillExperienceLevel}
-                    onChange={(_, value) => handleSkillChange(index, "skillExperienceLevel", value)}
-                    formData={formData}
-                    hideLabel={index > 0}
-                  />
-                  <FormField
-                    {...fieldMap.skillExperienceYears}
-                    value={skill.skillExperienceYears}
-                    onChange={(_, value) => handleSkillChange(index, "skillExperienceYears", value)}
-                    formData={formData}
-                    hideLabel={index > 0}
-                  />
-                </div>
-              </div>
-              <div className="candidate-cell skill-split-cell">
-                <div className="skill-split-fields">
-                  <div className="form-field skill-rating-field">
-                    {index === 0 && (
-                      <label>
-                        {fieldMap.skillRating?.label || "Ratings *"}
-                      </label>
-                    )}
-                    <div className="skill-rating-stars" role="radiogroup" aria-label="Skill rating">
-                      {[1, 2, 3, 4, 5].map((starValue) => {
-                        const currentRating = Number.parseInt(String(skill.skillRating || "0"), 10);
-                        const isActive = Number.isFinite(currentRating) && starValue <= currentRating;
-
-                        return (
-                          <button
-                            key={starValue}
-                            type="button"
-                            className={`skill-rating-star${isActive ? " active" : ""}`}
-                            onClick={() => handleSkillChange(index, "skillRating", String(starValue))}
-                            aria-label={`Set rating ${starValue}`}
-                            aria-pressed={isActive}
-                            title={`${starValue} star${starValue > 1 ? "s" : ""}`}
-                          >
-                            ★
-                          </button>
-                        );
-                      })}
-                    </div>
-                    {index === 0 && validationErrors.skillRating && (
-                      <div className="error-message">{validationErrors.skillRating}</div>
-                    )}
-                  </div>
-                </div>
-                {skills.length > 1 && (
-                  <button
-                    type="button"
-                    className="remove-skill-button"
-                    onClick={() => handleRemoveField(index)}
-                    title="Remove Skill"
-                  >
-                    ×
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {(skill.enableSecondarySkill || skill.secondarySkill) && (
-              <div className="candidate-grid secondary-skill-grid">
-                <div className="candidate-cell">
-                  {fieldMap.secondarySkill && (
-                    <FormField
-                      {...fieldMap.secondarySkill}
-                      value={skill.secondarySkill || ""}
-                      onChange={(_, value) => handleSkillChange(index, "secondarySkill", value)}
-                      formData={formData}
-                      hideLabel={index > 0}
-                    />
-                  )}
-                </div>
-                <div className="candidate-cell skill-split-cell">
-                  <div className="skill-split-fields">
-                    <FormField
-                      {...fieldMap.secondarySkillExperienceLevel}
-                      value={skill.secondarySkillExperienceLevel || ""}
-                      onChange={(_, value) => handleSkillChange(index, "secondarySkillExperienceLevel", value)}
-                      formData={formData}
-                      hideLabel={index > 0}
-                    />
-                    <FormField
-                      {...fieldMap.secondarySkillExperienceYears}
-                      value={skill.secondarySkillExperienceYears || ""}
-                      onChange={(_, value) => handleSkillChange(index, "secondarySkillExperienceYears", value)}
-                      formData={formData}
-                      hideLabel={index > 0}
-                    />
-                  </div>
-                </div>
-                <div className="candidate-cell skill-split-cell">
-                  <div className="skill-split-fields">
-                    <div className="form-field skill-rating-field">
-                      {index === 0 && (
-                        <label>
-                          {fieldMap.secondarySkillRating?.label || "Secondary Ratings"}
-                        </label>
-                      )}
-                      <div className="skill-rating-stars" role="radiogroup" aria-label="Secondary skill rating">
-                        {[1, 2, 3, 4, 5].map((starValue) => {
-                          const currentRating = Number.parseInt(String(skill.secondarySkillRating || "0"), 10);
-                          const isActive = Number.isFinite(currentRating) && starValue <= currentRating;
-
-                          return (
-                            <button
-                              key={`secondary-${starValue}`}
-                              type="button"
-                              className={`skill-rating-star${isActive ? " active" : ""}`}
-                              onClick={() => handleSkillChange(index, "secondarySkillRating", String(starValue))}
-                              aria-label={`Set secondary rating ${starValue}`}
-                              aria-pressed={isActive}
-                              title={`${starValue} star${starValue > 1 ? "s" : ""}`}
-                            >
-                              ★
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="candidate-cell secondary-skill-actions-cell">
-                  <button
-                    type="button"
-                    className="secondary-skill-toggle remove"
-                    onClick={() => toggleSecondarySkill(index, false)}
-                  >
-                    Remove Secondary Skill
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {!(skill.enableSecondarySkill || skill.secondarySkill) && (
-              <div className="secondary-skill-actions">
-                <button
-                  type="button"
-                  className="secondary-skill-toggle"
-                  onClick={() => toggleSecondarySkill(index, true)}
-                >
-                  Add Secondary Skill (Optional)
-                </button>
-              </div>
-            )}
+        <div className="candidate-grid">
+          <div className="candidate-cell candidate-skill-multiselect">
+            <FormField
+              {...fieldMap.primarySkill}
+              value={selectedSkills}
+              onChange={handleSkillsChange}
+              formData={formData}
+            />
           </div>
-        ))}
-
-        <div className="candidate-section-actions">
-          <button
-            type="button"
-            className={`add-skill-button ${isAddButtonDisabled ? 'disabled' : ''}`}
-            onClick={handleAddField}
-            disabled={isAddButtonDisabled}
-          >
-            Add Primary Skill
-          </button>
         </div>
       </div>
 
