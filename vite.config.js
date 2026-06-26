@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react-swc'
 import process from 'node:process'
 import path from 'node:path'
 
-const DEFAULT_SUPERSET_URL = 'http://172.208.48.83:8088';
+const DEFAULT_SUPERSET_URL = 'https://dev.superset.arrowshub.com/';
 
 function trimTrailingSlash(url) {
   return String(url || '').trim().replace(/\/+$/, '');

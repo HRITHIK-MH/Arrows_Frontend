@@ -6,7 +6,7 @@ import { resolveEmbedSupersetDomain } from "../../utils/embedSupersetDomain";
 import { DASHBOARD_UUID_MAP } from "../../utils/constants";
 
 const FALLBACK_SUPERSET_URL =
-  import.meta.env.VITE_SUPERSET_URL || "http://172.208.48.83:8088";
+  import.meta.env.VITE_SUPERSET_URL || "https://dev.superset.arrowshub.com/";
 
 const FALLBACK_EMBED_UUID =
   import.meta.env.VITE_SUPERSET_EMBED_ID || DASHBOARD_UUID_MAP.default;
