@@ -30,6 +30,8 @@ const TimesheetEntry = lazy(() => import("./pages/timesheet/TimesheetEntry.jsx")
 const UserRoles = lazy(() => import("./pages/user-roles/UserRoles.jsx"));
 const Calendar = lazy(() => import("./pages/calendar/Calendar.jsx"));
 const ApplicationForm = lazy(() => import("./pages/application/ApplicationForm.jsx"));
+const ProfilePage = lazy(() => import("./pages/profile/ProfilePage.jsx"));
+const SettingsPage = lazy(() => import("./pages/profile/SettingsPage.jsx"));
 
 // Loading fallback component
 const LoadingFallback = () => (
@@ -69,11 +71,6 @@ export default function App() {
   useEffect(() => {
     console.log('Route changed to:', location.pathname);
   }, [location.pathname]);
-
-  useEffect(() => {
-    document.documentElement.classList.remove("dark");
-    document.documentElement.style.backgroundColor = "#ffffff";
-  }, []);
 
   useEffect(() => {
     const shouldLockScroll = location.pathname !== "/login" && isSidebarOpen && window.innerWidth <= 768;
@@ -176,6 +173,8 @@ export default function App() {
             <Route path="/calendar" element={<RequireAuth><Calendar /></RequireAuth>} />
             <Route path="/users" element={<RequireAuth><UserRoles /></RequireAuth>} />
             <Route path="/application" element={<RequireAuth><ApplicationForm /></RequireAuth>} />
+            <Route path="/profile" element={<RequireAuth><ProfilePage /></RequireAuth>} />
+            <Route path="/settings" element={<RequireAuth><SettingsPage /></RequireAuth>} />
 
             {/* TODO: add /chat route */}
             <Route path="*" element={isAuthenticated() ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />} />

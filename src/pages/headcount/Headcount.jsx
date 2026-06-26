@@ -1,6 +1,6 @@
 import styles from "./Headcount.module.scss";
 import { useEffect, useMemo, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import {
   FiChevronLeft,
   FiChevronRight,
@@ -11,7 +11,7 @@ import {
 } from "react-icons/fi";
 import ReusableForm from "../../components/forms/ReusableForm";
 import { employeeConfig } from "../../components/forms/formConfigs";
-import { addEmployee, fetchActiveEmployees, updateEmployee, exitEmployee } from "../../api/headcountService";
+import { addEmployee, fetchActiveEmployees, updateEmployee } from "../../api/headcountService";
 
 const HEADCOUNT_STORAGE_KEY = "headcount:employees:v1";
 
@@ -23,7 +23,7 @@ const getInitialForm = () => {
   return initial;
 };
 
-const loadEmployees = () => {
+const loadStoredEmployees = () => {
   try {
     const rawEmployees = localStorage.getItem(HEADCOUNT_STORAGE_KEY);
     const parsedEmployees = rawEmployees ? JSON.parse(rawEmployees) : [];
@@ -66,10 +66,30 @@ const getUniqueOptions = (employees, fieldName) =>
   [...new Set(employees.map((employee) => String(employee[fieldName] || "").trim()).filter(Boolean))]
     .sort((a, b) => a.localeCompare(b));
 
+const extractEmployeeList = (data) => {
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data?.content)) return data.content;
+  if (Array.isArray(data?.data)) return data.data;
+  if (Array.isArray(data?.data?.content)) return data.data.content;
+  if (Array.isArray(data?.employees)) return data.employees;
+  return [];
+};
+
+const mergeWithStoredExitedEmployees = (apiEmployees, storedEmployees) => {
+  const apiEmployeeIds = new Set(apiEmployees.map((employee) => String(getEmployeeId(employee))));
+  const storedExitedEmployees = storedEmployees.filter(
+    (employee) => isExitedEmployee(employee) && !apiEmployeeIds.has(String(getEmployeeId(employee)))
+  );
+
+  return [...apiEmployees, ...storedExitedEmployees];
+};
+
 export default function Headcount() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [employees, setEmployees] = useState([]);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const formAction = searchParams.get("action");
+  const [employees, setEmployees] = useState(() => loadStoredEmployees());
   const [isAddingEmployee, setIsAddingEmployee] = useState(false);
   const [formData, setFormData] = useState(() => getInitialForm());
   const [editingEmployeeId, setEditingEmployeeId] = useState(null);
@@ -175,8 +195,8 @@ export default function Headcount() {
     setFormData(editEmployee);
     setEditingEmployeeId(getEmployeeId(editEmployee) ?? null);
     setIsAddingEmployee(true);
-    navigate("/headcount", { replace: true, state: null });
-  }, [location.state, navigate]);
+    setSearchParams({ action: "edit" }, { replace: true, state: null });
+  }, [location.state, setSearchParams]);
 
   useEffect(() => {
     const requestedTab = location.state?.headcountTab;
@@ -186,16 +206,34 @@ export default function Headcount() {
     navigate("/headcount", { replace: true, state: null });
   }, [location.state, navigate]);
 
+  useEffect(() => {
+    if (location.state?.editEmployee) return;
+
+    if (formAction === "add" && !isAddingEmployee) {
+      setFormData(getInitialForm());
+      setEditingEmployeeId(null);
+      setActiveTab("active");
+      setIsAddingEmployee(true);
+      return;
+    }
+
+    if (!formAction && isAddingEmployee && editingEmployeeId === null) {
+      setIsAddingEmployee(false);
+    }
+  }, [editingEmployeeId, formAction, isAddingEmployee, location.state]);
+
   const openForm = () => {
     setFormData(getInitialForm());
     setEditingEmployeeId(null);
     setActiveTab("active");
     setIsAddingEmployee(true);
+    setSearchParams({ action: "add" });
   };
 
   const closeForm = () => {
     setIsAddingEmployee(false);
     setEditingEmployeeId(null);
+    setSearchParams({});
   };
 
   const updateActiveFilter = (fieldName, value) => {
@@ -266,9 +304,23 @@ export default function Headcount() {
       setError(null);
       try {
         const data = await fetchActiveEmployees({ page: 1, limit: 1000 });
-        setEmployees(Array.isArray(data) ? data : (data?.content || []));
+        setEmployees(mergeWithStoredExitedEmployees(extractEmployeeList(data), loadStoredEmployees()));
       } catch (err) {
-        setError("Failed to load employees");
+        setEmployees((current) => {
+          if (current.length > 0) {
+            setError(null);
+            return current;
+          }
+
+          const savedEmployees = loadStoredEmployees();
+          if (savedEmployees.length > 0) {
+            setError(null);
+            return savedEmployees;
+          }
+
+          setError("Failed to load employees");
+          return current;
+        });
         console.error("Error loading employees:", err);
       } finally {
         setIsLoading(false);
@@ -278,8 +330,19 @@ export default function Headcount() {
     loadEmployees();
   }, []);
 
+  useEffect(() => {
+    if (!error) return undefined;
+
+    const timer = window.setTimeout(() => {
+      setError(null);
+    }, 4000);
+
+    return () => window.clearTimeout(timer);
+  }, [error]);
+
   const handleSubmit = async (data) => {
     try {
+      setError(null);
       const employeeData = { ...data };
       delete employeeData.serialNumber;
 
@@ -290,7 +353,11 @@ export default function Headcount() {
 
       if (editingEmployeeId !== null) {
         // Update existing employee via API
-        await updateEmployee(editingEmployeeId, normalizedEmployee);
+        try {
+          await updateEmployee(editingEmployeeId, normalizedEmployee);
+        } catch (err) {
+          console.warn("Headcount API update failed; saving locally instead:", err);
+        }
         setEmployees((current) =>
           current.map((employee) =>
             String(getEmployeeId(employee)) === String(editingEmployeeId)
@@ -300,10 +367,16 @@ export default function Headcount() {
         );
       } else {
         // Add new employee via API
-        const newEmployeeResponse = await addEmployee(normalizedEmployee);
+        let newEmployeeResponse = {};
+        try {
+          newEmployeeResponse = await addEmployee(normalizedEmployee);
+        } catch (err) {
+          console.warn("Headcount API add failed; saving locally instead:", err);
+        }
         const newEmployee = {
           ...normalizedEmployee,
           ...newEmployeeResponse,
+          employeeId: getEmployeeId(newEmployeeResponse) || createEmployeeId(),
           isExited: false,
           status: "active",
         };
@@ -312,6 +385,7 @@ export default function Headcount() {
 
       setIsAddingEmployee(false);
       setEditingEmployeeId(null);
+      setSearchParams({});
     } catch (err) {
       setError("Failed to save employee. Please try again.");
       console.error("Error saving employee:", err);
@@ -372,7 +446,7 @@ export default function Headcount() {
   return (
     <div className={styles.page} aria-label="Headcount">
       <section className={styles.card}>
-        {error && (
+        {error && employees.length === 0 && (
           <div className={styles.errorBanner} style={{ color: '#d32f2f', padding: '12px', marginBottom: '16px', backgroundColor: '#ffebee', borderRadius: '4px', border: '1px solid #ef5350' }}>
             {error}
           </div>

@@ -22,40 +22,11 @@ export default function Dashboard() {
 
   const stats = [
     { title: "Total Open Positions", value: jobs.length || "0", sub: "Live openings", tone: "blue" },
-    { title: "Core Clients", value: "94", sub: "Total Clients", tone: "blue" },
-    { title: "Requirements", value: "1200", sub: "This Week", tone: "peach" },
-    { title: "New Hire", value: "210", sub: "This Week", tone: "lavender" },
   ];
 
-  const tasks = [
-    { title: "Review High Priority Role Applications", progress: 75, tone: "green" },
-    { title: "Schedule Candidate Interviews", progress: 45, tone: "blue" },
-    { title: "Update Recruitment Tracker", progress: 60, tone: "gold" },
-  ];
-
-  const chart = [
-    { month: "Jan", height: 40 },
-    { month: "Feb", height: 55 },
-    { month: "Mar", height: 70 },
-    { month: "Apr", height: 88 },
-    { month: "May", height: 62 },
-    { month: "Jun", height: 76 },
-    { month: "Jul", height: 54 },
-    { month: "Aug", height: 60 },
-    { month: "Sep", height: 68 },
-    { month: "Oct", height: 92 },
-    { month: "Nov", height: 52 },
-    { month: "Dec", height: 78 },
-  ];
-
-  const candidates = [
-    { name: "Rohan Sharma", role: "Software Engineer", stage: "Interview Round 1", status: "In Review", badge: "blue", remarks: "Resume shortlisted" },
-    { name: "Divya Mehta", role: "Marketing Executive", stage: "Screening", status: "Scheduled", badge: "orange", remarks: "Awaiting candidate confirmation" },
-    { name: "Ahmed Khan", role: "HR Generalist", stage: "Offer Discussion", status: "Offer Sent", badge: "green", remarks: "Expected response today" },
-    { name: "Kunal Verma", role: "Data Analyst", stage: "Final Round", status: "In Progress", badge: "orange", remarks: "Panel interview scheduled" },
-    { name: "Pooja Singh", role: "UI/UX Designer", stage: "Hired", status: "Closed", badge: "purple", remarks: "Joining date: 20 Nov" },
-    { name: "Sanjay Patel", role: "Sales Manager", stage: "Rejected", status: "Closed", badge: "rose", remarks: "Not fit for role" },
-  ];
+  const tasks = [];
+  const chart = [];
+  const candidates = [];
 
   const fetchJobs = useCallback(async () => {
     setLoadingJobs(true);
@@ -146,14 +117,11 @@ export default function Dashboard() {
               <div className="progress-fill" style={{ width: "100%" }}></div>
             </div>
             <div className="status-legend">
-              <span><span className="legend-dot legend-purple"></span>Critical Roles 94</span>
-              <span><span className="legend-dot legend-orange"></span>Skilled Positions 50</span>
-              <span><span className="legend-dot legend-green"></span>Support Roles 45</span>
-              <span><span className="legend-dot legend-rose"></span>Entry-Level 55</span>
+              <span>No recruitment status data available.</span>
             </div>
             <div className="to-performer">
-              <span>To Performer: Daniel Esbella · IOS Developer</span>
-              <span>Performance 99%</span>
+              <span>-</span>
+              <span>-</span>
             </div>
           </div>
           <div className="tasks">
@@ -209,10 +177,11 @@ export default function Dashboard() {
                 ))}
               </tbody>
             </table>
-            <div className="stat-sub">Showing 6 of 20 entries</div>
+            <div className="stat-sub">Showing {candidates.length} entries</div>
           </div>
         </div>
       </main>
     </div>
   );
 }
+

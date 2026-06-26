@@ -130,8 +130,11 @@ function newTimesheetUrl(date?: string) {
 
 export function TimesheetsPage() {
   const navigate = useNavigate();
-  // Use a mock user for demo purposes (no Redux Provider required)
-  const user = { id: "usr-001", role: "employee", name: "Aarav Mehta" };
+  const user = {
+    id: window.localStorage.getItem("userEmail") || "current-user",
+    role: window.localStorage.getItem("userRole") || "employee",
+    name: window.localStorage.getItem("userName") || "",
+  };
   const [entries, setEntries] = useState<TimesheetCalendarEntry[]>(() => getTimesheetEntries());
   const [month, setMonth] = useState(currentMonthValue());
   const [selectedDate, setSelectedDate] = useState(dateKey(new Date()));

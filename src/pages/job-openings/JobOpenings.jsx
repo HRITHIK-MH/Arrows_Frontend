@@ -32,10 +32,7 @@ import { saveTeamMembers as saveTeamMembersApi } from "../../api/teamService";
 import { getClientOptions, loadClientRows } from "../../utils/clientStore";
 import styles from "./JobOpenings.module.scss";
 
-const DEFAULT_TEAM_MEMBERS = [
-  { id: "A83261", name: "Rahul Mehta" },
-  { id: "A83233", name: "Priya Sharma" },
-];
+const DEFAULT_TEAM_MEMBERS = [];
 
 const resolveUserName = () => {
   const email = localStorage.getItem("userEmail");
@@ -48,16 +45,27 @@ const resolveUserName = () => {
         .join(" ");
     }
   }
-  return localStorage.getItem("userName") || "Divya Mehta";
+  return localStorage.getItem("userName") || "";
 };
 
 const JOB_OPENING_DRAFT_STORAGE_KEY = "job-openings:add-draft:v1";
 const JOB_OPENING_TABLE_STORAGE_KEY = "job-openings:table:v1";
 const createJobOpeningDraftId = () => `draft-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+const SEEDED_JOB_OPENING_IDS = new Set(["ZR_1_JOB", "ZR_2_JOB", "ZR_3_JOB", "ZR_4_JOB"]);
+const SEEDED_JOB_OPENING_TITLES = new Set(["senior react developer", "product manager", "ui/ux designer"]);
 const isUuid = (value) =>
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
     String(value || "").trim(),
   );
+
+const isSeededJobOpeningRow = (row) => {
+  const jobId = String(row?.openingJobId || row?.jobPositionId || row?.jobId || "").trim();
+  const postingTitle = String(row?.postingTitle || row?.positionName || row?.jobTitle || "").trim().toLowerCase();
+  return SEEDED_JOB_OPENING_IDS.has(jobId) || SEEDED_JOB_OPENING_TITLES.has(postingTitle);
+};
+
+const cleanSeededJobOpeningRows = (rows = []) =>
+  rows.filter((row) => !isSeededJobOpeningRow(row));
 
 const saveJobOpeningTableData = (rows) => {
   try {
@@ -76,6 +84,17 @@ const getJobOpeningSequence = (value) => {
 
 const getJobOpeningIdValue = (item) =>
   item?.jobPositionId || item?.openingJobId || item?.jobId || "";
+
+const compareJobOpeningIds = (leftJobId, rightJobId) => {
+  const leftSequence = getJobOpeningSequence(leftJobId);
+  const rightSequence = getJobOpeningSequence(rightJobId);
+
+  if (leftSequence !== rightSequence) {
+    return leftSequence - rightSequence;
+  }
+
+  return String(leftJobId || "").localeCompare(String(rightJobId || ""));
+};
 
 const normalizeOptionKey = (value) =>
   String(value || "")
@@ -421,164 +440,17 @@ export default function JobOpenings({ createMode = false }) {
       const savedData = localStorage.getItem(JOB_OPENING_TABLE_STORAGE_KEY);
       const parsedData = savedData ? JSON.parse(savedData) : null;
       if (Array.isArray(parsedData) && parsedData.length > 0) {
-        return parsedData;
+        const cleanedRows = cleanSeededJobOpeningRows(parsedData);
+        if (cleanedRows.length !== parsedData.length) {
+          saveJobOpeningTableData(cleanedRows);
+        }
+        return cleanedRows;
       }
     } catch (error) {
       console.error("Failed to load saved job openings:", error);
     }
 
-    return [
-      {
-        jobPositionId: "JOP-001",
-        positionName: "Senior React Developer",
-        minExperience: 4,
-        maxExperience: 7,
-        jobDescriptionLink: "https://example.com/jd/react",
-        positionLevel: "senior",
-        location: "Delhi",
-        noOfPositions: 2,
-        jobReceivedDate: "2026-01-12",
-        hiringType: "on-site",
-        minSalary: 1200000,
-        maxSalary: 2000000,
-        jobType: "full-time",
-        technicalSkills: ["react", "javascript", "typescript"],
-        softSkills: ["communication", "teamwork"],
-        additionalSkills: "Redux",
-        addTechnicalSkills: ["machine-learning", "azure"],
-        clientId: "C1292938",
-        clientName: "MethodHub",
-        contactPersonName: "Divya Mehta",
-        contactPersonEmail: "divya.mehta@email.com",
-        assignedRecruiters: "Asha, Rohan",
-        targetDate: "2026-02-15",
-        jobOpeningStatus: "Active",
-        priority: "High",
-        hiringManager: "Karthik Rao",
-        candidates: [
-          {
-            candidateId: "C001",
-            candidateName: "Rahul Mehta",
-            candidateEmail: "rahul.mehta@email.com",
-            modifiedTime: "11/10/2025 05:30 PM",
-            source: "Resume Inbox",
-            rating: "3/5",
-            stage: "Assessment",
-            round: "Round 3"
-          },
-          {
-            candidateId: "C002",
-            candidateName: "Arun Kumar",
-            candidateEmail: "arun.kumar@email.com",
-            modifiedTime: "11/10/2025 05:30 PM",
-            source: "LinkedIn",
-            rating: "4/5",
-            stage: "Client Interview",
-            round: "Round 4"
-          },
-          {
-            candidateId: "C003",
-            candidateName: "Priya Sharma",
-            candidateEmail: "priya.sharma@email.com",
-            modifiedTime: "11/10/2025 05:30 PM",
-            source: "Naukri",
-            rating: "2/5",
-            stage: "Pre-Screening",
-            round: "Round 2"
-          }
-        ]
-      },
-      {
-        jobPositionId: "JOP-002",
-        positionName: "Product Manager",
-        minExperience: 6,
-        maxExperience: 10,
-        jobDescriptionLink: "https://example.com/jd/pm",
-        positionLevel: "manager",
-        location: "Pune",
-        noOfPositions: 1,
-        jobReceivedDate: "2026-01-20",
-        hiringType: "remote",
-        minSalary: 1400000,
-        maxSalary: 2200000,
-        jobType: "contract",
-        technicalSkills: ["sql", "aws"],
-        softSkills: ["leadership", "communication"],
-        additionalSkills: "Roadmapping",
-        addTechnicalSkills: ["data-science"],
-        clientId: "C1292432",
-        clientName: "Arrows Inc",
-        contactPersonName: "Rahul Mehta",
-        contactPersonEmail: "rahul.mehta@email.com",
-        assignedRecruiters: "Priya, Naveen",
-        targetDate: "2026-03-01",
-        jobOpeningStatus: "Draft",
-        priority: "Medium",
-        hiringManager: "Sneha Nair",
-        candidates: [
-          {
-            candidateId: "C011",
-            candidateName: "Ananya Rao",
-            candidateEmail: "ananya.rao@email.com",
-            modifiedTime: "11/12/2025 11:20 AM",
-            source: "LinkedIn",
-            rating: "4/5",
-            stage: "Sourced",
-            round: "Round 1"
-          },
-          {
-            candidateId: "C012",
-            candidateName: "Vikram Singh",
-            candidateEmail: "vikram.singh@email.com",
-            modifiedTime: "11/12/2025 11:20 AM",
-            source: "Resume Inbox",
-            rating: "3/5",
-            stage: "Assessment",
-            round: "Round 2"
-          }
-        ]
-      },
-      {
-        jobPositionId: "JOP-003",
-        positionName: "UI/UX Designer",
-        minExperience: 3,
-        maxExperience: 6,
-        jobDescriptionLink: "https://example.com/jd/uiux",
-        positionLevel: "mid",
-        location: "Bangalore",
-        noOfPositions: 1,
-        jobReceivedDate: "2026-01-18",
-        hiringType: "hybrid",
-        minSalary: 900000,
-        maxSalary: 1400000,
-        jobType: "full-time",
-        technicalSkills: ["html", "css"],
-        softSkills: ["creativity", "presentation"],
-        additionalSkills: "Figma",
-        extraTechnicalSkills: ["computer-vision"],
-        clientId: "C1292921",
-        clientName: "NovaLabs",
-        contactPersonName: "Arjun Rao",
-        contactPersonEmail: "arjun.rao@email.com",
-        assignedRecruiters: "Nisha",
-        targetDate: "2026-02-05",
-        jobOpeningStatus: "Closed",
-        priority: "Low",
-        hiringManager: "Anitha Kumar",
-        candidates: [
-          {
-            candidateId: "C021",
-            candidateName: "Sneha Iyer",
-            candidateEmail: "sneha.iyer@email.com",
-            modifiedTime: "11/18/2025 03:00 PM",
-            source: "LinkedIn",
-            rating: "4/5",
-            stage: "Pre-Screening",
-            round: "Round 1"
-          }
-        ]
-      }
-    ];
+    return [];
   });
   const [showSuccessMessage, setShowSuccessMessage] = React.useState(false);
   const [successMessageText, setSuccessMessageText] = React.useState("Job opening created successfully");
@@ -923,6 +795,11 @@ export default function JobOpenings({ createMode = false }) {
 
     if (sortConfig.key) {
       result.sort((a, b) => {
+        if (sortConfig.key === "openingJobId") {
+          const comparison = compareJobOpeningIds(a.openingJobId, b.openingJobId);
+          return sortConfig.direction === 'asc' ? comparison : -comparison;
+        }
+
         const aValue = String(a[sortConfig.key] || '').toLowerCase();
         const bValue = String(b[sortConfig.key] || '').toLowerCase();
 
@@ -1901,9 +1778,9 @@ export default function JobOpenings({ createMode = false }) {
                   <h3>{selectedJobOpening.openingJobId || "-"}</h3>
                   <p>{selectedJobOpening.postingTitle || "-"}</p>
                   <div className={styles.drawerMeta}>
-                    <span>{selectedJobOpening.contactPersonEmail || "hr@email.com"}</span>
-                    <span><FiMapPin size={11} /> {selectedJobOpening.city || "Bangalore, India"}</span>
-                    <span><FiPhone size={11} /> 9876543210</span>
+                    <span>{selectedJobOpening.contactPersonEmail || "-"}</span>
+                    <span><FiMapPin size={11} /> {selectedJobOpening.city || selectedJobOpening.location || "-"}</span>
+                    <span><FiPhone size={11} /> {selectedJobOpening.contactPersonPhone || "-"}</span>
                   </div>
                 </div>
               </div>

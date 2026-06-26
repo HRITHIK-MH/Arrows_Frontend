@@ -73,6 +73,40 @@
   overflow-y: auto;
 }
 
+.page.formPage {
+  height: calc(100vh - var(--header-height));
+  min-height: 0;
+  overflow: hidden;
+}
+
+.card.formCard {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.card.formCard .formWrap {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+  margin-top: 0;
+  overflow: hidden;
+}
+
+.card.formCard :global(.reusable-form-page.candidate-form),
+.card.formCard :global(.multi-step-form) {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
 .infoRow {
   display: flex;
   align-items: center;
@@ -610,6 +644,12 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
+}
+
+.entrySummary {
+  color: #64748b;
+  white-space: nowrap;
 }
 
 .entriesSelect {

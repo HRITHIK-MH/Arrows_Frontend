@@ -3,6 +3,8 @@ import { FiSearch } from "react-icons/fi";
 import styles from "./Applications.module.scss";
 
 const JOB_OPENING_TABLE_STORAGE_KEY = "job-openings:table:v1";
+const SEEDED_JOB_OPENING_IDS = new Set(["ZR_1_JOB", "ZR_2_JOB", "ZR_3_JOB", "ZR_4_JOB"]);
+const SEEDED_JOB_OPENING_TITLES = new Set(["senior react developer", "product manager", "ui/ux designer"]);
 
 function normalizeText(value) {
   return String(value || "").trim();
@@ -27,6 +29,7 @@ function buildApplicationRows(jobRows = []) {
       "-";
 
     const candidates = Array.isArray(job.candidates) ? job.candidates : [];
+    if (SEEDED_JOB_OPENING_IDS.has(openingJobId) || SEEDED_JOB_OPENING_TITLES.has(postingTitle.toLowerCase())) return [];
 
     return candidates.map((candidate, candidateIndex) => ({
       id: `${openingJobId}-${normalizeText(candidate.candidateId) || candidateIndex}`,

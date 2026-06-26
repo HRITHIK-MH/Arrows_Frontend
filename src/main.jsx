@@ -10,7 +10,6 @@ import "./styles/globals.scss";
 // Optional font bundling:
 // import "@fontsource/poppins/400.css";
 // import "@fontsource/poppins/600.css";
-document.documentElement.classList.remove("dark");
 
 // Initialize performance monitoring
 initPerformanceMonitoring();

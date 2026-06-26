@@ -14,7 +14,6 @@ import ForgotPasswordModal from './ForgotPasswordModal';
 import './Login.css';
 
 const USE_LOGIN_API = false;
-
 const LOGIN_CREDENTIALS_BY_ROLE = {
   recruiter: [
     { email: 'recruiter@method-hub.com', password: 'recruiter' },
@@ -360,10 +359,10 @@ const Login = () => {
   <div className="login-container">
     <div className="login-right">
       <div className="hero-copy">
-        <h1>Method-Hub Admin Dashboard</h1>
+        <h1>MethodHub Admin Dashboard</h1>
         <p>
           Manage sales, inventory, billing, and reports from one smart dashboard.
-          Method-Hub helps you run your business faster, smarter.
+          MethodHub helps you run your business faster, smarter.
         </p>
       </div>
       <div className="footer-copy">© 2026, Powered by MethodHub</div>

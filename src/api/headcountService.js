@@ -1,5 +1,12 @@
 import API from './axiosConfig';
 
+const EMPTY_EMPLOYEES_RESPONSE = {
+  content: [],
+  totalElements: 0,
+  totalPages: 0,
+  currentPage: 1,
+};
+
 /**
  * Add a new employee to headcount
  * @param {Object} employeeData - Employee details
@@ -8,7 +15,7 @@ import API from './axiosConfig';
 export const addEmployee = async (employeeData) => {
   try {
     const response = await API.post('/headcount/addEmployee', employeeData);
-    return response?.data?.data || response?.data || null;
+    return response?.data?.data || response?.data || {};
   } catch (error) {
     console.error('Error adding employee:', error);
     throw error;
@@ -39,8 +46,11 @@ export const fetchActiveEmployees = async ({
         customer: customer || undefined,
       },
     });
-    return response?.data || { content: [], totalElements: 0, totalPages: 0, currentPage: page };
+    return response?.data || { ...EMPTY_EMPLOYEES_RESPONSE, currentPage: page };
   } catch (error) {
+    if ([204, 404].includes(error?.response?.status)) {
+      return { ...EMPTY_EMPLOYEES_RESPONSE, currentPage: page };
+    }
     console.error('Error fetching active employees:', error);
     throw error;
   }
@@ -73,8 +83,8 @@ export const exitEmployee = async (employeeId, exitData) => {
   try {
     const exitRequest = {
       employee_id: employeeId,
-      exit_date: exitData.exitDate,
-      exit_reason: exitData.exitReason,
+      exitDate: exitData.exitDate,
+      exitReason: exitData.exitReason,
     };
     const response = await API.post('/headcount/exitEmployee', exitRequest);
     return response?.data || null;

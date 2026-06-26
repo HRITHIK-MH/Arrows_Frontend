@@ -4,177 +4,7 @@ import styles from "./UserRoles.module.scss";
 import DataTable from "../../components/forms/DataTable.jsx";
 
 export default function UserRoles() {
-  const [users, setUsers] = React.useState([
-    {
-      id: "U1",
-      userId: "C5342415",
-      fullName: "Arun Kumar",
-      email: "arun.kumar@email.com",
-      mobileNumber: "9876543210",
-      countryCode: "+91",
-      userRole: "CEO",
-      manager: "None",
-      department: "Leadership",
-      avatar: "https://i.pravatar.cc/150?img=12",
-      comments: ""
-    },
-    {
-      id: "U2",
-      userId: "C5342416",
-      fullName: "Priya Sharma",
-      email: "priya.sharma@email.com",
-      mobileNumber: "9876543211",
-      countryCode: "+91",
-      userRole: "Manager",
-      manager: "Arun Kumar",
-      department: "Hiring",
-      avatar: "https://i.pravatar.cc/150?img=5",
-      comments: ""
-    },
-    {
-      id: "U3",
-      userId: "C5342417",
-      fullName: "Ravi Patel",
-      email: "ravi.patel@email.com",
-      mobileNumber: "9876543212",
-      countryCode: "+91",
-      userRole: "Manager",
-      manager: "Arun Kumar",
-      department: "Hiring",
-      avatar: "https://i.pravatar.cc/150?img=13",
-      comments: ""
-    },
-    {
-      id: "U4",
-      userId: "C5342418",
-      fullName: "Sneha Iyer",
-      email: "sneha.iyer@email.com",
-      mobileNumber: "9876543213",
-      countryCode: "+91",
-      userRole: "Manager",
-      manager: "Arun Kumar",
-      department: "Hiring",
-      avatar: "https://i.pravatar.cc/150?img=9",
-      comments: ""
-    },
-    {
-      id: "U5",
-      userId: "C5342419",
-      fullName: "Vikram Singh",
-      email: "vikram.singh@email.com",
-      mobileNumber: "9876543214",
-      countryCode: "+91",
-      userRole: "Manager",
-      manager: "Arun Kumar",
-      department: "Operations",
-      avatar: "https://i.pravatar.cc/150?img=14",
-      comments: ""
-    },
-    {
-      id: "U6",
-      userId: "C5342420",
-      fullName: "Rajesh Kumar",
-      email: "rajesh.kumar@email.com",
-      mobileNumber: "9876543215",
-      countryCode: "+91",
-      userRole: "Recruiter",
-      manager: "Priya Sharma",
-      department: "Hiring",
-      avatar: "https://i.pravatar.cc/150?img=33",
-      comments: ""
-    },
-    {
-      id: "U7",
-      userId: "C5342421",
-      fullName: "Anil Mehta",
-      email: "anil.mehta@email.com",
-      mobileNumber: "9876543216",
-      countryCode: "+91",
-      userRole: "Recruiter",
-      manager: "Priya Sharma",
-      department: "Hiring",
-      avatar: "https://i.pravatar.cc/150?img=15",
-      comments: ""
-    },
-    {
-      id: "U8",
-      userId: "C5342422",
-      fullName: "Kavita Rao",
-      email: "kavita.rao@email.com",
-      mobileNumber: "9876543217",
-      countryCode: "+91",
-      userRole: "Recruiter",
-      manager: "Priya Sharma",
-      department: "Hiring",
-      avatar: "https://i.pravatar.cc/150?img=44",
-      comments: ""
-    },
-    {
-      id: "U9",
-      userId: "C5342423",
-      fullName: "Suresh Nair",
-      email: "suresh.nair@email.com",
-      mobileNumber: "9876543218",
-      countryCode: "+91",
-      userRole: "Recruiter",
-      manager: "Ravi Patel",
-      department: "Hiring",
-      avatar: "https://i.pravatar.cc/150?img=52",
-      comments: ""
-    },
-    {
-      id: "U10",
-      userId: "C5342424",
-      fullName: "Ananya Rao",
-      email: "ananya.rao@email.com",
-      mobileNumber: "9876543219",
-      countryCode: "+91",
-      userRole: "Recruiter",
-      manager: "Ravi Patel",
-      department: "Hiring",
-      avatar: "https://i.pravatar.cc/150?img=45",
-      comments: ""
-    },
-    {
-      id: "U11",
-      userId: "C5342425",
-      fullName: "Rohit Verma",
-      email: "rohit.verma@email.com",
-      mobileNumber: "9876543220",
-      countryCode: "+91",
-      userRole: "Recruiter",
-      manager: "Ravi Patel",
-      department: "Hiring",
-      avatar: "https://i.pravatar.cc/150?img=17",
-      comments: ""
-    },
-    {
-      id: "U12",
-      userId: "C5342426",
-      fullName: "Amit Shah",
-      email: "amit.shah@email.com",
-      mobileNumber: "9876543221",
-      countryCode: "+91",
-      userRole: "Recruiter",
-      manager: "Vikram Singh",
-      department: "Operations",
-      avatar: "https://i.pravatar.cc/150?img=60",
-      comments: ""
-    },
-    {
-      id: "U13",
-      userId: "C5342427",
-      fullName: "Pankaj Malhotra",
-      email: "pankaj.malhotra@email.com",
-      mobileNumber: "9876543222",
-      countryCode: "+91",
-      userRole: "Recruiter",
-      manager: "Vikram Singh",
-      department: "Operations",
-      avatar: "https://i.pravatar.cc/150?img=51",
-      comments: ""
-    }
-  ]);
+  const [users, setUsers] = React.useState([]);
   const [showForm, setShowForm] = React.useState(false);
   const [editingId, setEditingId] = React.useState(null);
   const [viewMode, setViewMode] = React.useState("chart");
@@ -234,7 +64,7 @@ export default function UserRoles() {
       userRole: "",
       manager: "",
       department: "",
-      avatar: `https://i.pravatar.cc/150?img=${Math.floor(Math.random() * 70)}`,
+      avatar: "",
       comments: ""
     });
     setShowForm(true);
@@ -672,7 +502,7 @@ export default function UserRoles() {
                   <input
                     type="text"
                     className={styles.formInput}
-                    placeholder="https://example.com/avatar.jpg"
+                    placeholder="Avatar URL"
                     name="avatar"
                     value={formData.avatar}
                     onChange={handleInputChange}
