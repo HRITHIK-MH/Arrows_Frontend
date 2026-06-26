@@ -35,44 +35,7 @@ const STAGE_TONE_MAP = {
   offer: "orange",
 };
 
-const DEFAULT_EVENTS = [
-  {
-    id: "seed-zr-431212-job",
-    title: "ZR_4312I2_JOB",
-    startsAt: "2026-01-01T11:00:00.000Z",
-    durationMins: 50,
-    tone: "purple",
-    candidateName: "Mapped Candidate",
-    stage: "Sourced",
-  },
-  {
-    id: "seed-jd-1",
-    title: "Interview 1",
-    startsAt: "2026-01-03T10:00:00.000Z",
-    durationMins: 45,
-    tone: "blue",
-    candidateName: "Priya Sharma",
-    stage: "Pre-Screening",
-  },
-  {
-    id: "seed-jd-2",
-    title: "Interview 2",
-    startsAt: "2026-01-03T14:00:00.000Z",
-    durationMins: 45,
-    tone: "green",
-    candidateName: "Vikram Singh",
-    stage: "Assessment",
-  },
-  {
-    id: "seed-jd-3",
-    title: "Interview 3",
-    startsAt: "2026-01-09T09:30:00.000Z",
-    durationMins: 30,
-    tone: "orange",
-    candidateName: "Ananya Rao",
-    stage: "Client interview",
-  },
-];
+const DEFAULT_EVENTS = [];
 
 const formatDateKey = (date) =>
   `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(
@@ -240,7 +203,6 @@ const Calendar = () => {
   }, [isMicrosoftConfigured]);
 
   const events = React.useMemo(() => {
-    const seeded = DEFAULT_EVENTS.map((item, index) => normalizeEvent(item, index, "seed")).filter(Boolean);
     const live = (meetings || [])
       .map((item, index) => normalizeEvent(item, index, "live"))
       .filter(Boolean);
@@ -248,7 +210,7 @@ const Calendar = () => {
       .map((item, index) => normalizeEvent(item, index, "microsoft"))
       .filter(Boolean);
 
-    const merged = [...seeded];
+    const merged = [];
     [...live, ...graph].forEach((item) => {
       const index = merged.findIndex((event) => event.id === item.id);
       if (index >= 0) merged[index] = item;

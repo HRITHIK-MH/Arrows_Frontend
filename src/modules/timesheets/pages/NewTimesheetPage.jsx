@@ -63,8 +63,8 @@ function formatHours(hours) {
 function defaultForm() {
   return {
     date: today(),
-    project: projectCatalog.find((project) => project.active)?.name ?? "HRMS Portal",
-    task: taskCategories[0],
+    project: projectCatalog.find((project) => project.active)?.name ?? "",
+    task: taskCategories[0] || "",
     startTime: "09:00",
     endTime: "17:00",
     notes: ""

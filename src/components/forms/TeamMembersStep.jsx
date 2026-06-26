@@ -1,22 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { fetchRecruiters } from "../../api/teamService";
 
-const TEAM_MEMBERS = [
-  {
-    id: "A83261",
-    name: "Rahul Mehta",
-    email: "rahul.mehta@email.com",
-    role: "Team Lead",
-    reportingManager: "Arun Kumar",
-  },
-  {
-    id: "A83233",
-    name: "Priya Sharma",
-    email: "priya.sharma@email.com",
-    role: "Team Lead",
-    reportingManager: "Divya Nair",
-  },
-];
+const TEAM_MEMBERS = [];
 
 const ADD_NEW_MEMBER_OPTION = "__add_new_member__";
 const normalizeName = (value) => String(value || "").trim().replace(/\s+/g, " ");
@@ -24,7 +9,7 @@ const normalizeName = (value) => String(value || "").trim().replace(/\s+/g, " ")
 const buildEmailFromName = (name) => {
   const normalized = normalizeName(name).toLowerCase();
   if (!normalized) return "";
-  return `${normalized.replace(/\s+/g, ".")}@email.com`;
+  return "";
 };
 
 const generateMemberId = (members) => {
@@ -89,7 +74,7 @@ const TeamMembersStep = ({
         }
       } catch (error) {
         if (!cancelled) {
-          console.warn('Falling back to static team members:', error);
+          console.warn('Failed to load team members:', error);
           setApiMembers([]);
         }
       }
@@ -232,7 +217,7 @@ const TeamMembersStep = ({
   const resolveReportingManager = (member) => {
     if (!member) return "-";
     if (member.reportingManager) return member.reportingManager;
-    return "Karthik Raman";
+    return "-";
   };
 
   return (

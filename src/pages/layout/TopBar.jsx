@@ -4,8 +4,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import NotificationBell from "../notification/NotificationBell";
-import ProfileModal from "../../components/ProfileModal";
-import SettingsModal from "../../components/SettingsModal";
 import { LINKS } from "./routesConfig";
 import { clearAuthSession } from "../../utils/authSession";
 
@@ -122,33 +120,35 @@ export default function TopBar({ isSidebarOpen, setSidebarOpen }) {
     return String(window.localStorage.getItem("userPersona") || "").toLowerCase();
   }, []);
   const profileDisplay = useMemo(() => {
+    const storedName = String(window.localStorage.getItem("userName") || "").trim();
+    const storedEmail = String(window.localStorage.getItem("userEmail") || "").trim();
+    const displayName = storedName || storedEmail.split("@")[0] || "";
+
     if (currentUserPersona === "businessstakeholder") {
       return {
-        name: "Demo Admin",
-        // role: "Business Stakeholder",
+        name: displayName,
+        role: "Business Stakeholder",
       };
     }
 
     if (currentUserRole === "accountmanager") {
       return {
-        name: "Surya",
+        name: displayName,
         role: "Account Manager",
       };
     }
 
     return {
-      name: "Saravanan",
+      name: displayName,
       role: "Recruiter",
     };
   }, [currentUserPersona, currentUserRole]);
-  const profileInitial = (profileDisplay.name || "S").charAt(0).toUpperCase();
+  const profileInitial = (profileDisplay.name || "U").charAt(0).toUpperCase();
 
 
   /** Profile menu state */
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
-  const [profileOpen, setProfileOpen] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(false);
 
   useEffect(() => {
     setPageLabelOverride(null);
@@ -252,21 +252,9 @@ export default function TopBar({ isSidebarOpen, setSidebarOpen }) {
           </button>
 
 
-          {menuOpen && (
+           {menuOpen && (
             <ul className="profileMenu" role="menu" aria-label="Profile menu">
-              <li className="profileMenuHeader" role="none">
-                <span className="profileMenuTitle">Menu</span>
-                <button
-                  type="button"
-                  className="profileMenuClose"
-                  onClick={() => setMenuOpen(false)}
-                  aria-label="Close profile menu"
-                >
-                  ×
-                </button>
-              </li>
-              <li role="menuitem" className="profileMenuItem" onClick={() => { setMenuOpen(false); setProfileOpen(true); }}>Profile</li>
-              <li role="menuitem" className="profileMenuItem" onClick={() => { setMenuOpen(false); setSettingsOpen(true); }}>Settings</li>
+              <li role="menuitem" className="profileMenuItem" onClick={() => { setMenuOpen(false); navigate("/profile"); }}>Profile</li>
               <li
                 role="menuitem"
                 className="profileMenuItem profileMenuDanger"
@@ -281,8 +269,6 @@ export default function TopBar({ isSidebarOpen, setSidebarOpen }) {
             </ul>
           )}
 
-          {profileOpen && <ProfileModal onClose={() => setProfileOpen(false)} />}
-          {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} />}
         </div>
       </div>
     </header>

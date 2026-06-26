@@ -3,6 +3,17 @@ import "./ProfileModal.css";
 
 export default function ProfileModal({ onClose }) {
   const modalRef = useRef(null);
+  const storedName = String(localStorage.getItem("userName") || "").trim();
+  const storedEmail = String(localStorage.getItem("userEmail") || "").trim();
+  const storedRole = String(localStorage.getItem("userRole") || localStorage.getItem("userPersona") || "").trim();
+  const storedDesignation = String(
+    localStorage.getItem("userDesignation") ||
+    localStorage.getItem("designation") ||
+    localStorage.getItem("jobTitle") ||
+    localStorage.getItem("userJobTitle") ||
+    ""
+  ).trim();
+  const displayName = storedName || storedEmail.split("@")[0] || "";
 
   // Close on Escape key
   useEffect(() => {
@@ -26,25 +37,25 @@ export default function ProfileModal({ onClose }) {
 
         <div className="profileModalBody">
           {/* Avatar */}
-          <div className="profileModalAvatar">S</div>
+          <div className="profileModalAvatar">{(displayName || "U").charAt(0).toUpperCase()}</div>
 
           {/* Info */}
           <div className="profileModalInfo">
             <div className="profileModalRow">
               <label className="profileModalLabel">Full Name</label>
-              <input className="profileModalInput" type="text" defaultValue="Admin" readOnly/>
+              <input className="profileModalInput" type="text" value={displayName} readOnly/>
             </div>
             <div className="profileModalRow">
               <label className="profileModalLabel">Role</label>
-              <input className="profileModalInput" type="text" defaultValue="Demo Admin" readOnly />
+              <input className="profileModalInput" type="text" value={storedRole} readOnly />
             </div>
             <div className="profileModalRow">
               <label className="profileModalLabel">Email</label>
-              <input className="profileModalInput" type="email" defaultValue="demo-admin@method-hub.com" readOnly />
+              <input className="profileModalInput" type="email" value={storedEmail} readOnly />
             </div>
             <div className="profileModalRow">
-              <label className="profileModalLabel">Phone</label>
-              <input className="profileModalInput" type="tel" defaultValue="+91 98765 43210" readOnly />
+              <label className="profileModalLabel">Designation</label>
+              <input className="profileModalInput" type="text" value={storedDesignation} readOnly />
             </div>
           </div>
         </div>
