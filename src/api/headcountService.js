@@ -1,4 +1,6 @@
-import API from './axiosConfig';
+import API, { createServiceApi } from './axiosConfig';
+
+const headcountApi = createServiceApi('headcount');
 
 const EMPTY_EMPLOYEES_RESPONSE = {
   content: [],
@@ -14,7 +16,7 @@ const EMPTY_EMPLOYEES_RESPONSE = {
  */
 export const addEmployee = async (employeeData) => {
   try {
-    const response = await API.post('/headcount/addEmployee', employeeData);
+    const response = await headcountApi.post('/headcount/addEmployee', employeeData);
     return response?.data?.data || response?.data || {};
   } catch (error) {
     console.error('Error adding employee:', error);
@@ -36,7 +38,7 @@ export const fetchActiveEmployees = async ({
   customer = ''
 } = {}) => {
   try {
-    const response = await API.get('/headcount/activeEmployees', {
+    const response = await headcountApi.get('/headcount/activeEmployees', {
       params: {
         page,
         limit,
@@ -64,7 +66,7 @@ export const fetchActiveEmployees = async ({
  */
 export const updateEmployee = async (employeeId, employeeData) => {
   try {
-    const response = await API.put(`/headcount/updateEmployee/${employeeId}`, employeeData);
+    const response = await headcountApi.put(`/headcount/updateEmployee/${employeeId}`, employeeData);
     return response?.data || null;
   } catch (error) {
     console.error('Error updating employee:', error);
@@ -86,7 +88,7 @@ export const exitEmployee = async (employeeId, exitData) => {
       exitDate: exitData.exitDate,
       exitReason: exitData.exitReason,
     };
-    const response = await API.post('/headcount/exitEmployee', exitRequest);
+    const response = await headcountApi.post('/headcount/exitEmployee', exitRequest);
     return response?.data || null;
   } catch (error) {
     console.error('Error exiting employee:', error);

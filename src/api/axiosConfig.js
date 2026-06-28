@@ -1,76 +1,117 @@
 import axios from 'axios';
 
-function resolveApiBaseUrl() {
-  const configured = String(import.meta.env.VITE_API_URL || '').trim();
-  const fallback = '/api';
+const SERVICE_ENV_MAP = {
+  identity: 'VITE_IDENTITY_SERVICE_URL',
+  tenant: 'VITE_TENANT_SERVICE_URL',
+  clientJob: 'VITE_CLIENT_JOB_SERVICE_URL',
+  candidate: 'VITE_CANDIDATE_SERVICE_URL',
+  applicationPipeline: 'VITE_APP_PIPELINE_SERVICE_URL',
+  interview: 'VITE_INTERVIEW_SERVICE_URL',
+  masterData: 'VITE_MASTER_DATA_SERVICE_URL',
+  notification: 'VITE_NOTIFICATION_SERVICE_URL',
+  headcount: 'VITE_HEADCOUNT_SERVICE_URL',
+};
+
+const DEFAULT_API_PATH = '/api';
+
+function normalizeUrl(value) {
+  return String(value || '').trim().replace(/\/+$/, '');
+}
+
+function buildApiBaseUrl(base) {
+  if (!base) return '';
+  const url = normalizeUrl(base);
+  if (!url) return '';
+  if (/\/api$/i.test(url)) {
+    return url;
+  }
+  return `${url}/api`;
+}
+
+function getEnvUrl(key) {
+  return normalizeUrl(import.meta.env[key] || '');
+}
+
+function getServiceUrl(serviceName) {
+  if (!serviceName) return '';
+  const envKey = SERVICE_ENV_MAP[serviceName];
+  return envKey ? getEnvUrl(envKey) : '';
+}
+
+export function resolveApiBaseUrl(serviceName) {
+  const serviceUrl = getServiceUrl(serviceName);
+  if (serviceUrl) {
+    return buildApiBaseUrl(serviceUrl);
+  }
+
+  const backendUrl = getEnvUrl('VITE_BACKEND_URL');
+  const configuredApiUrl = getEnvUrl('VITE_API_URL');
   const host = String(window?.location?.hostname || '').toLowerCase();
   const isLocalHost = host === 'localhost' || host === '127.0.0.1' || host === '0.0.0.0';
 
-  if (!configured) {
-    return fallback;
-  }
-
-  // In local dev, force relative proxy to avoid stale remote env values.
   if (isLocalHost) {
-    return '/api';
+    return DEFAULT_API_PATH;
   }
 
-  // Guard against placeholder values left in env templates.
-  if (/https?:\/\/api\.example\.com\/?$/i.test(configured)) {
-    return '/api';
+  if (backendUrl) {
+    return buildApiBaseUrl(backendUrl);
   }
 
-  const cleaned = configured.replace(/\/+$/, '');
-  if (/^https?:\/\//i.test(cleaned) && !/\/api(\/|$)/i.test(cleaned)) {
-    return `${cleaned}/api`;
+  if (configuredApiUrl) {
+    return buildApiBaseUrl(configuredApiUrl);
   }
 
-  return cleaned;
+  return DEFAULT_API_PATH;
 }
 
-// Create axios instance with default config
-const API = axios.create({
-  baseURL: resolveApiBaseUrl(),
-  timeout: 10000,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
+function makeApiInstance(baseURL) {
+  const instance = axios.create({
+    baseURL,
+    timeout: 10000,
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
 
-// Request interceptor to add auth token
-API.interceptors.request.use(
-  (config) => {
-    const skipAuth = Boolean(config?.skipAuth);
-    const token = localStorage.getItem('authToken') || localStorage.getItem('token');
-    if (token && !skipAuth) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
+  instance.interceptors.request.use(
+    (config) => {
+      const skipAuth = Boolean(config?.skipAuth);
+      const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+      if (token && !skipAuth) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
 
-// Response interceptor for error handling
-API.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    const skipAuthRedirect = Boolean(error?.config?.skipAuthRedirect);
-    if (!error.response) {
-      console.error('Network error: backend may be unavailable at API base URL', API.defaults.baseURL);
-    } else if (error.response?.status === 401 && !skipAuthRedirect) {
-      // Token expired or unauthorized
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('user');
-      window.location.href = '/login';
-    } else if (error.response?.status === 403) {
-      console.error('Access forbidden:', error.message);
-    } else if (error.response?.status >= 500) {
-      console.error('Server error:', error.message);
-    }
-    return Promise.reject(error);
-  }
-);
+      if (config?.service) {
+        config.baseURL = resolveApiBaseUrl(config.service);
+      }
 
+      return config;
+    },
+    (error) => Promise.reject(error),
+  );
+
+  instance.interceptors.response.use(
+    (response) => response,
+    (error) => {
+      const skipAuthRedirect = Boolean(error?.config?.skipAuthRedirect);
+      if (!error.response) {
+        console.error('Network error: backend may be unavailable at API base URL', instance.defaults.baseURL);
+      } else if (error.response?.status === 401 && !skipAuthRedirect) {
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+      } else if (error.response?.status === 403) {
+        console.error('Access forbidden:', error.message);
+      } else if (error.response?.status >= 500) {
+        console.error('Server error:', error.message);
+      }
+      return Promise.reject(error);
+    },
+  );
+
+  return instance;
+}
+
+const API = makeApiInstance(resolveApiBaseUrl());
+export const createServiceApi = (serviceName) => makeApiInstance(resolveApiBaseUrl(serviceName));
 export default API;

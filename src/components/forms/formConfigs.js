@@ -714,7 +714,7 @@ export const jobOpeningConfig = {
           // This field is auto-generated and disabled in UI, so auth failures
           // should not block submission.
           const authToken = localStorage.getItem('authToken') || localStorage.getItem('token');
-          const response = await fetch('/api/validate-job-position-id', {
+          const response = await fetch(`${resolveApiBaseUrl('clientJob')}/validate-job-position-id`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -806,9 +806,7 @@ export const jobOpeningConfig = {
 
       try {
         // Make AJAX call to validate description
-        const response = await fetch('/api/validate-description', {
-          method: 'POST',
-          headers: {
+          const response = await fetch(`${resolveApiBaseUrl('clientJob')}/validate-description`, {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({ description: value })

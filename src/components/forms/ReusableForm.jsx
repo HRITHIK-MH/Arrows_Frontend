@@ -1,4 +1,5 @@
 import axios from 'axios';
+import API from '../../api/axiosConfig';
 import React, { useState, useMemo, useCallback } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
 import pdfjsWorkerSrc from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
@@ -1832,7 +1833,8 @@ const ReusableForm = ({ config, onSubmit, initialData, readOnly = false }) => {
       if (config.submitRequest) {
         await config.submitRequest(formData);
       } else if (config.submitEndpoint) {
-        await axios.post(config.submitEndpoint, formData);
+        const submitEndpoint = config.submitEndpoint.startsWith('/') ? config.submitEndpoint : `/${config.submitEndpoint}`;
+        await API.post(submitEndpoint, formData);
       }
 
       // Call the onSubmit callback if provided
