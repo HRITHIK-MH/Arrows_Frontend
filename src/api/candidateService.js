@@ -12,7 +12,10 @@ export const fetchCandidates = async ({ page = 1, limit = 100, search, source, r
     sortBy,
     sortOrder,
   };
-  const response = await API.post('/candidates', payload);
+  const response = await API.post('/candidates', payload, {
+    skipAuth: true,
+    skipAuthRedirect: true,
+  });
   return response?.data?.data || { items: [], pagination: { page, limit, totalRecords: 0, totalPages: 0 } };
 };
 
