@@ -11,6 +11,10 @@ const unwrapList = (response) => {
     return payload.data;
   }
 
+  if (Array.isArray(payload?.data?.items)) {
+    return payload.data.items;
+  }
+
   if (Array.isArray(payload?.items)) {
     return payload.items;
   }
@@ -125,15 +129,32 @@ export const deleteJob = async (jobId) =>
     skipAuthRedirect: true,
   });
 
-export const fetchClients = async () =>
-  unwrapList(
-    await API.get('/clients', {
-      // Client list endpoint currently fails when local login token is attached.
-      // Skip auth header so dropdown options can still load.
-      skipAuth: true,
-      skipAuthRedirect: true,
-    })
-  );
+const FALLBACK_CLIENTS = [
+  { clientId: 'TEST-1', clientName: 'Test1' },
+  { clientId: 'TEST-2', clientName: 'Test2' },
+];
+
+export const fetchClients = async () => {
+  try {
+    const clients = unwrapList(
+      await API.get('/clients', {
+        // Client list endpoint currently fails when local login token is attached.
+        // Skip auth header so dropdown options can still load.
+        skipAuth: true,
+        skipAuthRedirect: true,
+      })
+    );
+
+    if (Array.isArray(clients) && clients.length > 0) {
+      return clients;
+    }
+
+    return FALLBACK_CLIENTS;
+  } catch (error) {
+    console.warn('Failed to load clients from backend, using fallback clients:', error);
+    return FALLBACK_CLIENTS;
+  }
+};
 
 const toSlug = (value) =>
   String(value || '')
@@ -183,31 +204,24 @@ export const toSkillOption = (row) => {
 
 export const toClientRequest = (row = {}) => ({
   clientName: String(row.clientName || row.name || '').trim(),
-  primaryLocationId: null,
-  clientCode: String(row.clientCode || row.clientId || '').trim() || null,
-  industryCode: null,
-  websiteUrl: String(row.websiteUrl || '').trim() || null,
-  comments: String(row.comments || row.note || '').trim() || null,
+  clientType: String(row.clientType || row.clientType || '').trim() || null,
+  industry: String(row.industryCode || row.industry || '').trim() || null,
   status: String(row.clientStatus || row.status || 'Active').trim(),
+  contactPersonName: String(row.primaryContactPerson || row.contactPersonName || '').trim() || null,
+  contactPersonEmail: String(row.contactEmail || row.email || '').trim() || null,
+  contactPersonPhone: String(row.contactNumber || row.phone || '').trim() || null,
+  city: String(row.clientLocation || row.city || '').trim() || null,
+  address: String(row.address || row.comments || '').trim() || null,
 });
 
 export const createClient = (payload) =>
-  API.post('/clients', toClientRequest(payload), {
-    skipAuth: true,
-    skipAuthRedirect: true,
-  });
+  API.post('/clients', toClientRequest(payload));
 
 export const updateClient = (clientId, payload) =>
-  API.put(`/clients/${encodeURIComponent(clientId)}`, toClientRequest(payload), {
-    skipAuth: true,
-    skipAuthRedirect: true,
-  });
+  API.put(`/clients/${encodeURIComponent(clientId)}`, toClientRequest(payload));
 
 export const deleteClient = (clientId) =>
-  API.delete(`/clients/${encodeURIComponent(clientId)}`, {
-    skipAuth: true,
-    skipAuthRedirect: true,
-  });
+  API.delete(`/clients/${encodeURIComponent(clientId)}`);
 
 export const normalizeClientRecord = (row, index = 0) => ({
   clientId: row?.clientId || row?.id || `CL-${index + 1}`,

@@ -534,11 +534,13 @@ export default function Clients() {
       try {
         if (isEditMode && isUuid(normalized.clientId)) {
           const response = await updateClientApi(normalized.clientId, normalized);
-          const savedRow = normalizeApiClient(response?.data || normalized);
+          const payload = response?.data?.data || response?.data || normalized;
+          const savedRow = normalizeApiClient(payload);
           setSubmittedData((prev) => prev.map((item, idx) => (idx === editingIndex ? { ...item, ...savedRow } : item)));
         } else {
           const response = await createClientApi(normalized);
-          const savedRow = normalizeApiClient(response?.data || normalized);
+          const payload = response?.data?.data || response?.data || normalized;
+          const savedRow = normalizeApiClient(payload);
           setSubmittedData((prev) => (isEditMode
             ? prev.map((item, idx) => (idx === editingIndex ? { ...item, ...savedRow } : item))
             : [...prev, savedRow]));
