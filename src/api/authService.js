@@ -16,8 +16,9 @@ export const loginWithPassword = async ({ email, password }) => {
   return normalizeAuthPayload(response?.data || {});
 };
 
-export const fetchSsoAuthorizeUrl = async () => {
+export const fetchSsoAuthorizeUrl = async (loginHint) => {
   const response = await API.get('/sso/authorize-url', {
+    params: loginHint ? { login_hint: String(loginHint).trim() } : {},
     skipAuth: true,
     skipAuthRedirect: true,
   });

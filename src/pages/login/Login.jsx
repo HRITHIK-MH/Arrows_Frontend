@@ -344,7 +344,7 @@ const Login = () => {
     setError('');
     setSsoLoading(true);
     try {
-      const url = await fetchSsoAuthorizeUrl();
+      const url = await fetchSsoAuthorizeUrl(email.trim() || undefined);
       if (!url) {
         throw new Error('SSO authorize URL is not available');
       }
