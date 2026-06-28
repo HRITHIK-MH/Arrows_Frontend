@@ -131,11 +131,11 @@ const getAuthErrorMessage = (err, fallbackMessage) => {
   }
 
   if (status >= 500) {
-    return 'Login service is unavailable. Start API gateway on http://localhost:8080 and try again.';
+    return `Login service is unavailable. Start API gateway on ${import.meta.env.VITE_BACKEND_URL} and try again.`;
   }
 
   if (!err?.response) {
-    return 'Cannot reach login service. Check backend is running on http://localhost:8080.';
+    return `Cannot reach login service. Check backend is running on ${import.meta.env.VITE_BACKEND_URL}`;
   }
 
   return err?.message || fallbackMessage;
