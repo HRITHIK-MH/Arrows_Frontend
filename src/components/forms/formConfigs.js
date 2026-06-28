@@ -806,10 +806,12 @@ export const jobOpeningConfig = {
 
       try {
         // Make AJAX call to validate description
-          const response = await fetch(`${resolveApiBaseUrl('clientJob')}/validate-description`, {
+        const response = await fetch(`${resolveApiBaseUrl('clientJob')}/validate-description`, {
+          method: 'POST',
+          headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ description: value })
+          body: JSON.stringify({ description: value }),
         });
 
         const result = await response.json();
