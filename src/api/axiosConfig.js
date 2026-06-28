@@ -20,7 +20,12 @@ function resolveApiBaseUrl() {
     return '/api';
   }
 
-  return configured;
+  const cleaned = configured.replace(/\/+$/, '');
+  if (/^https?:\/\//i.test(cleaned) && !/\/api(\/|$)/i.test(cleaned)) {
+    return `${cleaned}/api`;
+  }
+
+  return cleaned;
 }
 
 // Create axios instance with default config
