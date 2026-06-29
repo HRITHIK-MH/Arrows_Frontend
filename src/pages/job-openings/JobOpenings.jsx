@@ -1367,7 +1367,7 @@ export default function JobOpenings({ createMode = false }) {
   }, [closeCandidateDrawer, isCandidateDrawerOpen, isViewDrawerOpen]);
 
   return (
-    <div className={styles.page}>
+    <div className={`${styles.page}${showJobOpeningForm ? ` ${styles.pageFormMode}` : ""}`}>
       {showSuccessMessage && (
         <div className={styles.successMessage}>
           <span>{successMessageText}</span>
@@ -1381,7 +1381,7 @@ export default function JobOpenings({ createMode = false }) {
         </div>
       )}
 
-      <div className={styles.jobCard}>
+      <div className={`${styles.jobCard}${showJobOpeningForm ? ` ${styles.jobCardFormMode}` : ""}`}>
         {!showJobOpeningForm && (
           <div className={styles.infoRow}>
             <p className={styles.description}>
