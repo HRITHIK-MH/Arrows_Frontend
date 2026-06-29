@@ -115,7 +115,7 @@ const getAuthErrorMessage = (err, fallbackMessage) => {
   const status = Number(err?.response?.status || 0);
   const data = err?.response?.data;
 
-  const identityUrl = String(import.meta.env.VITE_IDENTITY_SERVICE_URL || import.meta.env.VITE_BACKEND_URL || 'http://localhost:8080').trim();
+  const identityUrl = String(import.meta.env.VITE_BACKEND_URL || import.meta.env.VITE_IDENTITY_SERVICE_URL || 'http://localhost:8080').trim();
 
   if (typeof data === 'string' && data.trim()) {
     return data.trim();
