@@ -1,6 +1,6 @@
 import API, { createServiceApi } from './axiosConfig';
 
-const identityApi = createServiceApi('identity');
+const identityApi = createServiceApi('');
 
 const normalizeAuthPayload = (payload) => {
   const data = payload && typeof payload === 'object' && payload.data && typeof payload.data === 'object'
