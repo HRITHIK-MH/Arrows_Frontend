@@ -1,6 +1,6 @@
 import API, { createServiceApi } from './axiosConfig';
 
-const headcountApi = createServiceApi('headcount');
+const headcountApi = createServiceApi('');
 
 const EMPTY_EMPLOYEES_RESPONSE = {
   content: [],

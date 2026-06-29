@@ -17,9 +17,10 @@ export const resolveApiBaseUrl = (serviceName = '') => {
   const host = String(window?.location?.hostname || '').toLowerCase();
   const isLocalHost = host === 'localhost' || host === '127.0.0.1' || host === '0.0.0.0';
   const normalizedService = String(serviceName || '').trim().replace(/^\/+/, '');
+  const shouldUseRootApi = normalizedService.toLowerCase() === 'clientjob';
 
   const joinService = (base) => {
-    if (!normalizedService) return base;
+    if (!normalizedService || shouldUseRootApi) return base;
     return `${base.replace(/\/+$/, '')}/${normalizedService}`.replace(/\/+/, '/');
   };
 
@@ -44,8 +45,9 @@ const API = axios.create({
 });
 
 const normalizeServiceUrl = (serviceName, url = '') => {
-  // ✅ FIX: if serviceName is 'identity', don’t double-prefix
-  const prefix = serviceName ? `/${serviceName}` : '';
+  const normalizedService = String(serviceName || '').trim().replace(/^\/+/, '');
+  const shouldUseRootApi = normalizedService.toLowerCase() === 'clientjob';
+  const prefix = normalizedService && !shouldUseRootApi ? `/${normalizedService}` : '';
   const trimmedUrl = String(url || '').trim();
   if (!trimmedUrl) {
     return prefix;

@@ -1,6 +1,6 @@
 import API, { createServiceApi } from './axiosConfig';
 
-const clientJobApi = createServiceApi('clientJob');
+const clientJobApi = createServiceApi('');
 
 const unwrapRecruiterItems = (payload) => {
   if (Array.isArray(payload)) return payload;
