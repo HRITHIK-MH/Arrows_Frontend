@@ -58,17 +58,20 @@ const normalizeServiceUrl = (serviceName, url = '') => {
 };
 
 export const createServiceApi = (serviceName) => {
-  if (!serviceName || typeof serviceName !== 'string') {
-    throw new Error('createServiceApi requires a service name string');
+  const name = serviceName == null ? '' : String(serviceName);
+  if (!name) {
+    // Don't throw in runtime; allow a root API when no service name provided.
+    // This makes consumers more tolerant and avoids initialization crashes.
+    console.warn('createServiceApi called without a service name — using root API');
   }
 
   return {
-    get: (url, config) => API.get(normalizeServiceUrl(serviceName, url), config),
-    post: (url, data, config) => API.post(normalizeServiceUrl(serviceName, url), data, config),
-    put: (url, data, config) => API.put(normalizeServiceUrl(serviceName, url), data, config),
-    patch: (url, data, config) => API.patch(normalizeServiceUrl(serviceName, url), data, config),
-    delete: (url, config) => API.delete(normalizeServiceUrl(serviceName, url), config),
-    request: (config) => API.request({ ...config, url: normalizeServiceUrl(serviceName, config?.url) }),
+    get: (url, config) => API.get(normalizeServiceUrl(name, url), config),
+    post: (url, data, config) => API.post(normalizeServiceUrl(name, url), data, config),
+    put: (url, data, config) => API.put(normalizeServiceUrl(name, url), data, config),
+    patch: (url, data, config) => API.patch(normalizeServiceUrl(name, url), data, config),
+    delete: (url, config) => API.delete(normalizeServiceUrl(name, url), config),
+    request: (config) => API.request({ ...config, url: normalizeServiceUrl(name, config?.url) }),
   };
 };
 
