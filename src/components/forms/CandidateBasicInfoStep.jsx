@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { FiTrash2 } from "react-icons/fi";
 import * as pdfjsLib from "pdfjs-dist";
 import pdfjsWorkerSrc from "pdfjs-dist/build/pdf.worker.min.mjs?url";
@@ -8,6 +8,9 @@ import { parseResume, mapResumeToFormFields, normalizeParsedResumePayload } from
 const normalizeText = (value) => String(value || "").replace(/\s+/g, " ").trim();
 
 const toLower = (value) => normalizeText(value).toLowerCase();
+
+const hasInternshipSignal = (...values) =>
+  values.some((value) => /\b(intern|internship|trainee)\b/i.test(normalizeText(value)));
 
 const getResumeLines = (text) =>
   String(text || "")
@@ -648,6 +651,7 @@ const CandidateBasicInfoStep = ({
 }) => {
   const isFresher = formData.candidateType === "fresher";
   const parsedResumeRef = React.useRef("");
+  const [resumeExtractionStatus, setResumeExtractionStatus] = useState({ state: "idle", message: "" });
 
 
   const fieldMap = useMemo(() => {
@@ -749,6 +753,7 @@ const CandidateBasicInfoStep = ({
 
     const parseAndMapResume = async () => {
       try {
+        setResumeExtractionStatus({ state: "loading", message: "Reading resume and extracting fields..." });
         const parsedData = await parseResume(sourceFile);
         if (isCancelled) return;
 
@@ -789,23 +794,40 @@ const CandidateBasicInfoStep = ({
             updates.gender = mappedData.gender;
           }
 
+          const hasCurrentWorkEvidence = [
+            mappedData.currentCompany,
+            mappedData.currentDesignation,
+            mappedData.employmentType,
+            formData.currentCompanyName,
+            formData.jobTitleRole,
+            formData.employmentType,
+          ].some((value) => normalizeText(value));
+          const isInternshipCandidate = hasInternshipSignal(
+            mappedData.currentDesignation,
+            mappedData.employmentType
+          );
+
           if (!normalizeText(formData.yearsExperience)) {
             const mappedExperience = mapExperienceValueToBucket(mappedData.totalExperience || mappedData.totalExperienceYears);
             if (mappedExperience) {
               updates.yearsExperience = mappedExperience;
               if (!normalizeText(formData.candidateType)) {
-                updates.candidateType = mappedExperience === "0-1" ? "fresher" : "experienced";
+                updates.candidateType = isInternshipCandidate
+                  ? "fresher"
+                  : hasCurrentWorkEvidence || mappedExperience !== "0-1"
+                    ? "experienced"
+                    : "fresher";
               }
             }
           }
 
-          if (!normalizeText(formData.currentCompanyName) && normalizeText(mappedData.currentCompany)) {
+          if (!isInternshipCandidate && !normalizeText(formData.currentCompanyName) && normalizeText(mappedData.currentCompany)) {
             updates.currentCompanyName = mappedData.currentCompany;
           }
-          if (!normalizeText(formData.jobTitleRole) && normalizeText(mappedData.currentDesignation)) {
+          if (!isInternshipCandidate && !normalizeText(formData.jobTitleRole) && normalizeText(mappedData.currentDesignation)) {
             updates.jobTitleRole = mappedData.currentDesignation;
           }
-          if (!normalizeText(formData.employmentType) && normalizeText(mappedData.employmentType)) {
+          if (!isInternshipCandidate && !normalizeText(formData.employmentType) && normalizeText(mappedData.employmentType)) {
             updates.employmentType = mappedData.employmentType;
           }
           if (!normalizeText(formData.noticePeriod) && normalizeText(mappedData.noticePeriod)) {
@@ -877,6 +899,10 @@ const CandidateBasicInfoStep = ({
 
           // If GPT parse succeeded, skip the local heuristic parser.
           if (Object.keys(updates).length > 0) {
+            setResumeExtractionStatus({
+              state: "success",
+              message: `${Object.keys(updates).length} field(s) auto-filled from uploaded resume.`,
+            });
             console.groupEnd();
             return;
           }
@@ -891,6 +917,7 @@ const CandidateBasicInfoStep = ({
 
         if (!extractedText) {
           console.debug("[ResumeDebug] Local extraction produced no text.");
+          setResumeExtractionStatus({ state: "warning", message: "Resume uploaded, but no readable text was found." });
           console.groupEnd();
           return;
         }
@@ -1004,14 +1031,21 @@ const CandidateBasicInfoStep = ({
         }
 
         const { company, role } = extractCompanyAndRole(extractedText);
-        if (!normalizeText(formData.currentCompanyName) && company) {
+        const isInternshipCandidate = hasInternshipSignal(role);
+        if (isInternshipCandidate && !normalizeText(formData.candidateType)) {
+          updates.candidateType = "fresher";
+        }
+        if (!isInternshipCandidate && !normalizeText(formData.currentCompanyName) && company) {
           updates.currentCompanyName = company;
         }
-        if (!normalizeText(formData.jobTitleRole) && role) {
+        if (!isInternshipCandidate && !normalizeText(formData.jobTitleRole) && role) {
           updates.jobTitleRole = role;
         }
+        if (!isInternshipCandidate && !normalizeText(formData.candidateType) && (company || role) && updates.candidateType === "fresher") {
+          updates.candidateType = "experienced";
+        }
 
-        if (!normalizeText(formData.employmentType)) {
+        if (!isInternshipCandidate && !normalizeText(formData.employmentType)) {
           if (normalizedLower.includes("full time") || normalizedLower.includes("full-time")) {
             updates.employmentType = "full-time";
           } else if (normalizedLower.includes("contract")) {
@@ -1043,9 +1077,18 @@ const CandidateBasicInfoStep = ({
           updates,
           nextFormValues: { ...formData, ...updates },
         });
+        if (Object.keys(updates).length > 0) {
+          setResumeExtractionStatus({
+            state: "success",
+            message: `${Object.keys(updates).length} field(s) auto-filled from uploaded resume.`,
+          });
+        } else {
+          setResumeExtractionStatus({ state: "warning", message: "Resume uploaded, but no matching values were detected for form fields." });
+        }
         console.groupEnd();
       } catch (error) {
         console.error("Resume parsing failed:", error);
+        setResumeExtractionStatus({ state: "error", message: "Unable to parse this resume. Try a PDF or DOCX file." });
         console.groupEnd();
       }
     };
@@ -1231,6 +1274,7 @@ const CandidateBasicInfoStep = ({
                     onChange={() => {
                       onChange("candidateTemplateMode", "no");
                       onChange("candidateTemplateFile", "");
+                      setResumeExtractionStatus({ state: "idle", message: "" });
                       // Clear auto-filled resume fields
                       onChange("firstName", "");
                       onChange("lastName", "");
@@ -1267,6 +1311,11 @@ const CandidateBasicInfoStep = ({
               {formData.candidateTemplateMode === "yes" && (
                 <div className="job-template-upload-wrap">
                   {renderField("candidateTemplateFile")}
+                  {resumeExtractionStatus.state !== "idle" ? (
+                    <div className={`resume-extraction-status resume-extraction-status--${resumeExtractionStatus.state}`}>
+                      {resumeExtractionStatus.message}
+                    </div>
+                  ) : null}
                 </div>
               )}
             </div>

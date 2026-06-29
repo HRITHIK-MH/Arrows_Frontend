@@ -103,6 +103,42 @@ const normalizeSkillName = (skill) => {
   return String(skill?.skill_name || skill?.name || skill?.primary_skill || '').trim();
 };
 
+const normalizeText = (value) => String(value || '').replace(/\s+/g, ' ').trim();
+
+const deriveEmploymentType = (resumeJson = {}, candidateForm = {}) => {
+  const professional = resumeJson?.professional_information || {};
+  const company = candidateForm?.current_company_information || {};
+  const explicitEmploymentType = normalizeText(professional.employment_type || company.employment_type);
+  const currentCompany = normalizeText(professional.current_company || company.current_company_name);
+  const currentDesignation = normalizeText(professional.current_designation || company.job_title_role);
+  const searchableText = [explicitEmploymentType, currentCompany, currentDesignation].join(' ').toLowerCase();
+
+  if (/\b(intern|internship|trainee)\b/.test(searchableText)) return 'internship';
+  if (/\b(contract|contractor|c2c|1099)\b/.test(searchableText)) return 'contract';
+  if (/\b(full[\s-]?time|permanent|employee|w2|payroll)\b/.test(searchableText)) return 'full-time';
+  if (currentCompany || currentDesignation) return 'full-time';
+
+  return '';
+};
+
+const isInternshipResume = (resumeJson = {}, candidateForm = {}) => {
+  const professional = resumeJson?.professional_information || {};
+  const company = candidateForm?.current_company_information || {};
+  const searchableText = [
+    professional.employment_type,
+    professional.current_company,
+    professional.current_designation,
+    company.employment_type,
+    company.current_company_name,
+    company.job_title_role,
+  ]
+    .map(normalizeText)
+    .join(' ')
+    .toLowerCase();
+
+  return /\b(intern|internship|trainee)\b/.test(searchableText);
+};
+
 const getExplicitPrimarySkill = (resumeJson = {}) => {
   const candidates = [
     resumeJson?.skills_information?.primary_skill,
@@ -151,6 +187,16 @@ export const mapResumeToCandidateForm = (resumeJson = {}) => {
     });
 
     mapSkills(candidateForm, resumeJson || {});
+    candidateForm.current_company_information.employment_type = deriveEmploymentType(resumeJson, candidateForm);
+    if (isInternshipResume(resumeJson, candidateForm)) {
+      candidateForm.current_company_information.candidate_type = 'Fresher';
+      candidateForm.current_company_information.current_company_name = '';
+      candidateForm.current_company_information.job_title_role = '';
+      candidateForm.current_company_information.employment_type = '';
+      candidateForm.current_company_information.notice_period_days = '';
+      candidateForm.current_company_information.current_ctc_lpa = '';
+      candidateForm.current_company_information.expected_ctc_lpa = '';
+    }
   } catch (error) {
     debugMapper('Mapping failed; returning schema defaults', {
       message: error?.message,

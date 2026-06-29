@@ -213,6 +213,14 @@ const normalizeDateToIso = (value) => {
   return `${yyyy}-${mm}-${dd}`;
 };
 
+const getTodayIsoDate = () => {
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth() + 1).padStart(2, '0');
+  const dd = String(today.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+};
+
 const formatOptionLabels = (selectedValues, options = []) => {
   const normalizedValues = Array.isArray(selectedValues)
     ? selectedValues
@@ -333,6 +341,7 @@ const FIELD_ALIAS_MAP = {
   softSkills: ['soft skills', 'behavioral skills'],
   additionalSkills: ['additional skills', 'other skills'],
   targetDate: ['target', 'target date', 'joining target date'],
+  jobReceivedDate: ['job received date', 'received date', 'requirement received date'],
   jobActivationDate: ['job activation date', 'validity upto', 'validity up to', 'validity date']
 };
 
@@ -574,6 +583,16 @@ const mapParsedJdToFormUpdates = (jdJson, formData, availableFields, sourceText 
   setIfEmpty('noOfPositions', numberValue(job.number_of_positions));
   setIfEmpty('minSalary', numberValue(compensation.minimum_ctc));
   setIfEmpty('maxSalary', numberValue(compensation.maximum_ctc));
+  setIfEmpty(
+    'jobReceivedDate',
+    normalizeDateToIso(
+      job.job_received_date ||
+      job.received_date ||
+      jdJson?.jobReceivedDate ||
+      jdJson?.receivedDate ||
+      jdJson?.requirementReceivedDate
+    ) || getTodayIsoDate()
+  );
 
   setIfEmpty(
     'positionLevel',
@@ -1122,11 +1141,7 @@ const FormStep = ({
         }
 
         if (!normalizeText(formData.jobReceivedDate)) {
-          const today = new Date();
-          const yyyy = today.getFullYear();
-          const mm = String(today.getMonth() + 1).padStart(2, '0');
-          const dd = String(today.getDate()).padStart(2, '0');
-          updates.jobReceivedDate = `${yyyy}-${mm}-${dd}`;
+          updates.jobReceivedDate = getTodayIsoDate();
         }
 
         const locationField = getAvailableField('location');

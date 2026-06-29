@@ -64,6 +64,39 @@ test('handles missing personal information', () => {
   assert.equal(result.current_company_information.current_company_name, 'Arrows');
 });
 
+test('defaults employment type to full-time when current company or role exists without contract signal', () => {
+  const result = mapResumeToCandidateForm({
+    professional_information: {
+      current_company: 'MethodHub Software Ltd',
+      current_designation: 'Data Analyst',
+      employment_type: '',
+    },
+  });
+
+  assert.equal(result.current_company_information.employment_type, 'full-time');
+});
+
+test('preserves contract employment signal and treats internship as fresher', () => {
+  const contractResult = mapResumeToCandidateForm({
+    professional_information: {
+      current_company: 'MethodHub Software Ltd',
+      current_designation: 'Contract Data Analyst',
+    },
+  });
+  const internshipResult = mapResumeToCandidateForm({
+    professional_information: {
+      current_company: 'MethodHub Software Ltd',
+      current_designation: 'Data Practice Intern',
+    },
+  });
+
+  assert.equal(contractResult.current_company_information.employment_type, 'contract');
+  assert.equal(internshipResult.current_company_information.candidate_type, 'Fresher');
+  assert.equal(internshipResult.current_company_information.current_company_name, '');
+  assert.equal(internshipResult.current_company_information.job_title_role, '');
+  assert.equal(internshipResult.current_company_information.employment_type, '');
+});
+
 test('uses explicit primary skill when parser identifies one', () => {
   const result = mapResumeToCandidateForm({
     skills_information: {

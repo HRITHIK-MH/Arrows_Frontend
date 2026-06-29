@@ -2061,6 +2061,28 @@
   margin-top: 2px;
 }
 
+.reusable-form-page.candidate-form .resume-extraction-status {
+  margin-top: 8px;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.reusable-form-page.candidate-form .resume-extraction-status--loading {
+  color: #1d4ed8;
+}
+
+.reusable-form-page.candidate-form .resume-extraction-status--success {
+  color: #166534;
+}
+
+.reusable-form-page.candidate-form .resume-extraction-status--warning {
+  color: #92400e;
+}
+
+.reusable-form-page.candidate-form .resume-extraction-status--error {
+  color: #b91c1c;
+}
+
 .reusable-form-page.candidate-form .file-input-display.with-button {
   background: #edf2f7;
   border: 1px solid #dbe3ee;
