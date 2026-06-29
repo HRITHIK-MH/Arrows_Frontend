@@ -29,6 +29,9 @@ import { fetchSkills, toSkillOption } from "../../api/jobClientService";
 import { fetchRecruiters } from "../../api/teamService";
 import styles from "./Candidates.module.scss";
 
+const JOB_OPENING_TABLE_STORAGE_KEY = "job-openings:table:v1";
+const SEEDED_JOB_OPENING_IDS = new Set(["ZR_1_JOB", "ZR_2_JOB", "ZR_3_JOB", "ZR_4_JOB"]);
+const SEEDED_JOB_OPENING_TITLES = new Set(["senior react developer", "product manager", "ui/ux designer"]);
 
 // Memoized filter bar component to prevent unnecessary re-renders
 const CandidateFilterBar = React.memo(({
@@ -118,60 +121,6 @@ const PROFILE_TABS = [
 
 const PIPELINE_STEPS = ["New", "In Review", "Engaged", "Offered", "Hired", "Rejected"];
 
-const JOB_MAP_OPTIONS = [
-  {
-    id: "C128736",
-    company: "HCL",
-    openingJobId: "ZR_4_JOB",
-    postingTitle: "Senior Associate",
-    clientId: "C1292938",
-    assignedRecruiter: "Parthiban",
-    appliedDate: "12/10/2025",
-    jobOpeningStatus: "Pre-Screening",
-    hiringManager: "Parthiban",
-  },
-  {
-    id: "C723722",
-    company: "TCS",
-    openingJobId: "ZR_3_JOB",
-    postingTitle: "Lead Engineer",
-    clientId: "C1292432",
-    assignedRecruiter: "Parthiban",
-    appliedDate: "12/10/2025",
-    jobOpeningStatus: "Rejected",
-    hiringManager: "Parthiban",
-  },
-  {
-    id: "C958463",
-    company: "Wipro",
-    openingJobId: "ZR_2_JOB",
-    postingTitle: "Senior Associate",
-    clientId: "C1292938",
-    assignedRecruiter: "Parthiban",
-    appliedDate: "12/10/2025",
-    jobOpeningStatus: "Client Interview",
-    hiringManager: "Parthiban",
-  },
-  {
-    id: "C4231649",
-    company: "Verizon",
-    openingJobId: "ZR_1_JOB",
-    postingTitle: "Staff Engineer",
-    clientId: "C1294956",
-    assignedRecruiter: "Manigandan",
-    appliedDate: "12/12/2025",
-    jobOpeningStatus: "Assessment",
-    hiringManager: "Saravanan",
-  },
-];
-
-const CLIENT_NAME_BY_ID = {
-  C1292938: "MethodHub",
-  C1292432: "Arrows Inc",
-  C1292921: "NovaLabs",
-  C1294956: "Verizon",
-};
-
 const PRIMARY_SKILL_OPTIONS = [
   "Core Java",
   "Spring Boot",
@@ -193,7 +142,185 @@ const EXPERIENCE_OPTIONS = ["1 Year", "2 Years", "3 Years", "4 Years", "5 Years"
 
 const LAST_USED_OPTIONS = ["2025", "2024", "2023", "2022", "2021"];
 const CANDIDATE_DRAFT_STORAGE_KEY = "candidates:add-draft:v1";
+const LOCAL_CANDIDATE_STORAGE_KEY = "candidates:local-cache:v1";
 const createDraftId = () => `draft-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+const sanitizeStorageValue = (value) => {
+  if (value === null || value === undefined) return value;
+  if (Array.isArray(value)) return value.map((item) => sanitizeStorageValue(item));
+  if (typeof value !== "object") return value;
+  if (value instanceof Date) return value.toISOString();
+  if (typeof File !== "undefined" && value instanceof File) {
+    return {
+      name: value.name,
+      size: value.size,
+      type: value.type,
+      lastModified: value.lastModified,
+    };
+  }
+  if (typeof Blob !== "undefined" && value instanceof Blob) {
+    return {
+      size: value.size,
+      type: value.type,
+    };
+  }
+
+  return Object.entries(value).reduce((acc, [key, nestedValue]) => {
+    acc[key] = sanitizeStorageValue(nestedValue);
+    return acc;
+  }, {});
+};
+
+const getCandidateStorageId = (candidate) =>
+  String(
+    candidate?.candidateId ||
+      candidate?.id ||
+      candidate?.candidateCode ||
+      candidate?.primaryEmail ||
+      candidate?.candidateEmail ||
+      ""
+  ).trim();
+
+const getCandidateIdNumber = (candidateId) => {
+  const matched = String(candidateId || "").match(/(\d+)/);
+  const parsed = matched ? Number.parseInt(matched[1], 10) : Number.NaN;
+  return Number.isFinite(parsed) ? parsed : Number.POSITIVE_INFINITY;
+};
+
+const compareCandidateIds = (leftCandidateId, rightCandidateId) => {
+  const leftNumber = getCandidateIdNumber(leftCandidateId);
+  const rightNumber = getCandidateIdNumber(rightCandidateId);
+
+  if (leftNumber !== rightNumber) {
+    return leftNumber - rightNumber;
+  }
+
+  return String(leftCandidateId || "").localeCompare(String(rightCandidateId || ""));
+};
+
+const readLocalCandidates = () => {
+  if (typeof window === "undefined") return [];
+
+  try {
+    const rawCandidates = window.localStorage.getItem(LOCAL_CANDIDATE_STORAGE_KEY);
+    const parsedCandidates = rawCandidates ? JSON.parse(rawCandidates) : [];
+    return Array.isArray(parsedCandidates)
+      ? parsedCandidates.filter((candidate) => candidate && typeof candidate === "object")
+      : [];
+  } catch (error) {
+    console.error("Failed to read local candidate cache:", error);
+    return [];
+  }
+};
+
+const writeLocalCandidates = (candidates) => {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(
+    LOCAL_CANDIDATE_STORAGE_KEY,
+    JSON.stringify(candidates.map((candidate) => sanitizeStorageValue(candidate)))
+  );
+};
+
+const mergeCandidates = (apiCandidates = [], localCandidates = []) => {
+  const merged = [];
+  const seenIds = new Set();
+
+  [...localCandidates, ...apiCandidates].forEach((candidate) => {
+    if (!candidate || typeof candidate !== "object") return;
+    const candidateId = getCandidateStorageId(candidate);
+    const dedupeKey = candidateId || JSON.stringify(candidate);
+
+    if (seenIds.has(dedupeKey)) {
+      return;
+    }
+
+    seenIds.add(dedupeKey);
+    merged.push(candidate);
+  });
+
+  return merged.sort((leftCandidate, rightCandidate) =>
+    compareCandidateIds(leftCandidate?.candidateId, rightCandidate?.candidateId)
+  );
+};
+
+const upsertLocalCandidate = (candidate) => {
+  const candidateId = getCandidateStorageId(candidate);
+  if (!candidateId) return;
+
+  const localCandidates = readLocalCandidates();
+  const nextCandidates = localCandidates.filter(
+    (existingCandidate) => getCandidateStorageId(existingCandidate) !== candidateId
+  );
+  nextCandidates.unshift(sanitizeStorageValue(candidate));
+  writeLocalCandidates(
+    nextCandidates.sort((leftCandidate, rightCandidate) =>
+      compareCandidateIds(leftCandidate?.candidateId, rightCandidate?.candidateId)
+    )
+  );
+};
+
+const removeLocalCandidate = (candidate) => {
+  const candidateId = getCandidateStorageId(candidate);
+  if (!candidateId) return;
+
+  const nextCandidates = readLocalCandidates().filter(
+    (existingCandidate) => getCandidateStorageId(existingCandidate) !== candidateId
+  );
+  writeLocalCandidates(
+    nextCandidates.sort((leftCandidate, rightCandidate) =>
+      compareCandidateIds(leftCandidate?.candidateId, rightCandidate?.candidateId)
+    )
+  );
+};
+
+const getNextCandidateId = (candidates = []) => {
+  const maxNumericId = candidates.reduce((maxValue, item) => {
+    const parsed = getCandidateIdNumber(item?.candidateId);
+    if (!Number.isFinite(parsed)) return maxValue;
+    return parsed > maxValue ? parsed : maxValue;
+  }, 0);
+
+  return `C${String(maxNumericId + 1).padStart(3, "0")}`;
+};
+
+const loadJobMapOptions = () => {
+  if (typeof window === "undefined") return [];
+
+  try {
+    const rawRows = window.localStorage.getItem(JOB_OPENING_TABLE_STORAGE_KEY);
+    const parsedRows = rawRows ? JSON.parse(rawRows) : [];
+    if (!Array.isArray(parsedRows)) return [];
+
+    return parsedRows
+      .map((row, index) => {
+        const openingJobId = String(row?.openingJobId || row?.jobPositionId || row?.jobId || "").trim();
+        const postingTitle = String(row?.postingTitle || row?.positionName || row?.jobTitle || "").trim();
+        if (
+          !openingJobId ||
+          SEEDED_JOB_OPENING_IDS.has(openingJobId) ||
+          SEEDED_JOB_OPENING_TITLES.has(postingTitle.toLowerCase())
+        ) {
+          return null;
+        }
+
+        return {
+          id: openingJobId || `job-${index + 1}`,
+          company: String(row?.clientName || row?.company || row?.clientId || "").trim(),
+          openingJobId,
+          postingTitle,
+          clientId: String(row?.clientId || "").trim(),
+          assignedRecruiter: String(row?.assignedRecruiters || row?.assignedRecruiter || "").trim(),
+          appliedDate: "",
+          jobOpeningStatus: String(row?.jobOpeningStatus || row?.jobStatus || row?.status || "").trim(),
+          hiringManager: String(row?.hiringManager || row?.accountManager || "").trim(),
+        };
+      })
+      .filter(Boolean);
+  } catch (error) {
+    console.error("Failed to load job opening options:", error);
+    return [];
+  }
+};
 
 const PRIMARY_SKILL_LABELS = {
   java: "Core Java",
@@ -354,7 +481,7 @@ const getMetaOptionsForField = (metaOptionMap, fieldName) => {
 export default function Candidates() {
   const [showCandidateForm, setShowCandidateForm] = React.useState(false);
   const [showDataTable, setShowDataTable] = React.useState(true);
-  const [submittedData, setSubmittedData] = React.useState([]);
+  const [submittedData, setSubmittedData] = React.useState(() => readLocalCandidates());
   const [loading, setLoading] = React.useState(false);
   const [pagination, setPagination] = React.useState({ page: 1, limit: 100, totalRecords: 0, totalPages: 1 });
   const [editingIndex, setEditingIndex] = React.useState(null);
@@ -367,7 +494,7 @@ export default function Candidates() {
   const [filterStatus, setFilterStatus] = React.useState('');
   const [entriesPerPage, setEntriesPerPage] = React.useState(10);
   const [currentPage, setCurrentPage] = React.useState(1);
-  const [sortConfig, setSortConfig] = React.useState({ key: null, direction: 'asc' });
+  const [sortConfig, setSortConfig] = React.useState({ key: 'candidateId', direction: 'asc' });
   const [isViewDrawerOpen, setIsViewDrawerOpen] = React.useState(false);
   const [activeProfileTab, setActiveProfileTab] = React.useState("Basic Info");
   const [selectedCandidate, setSelectedCandidate] = React.useState(null);
@@ -384,6 +511,7 @@ export default function Candidates() {
   const [candidateMetaOptions, setCandidateMetaOptions] = React.useState({});
   const [candidateSkillOptions, setCandidateSkillOptions] = React.useState([]);
   const [candidateRecruiterOptions, setCandidateRecruiterOptions] = React.useState([]);
+  const [jobMapOptions, setJobMapOptions] = React.useState(() => loadJobMapOptions());
   const mapDropdownRef = React.useRef(null);
   const addCandidateMenuRef = React.useRef(null);
   const resumeUploadRef = React.useRef(null);
@@ -425,15 +553,8 @@ export default function Candidates() {
   }, [currentUserRole]);
 
   const generateNextCandidateId = React.useCallback(() => {
-    const maxNumericId = submittedData.reduce((maxValue, item) => {
-      const matched = String(item?.candidateId || "").match(/(\d+)/);
-      const parsed = matched ? Number.parseInt(matched[1], 10) : Number.NaN;
-      if (!Number.isFinite(parsed)) return maxValue;
-      return parsed > maxValue ? parsed : maxValue;
-    }, 0);
-
-    const nextNumericId = maxNumericId + 1;
-    return `C${String(nextNumericId).padStart(3, "0")}`;
+    const allKnownCandidates = mergeCandidates(submittedData, readLocalCandidates());
+    return getNextCandidateId(allKnownCandidates);
   }, [submittedData]);
 
   const showTransientMessage = React.useCallback((message) => {
@@ -446,8 +567,9 @@ export default function Candidates() {
   const getClientNameById = React.useCallback((clientId) => {
     const normalizedClientId = String(clientId || "").trim();
     if (!normalizedClientId) return "-";
-    return CLIENT_NAME_BY_ID[normalizedClientId] || normalizedClientId;
-  }, []);
+    const matchingJob = jobMapOptions.find((option) => option.clientId === normalizedClientId && option.company);
+    return matchingJob?.company || normalizedClientId;
+  }, [jobMapOptions]);
 
   const sanitizeDraftValue = React.useCallback((value) => {
     if (value === null || value === undefined) return value;
@@ -483,6 +605,17 @@ export default function Candidates() {
   }, []);
 
   const loadCandidates = React.useCallback(async () => {
+    const localCandidates = readLocalCandidates();
+
+    if (localCandidates.length > 0) {
+      setSubmittedData((currentCandidates) => mergeCandidates(currentCandidates, localCandidates));
+      setPagination((prev) => ({
+        ...prev,
+        totalRecords: Math.max(prev.totalRecords, localCandidates.length),
+        totalPages: Math.max(prev.totalPages, Math.ceil(localCandidates.length / prev.limit) || 1),
+      }));
+    }
+
     setLoading(true);
     try {
       const response = await fetchCandidates({
@@ -492,16 +625,31 @@ export default function Candidates() {
         sortOrder: 'desc',
       });
 
-      setSubmittedData(Array.isArray(response.items) ? response.items : []);
+      const apiCandidates = Array.isArray(response.items) ? response.items : [];
+      const mergedCandidates = mergeCandidates(apiCandidates, localCandidates);
+
+      setSubmittedData(mergedCandidates);
       setPagination((prev) => ({
         ...prev,
         page: response.pagination?.page ?? prev.page,
         limit: response.pagination?.limit ?? prev.limit,
-        totalRecords: response.pagination?.totalRecords ?? prev.totalRecords,
-        totalPages: response.pagination?.totalPages ?? prev.totalPages,
+        totalRecords: Math.max(
+          response.pagination?.totalRecords ?? prev.totalRecords,
+          mergedCandidates.length
+        ),
+        totalPages: Math.max(
+          response.pagination?.totalPages ?? prev.totalPages,
+          Math.ceil(mergedCandidates.length / prev.limit) || 1
+        ),
       }));
     } catch (error) {
       console.error('Failed to load candidate list:', error);
+      setSubmittedData(localCandidates);
+      setPagination((prev) => ({
+        ...prev,
+        totalRecords: Math.max(prev.totalRecords, localCandidates.length),
+        totalPages: Math.max(prev.totalPages, Math.ceil(localCandidates.length / prev.limit) || 1),
+      }));
     } finally {
       setLoading(false);
     }
@@ -514,6 +662,19 @@ export default function Candidates() {
   React.useEffect(() => {
     loadCandidates();
   }, [loadCandidates]);
+
+  React.useEffect(() => {
+    const refreshJobMapOptions = () => setJobMapOptions(loadJobMapOptions());
+
+    refreshJobMapOptions();
+    window.addEventListener("focus", refreshJobMapOptions);
+    window.addEventListener("storage", refreshJobMapOptions);
+
+    return () => {
+      window.removeEventListener("focus", refreshJobMapOptions);
+      window.removeEventListener("storage", refreshJobMapOptions);
+    };
+  }, []);
 
   React.useEffect(() => {
     let isMounted = true;
@@ -773,6 +934,11 @@ export default function Candidates() {
         const aValue = a.item[sortConfig.key] || "";
         const bValue = b.item[sortConfig.key] || "";
 
+        if (sortConfig.key === "candidateId") {
+          const comparison = compareCandidateIds(aValue, bValue);
+          return sortConfig.direction === 'asc' ? comparison : -comparison;
+        }
+
         const aStr = String(aValue).toLowerCase();
         const bStr = String(bValue).toLowerCase();
 
@@ -833,6 +999,13 @@ export default function Candidates() {
     () => Array.from({ length: totalPages }, (_, index) => index + 1),
     [totalPages]
   );
+
+  const visiblePageNumbers = React.useMemo(() => {
+    if (totalPages <= 5) return pageNumbers;
+
+    const startPage = Math.max(1, Math.min(currentPage - 2, totalPages - 4));
+    return Array.from({ length: 5 }, (_, index) => startPage + index);
+  }, [currentPage, pageNumbers, totalPages]);
 
   const startEntry = totalRecords === 0 ? 0 : (currentPage - 1) * entriesPerPage + 1;
   const endEntry = Math.min(currentPage * entriesPerPage, totalRecords);
@@ -903,8 +1076,8 @@ export default function Candidates() {
 
   const buildCandidateProfile = React.useCallback((row) => {
     const [firstName = "", lastName = ""] = String(row.candidateName || "").split(" ");
-    const normalizedFirstName = row.firstName || firstName || "Rahul";
-    const normalizedLastName = row.lastName || lastName || "Mehta";
+    const normalizedFirstName = row.firstName || firstName || "";
+    const normalizedLastName = row.lastName || lastName || "";
     const mappedPrimarySkills = Array.isArray(row.skills)
       ? row.skills
         .filter((skill) => skill && skill.primarySkill)
@@ -963,77 +1136,6 @@ export default function Candidates() {
         })
       : [];
 
-    const hasMappedPrimarySkills = mappedPrimarySkills.length > 0;
-    const hasMappedSecondarySkills = mappedSecondarySkills.length > 0;
-    const defaultPrimarySkills = [
-      {
-        id: "primary-1",
-        name: "Core Java",
-        experience: "2 Years",
-        rating: 4,
-        lastUsed: "2025",
-      },
-      {
-        id: "primary-2",
-        name: "Spring Boot",
-        experience: "1 Year",
-        rating: 4,
-        lastUsed: "2025",
-      },
-      {
-        id: "primary-3",
-        name: "Microservices",
-        experience: "3 Years",
-        rating: 3,
-        lastUsed: "2025",
-      },
-      {
-        id: "primary-4",
-        name: "Rest API",
-        experience: "2 Years",
-        rating: 3,
-        lastUsed: "2022",
-      },
-    ];
-
-    const defaultSecondarySkills = [
-      {
-        id: "secondary-1",
-        name: "Communication Skills",
-        experience: "5 Years",
-        rating: 4,
-        lastUsed: "2025",
-      },
-      {
-        id: "secondary-2",
-        name: "Time Management",
-        experience: "5 Years",
-        rating: 4,
-        lastUsed: "2025",
-      },
-      {
-        id: "secondary-3",
-        name: "Problem-Solving",
-        experience: "5 Years",
-        rating: 3,
-        lastUsed: "2025",
-      },
-      {
-        id: "secondary-4",
-        name: "Team Collaboration",
-        experience: "5 Years",
-        rating: 4,
-        lastUsed: "2025",
-      },
-      {
-        id: "secondary-5",
-        name: "Adaptability & Learning",
-        experience: "5 Years",
-        rating: 4,
-        lastUsed: "2025",
-      },
-    ];
-
     const normalizedCandidateDocuments = Array.isArray(row.candidateDocuments)
       ? row.candidateDocuments
         .filter((doc) => doc && (doc.name || doc.file?.name || doc.id))
@@ -1061,149 +1163,36 @@ export default function Candidates() {
         })
       : [];
 
-    const defaultTimeline = [
-      {
-        id: "timeline-1",
-        title: "System Design / Technical Deep Dive",
-        by: "Parthiban",
-        summary: "Architecture, scalability, best practices, and communication assessed.",
-        date: "11/25/2025 09:33 PM",
-        tone: "purple",
-      },
-      {
-        id: "timeline-2",
-        title: "Coding / Problem-Solving",
-        by: "Parthiban",
-        summary: "Coding challenge, logic, algorithms, and debugging evaluated.",
-        date: "11/25/2025 09:33 PM",
-        tone: "slate",
-      },
-      {
-        id: "timeline-3",
-        title: "Technical Screening",
-        by: "Parthiban",
-        summary: "Basic technical fundamentals and core skills evaluated.",
-        date: "11/25/2025 09:33 PM",
-        tone: "green",
-      },
-      {
-        id: "timeline-4",
-        title: "Candidate Created",
-        by: "Parthiban",
-        summary: "Candidate profile created and moved to sourcing stage.",
-        date: "11/25/2025 09:33 PM",
-        tone: "orange",
-      },
-    ];
-
-    const defaultRatingRounds = [
-      {
-        id: "rating-1",
-        avatar: "P",
-        avatarTone: "purple",
-        title: "Round 1: Technical Screening / Fundamentals (Strong Hire)",
-        by: "Parthiban",
-        rating: 4,
-        date: "11/25/2025 09:33 PM",
-        summary:
-          "The candidate demonstrated strong technical fundamentals, solid understanding of core concepts, and the ability to reason through problems clearly.",
-        tags: [
-          { label: "General Interview", tone: "blue" },
-          { label: "Product Analyst (Sample)", tone: "gray" },
-        ],
-      },
-      {
-        id: "rating-2",
-        avatar: "S",
-        avatarTone: "olive",
-        title: "Round 2: Coding / Problem-Solving Round (Strong Hire)",
-        by: "Saravanan",
-        rating: 5,
-        date: "11/25/2025 09:33 PM",
-        summary:
-          "Excellent problem-solving skills with clean, optimized code. Strong ability to code under pressure while maintaining quality.",
-        tags: [
-          { label: "General Interview", tone: "green" },
-          { label: "Product Analyst (Sample)", tone: "gray" },
-        ],
-      },
-      {
-        id: "rating-3",
-        avatar: "M",
-        avatarTone: "rose",
-        title: "Round 3: System Design / Architecture / Technical Deep Dive (Strong Hire)",
-        by: "Manigandan",
-        rating: 5,
-        date: "11/25/2025 09:33 PM",
-        summary:
-          "Strong system design capability with practical and well-justified architecture decisions.",
-        tags: [
-          { label: "General Interview", tone: "orange" },
-          { label: "Product Analyst (Sample)", tone: "gray" },
-        ],
-      },
-    ];
-
-    const defaultJobApplications = [
-      {
-        openingJobId: "ZR_4_JOB",
-        postingTitle: "Senior Associate",
-        clientId: "C1292938",
-        assignedRecruiter: "Parthiban",
-        appliedDate: "12/10/2025",
-        jobOpeningStatus: "Pre-Screening",
-        hiringManager: "Parthiban",
-      },
-      {
-        openingJobId: "ZR_3_JOB",
-        postingTitle: "Lead Engineer",
-        clientId: "C1292432",
-        assignedRecruiter: "Parthiban",
-        appliedDate: "12/10/2025",
-        jobOpeningStatus: "Rejected",
-        hiringManager: "Parthiban",
-      },
-      {
-        openingJobId: "ZR_2_JOB",
-        postingTitle: "Senior Associate",
-        clientId: "C1292938",
-        assignedRecruiter: "Parthiban",
-        appliedDate: "12/10/2025",
-        jobOpeningStatus: "Client Interview",
-        hiringManager: "Parthiban",
-      },
-    ];
-
     return {
-      candidateId: row.candidateId || "C001",
+      candidateId: row.candidateId || "",
       firstName: normalizedFirstName,
       lastName: normalizedLastName,
-      fullName: `${normalizedFirstName} ${normalizedLastName}`.trim(),
-      role: row.role || "Senior Product Manager",
-      email: row.primaryEmail || row.candidateEmail || "rahul.mehta@email.com",
-      secondaryEmail: row.secondaryEmail || row.candidateEmail || "rahul.mehta@email.com",
-      phoneNumber: row.phoneNumber || "9876543210",
-      location: row.location || "Chennai, India",
-      dateOfBirth: row.dateOfBirth || "02/06/1999",
-      gender: row.gender || "Male",
-      currentCompany: row.currentCompanyName || (row.candidateType === "fresher" ? "Not applicable" : "Method Hub"),
-      experience: row.experience || "8 Years",
-      yearsExperience: row.yearsExperience || "8 Years",
-      offersInHand: row.offersInHand || "No",
-      currentCtc: row.currentCtc || "25,000,00 LPA",
-      expectedCtc: row.expectedCtc || "30,000,00 LPA",
-      primarySkills: row.primarySkills || (hasMappedPrimarySkills ? mappedPrimarySkills : defaultPrimarySkills),
-      secondarySkills: row.secondarySkills || (hasMappedSecondarySkills ? mappedSecondarySkills : (hasMappedPrimarySkills ? [] : defaultSecondarySkills)),
+      fullName: `${normalizedFirstName} ${normalizedLastName}`.trim() || row.candidateName || "",
+      role: row.role || row.currentDesignation || row.designation || "",
+      email: row.primaryEmail || row.candidateEmail || "",
+      secondaryEmail: row.secondaryEmail || "",
+      phoneNumber: row.phoneNumber || "",
+      location: row.location || "",
+      dateOfBirth: row.dateOfBirth || "",
+      gender: row.gender || "",
+      currentCompany: row.currentCompanyName || (row.candidateType === "fresher" ? "Not applicable" : ""),
+      experience: row.experience || row.yearsExperience || "",
+      yearsExperience: row.yearsExperience || row.experience || "",
+      offersInHand: row.offersInHand || "",
+      currentCtc: row.currentCtc || "",
+      expectedCtc: row.expectedCtc || "",
+      primarySkills: row.primarySkills || mappedPrimarySkills,
+      secondarySkills: row.secondarySkills || mappedSecondarySkills,
       resumeFiles: Array.isArray(row.resumeFiles) ? row.resumeFiles : normalizedCandidateDocuments,
       attachments: Array.isArray(row.attachments) ? row.attachments : normalizedCandidateDocuments,
-      timeline: row.timeline || defaultTimeline,
-      rating: row.rating || "4/5",
-      ratingRounds: row.ratingRounds || defaultRatingRounds,
-      overallRating: row.overallRating || 4,
-      source: row.source || "Resume Inbox",
-      stage: row.stage || "Sourced",
-      status: row.status || "In Progress",
-      jobApplications: row.jobApplications || defaultJobApplications,
+      timeline: row.timeline || [],
+      rating: row.rating || "",
+      ratingRounds: row.ratingRounds || [],
+      overallRating: row.overallRating || 0,
+      source: row.source || "",
+      stage: row.stage || "",
+      status: row.status || "",
+      jobApplications: Array.isArray(row.jobApplications) ? row.jobApplications : [],
     };
   }, []);
 
@@ -1382,6 +1371,7 @@ export default function Candidates() {
     try {
       setLoading(true);
       await deleteCandidate(row.candidateId, { softDelete: true });
+      removeLocalCandidate(row);
       setSubmittedData((prev) => prev.filter((_, i) => i !== index));
       showTransientMessage('Candidate deleted successfully');
     } catch (error) {
@@ -1405,6 +1395,11 @@ export default function Candidates() {
     const firstName = data.firstName || "";
     const lastName = data.lastName || "";
     const candidateName = data.candidateName || `${firstName} ${lastName}`.trim();
+    const allKnownCandidates = mergeCandidates(submittedData, readLocalCandidates());
+    const candidateId =
+      editingData?.candidateId ||
+      String(data.candidateId || data.candidateCode || "").trim() ||
+      getNextCandidateId(allKnownCandidates);
 
     const parseExperienceYearsAsInteger = (value) => {
       if (value === null || value === undefined || value === "") return undefined;
@@ -1424,6 +1419,8 @@ export default function Candidates() {
     };
 
     const candidatePayload = {
+      candidateId,
+      candidateCode: candidateId,
       firstName: data.firstName || "",
       lastName: data.lastName || "",
       primaryEmail: data.primaryEmail || data.candidateEmail || "",
@@ -1432,24 +1429,84 @@ export default function Candidates() {
       totalExperience: parseExperienceYearsAsInteger(data.yearsExperience),
     };
 
+    const localCandidate = {
+      ...data,
+      candidateId,
+      candidateName,
+      candidateEmail: data.primaryEmail || data.candidateEmail || "",
+      candidateDocuments: Array.isArray(data.candidateDocuments) ? data.candidateDocuments : [],
+      modifiedTime: data.modifiedTime || formatTimestamp(new Date()),
+      source: data.sourceName || data.sourceId || data.source || "",
+      rating: data.rating || "3/5",
+      stage: data.stage || "Added",
+      status: data.status || "In Progress",
+    };
+
     try {
       if (editingIndex !== null && editingData?.candidateId) {
         // For updates, the controller expects CandidateUpdateRequest at PUT /api/candidates/{id}
         await updateCandidate(editingData.candidateId, candidatePayload);
+        upsertLocalCandidate(localCandidate);
+        setSortConfig({ key: 'candidateId', direction: 'asc' });
+        setSubmittedData((previousCandidates) =>
+          mergeCandidates(
+            previousCandidates.map((candidate, index) =>
+              index === editingIndex ? localCandidate : candidate
+            ),
+            [localCandidate]
+          )
+        );
         showTransientMessage('Candidate updated successfully');
       } else {
         await createCandidate(candidatePayload);
+        upsertLocalCandidate(localCandidate);
+        setSortConfig({ key: 'candidateId', direction: 'asc' });
+        setSubmittedData((previousCandidates) => mergeCandidates(previousCandidates, [localCandidate]));
         showTransientMessage('Candidate added successfully');
       }
       await loadCandidates();
       closeCandidateForm();
     } catch (error) {
       console.error('Candidate save failed:', error);
-      alert('Unable to save candidate right now. Please try again.');
+      const status = error?.response?.status;
+      const isApiUnavailable = !error?.response || status >= 500;
+
+      if (isApiUnavailable) {
+        upsertLocalCandidate(localCandidate);
+        setSubmittedData((previousCandidates) => {
+          if (editingIndex !== null) {
+            return previousCandidates.map((candidate, index) =>
+              index === editingIndex ? localCandidate : candidate
+            );
+          }
+          return [...previousCandidates, localCandidate];
+        });
+        showTransientMessage(
+          editingIndex !== null
+            ? 'Candidate updated locally'
+            : 'Candidate added successfully'
+        );
+        closeCandidateForm();
+      } else {
+        const apiMessage =
+          error?.response?.data?.message ||
+          error?.response?.data?.error ||
+          'Unable to save candidate right now. Please try again.';
+        alert(apiMessage);
+      }
     } finally {
       setLoading(false);
     }
-  }, [closeCandidateForm, editingData?.candidateId, editingIndex, generateNextCandidateId, loadCandidates, showTransientMessage]);
+  }, [
+    closeCandidateForm,
+    editingData,
+    editingIndex,
+    formatTimestamp,
+    generateNextCandidateId,
+    loadCandidates,
+    showTransientMessage,
+    submittedData,
+  ]);
 
 
   const closeViewDrawer = React.useCallback(() => {
@@ -1460,25 +1517,25 @@ export default function Candidates() {
   }, []);
 
   const selectedMapOption = React.useMemo(
-    () => JOB_MAP_OPTIONS.find((option) => option.id === mapJobValue),
-    [mapJobValue]
+    () => jobMapOptions.find((option) => option.id === mapJobValue),
+    [jobMapOptions, mapJobValue]
   );
 
   const filteredMapOptions = React.useMemo(() => {
     const query = mapQuery.trim().toLowerCase();
-    if (!query) return JOB_MAP_OPTIONS;
-    return JOB_MAP_OPTIONS.filter(
+    if (!query) return jobMapOptions;
+    return jobMapOptions.filter(
       (option) =>
         option.id.toLowerCase().includes(query) ||
         option.company.toLowerCase().includes(query) ||
         option.openingJobId.toLowerCase().includes(query) ||
         option.postingTitle.toLowerCase().includes(query)
     );
-  }, [mapQuery]);
+  }, [jobMapOptions, mapQuery]);
 
   const handleMapJob = React.useCallback(() => {
     if (!mapJobValue) return;
-    const selectedOption = JOB_MAP_OPTIONS.find((option) => option.id === mapJobValue);
+    const selectedOption = jobMapOptions.find((option) => option.id === mapJobValue);
     if (!selectedOption) return;
     setSelectedCandidate((prev) => {
       if (!prev) return prev;
@@ -1495,7 +1552,7 @@ export default function Candidates() {
     setMapQuery("");
     setIsMapDropdownOpen(false);
     setActiveProfileTab("Job Applications");
-  }, [mapJobValue]);
+  }, [jobMapOptions, mapJobValue]);
 
   const activeSkillKey = activeSkillType === "primary" ? "primarySkills" : "secondarySkills";
   const skillOptions = activeSkillType === "primary" ? PRIMARY_SKILL_OPTIONS : SECONDARY_SKILL_OPTIONS;
@@ -1953,21 +2010,27 @@ export default function Candidates() {
             </tr>
           </thead>
           <tbody>
-            {(selectedCandidate.jobApplications || []).map((job, index) => (
-              <tr key={`${job.openingJobId}-${index}`}>
-                <td>{job.openingJobId}</td>
-                <td>{job.postingTitle}</td>
-                <td>{job.clientName || getClientNameById(job.clientId)}</td>
-                <td>{job.assignedRecruiter}</td>
-                <td>{job.appliedDate}</td>
-                <td>
-                  <span className={`${styles.stagePill} ${getStageClass(job.jobOpeningStatus)}`}>
-                    {job.jobOpeningStatus}
-                  </span>
-                </td>
-                <td>{job.hiringManager}</td>
+            {(selectedCandidate.jobApplications || []).length === 0 ? (
+              <tr>
+                <td colSpan={7} className={styles.emptyCell}>No job applications mapped.</td>
               </tr>
-            ))}
+            ) : (
+              (selectedCandidate.jobApplications || []).map((job, index) => (
+                <tr key={`${job.openingJobId}-${index}`}>
+                  <td>{job.openingJobId || "-"}</td>
+                  <td>{job.postingTitle || "-"}</td>
+                  <td>{job.clientName || getClientNameById(job.clientId)}</td>
+                  <td>{job.assignedRecruiter || job.assignedRecruiters || "-"}</td>
+                  <td>{job.appliedDate || "-"}</td>
+                  <td>
+                    <span className={`${styles.stagePill} ${getStageClass(job.jobOpeningStatus)}`}>
+                      {job.jobOpeningStatus || "-"}
+                    </span>
+                  </td>
+                  <td>{job.hiringManager || "-"}</td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
@@ -1975,14 +2038,14 @@ export default function Candidates() {
   };
 
   return (
-    <div className={styles.page}>
+    <div className={`${styles.page}${showCandidateForm ? ` ${styles.formPage}` : ""}`}>
       {successMessage && (
         <div className={styles.successMessage}>
           ✓ {successMessage}
         </div>
       )}
 
-      <div className={styles.card}>
+      <div className={`${styles.card}${showCandidateForm ? ` ${styles.formCard}` : ""}`}>
         {!showCandidateForm && (
           <div className={styles.infoRow}>
             <div className={styles.infoContent}>
@@ -2193,8 +2256,8 @@ export default function Candidates() {
                   <option value="50">50</option>
                 </select>
                 <span>entries</span>
-                <span>
-                  ({startEntry}-{endEntry} of {totalRecords})
+                <span className={styles.entrySummary}>
+                  Showing {startEntry} to {endEntry} of {totalRecords} entries
                 </span>
               </div>
               <div className={styles.pagination}>
@@ -2207,7 +2270,7 @@ export default function Candidates() {
                 >
                   {"<"}
                 </button>
-                {pageNumbers.map((pageNumber) => (
+                {visiblePageNumbers.map((pageNumber) => (
                   <button
                     key={pageNumber}
                     type="button"
@@ -2240,10 +2303,10 @@ export default function Candidates() {
             <div className={styles.drawerTop}>
               <div className={styles.drawerTopMain}>
                 <div className={styles.drawerProfile}>
-                  <div className={styles.drawerAvatar}>{selectedCandidate.firstName?.charAt(0) || "R"}</div>
+                  <div className={styles.drawerAvatar}>{selectedCandidate.firstName?.charAt(0) || selectedCandidate.fullName?.charAt(0) || "C"}</div>
                   <div className={styles.drawerIdentity}>
-                    <h3>{selectedCandidate.fullName}</h3>
-                    <p>{selectedCandidate.role}</p>
+                    <h3>{selectedCandidate.fullName || "Candidate"}</h3>
+                    <p>{selectedCandidate.role || "-"}</p>
                     <div className={styles.drawerMeta}>
                       <span><FiMail size={12} /> {selectedCandidate.email}</span>
                       <span><FiMapPin size={12} /> {selectedCandidate.location}</span>
@@ -2296,7 +2359,7 @@ export default function Candidates() {
                       setIsMapDropdownOpen((prev) => !prev);
                     }}
                   >
-                    <span>{selectedMapOption ? `${selectedMapOption.openingJobId} (${selectedMapOption.company})` : "Search JD to Map"}</span>
+                    <span>{selectedMapOption ? `${selectedMapOption.openingJobId}${selectedMapOption.company ? ` (${selectedMapOption.company})` : ""}` : "Search JD to Map"}</span>
                     <FiChevronDown size={16} />
                   </button>
                   {isMapDropdownOpen && (
@@ -2324,7 +2387,7 @@ export default function Candidates() {
                               setIsMapDropdownOpen(false);
                             }}
                           >
-                            {option.openingJobId} ({option.company})
+                            {option.openingJobId}{option.company ? ` (${option.company})` : ""}
                           </button>
                         ))}
                       </div>

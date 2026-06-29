@@ -1,4 +1,5 @@
 import axios from 'axios';
+import API from '../../api/axiosConfig';
 import React, { useState, useMemo, useCallback } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
 import pdfjsWorkerSrc from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
@@ -212,6 +213,14 @@ const normalizeDateToIso = (value) => {
   return `${yyyy}-${mm}-${dd}`;
 };
 
+const getTodayIsoDate = () => {
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth() + 1).padStart(2, '0');
+  const dd = String(today.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+};
+
 const formatOptionLabels = (selectedValues, options = []) => {
   const normalizedValues = Array.isArray(selectedValues)
     ? selectedValues
@@ -332,6 +341,7 @@ const FIELD_ALIAS_MAP = {
   softSkills: ['soft skills', 'behavioral skills'],
   additionalSkills: ['additional skills', 'other skills'],
   targetDate: ['target', 'target date', 'joining target date'],
+  jobReceivedDate: ['job received date', 'received date', 'requirement received date'],
   jobActivationDate: ['job activation date', 'validity upto', 'validity up to', 'validity date']
 };
 
@@ -573,6 +583,16 @@ const mapParsedJdToFormUpdates = (jdJson, formData, availableFields, sourceText 
   setIfEmpty('noOfPositions', numberValue(job.number_of_positions));
   setIfEmpty('minSalary', numberValue(compensation.minimum_ctc));
   setIfEmpty('maxSalary', numberValue(compensation.maximum_ctc));
+  setIfEmpty(
+    'jobReceivedDate',
+    normalizeDateToIso(
+      job.job_received_date ||
+      job.received_date ||
+      jdJson?.jobReceivedDate ||
+      jdJson?.receivedDate ||
+      jdJson?.requirementReceivedDate
+    ) || getTodayIsoDate()
+  );
 
   setIfEmpty(
     'positionLevel',
@@ -1121,11 +1141,7 @@ const FormStep = ({
         }
 
         if (!normalizeText(formData.jobReceivedDate)) {
-          const today = new Date();
-          const yyyy = today.getFullYear();
-          const mm = String(today.getMonth() + 1).padStart(2, '0');
-          const dd = String(today.getDate()).padStart(2, '0');
-          updates.jobReceivedDate = `${yyyy}-${mm}-${dd}`;
+          updates.jobReceivedDate = getTodayIsoDate();
         }
 
         const locationField = getAvailableField('location');
@@ -1371,57 +1387,6 @@ const FormStep = ({
       </div>
     );
 
-    const technicalSkillsOptions = Array.isArray(fieldMap.technicalSkills?.options)
-      ? fieldMap.technicalSkills.options
-      : [];
-
-    const fallbackAddTechnicalOptions = technicalSkillsOptions.length
-      ? technicalSkillsOptions
-      : [
-        { value: 'machine-learning', label: 'Machine Learning' },
-        { value: 'deep-learning', label: 'Deep Learning' },
-        { value: 'nlp', label: 'NLP' },
-        { value: 'data-science', label: 'Data Science' },
-        { value: 'computer-vision', label: 'Computer Vision' },
-        { value: 'azure', label: 'Microsoft Azure' }
-      ];
-
-    const addTechnicalConfig =
-      fieldMap.addTechnicalSkills ||
-      fieldMap.addTechnicalSkill ||
-      fieldMap.additionalTechnicalSkills ||
-      fieldMap['grid-col-1 grid-row-6'] ||
-      fields.find((field) => {
-        const fieldName = String(field?.name || '').toLowerCase();
-        const fieldLabel = String(field?.label || '').toLowerCase();
-        return (
-          field?.cssClass?.includes('grid-row-6') ||
-          fieldName.includes('addtechnical') ||
-          (fieldName.includes('technical') && fieldName.includes('additional')) ||
-          (fieldLabel.includes('add') && fieldLabel.includes('technical'))
-        );
-      }) ||
-      {
-        name: 'extraTechnicalSkills',
-        label: 'Add Technical Skill',
-        type: 'multiselect',
-        required: false
-      };
-
-    const addTechnicalFieldName = addTechnicalConfig.name || 'extraTechnicalSkills';
-    const addTechnicalFieldOptions = Array.isArray(addTechnicalConfig.options) && addTechnicalConfig.options.length
-      ? addTechnicalConfig.options
-      : fallbackAddTechnicalOptions;
-    const normalizedAddTechnicalConfig = {
-      ...addTechnicalConfig,
-      name: addTechnicalFieldName,
-      label: addTechnicalConfig.label || 'Add Technical Skill',
-      type: 'multiselect',
-      required: Boolean(addTechnicalConfig.required),
-      options: addTechnicalFieldOptions,
-      placeholder: addTechnicalConfig.placeholder || 'Select skills'
-    };
-
     const handleGenerateJd = async () => {
       setJdGenerationStatus({ state: 'loading', message: 'Generating job description...' });
 
@@ -1553,12 +1518,6 @@ const FormStep = ({
 
             <div className="grid-cell grid-col-1 grid-row-5">
               {getField('technicalSkills')}
-            </div>
-            <div className="grid-cell grid-col-2 grid-row-5">
-              {getField('additionalSkills')}
-            </div>
-            <div className="grid-cell grid-col-3 grid-row-5">
-              {renderField(normalizedAddTechnicalConfig)}
             </div>
             <div className="grid-cell grid-col-1 grid-row-6 grid-span-2">
               <div className="job-jd-generator">
@@ -1751,7 +1710,18 @@ const ReusableForm = ({ config, onSubmit, initialData, readOnly = false }) => {
       return data[fieldName];
     }
 
-    if (["primarySkill", "skillExperienceYears", "skillRating", "skillExperienceLevel"].includes(fieldName)) {
+    if (
+      [
+        "primarySkill",
+        "skillExperienceYears",
+        "skillRating",
+        "skillExperienceLevel",
+        "secondarySkill",
+        "secondarySkillExperienceLevel",
+        "secondarySkillExperienceYears",
+        "secondarySkillRating",
+      ].includes(fieldName)
+    ) {
       return data?.skills?.[0]?.[fieldName];
     }
 
@@ -1878,12 +1848,13 @@ const ReusableForm = ({ config, onSubmit, initialData, readOnly = false }) => {
       if (config.submitRequest) {
         await config.submitRequest(formData);
       } else if (config.submitEndpoint) {
-        await axios.post(config.submitEndpoint, formData);
+        const submitEndpoint = config.submitEndpoint.startsWith('/') ? config.submitEndpoint : `/${config.submitEndpoint}`;
+        await API.post(submitEndpoint, formData);
       }
 
       // Call the onSubmit callback if provided
       didRunSubmitCallback = true;
-      onSubmit?.(formData);
+      await onSubmit?.(formData);
 
       clearSavedDraft();
 
@@ -1893,7 +1864,7 @@ const ReusableForm = ({ config, onSubmit, initialData, readOnly = false }) => {
 
       if (config.localSubmitOnly) {
         if (!didRunSubmitCallback) {
-          onSubmit?.(formData);
+          await onSubmit?.(formData);
         }
         clearSavedDraft();
         return;
@@ -1901,7 +1872,7 @@ const ReusableForm = ({ config, onSubmit, initialData, readOnly = false }) => {
 
       // For development purposes, treat as success if it's a network error (no backend)
       if (error.code === 'ERR_NETWORK' || error.response?.status === 404) {
-        onSubmit?.(formData);
+        await onSubmit?.(formData);
         clearSavedDraft();
       } else {
         alert(`Error submitting ${itemLabel}. Please try again.`);

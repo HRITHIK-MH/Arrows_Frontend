@@ -8,6 +8,7 @@ import {
   Edit3,
   Eye,
   FileCheck2,
+  Filter,
   Plus,
   Send,
   Trash2,
@@ -16,26 +17,17 @@ import {
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import type { TimesheetCalendarEntry, TimesheetEntryStatus } from "@/modules/timesheets/types";
 import {
-  approveTimesheetEntry as approveTimesheetEntryLocal,
-  deleteTimesheetEntry as deleteTimesheetEntryLocal,
+  approveTimesheetEntry,
+  deleteTimesheetEntry,
   getTimesheetEntries,
-  rejectTimesheetEntry as rejectTimesheetEntryLocal,
-  submitEntriesForApproval as submitEntriesForApprovalLocal
+  rejectTimesheetEntry,
+  submitEntriesForApproval
 } from "@/modules/timesheets/utils/timesheetStorage";
-import { 
-  submitTimesheetApproval
-} from "@/api/timesheetService";
-import { demoUsers, holidayCalendar } from "@/services/mockData";
-import "../../../pages/TimesheetPage.css";
-
-type CalendarStatus = TimesheetEntryStatus | "missing" | "weekend";
-type StatusFilter = CalendarStatus | "all";
-
+import { demoUsers, holidayCalendar, getCurrentTimesheetUser } from "@/modules/timesheets/data";
+import "../styles/Timesheets.css";
 const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-
-const statusMeta: Record<CalendarStatus, { label: string; dot: string }> = {
+const statusMeta = {
   draft: {
     label: "Completed",
     dot: "completed"
@@ -61,40 +53,32 @@ const statusMeta: Record<CalendarStatus, { label: string; dot: string }> = {
     dot: "weekend"
   }
 };
-
 function currentMonthValue() {
-  return new Date().toISOString().slice(0, 7);
+  return (/* @__PURE__ */ new Date()).toISOString().slice(0, 7);
 }
-
-function monthLabel(month: string) {
+function monthLabel(month) {
   const [year, monthIndex] = month.split("-").map(Number);
   return new Intl.DateTimeFormat("en", { month: "long", year: "numeric" }).format(new Date(year, monthIndex - 1, 1));
 }
-
-function dateKey(date: Date) {
+function dateKey(date) {
   return date.toISOString().slice(0, 10);
 }
-
-function dateFromMonthDay(month: string, day: number) {
+function dateFromMonthDay(month, day) {
   return `${month}-${String(day).padStart(2, "0")}`;
 }
-
-function addMonths(month: string, offset: number) {
+function addMonths(month, offset) {
   const [year, monthIndex] = month.split("-").map(Number);
   const date = new Date(year, monthIndex - 1 + offset, 1);
   return date.toISOString().slice(0, 7);
 }
-
-function isWeekend(date: string) {
-  const day = new Date(`${date}T00:00:00`).getDay();
+function isWeekend(date) {
+  const day = (/* @__PURE__ */ new Date(`${date}T00:00:00`)).getDay();
   return day === 0 || day === 6;
 }
-
-function isHoliday(date: string) {
+function isHoliday(date) {
   return holidayCalendar.some((holiday) => holiday.date === date);
 }
-
-function calculateMonthDays(month: string) {
+function calculateMonthDays(month) {
   const [year, monthIndex] = month.split("-").map(Number);
   const firstDay = new Date(year, monthIndex - 1, 1);
   const daysInMonth = new Date(year, monthIndex, 0).getDate();
@@ -102,45 +86,34 @@ function calculateMonthDays(month: string) {
   const days = Array.from({ length: daysInMonth }, (_, index) => dateFromMonthDay(month, index + 1));
   return [...blanks, ...days];
 }
-
-function getDominantStatus(date: string, entries: TimesheetCalendarEntry[]): CalendarStatus {
+function getDominantStatus(date, entries) {
   if (entries.length === 0) {
     return isWeekend(date) || isHoliday(date) ? "weekend" : "missing";
   }
-
   if (entries.some((entry) => entry.status === "rejected")) return "rejected";
   if (entries.some((entry) => entry.status === "pending")) return "pending";
   if (entries.every((entry) => entry.status === "approved")) return "approved";
   return "draft";
 }
-
-function formatHours(hours: number) {
+function formatHours(hours) {
   return `${hours.toFixed(hours % 1 === 0 ? 0 : 2)}h`;
 }
-
-function statusBadge(status: CalendarStatus) {
+function statusBadge(status) {
   return <span className={`status ${status}`}>{statusMeta[status].label}</span>;
 }
-
-function newTimesheetUrl(date?: string) {
-  const params = new URLSearchParams({ mode: "daily" });
+function newTimesheetUrl(date) {
+  const params = new URLSearchParams({ tab: "daily" });
   if (date) params.set("date", date);
   return `/timesheet/new?${params.toString()}`;
 }
-
-export function TimesheetsPage() {
+function TimesheetsPage() {
   const navigate = useNavigate();
-  const user = {
-    id: window.localStorage.getItem("userEmail") || "current-user",
-    role: window.localStorage.getItem("userRole") || "employee",
-    name: window.localStorage.getItem("userName") || "",
-  };
-  const [entries, setEntries] = useState<TimesheetCalendarEntry[]>(() => getTimesheetEntries());
+  const user = getCurrentTimesheetUser();
+  const [entries, setEntries] = useState(() => getTimesheetEntries());
   const [month, setMonth] = useState(currentMonthValue());
-  const [selectedDate, setSelectedDate] = useState(dateKey(new Date()));
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [selectedDate, setSelectedDate] = useState(dateKey(/* @__PURE__ */ new Date()));
+  const [statusFilter, setStatusFilter] = useState("all");
   const [managerEmployeeId, setManagerEmployeeId] = useState("all");
-
   const isManagerPersona = user?.role === "manager" || user?.role === "admin";
   const visibleEmployeeId = isManagerPersona && managerEmployeeId !== "all" ? managerEmployeeId : user?.id ?? "";
   const calendarEntries = useMemo(() => {
@@ -150,10 +123,9 @@ export function TimesheetsPage() {
     }
     return monthEntries.filter((entry) => entry.employeeId === visibleEmployeeId);
   }, [entries, isManagerPersona, managerEmployeeId, month, visibleEmployeeId]);
-
   const calendarDays = useMemo(() => calculateMonthDays(month), [month]);
   const selectedDayEntries = calendarEntries.filter((entry) => entry.date === selectedDate);
-  const workingDays = calendarDays.filter((day): day is string => day !== null && !isWeekend(day) && !isHoliday(day));
+  const workingDays = calendarDays.filter((day) => day !== null && !isWeekend(day) && !isHoliday(day));
   const filledDays = new Set(calendarEntries.map((entry) => entry.date)).size;
   const missingDays = workingDays.filter((day) => !calendarEntries.some((entry) => entry.date === day)).length;
   const totalHours = calendarEntries.reduce((sum, entry) => sum + entry.hours, 0);
@@ -161,108 +133,65 @@ export function TimesheetsPage() {
   const approvedEntries = calendarEntries.filter((entry) => entry.status === "approved");
   const rejectedEntries = calendarEntries.filter((entry) => entry.status === "rejected");
   const editableEntries = calendarEntries.filter((entry) => entry.status === "draft" || entry.status === "rejected");
-
   const weeklyTrend = useMemo(() => {
     return [1, 2, 3, 4, 5].map((week) => {
-      const hours = calendarEntries
-        .filter((entry) => Math.ceil(Number(entry.date.slice(-2)) / 7) === week)
-        .reduce((sum, entry) => sum + entry.hours, 0);
+      const hours = calendarEntries.filter((entry) => Math.ceil(Number(entry.date.slice(-2)) / 7) === week).reduce((sum, entry) => sum + entry.hours, 0);
       return { week: `W${week}`, hours };
     });
   }, [calendarEntries]);
-
   const projectDistribution = useMemo(() => {
-    const totals = calendarEntries.reduce<Record<string, number>>((summary, entry) => {
+    const totals = calendarEntries.reduce((summary, entry) => {
       summary[entry.project] = (summary[entry.project] ?? 0) + entry.hours;
       return summary;
     }, {});
     return Object.entries(totals).sort((a, b) => b[1] - a[1]).slice(0, 5);
   }, [calendarEntries]);
-
   const teamSummary = useMemo(() => {
-    return demoUsers
-      .filter((employee) => employee.role === "employee")
-      .map((employee) => {
-        const employeeEntries = entries.filter((entry) => entry.employeeId === employee.id && entry.date.startsWith(month));
-        const employeeFilledDays = new Set(employeeEntries.map((entry) => entry.date)).size;
-        return {
-          employee,
-          filledDays: employeeFilledDays,
-          missingDays: Math.max(0, workingDays.length - employeeFilledDays),
-          pendingApproval: employeeEntries.filter((entry) => entry.status === "pending").length,
-          rejected: employeeEntries.filter((entry) => entry.status === "rejected").length
-        };
-      });
+    return demoUsers.filter((employee) => employee.role === "employee").map((employee) => {
+      const employeeEntries = entries.filter((entry) => entry.employeeId === employee.id && entry.date.startsWith(month));
+      const employeeFilledDays = new Set(employeeEntries.map((entry) => entry.date)).size;
+      return {
+        employee,
+        filledDays: employeeFilledDays,
+        missingDays: Math.max(0, workingDays.length - employeeFilledDays),
+        pendingApproval: employeeEntries.filter((entry) => entry.status === "pending").length,
+        rejected: employeeEntries.filter((entry) => entry.status === "rejected").length
+      };
+    });
   }, [entries, month, workingDays.length]);
-
   function refreshEntries() {
     setEntries(getTimesheetEntries());
   }
-
-  function handleDelete(entryId: string) {
+  function handleDelete(entryId) {
     const entry = entries.find((item) => item.id === entryId);
     if (entry?.status === "pending" || entry?.status === "approved") {
       toast.error("Submitted or approved entries are locked.");
       return;
     }
-    deleteTimesheetEntryLocal(entryId);
+    deleteTimesheetEntry(entryId);
     refreshEntries();
     toast.success("Timesheet entry deleted.");
   }
-
-  async function handleSubmitForApproval() {
+  function handleSubmitForApproval() {
     if (editableEntries.length === 0) {
       toast.error("No editable entries are ready for approval.");
       return;
     }
-    try {
-      // Submit entries to backend
-      await submitTimesheetApproval({ entryIds: editableEntries.map((entry) => entry.id) });
-      // Also update local storage for consistency
-      submitEntriesForApprovalLocal(editableEntries.map((entry) => entry.id));
-      refreshEntries();
-      toast.success("Editable entries submitted for manager approval.");
-    } catch (error) {
-      console.error("Error submitting entries for approval:", error);
-      // Fallback to local storage
-      submitEntriesForApprovalLocal(editableEntries.map((entry) => entry.id));
-      refreshEntries();
-      toast.success("Editable entries submitted for manager approval.");
-    }
+    submitEntriesForApproval(editableEntries.map((entry) => entry.id));
+    refreshEntries();
+    toast.success("Editable entries submitted for manager approval.");
   }
-
-  async function handleManagerAction(entryId: string, action: "approve" | "reject") {
-    try {
-      if (action === "approve") {
-        // Call backend approval endpoint
-        await submitTimesheetApproval({ entryId, status: "approved", comment: "Approved from manager dashboard." });
-        // Update local state
-        approveTimesheetEntryLocal(entryId, "Approved from manager dashboard.");
-        toast.success("Entry approved.");
-      } else {
-        // Call backend rejection endpoint
-        await submitTimesheetApproval({ entryId, status: "rejected", comment: "Please update the task details and resubmit." });
-        // Update local state
-        rejectTimesheetEntryLocal(entryId, "Please update the task details and resubmit.");
-        toast.success("Entry rejected and reopened for employee editing.");
-      }
-      refreshEntries();
-    } catch (error) {
-      console.error(`Error ${action}ing entry:`, error);
-      // Fallback to local only
-      if (action === "approve") {
-        approveTimesheetEntryLocal(entryId, "Approved from manager dashboard.");
-        toast.success("Entry approved.");
-      } else {
-        rejectTimesheetEntryLocal(entryId, "Please update the task details and resubmit.");
-        toast.success("Entry rejected and reopened for employee editing.");
-      }
-      refreshEntries();
+  function handleManagerAction(entryId, action) {
+    if (action === "approve") {
+      approveTimesheetEntry(entryId, "Approved from manager dashboard.");
+      toast.success("Entry approved.");
+    } else {
+      rejectTimesheetEntry(entryId, "Please update the task details and resubmit.");
+      toast.success("Entry rejected and reopened for employee editing.");
     }
+    refreshEntries();
   }
-
-  return (
-    <div className="timesheet-root">
+  return <div className="timesheet-root">
       <div className="timesheet-header">
         <div>
           <p className="kicker">TIMESHEETS</p>
@@ -270,7 +199,7 @@ export function TimesheetsPage() {
           <p className="lead">Log, review, submit, and track timesheets from a visual monthly calendar.</p>
         </div>
         <div className="header-actions">
-          <button className="btn outline" onClick={() => navigate("/timesheet/new?mode=review")}>
+          <button className="btn outline" onClick={() => navigate("/timesheet/new?tab=review")}>
             <FileCheck2 size={16} style={{ display: "inline", marginRight: "6px" }} />
             Review
           </button>
@@ -325,25 +254,17 @@ export function TimesheetsPage() {
           <div className="calendar-controls">
             <div className="month">{monthLabel(month)}</div>
             <div className="filters">
-              {isManagerPersona && (
-                <select className="filters" value={managerEmployeeId} onChange={(event) => setManagerEmployeeId(event.target.value)}>
+              {isManagerPersona && <select className="filters" value={managerEmployeeId} onChange={(event) => setManagerEmployeeId(event.target.value)}>
                   <option value="all">All employees</option>
-                  {demoUsers
-                    .filter((employee) => employee.role === "employee")
-                    .map((employee) => (
-                      <option key={employee.id} value={employee.id}>
+                  {demoUsers.filter((employee) => employee.role === "employee").map((employee) => <option key={employee.id} value={employee.id}>
                         {employee.name}
-                      </option>
-                    ))}
-                </select>
-              )}
-              <select className="filters" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as StatusFilter)}>
+                      </option>)}
+                </select>}
+              <select className="filters" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
                 <option value="all">All statuses</option>
-                {Object.entries(statusMeta).map(([status, meta]) => (
-                  <option key={status} value={status}>
+                {Object.entries(statusMeta).map(([status, meta]) => <option key={status} value={status}>
                     {meta.label}
-                  </option>
-                ))}
+                  </option>)}
               </select>
               <button className="btn outline" aria-label="Previous month" onClick={() => setMonth((current) => addMonths(current, -1))}>
                 <ChevronLeft size={18} />
@@ -355,58 +276,46 @@ export function TimesheetsPage() {
           </div>
 
           <div className="legend">
-            {Object.entries(statusMeta).map(([status, meta]) => (
-              <div key={status} style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+            {Object.entries(statusMeta).map(([status, meta]) => <div key={status} style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                 <span className={`dot ${meta.dot}`} />
                 {meta.label}
-              </div>
-            ))}
+              </div>)}
           </div>
 
           <div className="calendar-grid">
             <div className="week-head">
-              {dayNames.map((day) => (
-                <div key={day} style={{ textAlign: "center" }}>
+              {dayNames.map((day) => <div key={day} style={{ textAlign: "center" }}>
                   {day}
-                </div>
-              ))}
+                </div>)}
             </div>
             <div className="days">
               {calendarDays.map((day, index) => {
-                if (!day) {
-                  return <div key={`blank-${index}`} className="day-cell empty" />;
-                }
-
-                const dayEntries = calendarEntries.filter((entry) => entry.date === day);
-                const status = getDominantStatus(day, dayEntries);
-                const hiddenByFilter = statusFilter !== "all" && status !== statusFilter;
-                const dayHours = dayEntries.reduce((sum, entry) => sum + entry.hours, 0);
-
-                return (
-                  <button
-                    key={day}
-                    type="button"
-                    onClick={() => setSelectedDate(day)}
-                    className={`day-cell ${status} ${hiddenByFilter ? "day-cell-filtered" : ""} ${selectedDate === day ? "day-cell-selected" : ""}`}
-                    style={{
-                      opacity: hiddenByFilter ? 0.35 : 1,
-                      cursor: hiddenByFilter ? "default" : "pointer",
-                      border: selectedDate === day ? "2px solid #2563eb" : "none"
-                    }}
-                  >
+    if (!day) {
+      return <div key={`blank-${index}`} className="day-cell empty" />;
+    }
+    const dayEntries = calendarEntries.filter((entry) => entry.date === day);
+    const status = getDominantStatus(day, dayEntries);
+    const hiddenByFilter = statusFilter !== "all" && status !== statusFilter;
+    const dayHours = dayEntries.reduce((sum, entry) => sum + entry.hours, 0);
+    return <button
+      key={day}
+      type="button"
+      onClick={() => setSelectedDate(day)}
+      className={`day-cell ${status} ${hiddenByFilter ? "day-cell-filtered" : ""} ${selectedDate === day ? "day-cell-selected" : ""}`}
+      style={{
+        opacity: hiddenByFilter ? 0.35 : 1,
+        cursor: hiddenByFilter ? "default" : "pointer",
+        border: selectedDate === day ? "2px solid #2563eb" : "none"
+      }}
+    >
                     <div className="day-num">{Number(day.slice(-2))}</div>
                     <div className="day-title">{statusMeta[status].label}</div>
-                    {dayEntries.length > 0 ? (
-                      <>
+                    {dayEntries.length > 0 ? <>
                         <div style={{ fontSize: "12px", color: "#6b7280", marginTop: "4px" }}>{dayEntries[0].project}</div>
                         <div className="day-hours">{formatHours(dayHours)}</div>
-                      </>
-                    ) : (
-                      <div style={{ fontSize: "12px", color: "#6b7280", marginTop: "4px" }}>{isHoliday(day) ? "Holiday" : "No records"}</div>
-                    )}
-                  </button>
-                );
-              })}
+                      </> : <div style={{ fontSize: "12px", color: "#6b7280", marginTop: "4px" }}>{isHoliday(day) ? "Holiday" : "No records"}</div>}
+                  </button>;
+  })}
             </div>
           </div>
         </div>
@@ -415,15 +324,13 @@ export function TimesheetsPage() {
           <div className="day-panel">
             <div className="day-panel-header">
               <div style={{ fontWeight: 700 }}>
-                {new Intl.DateTimeFormat("en", { day: "2-digit", month: "short", year: "numeric" }).format(new Date(`${selectedDate}T00:00:00`))}
+                {new Intl.DateTimeFormat("en", { day: "2-digit", month: "short", year: "numeric" }).format(/* @__PURE__ */ new Date(`${selectedDate}T00:00:00`))}
               </div>
               {statusBadge(getDominantStatus(selectedDate, selectedDayEntries))}
             </div>
 
             <div>
-              {selectedDayEntries.length > 0 ? (
-                selectedDayEntries.map((entry) => (
-                  <div key={entry.id} className="entry-card">
+              {selectedDayEntries.length > 0 ? selectedDayEntries.map((entry) => <div key={entry.id} className="entry-card">
                     <div className="entry-title">{entry.project}</div>
                     <div className="entry-sub">{entry.taskCategory}</div>
                     <div className="entry-row">
@@ -440,36 +347,57 @@ export function TimesheetsPage() {
                     </div>
                     {entry.notes && <div className="entry-note">{entry.notes}</div>}
                     <div className="entry-actions">
-                      <button className="btn outline" onClick={() => navigate("/timesheet/new?mode=review")}>
+                      <button className="btn outline" onClick={() => navigate("/timesheet/new?tab=review")}>
                         <Eye size={14} style={{ marginRight: "4px" }} />
                         View
                       </button>
                       <button
-                        className="btn outline"
-                        disabled={entry.status === "pending" || entry.status === "approved"}
-                        onClick={() => navigate(newTimesheetUrl(entry.date))}
-                      >
+    className="btn outline"
+    disabled={entry.status === "pending" || entry.status === "approved"}
+    onClick={() => navigate(newTimesheetUrl(entry.date))}
+  >
                         <Edit3 size={14} style={{ marginRight: "4px" }} />
                         Edit
                       </button>
                       <button
-                        className="btn ghost"
-                        disabled={entry.status === "pending" || entry.status === "approved"}
-                        onClick={() => handleDelete(entry.id)}
-                      >
+    className="btn ghost"
+    disabled={entry.status === "pending" || entry.status === "approved"}
+    onClick={() => handleDelete(entry.id)}
+  >
                         <Trash2 size={14} style={{ marginRight: "4px" }} />
                         Delete
                       </button>
                     </div>
-                  </div>
-                ))
-              ) : (
-                <div style={{ padding: "16px", color: "#6b7280", fontSize: "14px" }}>No entries for this day.</div>
-              )}
+                  </div>) : <div style={{ padding: "16px", color: "#6b7280", fontSize: "14px" }}>No entries for this day.</div>}
               <button className="btn full primary" onClick={() => navigate(newTimesheetUrl(selectedDate))}>
                 <Plus size={14} style={{ marginRight: "6px" }} />
                 Create entry
               </button>
+            </div>
+          </div>
+          <div className="ts-sidebar-card">
+            <h3>Weekly summary</h3>
+            <p>Visual weekly totals and missing days.</p>
+            <div className="summary-bars">
+              {weeklyTrend.map((week) => <div key={week.week} className="summary-bar-row">
+                  <span>{week.week}</span>
+                  <div className="summary-bar-track">
+                    <div className="summary-bar-fill" style={{ width: `${Math.min(100, week.hours / 40 * 100)}%` }} />
+                  </div>
+                  <strong>{formatHours(week.hours)}</strong>
+                </div>)}
+            </div>
+          </div>
+          <div className="ts-sidebar-card">
+            <h3>Project distribution</h3>
+            <p>Current month logged hours.</p>
+            <div className="summary-bars">
+              {projectDistribution.length > 0 ? projectDistribution.map(([project, hours]) => <div key={project} className="project-summary">
+                    <div><span>{project}</span><strong>{formatHours(hours)}</strong></div>
+                    <div className="summary-bar-track">
+                      <div className="summary-bar-fill project" style={{ width: `${Math.min(100, hours / Math.max(1, totalHours) * 100)}%` }} />
+                    </div>
+                  </div>) : <p>No project hours yet.</p>}
             </div>
           </div>
         </div>
@@ -487,17 +415,15 @@ export function TimesheetsPage() {
           </button>
         </div>
         <div className="approval-grid">
-          {(["draft", "pending", "approved", "rejected"] as TimesheetEntryStatus[]).map((status) => (
-            <div key={status} className="approval-tile">
+          {["draft", "pending", "approved", "rejected"].map((status) => <div key={status} className="approval-tile">
               {statusBadge(status)}
               <strong>{calendarEntries.filter((entry) => (entry.status ?? "draft") === status).length}</strong>
               <span>{status === "draft" ? "Editable entries" : status === "pending" ? "Manager review" : status === "approved" ? "Locked and approved" : "Needs correction"}</span>
-            </div>
-          ))}
+            </div>)}
         </div>
       </div>
 
-      <div className="section-card team-card">
+      {isManagerPersona ? <div className="section-card team-card">
         <div className="section-header">
           <div>
             <h2>Team timesheet dashboard</h2>
@@ -519,9 +445,8 @@ export function TimesheetsPage() {
             </thead>
             <tbody>
               {teamSummary.map((item) => {
-                const firstPending = entries.find((entry) => entry.employeeId === item.employee.id && entry.status === "pending" && entry.date.startsWith(month));
-                return (
-                  <tr key={item.employee.id}>
+    const firstPending = entries.find((entry) => entry.employeeId === item.employee.id && entry.status === "pending" && entry.date.startsWith(month));
+    return <tr key={item.employee.id}>
                     <td>
                       <strong>{item.employee.name}</strong>
                       <span>{item.employee.department}</span>
@@ -544,14 +469,16 @@ export function TimesheetsPage() {
                         </button>
                       </div>
                     </td>
-                  </tr>
-                );
-              })}
+                  </tr>;
+  })}
             </tbody>
           </table>
         </div>
-      </div>
+      </div> : null}
 
-    </div>
-  );
+      
+    </div>;
 }
+export {
+  TimesheetsPage
+};

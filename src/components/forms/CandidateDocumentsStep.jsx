@@ -9,6 +9,9 @@ const normalizeText = (value) => String(value || "").replace(/\s+/g, " ").trim()
 
 const toLower = (value) => normalizeText(value).toLowerCase();
 
+const hasInternshipSignal = (...values) =>
+  values.some((value) => /\b(intern|internship|trainee)\b/i.test(normalizeText(value)));
+
 const getResumeLines = (text) =>
   String(text || "")
     .split(/\r?\n/)
@@ -307,8 +310,7 @@ const extractLatestExperienceEntry = (text) => {
 const SKILL_ALIAS_MAP = {
   java: ["core java", "java", "spring boot", "spring"],
   python: ["python", "python3"],
-  react: ["react", "reactjs", "react js"],
-  "react-js": ["react", "reactjs", "react js", "react.js"],
+  react: ["react", "reactjs", "react js", "react.js"],
   node: ["node", "nodejs", "node js", "express"],
   aws: ["aws", "amazon web services"],
   "angular-4": ["angular", "angularjs", "angular 2", "angular 4", "angular 5"],
@@ -791,28 +793,47 @@ const CandidateDocumentsStep = ({ formData, onChange, onSetStepFields }) => {
       if (!normalizeText(formData.yearsExperience) && (parsed.totalExperienceYears || parsed.totalExperience)) {
         const yearsValue = mapExperienceValueToBucket(parsed.totalExperienceYears || parsed.totalExperience);
         if (yearsValue) {
+          const isInternshipCandidate = hasInternshipSignal(parsed.currentDesignation, parsed.employmentType);
+          const hasCurrentWorkEvidence = [
+            parsed.currentCompany,
+            parsed.currentDesignation,
+            parsed.employmentType,
+            formData.currentCompanyName,
+            formData.jobTitleRole,
+            formData.employmentType,
+          ].some((value) => normalizeText(value));
           updates.yearsExperience = yearsValue;
           fieldNames.add("yearsExperience");
           if (!normalizeText(formData.candidateType)) {
-            updates.candidateType = yearsValue === "0-1" ? "fresher" : "experienced";
+            updates.candidateType = isInternshipCandidate
+              ? "fresher"
+              : hasCurrentWorkEvidence || yearsValue !== "0-1"
+                ? "experienced"
+                : "fresher";
             fieldNames.add("candidateType");
           }
         }
       }
 
+      const isParsedInternshipCandidate = hasInternshipSignal(parsed.currentDesignation, parsed.employmentType);
+
       if (!normalizeText(formData.candidateType) && parsed.candidateType) {
         updates.candidateType = parsed.candidateType;
         fieldNames.add("candidateType");
       }
-      if (!normalizeText(formData.currentCompanyName) && parsed.currentCompany) {
+      if (isParsedInternshipCandidate && !normalizeText(formData.candidateType)) {
+        updates.candidateType = "fresher";
+        fieldNames.add("candidateType");
+      }
+      if (!isParsedInternshipCandidate && !normalizeText(formData.currentCompanyName) && parsed.currentCompany) {
         updates.currentCompanyName = parsed.currentCompany;
         fieldNames.add("currentCompanyName");
       }
-      if (!normalizeText(formData.jobTitleRole) && parsed.currentDesignation) {
+      if (!isParsedInternshipCandidate && !normalizeText(formData.jobTitleRole) && parsed.currentDesignation) {
         updates.jobTitleRole = parsed.currentDesignation;
         fieldNames.add("jobTitleRole");
       }
-      if (!normalizeText(formData.employmentType) && parsed.employmentType) {
+      if (!isParsedInternshipCandidate && !normalizeText(formData.employmentType) && parsed.employmentType) {
         updates.employmentType = parsed.employmentType;
         fieldNames.add("employmentType");
       }
@@ -842,7 +863,6 @@ const CandidateDocumentsStep = ({ formData, onChange, onSetStepFields }) => {
           { value: "javascript", label: "JavaScript" },
           { value: "jquery", label: "jQuery" },
           { value: "bootstrap", label: "Bootstrap" },
-          { value: "react-js", label: "React.js" },
           { value: "angular-4", label: "Angular 4" },
           { value: "backbone-js", label: "Backbone.js" },
         ];
@@ -984,7 +1004,6 @@ const CandidateDocumentsStep = ({ formData, onChange, onSetStepFields }) => {
           { value: "javascript", label: "JavaScript" },
           { value: "jquery", label: "jQuery" },
           { value: "bootstrap", label: "Bootstrap" },
-          { value: "react-js", label: "React.js" },
           { value: "angular-4", label: "Angular 4" },
           { value: "backbone-js", label: "Backbone.js" },
         ];
@@ -1017,24 +1036,30 @@ const CandidateDocumentsStep = ({ formData, onChange, onSetStepFields }) => {
       }
 
       const { company, role } = extractCompanyAndRole(text);
-      if (!normalizeText(formData.currentCompanyName) && company) {
+      const isInternshipCandidate = hasInternshipSignal(role);
+      if (isInternshipCandidate && !normalizeText(formData.candidateType)) {
+        updates.candidateType = "fresher";
+        fieldNames.add("candidateType");
+      }
+      if (!isInternshipCandidate && !normalizeText(formData.currentCompanyName) && company) {
         updates.currentCompanyName = company;
         fieldNames.add("currentCompanyName");
       }
-      if (!normalizeText(formData.jobTitleRole) && role) {
+      if (!isInternshipCandidate && !normalizeText(formData.jobTitleRole) && role) {
         updates.jobTitleRole = role;
         fieldNames.add("jobTitleRole");
       }
+      if (!isInternshipCandidate && !normalizeText(formData.candidateType) && (company || role) && updates.candidateType === "fresher") {
+        updates.candidateType = "experienced";
+        fieldNames.add("candidateType");
+      }
 
-      if (!normalizeText(formData.employmentType)) {
+      if (!isInternshipCandidate && !normalizeText(formData.employmentType)) {
         if (normalizedLower.includes("full time") || normalizedLower.includes("full-time")) {
           updates.employmentType = "full-time";
           fieldNames.add("employmentType");
         } else if (normalizedLower.includes("contract")) {
           updates.employmentType = "contract";
-          fieldNames.add("employmentType");
-        } else if (normalizedLower.includes("intern") || normalizedLower.includes("internship")) {
-          updates.employmentType = "internship";
           fieldNames.add("employmentType");
         }
       }

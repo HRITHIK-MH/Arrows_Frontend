@@ -14,7 +14,6 @@ import ForgotPasswordModal from './ForgotPasswordModal';
 import './Login.css';
 
 const USE_LOGIN_API = false;
-
 const LOGIN_CREDENTIALS_BY_ROLE = {
   recruiter: [
     { email: 'recruiter@method-hub.com', password: 'recruiter' },
@@ -116,6 +115,8 @@ const getAuthErrorMessage = (err, fallbackMessage) => {
   const status = Number(err?.response?.status || 0);
   const data = err?.response?.data;
 
+  const identityUrl = String(import.meta.env.VITE_IDENTITY_SERVICE_URL || import.meta.env.VITE_BACKEND_URL || 'http://localhost:8080').trim();
+
   if (typeof data === 'string' && data.trim()) {
     return data.trim();
   }
@@ -132,11 +133,11 @@ const getAuthErrorMessage = (err, fallbackMessage) => {
   }
 
   if (status >= 500) {
-    return 'Login service is unavailable. Start API gateway on http://localhost:8080 and try again.';
+    return `Login service is unavailable. Check identity service at ${identityUrl} and try again.`;
   }
 
   if (!err?.response) {
-    return 'Cannot reach login service. Check backend is running on http://localhost:8080.';
+    return `Cannot reach login service. Check identity service at ${identityUrl}.`;
   }
 
   return err?.message || fallbackMessage;
@@ -345,7 +346,7 @@ const Login = () => {
     setError('');
     setSsoLoading(true);
     try {
-      const url = await fetchSsoAuthorizeUrl();
+      const url = await fetchSsoAuthorizeUrl(email.trim() || undefined);
       if (!url) {
         throw new Error('SSO authorize URL is not available');
       }
@@ -360,10 +361,10 @@ const Login = () => {
   <div className="login-container">
     <div className="login-right">
       <div className="hero-copy">
-        <h1>Method-Hub Admin Dashboard</h1>
+        <h1>MethodHub Admin Dashboard</h1>
         <p>
           Manage sales, inventory, billing, and reports from one smart dashboard.
-          Method-Hub helps you run your business faster, smarter.
+          MethodHub helps you run your business faster, smarter.
         </p>
       </div>
       <div className="footer-copy">© 2026, Powered by MethodHub</div>

@@ -1,4 +1,6 @@
-import API from './axiosConfig';
+import API, { createServiceApi } from './axiosConfig';
+
+const clientJobApi = createServiceApi('clientJob');
 
 const unwrapList = (response) => {
   const payload = response?.data;
@@ -9,6 +11,10 @@ const unwrapList = (response) => {
 
   if (Array.isArray(payload?.data)) {
     return payload.data;
+  }
+
+  if (Array.isArray(payload?.data?.items)) {
+    return payload.data.items;
   }
 
   if (Array.isArray(payload?.items)) {
@@ -33,7 +39,7 @@ const normalizeText = (value, fallback = '-') => {
 
 export const fetchJobs = async () =>
   unwrapList(
-    await API.get('/jobs', {
+    await clientJobApi.get('/jobs', {
       skipAuth: true,
       skipAuthRedirect: true,
     })
@@ -108,32 +114,49 @@ export const toJobRequest = (row = {}) => {
 };
 
 export const createJob = async (row) =>
-  API.post('/jobs', toJobRequest(row), {
+  clientJobApi.post('/jobs', toJobRequest(row), {
     skipAuth: true,
     skipAuthRedirect: true,
   });
 
 export const updateJob = async (jobId, row) =>
-  API.put(`/jobs/${encodeURIComponent(jobId)}`, toJobRequest(row), {
+  clientJobApi.put(`/jobs/${encodeURIComponent(jobId)}`, toJobRequest(row), {
     skipAuth: true,
     skipAuthRedirect: true,
   });
 
 export const deleteJob = async (jobId) =>
-  API.delete(`/jobs/${encodeURIComponent(jobId)}`, {
+  clientJobApi.delete(`/jobs/${encodeURIComponent(jobId)}`, {
     skipAuth: true,
     skipAuthRedirect: true,
   });
 
-export const fetchClients = async () =>
-  unwrapList(
-    await API.get('/clients', {
-      // Client list endpoint currently fails when local login token is attached.
-      // Skip auth header so dropdown options can still load.
-      skipAuth: true,
-      skipAuthRedirect: true,
-    })
-  );
+const FALLBACK_CLIENTS = [
+  { clientId: 'TEST-1', clientName: 'Test1' },
+  { clientId: 'TEST-2', clientName: 'Test2' },
+];
+
+export const fetchClients = async () => {
+  try {
+    const clients = unwrapList(
+      await clientJobApi.get('/clients', {
+        // Client list endpoint currently fails when local login token is attached.
+        // Skip auth header so dropdown options can still load.
+        skipAuth: true,
+        skipAuthRedirect: true,
+      })
+    );
+
+    if (Array.isArray(clients) && clients.length > 0) {
+      return clients;
+    }
+
+    return FALLBACK_CLIENTS;
+  } catch (error) {
+    console.warn('Failed to load clients from backend, using fallback clients:', error);
+    return FALLBACK_CLIENTS;
+  }
+};
 
 const toSlug = (value) =>
   String(value || '')
@@ -144,14 +167,14 @@ const toSlug = (value) =>
 
 export const fetchSkills = async () =>
   unwrapList(
-    await API.get('/skills', {
+    await clientJobApi.get('/skills', {
       skipAuth: true,
       skipAuthRedirect: true,
     })
   );
 
 export const fetchJobInformationMeta = async () => {
-  const response = await API.get('/jobs/job-information/meta', {
+  const response = await clientJobApi.get('/jobs/job-information/meta', {
     skipAuth: true,
     skipAuthRedirect: true,
   });
@@ -159,7 +182,7 @@ export const fetchJobInformationMeta = async () => {
 };
 
 export const fetchClientRequirementMeta = async () => {
-  const response = await API.get('/jobs/client-requirement/meta', {
+  const response = await clientJobApi.get('/jobs/client-requirement/meta', {
     skipAuth: true,
     skipAuthRedirect: true,
   });
@@ -183,31 +206,24 @@ export const toSkillOption = (row) => {
 
 export const toClientRequest = (row = {}) => ({
   clientName: String(row.clientName || row.name || '').trim(),
-  primaryLocationId: null,
-  clientCode: String(row.clientCode || row.clientId || '').trim() || null,
-  industryCode: null,
-  websiteUrl: String(row.websiteUrl || '').trim() || null,
-  comments: String(row.comments || row.note || '').trim() || null,
+  clientType: String(row.clientType || row.clientType || '').trim() || null,
+  industry: String(row.industryCode || row.industry || '').trim() || null,
   status: String(row.clientStatus || row.status || 'Active').trim(),
+  contactPersonName: String(row.primaryContactPerson || row.contactPersonName || '').trim() || null,
+  contactPersonEmail: String(row.contactEmail || row.email || '').trim() || null,
+  contactPersonPhone: String(row.contactNumber || row.phone || '').trim() || null,
+  city: String(row.clientLocation || row.city || '').trim() || null,
+  address: String(row.address || row.comments || '').trim() || null,
 });
 
 export const createClient = (payload) =>
-  API.post('/clients', toClientRequest(payload), {
-    skipAuth: true,
-    skipAuthRedirect: true,
-  });
+  clientJobApi.post('/clients', toClientRequest(payload));
 
 export const updateClient = (clientId, payload) =>
-  API.put(`/clients/${encodeURIComponent(clientId)}`, toClientRequest(payload), {
-    skipAuth: true,
-    skipAuthRedirect: true,
-  });
+  clientJobApi.put(`/clients/${encodeURIComponent(clientId)}`, toClientRequest(payload));
 
 export const deleteClient = (clientId) =>
-  API.delete(`/clients/${encodeURIComponent(clientId)}`, {
-    skipAuth: true,
-    skipAuthRedirect: true,
-  });
+  clientJobApi.delete(`/clients/${encodeURIComponent(clientId)}`);
 
 export const normalizeClientRecord = (row, index = 0) => ({
   clientId: row?.clientId || row?.id || `CL-${index + 1}`,

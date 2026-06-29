@@ -5,7 +5,7 @@ import "./ProfileModal.css";
 export default function SettingsModal({ onClose }) {
   const modalRef = useRef(null);
   const [emailAlerts, setEmailAlerts] = useState(false);
-  const { theme, setTheme, notificationsEnabled, setNotificationsEnabled } = useTheme();
+  const { notificationsEnabled, setNotificationsEnabled } = useTheme();
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -33,19 +33,6 @@ export default function SettingsModal({ onClose }) {
         </div>
 
         <div className="settingsModalBody">
-          {/* Appearance */}
-          <div className="settingsSection">
-            <h3 className="settingsSectionTitle">Appearance</h3>
-            <div className="settingsRow">
-              <label className="settingsLabel">Theme</label>
-              <select className="settingsSelect" value={theme} onChange={(e) => setTheme(e.target.value)}>
-                <option value="light">Light</option>
-                <option value="dark">Dark</option>
-              </select>
-            </div>
-
-          </div>
-
           {/* Notifications */}
           <div className="settingsSection">
             <h3 className="settingsSectionTitle">Notifications</h3>

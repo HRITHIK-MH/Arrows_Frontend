@@ -7,6 +7,7 @@
     "dev": "vite --mode dev",
     "build": "vite build --mode prod",
     "lint": "eslint .",
+    "test": "node --test src/utils/resumeFieldMapper.test.js",
     "preview": "vite preview --mode prod"
   },
   "dependencies": {
@@ -17,7 +18,7 @@
     "@mui/icons-material": "^7.3.6",
     "@mui/material": "^7.3.6",
     "@superset-ui/embedded-sdk": "^0.3.0",
-    "axios": "^1.13.2",
+    "axios": "^1.18.1",
     "clsx": "^1.2.1",
     "install": "^0.13.0",
     "lucide-react": "^1.20.0",

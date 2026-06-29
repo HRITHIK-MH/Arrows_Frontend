@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import { FiTrash2 } from "react-icons/fi";
 import * as pdfjsLib from "pdfjs-dist";
 import pdfjsWorkerSrc from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 import FormField from "./FormField";
@@ -7,6 +8,9 @@ import { parseResume, mapResumeToFormFields, normalizeParsedResumePayload } from
 const normalizeText = (value) => String(value || "").replace(/\s+/g, " ").trim();
 
 const toLower = (value) => normalizeText(value).toLowerCase();
+
+const hasInternshipSignal = (...values) =>
+  values.some((value) => /\b(intern|internship|trainee)\b/i.test(normalizeText(value)));
 
 const getResumeLines = (text) =>
   String(text || "")
@@ -438,16 +442,14 @@ const getSkillDefaultsFromExperience = (yearsBucket, yearsNumber) => {
 
 const createSkillRow = (primarySkill, defaults = {}) => ({
   primarySkill: primarySkill || "",
-  enableSecondarySkill: false,
+  enableSecondarySkill: defaults.enableSecondarySkill ?? true,
   secondarySkill: "",
   skillExperienceLevel: defaults.skillExperienceLevel || "",
   skillExperienceYears: defaults.skillExperienceYears || "",
   skillRating: defaults.skillRating || "",
-  skillComments: defaults.skillComments || "",
   secondarySkillExperienceLevel: "",
   secondarySkillExperienceYears: "",
   secondarySkillRating: "",
-  secondarySkillComments: "",
 });
 
 const extractCompanyAndRole = (text) => {
@@ -649,6 +651,7 @@ const CandidateBasicInfoStep = ({
 }) => {
   const isFresher = formData.candidateType === "fresher";
   const parsedResumeRef = React.useRef("");
+  const [resumeExtractionStatus, setResumeExtractionStatus] = useState({ state: "idle", message: "" });
 
 
   const fieldMap = useMemo(() => {
@@ -750,6 +753,7 @@ const CandidateBasicInfoStep = ({
 
     const parseAndMapResume = async () => {
       try {
+        setResumeExtractionStatus({ state: "loading", message: "Reading resume and extracting fields..." });
         const parsedData = await parseResume(sourceFile);
         if (isCancelled) return;
 
@@ -790,23 +794,40 @@ const CandidateBasicInfoStep = ({
             updates.gender = mappedData.gender;
           }
 
+          const hasCurrentWorkEvidence = [
+            mappedData.currentCompany,
+            mappedData.currentDesignation,
+            mappedData.employmentType,
+            formData.currentCompanyName,
+            formData.jobTitleRole,
+            formData.employmentType,
+          ].some((value) => normalizeText(value));
+          const isInternshipCandidate = hasInternshipSignal(
+            mappedData.currentDesignation,
+            mappedData.employmentType
+          );
+
           if (!normalizeText(formData.yearsExperience)) {
             const mappedExperience = mapExperienceValueToBucket(mappedData.totalExperience || mappedData.totalExperienceYears);
             if (mappedExperience) {
               updates.yearsExperience = mappedExperience;
               if (!normalizeText(formData.candidateType)) {
-                updates.candidateType = mappedExperience === "0-1" ? "fresher" : "experienced";
+                updates.candidateType = isInternshipCandidate
+                  ? "fresher"
+                  : hasCurrentWorkEvidence || mappedExperience !== "0-1"
+                    ? "experienced"
+                    : "fresher";
               }
             }
           }
 
-          if (!normalizeText(formData.currentCompanyName) && normalizeText(mappedData.currentCompany)) {
+          if (!isInternshipCandidate && !normalizeText(formData.currentCompanyName) && normalizeText(mappedData.currentCompany)) {
             updates.currentCompanyName = mappedData.currentCompany;
           }
-          if (!normalizeText(formData.jobTitleRole) && normalizeText(mappedData.currentDesignation)) {
+          if (!isInternshipCandidate && !normalizeText(formData.jobTitleRole) && normalizeText(mappedData.currentDesignation)) {
             updates.jobTitleRole = mappedData.currentDesignation;
           }
-          if (!normalizeText(formData.employmentType) && normalizeText(mappedData.employmentType)) {
+          if (!isInternshipCandidate && !normalizeText(formData.employmentType) && normalizeText(mappedData.employmentType)) {
             updates.employmentType = mappedData.employmentType;
           }
           if (!normalizeText(formData.noticePeriod) && normalizeText(mappedData.noticePeriod)) {
@@ -846,16 +867,30 @@ const CandidateBasicInfoStep = ({
                 skillExperienceLevel: mappedData.skillExperienceLevel || undefined,
                 skillExperienceYears: mappedData.skillExperienceYears || undefined,
                 skillRating: mappedData.skillRating || undefined,
-                skillComments: mappedData.skillComments || undefined,
               };
               updates.skills = skillValuesForRows.map((skillValue) => createSkillRow(skillValue, skillDefaults));
             }
           }
 
+          const formPopulationStartedAt =
+            typeof performance !== "undefined" && typeof performance.now === "function"
+              ? performance.now()
+              : Date.now();
+          let populatedFieldCount = 0;
           Object.entries(updates).forEach(([fieldName, fieldValue]) => {
             if (fieldValue !== undefined && fieldValue !== null && fieldValue !== "") {
+              populatedFieldCount += 1;
               onChange(fieldName, fieldValue);
             }
+          });
+          const formPopulationEndedAt =
+            typeof performance !== "undefined" && typeof performance.now === "function"
+              ? performance.now()
+              : Date.now();
+          console.debug("[ResumeTiming] Form Population:", {
+            durationMs: Math.round((formPopulationEndedAt - formPopulationStartedAt) * 100) / 100,
+            fieldCount: populatedFieldCount,
+            path: "gpt-api",
           });
           console.debug("[ResumeDebug] Final form values from GPT/API path:", {
             updates,
@@ -864,6 +899,10 @@ const CandidateBasicInfoStep = ({
 
           // If GPT parse succeeded, skip the local heuristic parser.
           if (Object.keys(updates).length > 0) {
+            setResumeExtractionStatus({
+              state: "success",
+              message: `${Object.keys(updates).length} field(s) auto-filled from uploaded resume.`,
+            });
             console.groupEnd();
             return;
           }
@@ -878,6 +917,7 @@ const CandidateBasicInfoStep = ({
 
         if (!extractedText) {
           console.debug("[ResumeDebug] Local extraction produced no text.");
+          setResumeExtractionStatus({ state: "warning", message: "Resume uploaded, but no readable text was found." });
           console.groupEnd();
           return;
         }
@@ -991,35 +1031,64 @@ const CandidateBasicInfoStep = ({
         }
 
         const { company, role } = extractCompanyAndRole(extractedText);
-        if (!normalizeText(formData.currentCompanyName) && company) {
+        const isInternshipCandidate = hasInternshipSignal(role);
+        if (isInternshipCandidate && !normalizeText(formData.candidateType)) {
+          updates.candidateType = "fresher";
+        }
+        if (!isInternshipCandidate && !normalizeText(formData.currentCompanyName) && company) {
           updates.currentCompanyName = company;
         }
-        if (!normalizeText(formData.jobTitleRole) && role) {
+        if (!isInternshipCandidate && !normalizeText(formData.jobTitleRole) && role) {
           updates.jobTitleRole = role;
         }
+        if (!isInternshipCandidate && !normalizeText(formData.candidateType) && (company || role) && updates.candidateType === "fresher") {
+          updates.candidateType = "experienced";
+        }
 
-        if (!normalizeText(formData.employmentType)) {
+        if (!isInternshipCandidate && !normalizeText(formData.employmentType)) {
           if (normalizedLower.includes("full time") || normalizedLower.includes("full-time")) {
             updates.employmentType = "full-time";
           } else if (normalizedLower.includes("contract")) {
             updates.employmentType = "contract";
-          } else if (normalizedLower.includes("intern") || normalizedLower.includes("internship")) {
-            updates.employmentType = "internship";
           }
         }
 
+        const formPopulationStartedAt =
+          typeof performance !== "undefined" && typeof performance.now === "function"
+            ? performance.now()
+            : Date.now();
+        let populatedFieldCount = 0;
         Object.entries(updates).forEach(([fieldName, fieldValue]) => {
           if (fieldValue !== undefined && fieldValue !== null && fieldValue !== "") {
+            populatedFieldCount += 1;
             onChange(fieldName, fieldValue);
           }
+        });
+        const formPopulationEndedAt =
+          typeof performance !== "undefined" && typeof performance.now === "function"
+            ? performance.now()
+            : Date.now();
+        console.debug("[ResumeTiming] Form Population:", {
+          durationMs: Math.round((formPopulationEndedAt - formPopulationStartedAt) * 100) / 100,
+          fieldCount: populatedFieldCount,
+          path: "local-fallback",
         });
         console.debug("[ResumeDebug] Final form values from local fallback path:", {
           updates,
           nextFormValues: { ...formData, ...updates },
         });
+        if (Object.keys(updates).length > 0) {
+          setResumeExtractionStatus({
+            state: "success",
+            message: `${Object.keys(updates).length} field(s) auto-filled from uploaded resume.`,
+          });
+        } else {
+          setResumeExtractionStatus({ state: "warning", message: "Resume uploaded, but no matching values were detected for form fields." });
+        }
         console.groupEnd();
       } catch (error) {
         console.error("Resume parsing failed:", error);
+        setResumeExtractionStatus({ state: "error", message: "Unable to parse this resume. Try a PDF or DOCX file." });
         console.groupEnd();
       }
     };
@@ -1081,77 +1150,104 @@ const CandidateBasicInfoStep = ({
     );
   };
 
-  const skills = formData.skills || [
-    {
-      primarySkill: "",
-      enableSecondarySkill: false,
-      secondarySkill: "",
-      skillExperienceLevel: "",
-      skillExperienceYears: "",
-      skillRating: "",
-      skillComments: "",
-      secondarySkillExperienceLevel: "",
-      secondarySkillExperienceYears: "",
-      secondarySkillRating: "",
-      secondarySkillComments: ""
+  const skillRows = Array.isArray(formData.skills) && formData.skills.length > 0
+    ? formData.skills
+    : [createSkillRow(formData.primarySkill || "")];
+  const primarySkillRowCount = skillRows.filter((skill) => !skill.isSecondaryOnly).length;
+  const secondarySkillRowCount = skillRows.filter((skill, index) => index === 0 || skill.enableSecondarySkill).length;
+
+  const updateSkillRow = (rowIndex, fieldName, fieldValue) => {
+    const nextSkills = skillRows.map((skill, index) =>
+      index === rowIndex ? { ...skill, [fieldName]: fieldValue } : skill
+    );
+
+    onChange("skills", nextSkills);
+
+    if (
+      rowIndex === 0 &&
+      [
+        "primarySkill",
+        "secondarySkill",
+        "skillExperienceLevel",
+        "skillExperienceYears",
+        "skillRating",
+        "secondarySkillExperienceLevel",
+        "secondarySkillExperienceYears",
+        "secondarySkillRating",
+      ].includes(fieldName)
+    ) {
+      onChange(fieldName, fieldValue);
     }
-  ];
-
-  const handleAddField = () => {
-    const newSkills = [
-      ...skills,
-      {
-        primarySkill: "",
-        enableSecondarySkill: false,
-        secondarySkill: "",
-        skillExperienceLevel: "",
-        skillExperienceYears: "",
-        skillRating: "",
-        skillComments: "",
-        secondarySkillExperienceLevel: "",
-        secondarySkillExperienceYears: "",
-        secondarySkillRating: "",
-        secondarySkillComments: ""
-      }
-    ];
-    onChange("skills", newSkills);
   };
 
-  const handleRemoveField = (index) => {
-    const newSkills = skills.filter((_, i) => i !== index);
-    onChange("skills", newSkills);
+  const addSkillRow = () => {
+    onChange("skills", [...skillRows, createSkillRow("", { enableSecondarySkill: false })]);
   };
 
-  const handleSkillChange = (index, fieldName, value) => {
-    const newSkills = [...skills];
-    newSkills[index] = { ...newSkills[index], [fieldName]: value };
-    onChange("skills", newSkills);
+  const removeSkillRow = (rowIndex) => {
+    const nextSkills = skillRows.filter((_, index) => index !== rowIndex);
+    onChange("skills", nextSkills.length > 0 ? nextSkills : [createSkillRow("")]);
   };
 
-  const toggleSecondarySkill = (index, enabled) => {
-    const newSkills = [...skills];
-    const current = newSkills[index] || {};
+  const addSecondarySkillRow = () => {
+    const disabledRowIndex = skillRows.findIndex((skill, index) => index > 0 && !skill.isSecondaryOnly && !skill.enableSecondarySkill);
 
-    if (enabled) {
-      newSkills[index] = { ...current, enableSecondarySkill: true };
-    } else {
-      newSkills[index] = {
-        ...current,
-        enableSecondarySkill: false,
-        secondarySkill: "",
-        secondarySkillExperienceLevel: "",
-        secondarySkillExperienceYears: "",
-        secondarySkillRating: "",
-        secondarySkillComments: "",
-      };
+    if (disabledRowIndex >= 0) {
+      setSecondarySkillEnabled(disabledRowIndex, true);
+      return;
     }
 
-    onChange("skills", newSkills);
+    onChange("skills", [...skillRows, { ...createSkillRow("", { enableSecondarySkill: true }), isSecondaryOnly: true }]);
   };
 
-  const isAddButtonDisabled = skills.some(
-    skill => !skill.primarySkill || !skill.skillExperienceLevel || !skill.skillExperienceYears || !skill.skillRating
-  );
+  const setSecondarySkillEnabled = (rowIndex, enabled) => {
+    const nextSkills = skillRows.map((skill, index) =>
+      index === rowIndex
+        ? {
+            ...skill,
+            enableSecondarySkill: enabled,
+            secondarySkill: enabled ? skill.secondarySkill : "",
+            secondarySkillExperienceLevel: enabled ? skill.secondarySkillExperienceLevel : "",
+            secondarySkillExperienceYears: enabled ? skill.secondarySkillExperienceYears : "",
+            secondarySkillRating: enabled ? skill.secondarySkillRating : "",
+          }
+        : skill
+    );
+
+    onChange("skills", nextSkills);
+
+    if (rowIndex === 0 && !enabled) {
+      onChange("secondarySkill", "");
+      onChange("secondarySkillExperienceLevel", "");
+      onChange("secondarySkillExperienceYears", "");
+      onChange("secondarySkillRating", "");
+    }
+  };
+
+  const removeSecondarySkillRow = (rowIndex) => {
+    if (skillRows[rowIndex]?.isSecondaryOnly) {
+      const nextSkills = skillRows.filter((_, index) => index !== rowIndex);
+      onChange("skills", nextSkills.length > 0 ? nextSkills : [createSkillRow("")]);
+      return;
+    }
+
+    setSecondarySkillEnabled(rowIndex, false);
+  };
+
+  const renderSkillField = (rowIndex, fieldName, valueOverride) => {
+    const field = fieldMap[fieldName];
+    if (!field) return null;
+
+    return (
+      <FormField
+        {...field}
+        value={valueOverride ?? ""}
+        onChange={(_, value) => updateSkillRow(rowIndex, fieldName, value)}
+        formData={formData}
+        error={rowIndex === 0 ? validationErrors[fieldName] : ""}
+      />
+    );
+  };
 
   return (
     <div className="candidate-step">
@@ -1178,6 +1274,7 @@ const CandidateBasicInfoStep = ({
                     onChange={() => {
                       onChange("candidateTemplateMode", "no");
                       onChange("candidateTemplateFile", "");
+                      setResumeExtractionStatus({ state: "idle", message: "" });
                       // Clear auto-filled resume fields
                       onChange("firstName", "");
                       onChange("lastName", "");
@@ -1214,6 +1311,11 @@ const CandidateBasicInfoStep = ({
               {formData.candidateTemplateMode === "yes" && (
                 <div className="job-template-upload-wrap">
                   {renderField("candidateTemplateFile")}
+                  {resumeExtractionStatus.state !== "idle" ? (
+                    <div className={`resume-extraction-status resume-extraction-status--${resumeExtractionStatus.state}`}>
+                      {resumeExtractionStatus.message}
+                    </div>
+                  ) : null}
                 </div>
               )}
             </div>
@@ -1223,8 +1325,6 @@ const CandidateBasicInfoStep = ({
           {renderField("lastName")}
           {renderField("primaryEmail")}
           {renderField("phoneNumber")}
-          {renderField("gender")}
-          {renderField("dateOfBirth")}
           {renderField("yearsExperience")}
           {renderField("offersInHand")}
         </div>
@@ -1271,183 +1371,105 @@ const CandidateBasicInfoStep = ({
 
       <div className="candidate-section">
         <div className="candidate-section-header">
-          <h3 className="candidate-section-title">Add Skill set</h3>
+          <h3 className="candidate-section-title">Skills Info</h3>
           <div className="candidate-section-divider" />
         </div>
 
-        {skills.map((skill, index) => (
-          <div key={index} className="skill-row-container">
-            <div className="candidate-grid">
-              <div className="candidate-cell">
-                <FormField
-                  {...fieldMap.primarySkill}
-                  value={skill.primarySkill}
-                  onChange={(_, value) => handleSkillChange(index, "primarySkill", value)}
-                  formData={formData}
-                  hideLabel={index > 0}
-                />
-              </div>
-              <div className="candidate-cell skill-split-cell">
-                <div className="skill-split-fields">
-                  <FormField
-                    {...fieldMap.skillExperienceLevel}
-                    value={skill.skillExperienceLevel}
-                    onChange={(_, value) => handleSkillChange(index, "skillExperienceLevel", value)}
-                    formData={formData}
-                    hideLabel={index > 0}
-                  />
-                  <FormField
-                    {...fieldMap.skillExperienceYears}
-                    value={skill.skillExperienceYears}
-                    onChange={(_, value) => handleSkillChange(index, "skillExperienceYears", value)}
-                    formData={formData}
-                    hideLabel={index > 0}
-                  />
+        <div className="skill-subsection">
+          <div className="skill-subsection-header">
+            <h4 className="skill-subsection-title">Primary Skill</h4>
+            <div className="skill-subsection-divider" />
+          </div>
+
+          {skillRows.map((skill, index) => skill.isSecondaryOnly ? null : (
+            <div className="skill-row-container" key={`primary-skill-row-${index}`}>
+              <div className="candidate-grid skill-compact-grid">
+              <div className="candidate-cell skill-primary-secondary-cell">
+                <div className="skill-primary-secondary-fields">
+                  {renderSkillField(index, "primarySkill", skill.primarySkill)}
                 </div>
               </div>
               <div className="candidate-cell skill-split-cell">
                 <div className="skill-split-fields">
-                  <div className="form-field skill-rating-field">
-                    {index === 0 && (
-                      <label>
-                        {fieldMap.skillRating?.label || "Ratings *"}
-                      </label>
-                    )}
-                    <div className="skill-rating-stars" role="radiogroup" aria-label="Skill rating">
-                      {[1, 2, 3, 4, 5].map((starValue) => {
-                        const currentRating = Number.parseInt(String(skill.skillRating || "0"), 10);
-                        const isActive = Number.isFinite(currentRating) && starValue <= currentRating;
-
-                        return (
-                          <button
-                            key={starValue}
-                            type="button"
-                            className={`skill-rating-star${isActive ? " active" : ""}`}
-                            onClick={() => handleSkillChange(index, "skillRating", String(starValue))}
-                            aria-label={`Set rating ${starValue}`}
-                            aria-pressed={isActive}
-                            title={`${starValue} star${starValue > 1 ? "s" : ""}`}
-                          >
-                            ★
-                          </button>
-                        );
-                      })}
-                    </div>
-                    {index === 0 && validationErrors.skillRating && (
-                      <div className="error-message">{validationErrors.skillRating}</div>
-                    )}
-                  </div>
+                  {renderSkillField(index, "skillExperienceLevel", skill.skillExperienceLevel)}
+                  {renderSkillField(index, "skillExperienceYears", skill.skillExperienceYears)}
                 </div>
-                {skills.length > 1 && (
-                  <button
-                    type="button"
-                    className="remove-skill-button"
-                    onClick={() => handleRemoveField(index)}
-                    title="Remove Skill"
-                  >
-                    ×
-                  </button>
-                )}
               </div>
-            </div>
-
-            {(skill.enableSecondarySkill || skill.secondarySkill) && (
-              <div className="candidate-grid secondary-skill-grid">
-                <div className="candidate-cell">
-                  {fieldMap.secondarySkill && (
-                    <FormField
-                      {...fieldMap.secondarySkill}
-                      value={skill.secondarySkill || ""}
-                      onChange={(_, value) => handleSkillChange(index, "secondarySkill", value)}
-                      formData={formData}
-                      hideLabel={index > 0}
-                    />
+              <div className="candidate-cell skill-split-cell">
+                <div className="skill-split-fields skill-rating-with-remove">
+                  {renderSkillField(index, "skillRating", skill.skillRating)}
+                  {skillRows.slice(0, index + 1).filter((row) => !row.isSecondaryOnly).length === primarySkillRowCount && (
+                    <button type="button" className="add-skill-button" onClick={addSkillRow}>
+                      + Add Primary Skill
+                    </button>
+                  )}
+                  {primarySkillRowCount > 1 && (
+                    <button
+                      type="button"
+                      className="remove-skill-button"
+                      onClick={() => removeSkillRow(index)}
+                      aria-label="Remove Skill"
+                      title="Remove Skill"
+                    >
+                      <FiTrash2 size={16} aria-hidden="true" />
+                    </button>
                   )}
                 </div>
-                <div className="candidate-cell skill-split-cell">
-                  <div className="skill-split-fields">
-                    <FormField
-                      {...fieldMap.secondarySkillExperienceLevel}
-                      value={skill.secondarySkillExperienceLevel || ""}
-                      onChange={(_, value) => handleSkillChange(index, "secondarySkillExperienceLevel", value)}
-                      formData={formData}
-                      hideLabel={index > 0}
-                    />
-                    <FormField
-                      {...fieldMap.secondarySkillExperienceYears}
-                      value={skill.secondarySkillExperienceYears || ""}
-                      onChange={(_, value) => handleSkillChange(index, "secondarySkillExperienceYears", value)}
-                      formData={formData}
-                      hideLabel={index > 0}
-                    />
-                  </div>
-                </div>
-                <div className="candidate-cell skill-split-cell">
-                  <div className="skill-split-fields">
-                    <div className="form-field skill-rating-field">
-                      {index === 0 && (
-                        <label>
-                          {fieldMap.secondarySkillRating?.label || "Secondary Ratings"}
-                        </label>
-                      )}
-                      <div className="skill-rating-stars" role="radiogroup" aria-label="Secondary skill rating">
-                        {[1, 2, 3, 4, 5].map((starValue) => {
-                          const currentRating = Number.parseInt(String(skill.secondarySkillRating || "0"), 10);
-                          const isActive = Number.isFinite(currentRating) && starValue <= currentRating;
+              </div>
+              </div>
+            </div>
+          ))}
+        </div>
 
-                          return (
-                            <button
-                              key={`secondary-${starValue}`}
-                              type="button"
-                              className={`skill-rating-star${isActive ? " active" : ""}`}
-                              onClick={() => handleSkillChange(index, "secondarySkillRating", String(starValue))}
-                              aria-label={`Set secondary rating ${starValue}`}
-                              aria-pressed={isActive}
-                              title={`${starValue} star${starValue > 1 ? "s" : ""}`}
-                            >
-                              ★
-                            </button>
-                          );
-                        })}
-                      </div>
+        <div className="skill-subsection">
+          <div className="skill-subsection-header">
+            <h4 className="skill-subsection-title">Secondary Skill</h4>
+            <div className="skill-subsection-divider" />
+          </div>
+
+          {skillRows.map((skill, index) => {
+            if (index !== 0 && !skill.enableSecondarySkill) return null;
+
+            return (
+              <div className="skill-row-container" key={`secondary-skill-row-${index}`}>
+                <div className="candidate-grid skill-compact-grid">
+                  <div className="candidate-cell skill-primary-secondary-cell">
+                    <div className="skill-primary-secondary-fields">
+                      {renderSkillField(index, "secondarySkill", skill.secondarySkill)}
+                    </div>
+                  </div>
+                  <div className="candidate-cell skill-split-cell">
+                    <div className="skill-split-fields">
+                      {renderSkillField(index, "secondarySkillExperienceLevel", skill.secondarySkillExperienceLevel)}
+                      {renderSkillField(index, "secondarySkillExperienceYears", skill.secondarySkillExperienceYears)}
+                    </div>
+                  </div>
+                  <div className="candidate-cell skill-split-cell">
+                    <div className="skill-split-fields skill-rating-with-remove">
+                      {renderSkillField(index, "secondarySkillRating", skill.secondarySkillRating)}
+                      {skillRows.slice(0, index + 1).filter((row, rowIndex) => rowIndex === 0 || row.enableSecondarySkill).length === secondarySkillRowCount && (
+                        <button type="button" className="add-skill-button" onClick={addSecondarySkillRow}>
+                          + Add Secondary Skill
+                        </button>
+                      )}
+                      {index > 0 && (
+                        <button
+                          type="button"
+                          className="remove-skill-button"
+                          onClick={() => removeSecondarySkillRow(index)}
+                          aria-label="Remove Secondary Skill"
+                          title="Remove Secondary Skill"
+                        >
+                          <FiTrash2 size={16} aria-hidden="true" />
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
-                <div className="candidate-cell secondary-skill-actions-cell">
-                  <button
-                    type="button"
-                    className="secondary-skill-toggle remove"
-                    onClick={() => toggleSecondarySkill(index, false)}
-                  >
-                    Remove Secondary Skill
-                  </button>
-                </div>
               </div>
-            )}
+            );
+          })}
 
-            {!(skill.enableSecondarySkill || skill.secondarySkill) && (
-              <div className="secondary-skill-actions">
-                <button
-                  type="button"
-                  className="secondary-skill-toggle"
-                  onClick={() => toggleSecondarySkill(index, true)}
-                >
-                  Add Secondary Skill (Optional)
-                </button>
-              </div>
-            )}
-          </div>
-        ))}
-
-        <div className="candidate-section-actions">
-          <button
-            type="button"
-            className={`add-skill-button ${isAddButtonDisabled ? 'disabled' : ''}`}
-            onClick={handleAddField}
-            disabled={isAddButtonDisabled}
-          >
-            Add Primary Skill
-          </button>
         </div>
       </div>
 

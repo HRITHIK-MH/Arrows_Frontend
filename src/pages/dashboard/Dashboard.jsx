@@ -6,10 +6,33 @@ import { resolveEmbedSupersetDomain } from "../../utils/embedSupersetDomain";
 import { DASHBOARD_UUID_MAP } from "../../utils/constants";
 
 const FALLBACK_SUPERSET_URL =
-  import.meta.env.VITE_SUPERSET_URL || "http://172.174.201.208:8088";
+  import.meta.env.VITE_SUPERSET_URL || "https://dev.superset.arrowshub.com/";
 
 const FALLBACK_EMBED_UUID =
   import.meta.env.VITE_SUPERSET_EMBED_ID || DASHBOARD_UUID_MAP.default;
+
+const RESOURCE_ID_MAP = String(import.meta.env.VITE_SUPERSET_RESOURCE_ID_MAP || "")
+  .split(",")
+  .map((entry) => entry.trim())
+  .filter(Boolean)
+  .reduce((acc, entry) => {
+    const [uuid, resourceId] = entry.split(":").map((part) => String(part || "").trim());
+    if (uuid && resourceId) {
+      acc[uuid.toLowerCase()] = resourceId;
+    }
+    return acc;
+  }, {});
+
+const hasResourceIdMapping = (dashboardUuid) => {
+  const uuid = String(dashboardUuid || "").trim().toLowerCase();
+  if (!uuid) {
+    return false;
+  }
+  if (uuid === String(FALLBACK_EMBED_UUID || "").trim().toLowerCase()) {
+    return true;
+  }
+  return Boolean(RESOURCE_ID_MAP[uuid]);
+};
 
 const STAKEHOLDER_EMAILS = new Set([
   "demo-admin@method-hub.com",
@@ -90,9 +113,20 @@ export default function Dashboard() {
           fallbackEmbedUuid: FALLBACK_EMBED_UUID,
         });
 
-        const bootstrap = await fetchDashboardGuestToken(roleDashboardUuid);
+        const selectedDashboardUuid = hasResourceIdMapping(roleDashboardUuid)
+          ? roleDashboardUuid
+          : FALLBACK_EMBED_UUID;
+
+        if (roleDashboardUuid && selectedDashboardUuid !== roleDashboardUuid) {
+          console.warn(
+            "[superset] Falling back to VITE_SUPERSET_EMBED_ID because role dashboard UUID is not mapped:",
+            roleDashboardUuid,
+          );
+        }
+
+        const bootstrap = await fetchDashboardGuestToken(selectedDashboardUuid);
         const dashboardId =
-          roleDashboardUuid ||
+          selectedDashboardUuid ||
           bootstrap.dashboardUuid ||
           FALLBACK_EMBED_UUID;
         const supersetDomain = resolveEmbedSupersetDomain(
