@@ -32,7 +32,7 @@ export const resolveApiBaseUrl = (serviceName = '') => {
   }
 
   return joinService(fallback);
-}
+};
 
 // Create axios instance with default config
 const API = axios.create({
@@ -44,7 +44,8 @@ const API = axios.create({
 });
 
 const normalizeServiceUrl = (serviceName, url = '') => {
-  const prefix = serviceName.startsWith('/') ? serviceName : `/${serviceName}`;
+  // ✅ FIX: if serviceName is 'identity', don’t double-prefix
+  const prefix = serviceName ? `/${serviceName}` : '';
   const trimmedUrl = String(url || '').trim();
   if (!trimmedUrl) {
     return prefix;
@@ -81,9 +82,7 @@ API.interceptors.request.use(
     }
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
 // Response interceptor for error handling
