@@ -852,10 +852,25 @@ const CandidateBasicInfoStep = ({
             }
           }
 
+          const formPopulationStartedAt =
+            typeof performance !== "undefined" && typeof performance.now === "function"
+              ? performance.now()
+              : Date.now();
+          let populatedFieldCount = 0;
           Object.entries(updates).forEach(([fieldName, fieldValue]) => {
             if (fieldValue !== undefined && fieldValue !== null && fieldValue !== "") {
+              populatedFieldCount += 1;
               onChange(fieldName, fieldValue);
             }
+          });
+          const formPopulationEndedAt =
+            typeof performance !== "undefined" && typeof performance.now === "function"
+              ? performance.now()
+              : Date.now();
+          console.debug("[ResumeTiming] Form Population:", {
+            durationMs: Math.round((formPopulationEndedAt - formPopulationStartedAt) * 100) / 100,
+            fieldCount: populatedFieldCount,
+            path: "gpt-api",
           });
           console.debug("[ResumeDebug] Final form values from GPT/API path:", {
             updates,
@@ -1008,10 +1023,25 @@ const CandidateBasicInfoStep = ({
           }
         }
 
+        const formPopulationStartedAt =
+          typeof performance !== "undefined" && typeof performance.now === "function"
+            ? performance.now()
+            : Date.now();
+        let populatedFieldCount = 0;
         Object.entries(updates).forEach(([fieldName, fieldValue]) => {
           if (fieldValue !== undefined && fieldValue !== null && fieldValue !== "") {
+            populatedFieldCount += 1;
             onChange(fieldName, fieldValue);
           }
+        });
+        const formPopulationEndedAt =
+          typeof performance !== "undefined" && typeof performance.now === "function"
+            ? performance.now()
+            : Date.now();
+        console.debug("[ResumeTiming] Form Population:", {
+          durationMs: Math.round((formPopulationEndedAt - formPopulationStartedAt) * 100) / 100,
+          fieldCount: populatedFieldCount,
+          path: "local-fallback",
         });
         console.debug("[ResumeDebug] Final form values from local fallback path:", {
           updates,
