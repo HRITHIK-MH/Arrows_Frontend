@@ -175,9 +175,14 @@ const Login = () => {
     if (response?.name) {
       localStorage.setItem('userName', String(response.name).trim());
     }
-    if (response?.token) {
-      localStorage.setItem('token', response.token);
-      localStorage.setItem('authToken', response.token);
+
+    const incomingToken = String(
+      response?.token || response?.access_token || response?.accessToken || response?.jwt || ''
+    ).trim();
+
+    if (incomingToken) {
+      localStorage.setItem('token', incomingToken);
+      localStorage.setItem('authToken', incomingToken);
       startAuthSession();
     }
   }, [email]);
