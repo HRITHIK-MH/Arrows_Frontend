@@ -1,31 +1,37 @@
 import axios from 'axios';
 
-function resolveApiBaseUrl() {
-  const configured = String(import.meta.env.VITE_API_URL || '').trim();
+function normalizeApiBaseUrl(url = '') {
+  const trimmed = String(url || '').trim().replace(/\/+$/, '');
+  if (!trimmed) {
+    return '';
+  }
+  if (/^https?:\/\//i.test(trimmed)) {
+    return /\/api(\/|$)/i.test(trimmed) ? trimmed : `${trimmed}/api`;
+  }
+  return trimmed.replace(/^\/+/, '').replace(/\/+/g, '/');
+}
+
+export const resolveApiBaseUrl = (serviceName = '') => {
+  const backendConfigured = String(import.meta.env.VITE_BACKEND_URL || '').trim();
   const fallback = '/api';
   const host = String(window?.location?.hostname || '').toLowerCase();
   const isLocalHost = host === 'localhost' || host === '127.0.0.1' || host === '0.0.0.0';
+  const normalizedService = String(serviceName || '').trim().replace(/^\/+/, '');
 
-  if (!configured) {
-    return fallback;
-  }
+  const joinService = (base) => {
+    if (!normalizedService) return base;
+    return `${base.replace(/\/+$/, '')}/${normalizedService}`.replace(/\/+/, '/');
+  };
 
-  // In local dev, force relative proxy to avoid stale remote env values.
   if (isLocalHost) {
-    return '/api';
+    return joinService('/api');
   }
 
-  // Guard against placeholder values left in env templates.
-  if (/https?:\/\/api\.example\.com\/?$/i.test(configured)) {
-    return '/api';
+  if (backendConfigured && !/https?:\/\/api\.example\.com\/?$/i.test(backendConfigured)) {
+    return joinService(normalizeApiBaseUrl(backendConfigured));
   }
 
-  const cleaned = configured.replace(/\/+$/, '');
-  if (/^https?:\/\//i.test(cleaned) && !/\/api(\/|$)/i.test(cleaned)) {
-    return `${cleaned}/api`;
-  }
-
-  return cleaned;
+  return joinService(fallback);
 }
 
 // Create axios instance with default config
@@ -36,6 +42,34 @@ const API = axios.create({
     'Content-Type': 'application/json',
   },
 });
+
+const normalizeServiceUrl = (serviceName, url = '') => {
+  const prefix = serviceName.startsWith('/') ? serviceName : `/${serviceName}`;
+  const trimmedUrl = String(url || '').trim();
+  if (!trimmedUrl) {
+    return prefix;
+  }
+  if (/^https?:\/\//i.test(trimmedUrl)) {
+    return trimmedUrl;
+  }
+  const path = trimmedUrl.replace(/^\/+/, '');
+  return `${prefix}/${path}`.replace(/\/+/g, '/');
+};
+
+export const createServiceApi = (serviceName) => {
+  if (!serviceName || typeof serviceName !== 'string') {
+    throw new Error('createServiceApi requires a service name string');
+  }
+
+  return {
+    get: (url, config) => API.get(normalizeServiceUrl(serviceName, url), config),
+    post: (url, data, config) => API.post(normalizeServiceUrl(serviceName, url), data, config),
+    put: (url, data, config) => API.put(normalizeServiceUrl(serviceName, url), data, config),
+    patch: (url, data, config) => API.patch(normalizeServiceUrl(serviceName, url), data, config),
+    delete: (url, config) => API.delete(normalizeServiceUrl(serviceName, url), config),
+    request: (config) => API.request({ ...config, url: normalizeServiceUrl(serviceName, config?.url) }),
+  };
+};
 
 // Request interceptor to add auth token
 API.interceptors.request.use(
