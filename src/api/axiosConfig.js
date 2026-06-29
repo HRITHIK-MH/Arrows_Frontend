@@ -90,6 +90,11 @@ API.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
+const shouldRedirectToLogin = () => {
+  const pathname = String(window?.location?.pathname || '').toLowerCase();
+  return pathname !== '/login' && pathname !== '/login/sso-callback';
+};
+
 // Response interceptor for error handling
 API.interceptors.response.use(
   (response) => response,
@@ -101,7 +106,9 @@ API.interceptors.response.use(
       // Token expired or unauthorized
       localStorage.removeItem('authToken');
       localStorage.removeItem('user');
-      window.location.href = '/login';
+      if (shouldRedirectToLogin()) {
+        window.location.href = '/login';
+      }
     } else if (error.response?.status === 403) {
       console.error('Access forbidden:', error.message);
     } else if (error.response?.status >= 500) {

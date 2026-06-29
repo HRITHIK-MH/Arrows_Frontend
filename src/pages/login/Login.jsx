@@ -200,6 +200,13 @@ const Login = () => {
   }, []);
 
   useEffect(() => {
+    const hasStoredToken = Boolean(localStorage.getItem('authToken') || localStorage.getItem('token'));
+    if (hasStoredToken && window.location.pathname === '/login') {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [navigate]);
+
+  useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
     const code = String(searchParams.get('code') || '').trim();
     const state = String(searchParams.get('state') || '').trim();
@@ -330,7 +337,7 @@ const Login = () => {
         persistAuthSession(response, inferredRole);
       }
 
-      navigate('/dashboard');
+      navigate('/dashboard', { replace: true });
     } catch (err) {
       if (USE_LOGIN_API) {
         setError(getAuthErrorMessage(err, 'Login failed'));
