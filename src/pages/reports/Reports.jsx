@@ -7,27 +7,8 @@ export default function Reports() {
   const [toDate, setToDate] = React.useState("");
   const [loading, setLoading] = React.useState(false);
 
-  // Sample data
-  const [metricsData] = React.useState([
-    { label: "Sourced", value: 1048 },
-    { label: "Pre Screened", value: 583 },
-    { label: "Client Interviews", value: 482 },
-    { label: "Client Submissions", value: 220 },
-    { label: "Offers", value: 70 },
-    { label: "Hires", value: 32 }
-  ]);
-
-  const [chartData] = React.useState([
-    { name: "Vinayak Hiremath", value: 53, skills: ["Java Developer, Responsive"] },
-    { name: "Vaishnavi R", value: 118, skills: ["Java Developer, TransUnion", "Python De"] },
-    { name: "Vaishnavi G", value: 43, skills: ["Java Developer"] },
-    { name: "Sri Gnanam U", value: 133, skills: ["Java Developer, Responsive"] },
-    { name: "Mohammad Shabnam", value: 46, skills: ["Python Developer"] },
-    { name: "M Jagadish Kumar", value: 11, skills: ["Java Developer"] },
-    { name: "M Jagadish", value: 1, skills: ["Python Developer"] },
-    { name: "Karthik Paramaswam", value: 139, skills: ["Java Developer, TransUnion"] },
-    { name: "Jenifer Anthony Babu", value: 191, skills: ["Java Developer, Responsive"] }
-  ]);
+  const [metricsData] = React.useState([]);
+  const [chartData] = React.useState([]);
 
   React.useEffect(() => {
     const fetchReports = async () => {
@@ -47,7 +28,7 @@ export default function Reports() {
   const colors = ["#0087BE", "#1A1A1A", "#0066CC", "#FF6B35", "#4CAF50", "#FFC107", "#FF5722", "#9C27B0", "#00BCD4"];
 
   const getMaxValue = () => {
-    return Math.max(...chartData.map(item => item.value));
+    return chartData.length ? Math.max(...chartData.map(item => item.value)) : 0;
   };
 
   return (
@@ -98,21 +79,27 @@ export default function Reports() {
         ) : (
           <>
             {/* Metrics Cards */}
-            <div className={styles.metricsSection}>
-              {metricsData.map((metric, index) => (
-                <div key={index} className={styles.metricCard}>
-                  <h3 className={styles.metricLabel}>{metric.label}</h3>
-                  <p className={styles.metricValue}>{metric.value.toLocaleString()}</p>
-                </div>
-              ))}
-            </div>
+            {metricsData.length > 0 ? (
+              <div className={styles.metricsSection}>
+                {metricsData.map((metric, index) => (
+                  <div key={index} className={styles.metricCard}>
+                    <h3 className={styles.metricLabel}>{metric.label}</h3>
+                    <p className={styles.metricValue}>{metric.value.toLocaleString()}</p>
+                  </div>
+                ))}
+              </div>
+            ) : null}
 
             {/* Chart Section */}
             <div className={styles.chartSection}>
               <h2 className={styles.chartTitle}>Profile Sourced by Each</h2>
 
               <div className={styles.chartContainer}>
-                {chartData.map((item, index) => {
+                {chartData.length === 0 ? (
+                  <div className={styles.loadingState}>
+                    <p>No report data available.</p>
+                  </div>
+                ) : chartData.map((item, index) => {
                   const maxValue = getMaxValue();
                   const percentage = (item.value / maxValue) * 100;
 

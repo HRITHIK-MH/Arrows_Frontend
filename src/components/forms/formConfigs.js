@@ -54,12 +54,7 @@ const SOURCE_DIRECTORY = [
   { id: "SRC-006", name: "Through Website" }
 ];
 
-const RECRUITER_DIRECTORY = [
-  { id: "REC-001", name: "Parthiban" },
-  { id: "REC-002", name: "Manigandan" },
-  { id: "REC-003", name: "Saravanan" },
-  { id: "REC-004", name: "Priya" }
-];
+const RECRUITER_DIRECTORY = [];
 
 const SOURCE_NAME_OPTIONS = SOURCE_DIRECTORY.map(({ id, name }) => ({
   value: name,
@@ -376,8 +371,7 @@ export const jobOpeningConfig = {
           options: [
             { value: "full-time", label: "Full Time Employment" },
             { value: "part-time", label: "Part Time" },
-            { value: "contract", label: "Contract" },
-            { value: "internship", label: "Internship" }
+            { value: "contract", label: "Contract" }
           ]
         },
         {
@@ -500,11 +494,7 @@ export const jobOpeningConfig = {
           required: true,
           cssClass: "grid-col-1 grid-row-1",
           placeholder: "Select Client Name",
-          options: [
-            { value: "MethodHub", label: "MethodHub", clientId: "C1292938" },
-            { value: "Arrows Inc", label: "Arrows Inc", clientId: "C1292432" },
-            { value: "NovaLabs", label: "NovaLabs", clientId: "C1292921" }
-          ]
+          options: []
         },
         {
           name: "contactPersonName",
@@ -724,7 +714,7 @@ export const jobOpeningConfig = {
           // This field is auto-generated and disabled in UI, so auth failures
           // should not block submission.
           const authToken = localStorage.getItem('authToken') || localStorage.getItem('token');
-          const response = await fetch('/api/validate-job-position-id', {
+          const response = await fetch(`${resolveApiBaseUrl('clientJob')}/validate-job-position-id`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -816,12 +806,12 @@ export const jobOpeningConfig = {
 
       try {
         // Make AJAX call to validate description
-        const response = await fetch('/api/validate-description', {
+        const response = await fetch(`${resolveApiBaseUrl('clientJob')}/validate-description`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ description: value })
+          body: JSON.stringify({ description: value }),
         });
 
         const result = await response.json();
@@ -866,6 +856,7 @@ export const candidateConfig = {
   itemName: "Candidates",
   formClassName: "candidate-form",
   hideTitle: true,
+  hideStepper: true,
   showDraftAction: true,
   draftLabel: "Save as Draft",
   submitLabel: "Submit",
@@ -1005,7 +996,6 @@ export const candidateConfig = {
           options: [
             { value: "full-time", label: "Full Time" },
             { value: "contract", label: "Contract" },
-            { value: "internship", label: "Internship" }
           ]
         },
         {
@@ -1034,18 +1024,18 @@ export const candidateConfig = {
         },
         {
           name: "primarySkill",
-          label: "Skill Set *",
-          type: "multiselect",
+          label: "Primary Skill *",
+          type: "select",
           required: true,
           validationRule: "requiredField",
-          placeholder: "Select skills",
+          placeholder: "Select Primary Skill",
+          allowAddMore: true,
           options: [
             { value: "html5", label: "HTML5" },
             { value: "css3", label: "CSS3" },
             { value: "javascript", label: "JavaScript" },
             { value: "jquery", label: "jQuery" },
             { value: "bootstrap", label: "Bootstrap" },
-            { value: "react-js", label: "React.js" },
             { value: "angular-4", label: "Angular 4" },
             { value: "backbone-js", label: "Backbone.js" },
             { value: "java", label: "Core Java" },
@@ -1054,6 +1044,89 @@ export const candidateConfig = {
             { value: "node", label: "Node.js" },
             { value: "aws", label: "AWS" }
           ]
+        },
+        {
+          name: "secondarySkill",
+          label: "Secondary Skill *",
+          type: "select",
+          required: true,
+          validationRule: "requiredField",
+          placeholder: "Select Secondary Skill",
+          allowAddMore: true,
+          options: [
+            { value: "html5", label: "HTML5" },
+            { value: "css3", label: "CSS3" },
+            { value: "javascript", label: "JavaScript" },
+            { value: "jquery", label: "jQuery" },
+            { value: "bootstrap", label: "Bootstrap" },
+            { value: "angular-4", label: "Angular 4" },
+            { value: "backbone-js", label: "Backbone.js" },
+            { value: "java", label: "Core Java" },
+            { value: "python", label: "Python" },
+            { value: "react", label: "React" },
+            { value: "node", label: "Node.js" },
+            { value: "aws", label: "AWS" }
+          ]
+        },
+        {
+          name: "skillExperienceLevel",
+          label: "Experience Level *",
+          type: "select",
+          required: true,
+          validationRule: "requiredField",
+          placeholder: "Select Experience Level",
+          options: [
+            { value: "beginner", label: "Beginner" },
+            { value: "intermediate", label: "Intermediate" },
+            { value: "expert", label: "Expert" }
+          ]
+        },
+        {
+          name: "skillExperienceYears",
+          label: "Experience (Years) *",
+          type: "number",
+          required: true,
+          validationRule: "requiredField",
+          placeholder: "Years",
+          allowDecimal: true
+        },
+        {
+          name: "skillRating",
+          label: "Ratings *",
+          type: "rating",
+          required: true,
+          validationRule: "requiredField",
+          placeholder: "Select Rating"
+        },
+        {
+          name: "secondarySkillExperienceLevel",
+          label: "Experience Level *",
+          type: "select",
+          required: true,
+          validationRule: "requiredField",
+          placeholder: "Select Experience Level",
+          options: [
+            { value: "beginner", label: "Beginner" },
+            { value: "intermediate", label: "Intermediate" },
+            { value: "expert", label: "Expert" }
+          ]
+        },
+        {
+          name: "secondarySkillExperienceYears",
+          label: "Experience (Years) *",
+          type: "number",
+          required: true,
+          validationRule: "requiredField",
+          placeholder: "Years",
+          allowDecimal: true
+        },
+        {
+          name: "secondarySkillRating",
+          label: "Ratings *",
+          type: "rating",
+          required: true,
+          validationRule: "requiredField",
+          placeholder: "Select Rating"
         },
         {
           name: "recruiterId",
@@ -1129,6 +1202,35 @@ export const candidateConfig = {
         return { isValid: true };
       }
 
+      const secondarySkillFields = [
+        "secondarySkill",
+        "secondarySkillExperienceLevel",
+        "secondarySkillExperienceYears",
+        "secondarySkillRating",
+      ];
+
+      if (secondarySkillFields.includes(fieldName)) {
+        const enabledSecondarySkillRows = Array.isArray(formData?.skills)
+          ? formData.skills.filter((skill, index) => index === 0 || skill?.enableSecondarySkill)
+          : [];
+
+        if (enabledSecondarySkillRows.length === 0) {
+          return { isValid: true };
+        }
+
+        if (enabledSecondarySkillRows.some((skill) => isEmptyValue(skill?.[fieldName]))) {
+          const fieldLabels = {
+            secondarySkill: 'Secondary Skill',
+            secondarySkillExperienceLevel: 'Experience Level',
+            secondarySkillRating: 'Ratings',
+            secondarySkillExperienceYears: 'Experience (Years)',
+          };
+          return { isValid: false, message: `${fieldLabels[fieldName]} is required` };
+        }
+
+        return { isValid: true };
+      }
+
       if (isEmptyValue(value)) {
         const fieldLabels = {
           candidateId: 'Application Id',
@@ -1143,15 +1245,14 @@ export const candidateConfig = {
           noticePeriod: 'Notice Period',
           currentCtc: 'Current CTC',
           expectedCtc: 'Expected CTC',
-          primarySkill: 'Skill Set',
+          primarySkill: 'Primary Skill',
           secondarySkill: 'Secondary Skill',
           skillExperienceLevel: 'Experience Level',
-          secondarySkillExperienceLevel: 'Secondary Experience Level',
+          secondarySkillExperienceLevel: 'Experience Level',
           skillRating: 'Ratings',
-          secondarySkillRating: 'Secondary Ratings',
+          secondarySkillRating: 'Ratings',
           skillExperienceYears: 'Experience (Years)',
-          secondarySkillExperienceYears: 'Secondary Experience (Years)',
-          secondarySkillComments: 'Secondary Comments',
+          secondarySkillExperienceYears: 'Experience (Years)',
           sourceName: 'Source Name',
           sourcedDate: 'Sourced Date',
           candidateResume: 'Resume'
@@ -1597,7 +1698,6 @@ export const employeeConfig = {
             { value: "T4", label: "T4" },
             { value: "Vendor", label: "Vendor" },
             { value: "W2", label: "W2" }
-
           ]
         },
         {
@@ -1688,12 +1788,13 @@ export const employeeConfig = {
         {
           name: "billingType",
           label: "Billing Type *",
-          type: "radio",
+          type: "select",
           required: true,
           validationRule: "requiredField",
+          placeholder: "Select option",
           options: [
             { value: "Billable", label: "Billable" },
-            { value: "Non-billable", label: "Non-billable" }
+            { value: "Non-Billable", label: "Non-Billable" }
           ]
         }
       ]

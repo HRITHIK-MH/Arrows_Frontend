@@ -1,4 +1,6 @@
-import API from './axiosConfig';
+import API, { createServiceApi } from './axiosConfig';
+
+const interviewApi = createServiceApi('interview');
 
 export const fetchInterviews = async ({ page = 1, limit = 100, search, candidateId, status, interviewType, sortBy = 'interviewDateTime', sortOrder = 'asc' } = {}) => {
   const payload = {
@@ -11,12 +13,12 @@ export const fetchInterviews = async ({ page = 1, limit = 100, search, candidate
     sortBy,
     sortOrder,
   };
-  const response = await API.post('/interviews', payload);
+  const response = await interviewApi.post('/interviews', payload);
   return response?.data?.data || { items: [], pagination: { page, limit, totalRecords: 0, totalPages: 0 } };
 };
 
 export const fetchInterviewFiltersMeta = async () => {
-  const response = await API.get('/interviews/meta/filters', {
+  const response = await interviewApi.get('/interviews/meta/filters', {
     skipAuthRedirect: true,
   });
   return response?.data?.data || response?.data || null;
@@ -31,18 +33,18 @@ const unwrapArray = (payload) => {
 };
 
 export const fetchAvailableInterviewers = async () => {
-  const response = await API.get('/interview-groups/available-users', {
+  const response = await interviewApi.get('/interview-groups/available-users', {
     skipAuthRedirect: true,
   });
   return unwrapArray(response?.data);
 };
 
 export const fetchInterviewDetail = async (interviewId) => {
-  const response = await API.get(`/interviews/${encodeURIComponent(interviewId)}`);
+  const response = await interviewApi.get(`/interviews/${encodeURIComponent(interviewId)}`);
   return response?.data?.data || null;
 };
 
 export const updateInterviewStatus = async (interviewId, statusUpdate) => {
-  const response = await API.patch(`/interviews/${encodeURIComponent(interviewId)}/status`, statusUpdate);
+  const response = await interviewApi.patch(`/interviews/${encodeURIComponent(interviewId)}/status`, statusUpdate);
   return response?.data?.data || null;
 };

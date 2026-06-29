@@ -1,4 +1,5 @@
 import axios from 'axios';
+import API from '../../api/axiosConfig';
 import React, { useState, useMemo, useCallback } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
 import pdfjsWorkerSrc from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
@@ -1694,7 +1695,18 @@ const ReusableForm = ({ config, onSubmit, initialData, readOnly = false }) => {
       return data[fieldName];
     }
 
-    if (["primarySkill", "skillExperienceYears", "skillRating", "skillExperienceLevel"].includes(fieldName)) {
+    if (
+      [
+        "primarySkill",
+        "skillExperienceYears",
+        "skillRating",
+        "skillExperienceLevel",
+        "secondarySkill",
+        "secondarySkillExperienceLevel",
+        "secondarySkillExperienceYears",
+        "secondarySkillRating",
+      ].includes(fieldName)
+    ) {
       return data?.skills?.[0]?.[fieldName];
     }
 
@@ -1821,12 +1833,13 @@ const ReusableForm = ({ config, onSubmit, initialData, readOnly = false }) => {
       if (config.submitRequest) {
         await config.submitRequest(formData);
       } else if (config.submitEndpoint) {
-        await axios.post(config.submitEndpoint, formData);
+        const submitEndpoint = config.submitEndpoint.startsWith('/') ? config.submitEndpoint : `/${config.submitEndpoint}`;
+        await API.post(submitEndpoint, formData);
       }
 
       // Call the onSubmit callback if provided
       didRunSubmitCallback = true;
-      onSubmit?.(formData);
+      await onSubmit?.(formData);
 
       clearSavedDraft();
 
@@ -1836,7 +1849,7 @@ const ReusableForm = ({ config, onSubmit, initialData, readOnly = false }) => {
 
       if (config.localSubmitOnly) {
         if (!didRunSubmitCallback) {
-          onSubmit?.(formData);
+          await onSubmit?.(formData);
         }
         clearSavedDraft();
         return;
@@ -1844,7 +1857,7 @@ const ReusableForm = ({ config, onSubmit, initialData, readOnly = false }) => {
 
       // For development purposes, treat as success if it's a network error (no backend)
       if (error.code === 'ERR_NETWORK' || error.response?.status === 404) {
-        onSubmit?.(formData);
+        await onSubmit?.(formData);
         clearSavedDraft();
       } else {
         alert(`Error submitting ${itemLabel}. Please try again.`);

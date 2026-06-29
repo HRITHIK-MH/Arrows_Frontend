@@ -5,8 +5,9 @@
 
 import axios from 'axios';
 import { debounce } from './debounce';
+import { resolveApiBaseUrl } from '../api/axiosConfig';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+const API_BASE_URL = resolveApiBaseUrl();
 
 /**
  * Validates a mandatory field (checks if value is provided)

@@ -315,6 +315,231 @@
   margin-top: 2px;
 }
 
+/* ===== Profile Page ===== */
+.profilePage {
+  width: 100%;
+  min-height: calc(100vh - var(--header-height));
+  padding: 12px 0 24px;
+  box-sizing: border-box;
+}
+
+.profilePageShell {
+  width: min(100%, 620px);
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 18px;
+  align-items: start;
+}
+
+.profilePageShellSingle {
+  grid-template-columns: 1fr;
+}
+
+.profilePageCard {
+  width: 100%;
+  min-width: 0;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+  overflow: hidden;
+}
+
+.profilePageHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.profilePageProfileBody {
+  align-items: stretch;
+}
+
+.profilePageProfileBody .profileModalAvatar {
+  align-self: center;
+}
+
+.profilePageFooter {
+  background: #fff;
+}
+
+/* ===== Settings Page ===== */
+.settingsPage {
+  width: 100%;
+  min-height: calc(100vh - var(--header-height));
+  padding: 12px 0 24px;
+  box-sizing: border-box;
+}
+
+.settingsPageShell {
+  width: min(100%, 1180px);
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.settingsNav {
+  position: sticky;
+  top: calc(var(--header-height) + 12px);
+  max-height: calc(100vh - var(--header-height) - 36px);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
+}
+
+.settingsNavItem {
+  width: 100%;
+  min-height: 38px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: #475569;
+  cursor: pointer;
+  font-size: 0.88rem;
+  font-weight: 600;
+  text-align: left;
+  padding: 8px 10px;
+  transition: background 140ms ease, color 140ms ease;
+}
+
+.settingsNavItem:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.settingsNavItemActive {
+  background: #e0e8fd;
+  color: #035297;
+}
+
+.settingsPanel {
+  min-width: 0;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+  overflow: hidden;
+}
+
+.settingsPanelHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.settingsPanelDescription {
+  margin: 6px 0 0;
+  color: #64748b;
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.settingsPanelBody {
+  padding: 20px 24px;
+}
+
+.settingsPanelSection {
+  padding-top: 0;
+}
+
+.settingsProfileSummary {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.settingsProfileSummary .profileModalAvatar {
+  justify-self: center;
+}
+
+.settingsPlaceholder {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 16px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.settingsPlaceholder p {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+.settingsPanelFooter {
+  margin-top: 0;
+}
+
+[data-theme="dark"] .profilePageCard,
+[data-theme="dark"] .profilePageFooter,
+[data-theme="dark"] .settingsNav,
+[data-theme="dark"] .settingsPanel {
+  background: var(--surface-1);
+  border-color: var(--border-1);
+}
+
+[data-theme="dark"] .profilePageHeader,
+[data-theme="dark"] .profilePageFooter,
+[data-theme="dark"] .settingsSection,
+[data-theme="dark"] .settingsPanelHeader {
+  border-color: var(--border-1);
+}
+
+[data-theme="dark"] .modalTitle,
+[data-theme="dark"] .settingsLabel,
+[data-theme="dark"] .settingsNavItemActive {
+  color: var(--text-strong);
+}
+
+[data-theme="dark"] .settingsPanelDescription,
+[data-theme="dark"] .settingsNavItem,
+[data-theme="dark"] .settingsPlaceholder p {
+  color: var(--text-muted);
+}
+
+[data-theme="dark"] .settingsNavItem:hover,
+[data-theme="dark"] .settingsNavItemActive {
+  background: var(--surface-3);
+}
+
+[data-theme="dark"] .profileModalInput {
+  background: var(--surface-2);
+  border-color: var(--border-1);
+  color: var(--text-strong);
+}
+
+[data-theme="dark"] .settingsSelect {
+  background: var(--surface-2);
+  border-color: var(--border-1);
+  color: var(--text-strong);
+}
+
+[data-theme="dark"] .profileModalInput[readonly],
+[data-theme="dark"] .changePasswordFields,
+[data-theme="dark"] .settingsPlaceholder {
+  background: var(--surface-3);
+  border-color: var(--border-1);
+  color: var(--text-muted);
+}
+
 @media (max-width: 480px) {
   .modalCard {
     border-radius: 14px;
@@ -326,4 +551,71 @@
     gap: 8px;
   }
   .settingsSelect { min-width: unset; width: 100%; }
+}
+
+@media (max-width: 980px) {
+  .profilePageShell {
+    grid-template-columns: 1fr;
+  }
+
+  .settingsPageShell {
+    grid-template-columns: 1fr;
+  }
+
+  .settingsNav {
+    position: static;
+    max-height: none;
+    overflow-x: auto;
+    overflow-y: hidden;
+    flex-direction: row;
+    padding: 8px;
+  }
+
+  .settingsNavItem {
+    width: auto;
+    white-space: nowrap;
+    flex: 0 0 auto;
+  }
+}
+
+@media (max-width: 640px) {
+  .profilePage {
+    padding: 8px 0 16px;
+  }
+
+  .profilePageShell {
+    gap: 12px;
+  }
+
+  .settingsPage {
+    padding: 8px 0 16px;
+  }
+
+  .settingsPageShell {
+    gap: 12px;
+  }
+
+  .profilePageHeader,
+  .profileModalBody,
+  .settingsModalBody,
+  .profilePageFooter,
+  .settingsPanelHeader,
+  .settingsPanelBody {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .settingsProfileSummary {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .profilePageFooter {
+    flex-direction: column-reverse;
+  }
+
+  .profilePageFooter .modalBtnPrimary,
+  .profilePageFooter .modalBtnSecondary {
+    width: 100%;
+  }
 }

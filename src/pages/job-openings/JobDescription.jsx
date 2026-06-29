@@ -3,75 +3,29 @@ import { FiArrowLeft, FiCheck, FiEye, FiFileText, FiTrash2, FiX } from "react-ic
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import styles from "./JobDescription.module.scss";
 
-  const fallbackJob = {
-    openingJobId: "ZR_431212_JOB",
-    postingTitle: "Senior Developer",
-    minExperience: 5,
-    maxExperience: 10,
-  jobReceivedDate: "2025-09-15",
-  clientId: "1298338",
-    importance: "High Importance",
-    candidates: [
-      {
-        candidateId: "C00123342",
-        candidateName: "Ravi Patel",
-        candidateEmail: "ravi.patel@example.com",
-        recruiterName: "Parthiban",
-        source: "Naukri",
-        rating: "2/5",
-        matchingScore: 92,
-        stage: "Pre-Screening",
-        status: "In Progress",
-      },
-      {
-        candidateId: "C00123342",
-        candidateName: "Vikram Singh",
-        candidateEmail: "vikram.singh@example.com",
-        recruiterName: "Parthiban",
-        source: "Resume Inbox",
-        rating: "2/5",
-        matchingScore: 90,
-        stage: "Pre-Screening",
-        status: "In Progress",
-      },
-      {
-        candidateId: "C00123342",
-        candidateName: "Ananya Rao",
-        candidateEmail: "ananya.rao@example.com",
-        recruiterName: "Parthiban",
-        source: "LinkedIn",
-        rating: "3/5",
-        matchingScore: 85,
-        stage: "Assessment",
-        status: "Completed",
-      },
-    ],
-  };
+const fallbackJob = {
+  openingJobId: "",
+  postingTitle: "",
+  minExperience: "",
+  maxExperience: "",
+  jobReceivedDate: "",
+  clientId: "",
+  importance: "",
+  candidates: [],
+};
 
 const DEFAULT_STAGE_TABS = [
   "Map Candidates",
   "Sourced",
   "Pre-Screening",
   "Assessment",
-  "Client Interview",
+  "Interview",
   "Offer",
 ];
 const TEAM_OPTIONS = ["Pre-Screening Panel", "Java Team", "JD 1", "Python Team"];
 const DURATION_OPTIONS = ["15 minutes", "30 minutes", "45 minutes", "60 minutes"];
 const PANEL_OPTIONS = ["Panel Name 1", "Panel Name 2", "Panel Name 3"];
 const PLATFORM_OPTIONS = ["Microsoft Teams", "Google Meet", "Zoom"];
-const DUMMY_SOURCED_CANDIDATE = {
-  rowId: "dummy-sourced-candidate-1",
-  candidateId: "C009901",
-  candidateName: "Demo Sourced Candidate",
-  candidateEmail: "demo.sourced@example.com",
-  recruiterName: "Parthiban",
-  source: "Added by User",
-  rating: "3/5",
-  matchingScore: 88,
-  stage: "Sourced",
-  status: "In Progress",
-};
 
 const normalizeLegacyStageLabel = (stage) => {
   const safeStage = String(stage || "").trim();
@@ -223,8 +177,8 @@ const deriveCandidateFromFile = (file, existingRows, recruiterName) => {
     rowId: `${candidateId}-${Date.now()}`,
     candidateId,
     candidateName: fullName,
-    candidateEmail: emailToken ? `${emailToken}@example.com` : "candidate@example.com",
-    recruiterName: recruiterName || "Parthiban",
+    candidateEmail: "",
+    recruiterName: recruiterName || "",
     source: "Uploaded Document",
     rating: "0/5",
     matchingScore,
@@ -261,8 +215,8 @@ const JobDescription = () => {
     const normalizedRows = (job.candidates || []).map((row, index) => ({
       ...row,
       rowId: row.rowId || `${row.candidateId || "cand"}-${index}`,
-      recruiterName: row.recruiterName || job.hiringManager || "Parthiban",
-      source: row.source || "Resume Inbox",
+      recruiterName: row.recruiterName || job.hiringManager || "",
+      source: row.source || "",
       stage: normalizeStage(row.stage),
       status:
         row.status ||
@@ -273,13 +227,7 @@ const JobDescription = () => {
           : Math.max(65, 92 - index * 5),
     }));
 
-    const hasSourcedCandidate = normalizedRows.some(
-      (row) => normalizeStage(row.stage) === "Sourced"
-    );
-
-    return hasSourcedCandidate
-      ? normalizedRows
-      : [...normalizedRows, { ...DUMMY_SOURCED_CANDIDATE }];
+    return normalizedRows;
   }, [job.candidates, job.hiringManager, normalizeStage]);
 
   const [activeStage, setActiveStage] = React.useState("Map Candidates");
@@ -519,7 +467,7 @@ const JobDescription = () => {
     if (!uploadCandidateFile) return;
     setCandidateRows((prev) => [
       ...prev,
-      deriveCandidateFromFile(uploadCandidateFile, prev, job.hiringManager || "Parthiban"),
+      deriveCandidateFromFile(uploadCandidateFile, prev, job.hiringManager || ""),
     ]);
     setActiveStage("Map Candidates");
     setSearchTerm("");

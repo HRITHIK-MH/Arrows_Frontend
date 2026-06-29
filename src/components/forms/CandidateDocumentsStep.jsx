@@ -307,8 +307,7 @@ const extractLatestExperienceEntry = (text) => {
 const SKILL_ALIAS_MAP = {
   java: ["core java", "java", "spring boot", "spring"],
   python: ["python", "python3"],
-  react: ["react", "reactjs", "react js"],
-  "react-js": ["react", "reactjs", "react js", "react.js"],
+  react: ["react", "reactjs", "react js", "react.js"],
   node: ["node", "nodejs", "node js", "express"],
   aws: ["aws", "amazon web services"],
   "angular-4": ["angular", "angularjs", "angular 2", "angular 4", "angular 5"],
@@ -842,7 +841,6 @@ const CandidateDocumentsStep = ({ formData, onChange, onSetStepFields }) => {
           { value: "javascript", label: "JavaScript" },
           { value: "jquery", label: "jQuery" },
           { value: "bootstrap", label: "Bootstrap" },
-          { value: "react-js", label: "React.js" },
           { value: "angular-4", label: "Angular 4" },
           { value: "backbone-js", label: "Backbone.js" },
         ];
@@ -984,7 +982,6 @@ const CandidateDocumentsStep = ({ formData, onChange, onSetStepFields }) => {
           { value: "javascript", label: "JavaScript" },
           { value: "jquery", label: "jQuery" },
           { value: "bootstrap", label: "Bootstrap" },
-          { value: "react-js", label: "React.js" },
           { value: "angular-4", label: "Angular 4" },
           { value: "backbone-js", label: "Backbone.js" },
         ];
@@ -1032,9 +1029,6 @@ const CandidateDocumentsStep = ({ formData, onChange, onSetStepFields }) => {
           fieldNames.add("employmentType");
         } else if (normalizedLower.includes("contract")) {
           updates.employmentType = "contract";
-          fieldNames.add("employmentType");
-        } else if (normalizedLower.includes("intern") || normalizedLower.includes("internship")) {
-          updates.employmentType = "internship";
           fieldNames.add("employmentType");
         }
       }

@@ -52,23 +52,6 @@
 
 }
 
- @media (prefers-color-scheme: dark) {
-    :root {
-        --bg: #F0F4FF !important;
-        --text: #2C3135 !important;
-        --sidebar-bg: #ffffff !important;
-        --header-bg: #F0F4FF !important;
-        --divider: #e5e7eb !important;
-        --sidebar-icon: #94a3b8 !important;
-        --bgiconactive: #E0E8FD !important;
-    }
-        .search, .profileBtn {
-        background: var(--sidebar-bg) !important;
-        border-color: var(--blue-border) !important;
-    }
-} 
-
-
 /* ===== Dark Theme ===== */
 [data-theme="dark"] {
   --bg: rgba(15, 23, 42, 0.92);
@@ -846,24 +829,6 @@ body {
 }
 
 
-/* Dark mode adjustments (optional) */
-@media (prefers-color-scheme: dark) {
-  .search, .profileBtn {
-    background: #0f172a;
-    border-color: #1f2937;
-  }
-  .profileMenu {
-    background: #0f172a;
-    border-color: #1f2937;
-    box-shadow: 0 6px 24px rgba(0,0,0,0.25);
-  }
-  .topTitle { color: var(--text); }
-  .breadcrumb { color: var(--subtext); }
-}
-
-
-
-
 
 
 /* ---------- Navigation visuals (keep as-is) ---------- */
@@ -1184,25 +1149,6 @@ $gutter: 1rem;
 }
 
 
-/* Dark mode hook (optional) */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #0f172a;
-    --text: #e5e7eb;
-    --sidebar-bg: #0b1220;
-    --header-bg: #0f172a;
-    --divider: #1f2937;
-    --sidebar-icon: #94a3b8;
-    --bgiconactive: #111827;
-  }
-
-
-  @media (max-width: 768px) {
-    .toggleBtn { background: #0f172a; border-color: #1f2937; color: #e5e7eb; }
-    .toggleBtn:hover { background: #111827; }
-  }
-}
-
 /* Profile menu polish */
 .profileBtn[aria-expanded="true"] {
   background: #fff;
@@ -1375,43 +1321,4 @@ $gutter: 1rem;
     background: #f1f5f9;
   }
 }
-
-@media (prefers-color-scheme: dark) {
-  .profileBtn[aria-expanded="true"] {
-    background: #111827;
-    border-color: #1f2937;
-    box-shadow: 0 12px 24px rgba(0,0,0,0.35);
-  }
-
-  .profileMenu {
-    background: #0f172a;
-    border-color: #1f2937;
-    box-shadow: 0 12px 24px rgba(0,0,0,0.35);
-  }
-
-  .profileMenu::before {
-    background: #0f172a;
-    border-left: 1px solid #1f2937;
-    border-top: 1px solid #1f2937;
-  }
-
-  .profileMenuItem {
-    color: #e5e7eb;
-  }
-
-  .profileMenuItem:hover {
-    background: #111827;
-  }
-
-  .profileMenuDanger {
-    color: #f87171;
-  }
-
-  .profileMenuDanger:hover {
-    background: #1f2937;
-    color: #fecaca;
-  }
-}
-
-
 

@@ -25,7 +25,8 @@ const FormField = ({
   showBrowseButton,
   allowDecimal,
   suppressError,
-  maxLength
+  maxLength,
+  allowAddMore
 }) => {
   const [isValidating, setIsValidating] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -59,6 +60,16 @@ const FormField = ({
       };
     })
     .filter((option) => option.label !== '');
+
+  const normalizedCustomOptions = customOptions.map((option, index) => ({
+    key: String(option.value ?? `custom-option-${index}`),
+    value: option.value,
+    label: String(option.label ?? option.value ?? ''),
+  }));
+  const normalizedMergedSelectOptions = [...normalizedSelectOptions, ...normalizedCustomOptions].filter(
+    (option, index, self) =>
+      self.findIndex((item) => String(item.value) === String(option.value)) === index
+  );
 
   useEffect(() => {
     if (error) {
@@ -210,6 +221,25 @@ const FormField = ({
       handleMultiSelectChange([...(Array.isArray(value) ? value : []), newOption.value]);
     }
     setCustomOption('');
+  };
+
+  const handleAddCustomSelectOption = () => {
+    const trimmed = customOption.trim();
+    if (!trimmed) return;
+
+    const exists = normalizedMergedSelectOptions.some(
+      (option) => String(option.value).toLowerCase() === trimmed.toLowerCase()
+    );
+    const newOption = { value: trimmed, label: trimmed };
+
+    if (!exists) {
+      setCustomOptions((prev) => [...prev, newOption]);
+    }
+
+    onChange(name, newOption.value);
+    triggerFieldValidation(newOption.value);
+    setCustomOption('');
+    setIsDropdownOpen(false);
   };
 
   const handleBlur = async () => {
@@ -431,7 +461,7 @@ const FormField = ({
             value={
               isDropdownOpen
                 ? searchTerm
-                : normalizedSelectOptions.find((opt) => String(opt.value) === String(value))?.label || ''
+                : normalizedMergedSelectOptions.find((opt) => String(opt.value) === String(value))?.label || ''
             }
             onChange={(event) => {
               setSearchTerm(event.target.value);
@@ -483,6 +513,23 @@ const FormField = ({
                   </button>
                 ))
               )}
+              {allowAddMore && (
+                <div className="multiselect-add select-add-more">
+                  <input
+                    type="text"
+                    value={customOption}
+                    placeholder="Add more"
+                    onChange={(event) => setCustomOption(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter') {
+                        event.preventDefault();
+                        handleAddCustomSelectOption();
+                      }
+                    }}
+                  />
+                  <button type="button" onClick={handleAddCustomSelectOption}>Add</button>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -498,16 +545,16 @@ const FormField = ({
             aria-expanded={isDropdownOpen}
           >
             <span className="select-value">
-              {normalizedSelectOptions.find((opt) => String(opt.value) === String(value))?.label || placeholder || 'Select...'}
+              {normalizedMergedSelectOptions.find((opt) => String(opt.value) === String(value))?.label || placeholder || 'Select...'}
             </span>
             <span className="select-chevron" aria-hidden="true" />
           </button>
           {isDropdownOpen && (
             <div className="select-dropdown" role="listbox">
-              {normalizedSelectOptions.length === 0 ? (
+              {normalizedMergedSelectOptions.length === 0 ? (
                 <div className="select-empty">No options available</div>
               ) : (
-                normalizedSelectOptions.map((option) => (
+                normalizedMergedSelectOptions.map((option) => (
                   <button
                     key={option.key}
                     type="button"
@@ -523,6 +570,23 @@ const FormField = ({
                     {option.label}
                   </button>
                 ))
+              )}
+              {allowAddMore && (
+                <div className="multiselect-add select-add-more">
+                  <input
+                    type="text"
+                    value={customOption}
+                    placeholder="Add more"
+                    onChange={(event) => setCustomOption(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter') {
+                        event.preventDefault();
+                        handleAddCustomSelectOption();
+                      }
+                    }}
+                  />
+                  <button type="button" onClick={handleAddCustomSelectOption}>Add</button>
+                </div>
               )}
             </div>
           )}
@@ -545,6 +609,32 @@ const FormField = ({
               <span>{option.label}</span>
             </label>
           ))}
+        </div>
+      ) : type === 'rating' ? (
+        <div className="skill-rating-field">
+          <div className="skill-rating-stars" role="radiogroup" aria-label={cleanedLabel || name}>
+            {[1, 2, 3, 4, 5].map((starValue) => {
+              const isActive = Number(value || 0) >= starValue;
+              return (
+                <button
+                  key={starValue}
+                  type="button"
+                  className={`skill-rating-star${isActive ? ' active' : ''}`}
+                  onClick={() => {
+                    const nextValue = String(starValue);
+                    onChange(name, nextValue);
+                    triggerFieldValidation(nextValue);
+                  }}
+                  aria-label={`Rate ${starValue} star${starValue > 1 ? 's' : ''}`}
+                  aria-checked={String(value) === String(starValue)}
+                  role="radio"
+                  disabled={disabled}
+                >
+                  ★
+                </button>
+              );
+            })}
+          </div>
         </div>
       ) : type === 'textarea' ? (
         <textarea

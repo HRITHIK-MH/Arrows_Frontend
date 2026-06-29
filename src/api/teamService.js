@@ -1,4 +1,6 @@
-import API from './axiosConfig';
+import API, { createServiceApi } from './axiosConfig';
+
+const clientJobApi = createServiceApi('clientJob');
 
 const unwrapRecruiterItems = (payload) => {
   if (Array.isArray(payload)) return payload;
@@ -9,7 +11,7 @@ const unwrapRecruiterItems = (payload) => {
 };
 
 export const fetchRecruiters = async ({ openingJobId } = {}) => {
-  const response = await API.get('/users/recruiters', {
+  const response = await clientJobApi.get('/users/recruiters', {
     params: openingJobId ? { openingJobId } : undefined,
     skipAuthRedirect: true,
   });
@@ -40,7 +42,7 @@ export const saveTeamMembers = async ({ openingJobId, teamMembers = [], permissi
     return null;
   }
 
-  return API.post('/jobs/team-members', {
+  return clientJobApi.post('/jobs/team-members', {
     openingJobId,
     teamMembers,
     permissions: {

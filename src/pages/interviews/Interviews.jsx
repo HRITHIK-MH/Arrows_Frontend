@@ -34,67 +34,8 @@ const PROFILE_TABS = [
 
 const PIPELINE_STEPS = ["New", "In Review", "Engaged", "Offered", "Hired", "Rejected"];
 
-const JOB_OPENING_OPTIONS = [
-  {
-    openingJobId: "ZR_4_JOB",
-    postingTitle: "Senior Associate",
-    company: "HCL",
-    clientId: "C1292938",
-  },
-  {
-    openingJobId: "ZR_3_JOB",
-    postingTitle: "Lead Engineer",
-    company: "TCS",
-    clientId: "C1292432",
-  },
-  {
-    openingJobId: "ZR_2_JOB",
-    postingTitle: "Senior Associate",
-    company: "Wipro",
-    clientId: "C1292938",
-  },
-  {
-    openingJobId: "ZR_1_JOB",
-    postingTitle: "Staff Engineer",
-    company: "Verizon",
-    clientId: "C1294956",
-  },
-];
-
-const CANDIDATE_INTERVIEW_SOURCE = [
-  {
-    candidateId: "C001",
-    candidateName: "Raghul Mehta",
-    candidateEmail: "raghul.mehta@email.com",
-    source: "Resume Inbox",
-    rating: "3/5",
-    stage: "Sourced",
-  },
-  {
-    candidateId: "C002",
-    candidateName: "Priya Sharma",
-    candidateEmail: "priya.sharma@email.com",
-    source: "Added by User",
-    rating: "4/5",
-    stage: "Pre-Screening",
-  },
-  {
-    candidateId: "C003",
-    candidateName: "Arjun Rao",
-    candidateEmail: "arjun.rao@email.com",
-    source: "Seek",
-    rating: "4/5",
-    stage: "Assessment",
-  },
-  {
-    candidateId: "C004",
-    candidateName: "Sneha Nair",
-    candidateEmail: "sneha.nair@email.com",
-    source: "Resume Inbox",
-    rating: "2/5",
-    stage: "Client Interview",
-  },
-];
+const JOB_OPENING_OPTIONS = [];
+const CANDIDATE_INTERVIEW_SOURCE = [];
 
 const PRIMARY_SKILL_OPTIONS = [
   "Core Java",
@@ -116,56 +57,7 @@ const SECONDARY_SKILL_OPTIONS = [
 const EXPERIENCE_OPTIONS = ["1 Year", "2 Years", "3 Years", "4 Years", "5 Years"];
 const LAST_USED_OPTIONS = ["2025", "2024", "2023", "2022", "2021"];
 
-const INTERVIEWER_DIRECTORY = {
-  "Priya Sharma": {
-    email: "priya.sharma@email.com",
-    mobile: "+91770887243",
-    designation: "Panel",
-    availability: "Yes",
-  },
-  "Rahul Mehta": {
-    email: "rahul.mehta@email.com",
-    mobile: "+91770887243",
-    designation: "Panel",
-    availability: "Yes",
-  },
-  "Vikram Singh": {
-    email: "vikram.singh@email.com",
-    mobile: "+91770887243",
-    designation: "Panel",
-    availability: "Yes",
-  },
-  "Neha Verma": {
-    email: "neha.verma@email.com",
-    mobile: "+91770887243",
-    designation: "Panel",
-    availability: "Yes",
-  },
-  "Suresh Nair": {
-    email: "suresh.nair@email.com",
-    mobile: "+91770887243",
-    designation: "Panel",
-    availability: "Yes",
-  },
-  "Interviewer 1": {
-    email: "interviewer1@email.com",
-    mobile: "+910000000001",
-    designation: "Panel",
-    availability: "Yes",
-  },
-  "Interviewer 2": {
-    email: "interviewer2@email.com",
-    mobile: "+910000000002",
-    designation: "Panel",
-    availability: "Yes",
-  },
-  "Interviewer 3": {
-    email: "interviewer3@email.com",
-    mobile: "+910000000003",
-    designation: "Panel",
-    availability: "Yes",
-  },
-};
+const INTERVIEWER_DIRECTORY = {};
 
 const INTERVIEWER_OPTIONS = Object.keys(INTERVIEWER_DIRECTORY);
 
@@ -288,29 +180,7 @@ export default function Interviews() {
     [interviewerDirectory]
   );
 
-  // Sample groups data
-  const [groups, setGroups] = React.useState([
-    {
-      id: "Java",
-      name: "Java",
-      members: 6,
-      rounds: ["Round 1", "Round 2", "Round 3"],
-      teamMembers: [
-        { name: "Priya Sharma", email: "priya.sharma@email.com", mobile: "+91770887243", round: "Round 1", designation: "Panel", availability: "Yes" },
-        { name: "Rahul Mehta", email: "rahul.mehta@email.com", mobile: "+91770887243", round: "Round 3", designation: "Panel", availability: "Yes" },
-        { name: "Vikram Singh", email: "vikram.singh@email.com", mobile: "+91770887243", round: "Round 2", designation: "Panel", availability: "Yes" },
-        { name: "Neha Verma", email: "neha.verma@email.com", mobile: "+91770887243", round: "Round 3", designation: "Panel", availability: "Yes" },
-        { name: "Suresh Nair", email: "Suresh.nair@email.com", mobile: "+91770887243", round: "Round 1", designation: "Panel", availability: "Yes" }
-      ]
-    },
-    {
-      id: "Python Team",
-      name: "Python Team",
-      members: 4,
-      rounds: ["Round 1", "Round 2"],
-      teamMembers: []
-    }
-  ]);
+  const [groups, setGroups] = React.useState([]);
 
   // Fetch interviews data
   React.useEffect(() => {
@@ -460,118 +330,11 @@ export default function Interviews() {
 
   const buildCandidateProfile = React.useCallback((row) => {
     const [firstName = "", lastName = ""] = String(row.candidateName || "").split(" ");
-    const defaultPrimarySkills = [
-      {
-        id: "primary-1",
-        name: "Communication",
-        experience: "3 Years",
-        rating: 4,
-        lastUsed: "2025",
-        comments: "Confident in stakeholder discussions and interview rounds.",
-      },
-      {
-        id: "primary-2",
-        name: "Technical Screening",
-        experience: "2 Years",
-        rating: 4,
-        lastUsed: "2025",
-        comments: "Strong core understanding for the mapped role.",
-      },
-    ];
-
-    const defaultSecondarySkills = [
-      {
-        id: "secondary-1",
-        name: "Problem-Solving",
-        experience: "4 Years",
-        rating: 4,
-        lastUsed: "2025",
-        comments: "Approaches case-based questions with clarity.",
-      },
-      {
-        id: "secondary-2",
-        name: "Team Collaboration",
-        experience: "4 Years",
-        rating: 4,
-        lastUsed: "2025",
-        comments: "Works well across cross-functional interview loops.",
-      },
-    ];
-
-    const defaultFiles = [
-      {
-        id: "resume-1",
-        name: `${row.candidateName} Resume`,
-        type: "pdf",
-        size: "2.2 MB",
-        tone: "blue",
-      },
-      {
-        id: "resume-2",
-        name: "Interview Notes",
-        type: "doc",
-        size: "1.1 MB",
-        tone: "peach",
-      },
-    ];
-
-    const defaultTimeline = [
-      {
-        id: "timeline-1",
-        title: "Interview Scheduled",
-        by: "Parthiban",
-        summary: `${row.interviewType} interview scheduled for ${row.dateTime}.`,
-        date: row.dateTime,
-        tone: "purple",
-      },
-      {
-        id: "timeline-2",
-        title: "Profile Shared",
-        by: "Parthiban",
-        summary: `Candidate profile shared with ${row.company}.`,
-        date: "12/25/2025 09:33 PM",
-        tone: "slate",
-      },
-      {
-        id: "timeline-3",
-        title: "Shortlisted",
-        by: "Parthiban",
-        summary: `${row.candidateName} shortlisted for ${row.roleJobTitle}.`,
-        date: "12/24/2025 07:15 PM",
-        tone: "green",
-      },
-    ];
-
-    const defaultRatingRounds = [
-      {
-        id: "rating-1",
-        avatar: "P",
-        avatarTone: "purple",
-        title: "Round 1: Screening Discussion (Strong Hire)",
-        by: "Parthiban",
-        rating: 4,
-        date: "12/25/2025 09:33 PM",
-        summary: "Strong fundamentals, clear communication, and good intent for the opportunity.",
-        tags: [
-          { label: row.interviewType, tone: "blue" },
-          { label: row.roleJobTitle, tone: "gray" },
-        ],
-      },
-      {
-        id: "rating-2",
-        avatar: "S",
-        avatarTone: "olive",
-        title: "Round 2: Role Fit Assessment (Hire)",
-        by: "Saravanan",
-        rating: 5,
-        date: "12/26/2025 10:10 AM",
-        summary: "Candidate experience aligns well with the role and client expectation.",
-        tags: [
-          { label: row.mode, tone: "green" },
-          { label: row.company, tone: "orange" },
-        ],
-      },
-    ];
+    const defaultPrimarySkills = [];
+    const defaultSecondarySkills = [];
+    const defaultFiles = [];
+    const defaultTimeline = [];
+    const defaultRatingRounds = [];
 
     return {
       candidateId: row.candidateId,
@@ -579,29 +342,29 @@ export default function Interviews() {
       lastName,
       fullName: row.candidateName,
       role: row.roleJobTitle,
-      email: row.email || "rahul.mehta@email.com",
-      secondaryEmail: row.secondaryEmail || "rahul.personal@email.com",
-      phoneNumber: row.phoneNumber || "9876543210",
-      location: row.location || "Chennai, India",
-      dateOfBirth: row.dateOfBirth || "02/06/1999",
-      gender: row.gender || "Male",
+      email: row.email || "",
+      secondaryEmail: row.secondaryEmail || "",
+      phoneNumber: row.phoneNumber || "",
+      location: row.location || "",
+      dateOfBirth: row.dateOfBirth || "",
+      gender: row.gender || "",
       currentCompany: row.currentCompany || row.company,
-      experience: row.experience || "5 Years",
-      yearsExperience: row.yearsExperience || "5 Years",
-      offersInHand: row.offersInHand || "No",
-      currentCtc: row.currentCtc || "18,00,000 LPA",
-      expectedCtc: row.expectedCtc || "24,00,000 LPA",
+      experience: row.experience || "",
+      yearsExperience: row.yearsExperience || "",
+      offersInHand: row.offersInHand || "",
+      currentCtc: row.currentCtc || "",
+      expectedCtc: row.expectedCtc || "",
       primarySkills: row.primarySkills || defaultPrimarySkills,
       secondarySkills: row.secondarySkills || defaultSecondarySkills,
       resumeFiles: row.resumeFiles || defaultFiles,
       attachments: row.attachments || defaultFiles,
       timeline: row.timeline || defaultTimeline,
       ratingRounds: row.ratingRounds || defaultRatingRounds,
-      overallRating: row.overallRating || 4,
-      stage: row.stage || "Pre-Screening",
+      overallRating: row.overallRating || 0,
+      stage: row.stage || "",
       status: row.status,
-      source: row.source || "Interview Schedule",
-      jobApplications: row.jobApplications || JOB_OPENING_OPTIONS.slice(0, 2),
+      source: row.source || "",
+      jobApplications: row.jobApplications || [],
     };
   }, []);
 
@@ -1019,7 +782,7 @@ export default function Interviews() {
   }, []);
 
   const handleDownloadFile = React.useCallback((fileName) => {
-    const blob = new Blob([`Mock file generated for ${fileName}`], { type: "text/plain" });
+    const blob = new Blob([""], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement("a");
     anchor.href = url;
@@ -1067,14 +830,14 @@ export default function Interviews() {
               onClick={() => onChange?.(starValue)}
               aria-label={`Rate ${starValue} star${starValue > 1 ? "s" : ""}`}
             >
-              ★
+              ?
             </button>
           );
         }
 
         return (
           <span key={starValue} className={`${styles.starText}${isFilled ? ` ${styles.starFilled}` : ""}`}>
-            ★
+            ?
           </span>
         );
       })}
@@ -1736,7 +1499,7 @@ export default function Interviews() {
                                   : ""
                               }
                             >
-                              ▲
+                              ?
                             </span>
                             <span
                               className={
@@ -1745,7 +1508,7 @@ export default function Interviews() {
                                   : ""
                               }
                             >
-                              ▼
+                              ?
                             </span>
                           </span>
                         </th>
@@ -2445,32 +2208,35 @@ export default function Interviews() {
 
         {activeProfileTab==="Timeline" && (
         <div className={styles.timelineList}>
-
-        <div className={styles.timelineItem}>
-        <span className={`${styles.timelineMarker} ${styles.timelineMarkerPurple}`}/>
+        {(selectedCandidate.timeline || []).length === 0 ? (
+        <div className={styles.emptyState}>No timeline found.</div>
+        ) : (
+        (selectedCandidate.timeline || []).map((item) => (
+        <div key={item.id} className={styles.timelineItem}>
+        <span className={`${styles.timelineMarker} ${styles[`timelineMarker${item.tone.charAt(0).toUpperCase()}${item.tone.slice(1)}`]}`}/>
         <div className={styles.timelineItemBody}>
         <div className={styles.timelineHead}>
-        <h4>Interview Scheduled</h4>
-        <span>11/25/2025</span>
+        <h4>{item.title}</h4>
+        <span>{item.date}</span>
         </div>
-        <p className={styles.timelineSummary}>
-        Interview created and scheduled for candidate
-        </p>
+        <p className={styles.timelineSummary}>{item.summary}</p>
         </div>
         </div>
-
+        ))
+        )}
         </div>
         )}
-
         {activeProfileTab==="Rating" && (
 
         <div className={styles.ratingPanel}>
 
         <h4>Overall Rating</h4>
 
-        <div className={styles.starGroup}>
-        ★ ★ ★ ★ ☆
-        </div>
+        {(selectedCandidate.ratingRounds || []).length === 0 ? (
+        <div className={styles.emptyState}>No rating found.</div>
+        ) : (
+        <div className={styles.starGroup}>{renderRatingStars(selectedCandidate.overallRating || 0)}</div>
+        )}
 
         </div>
 
@@ -2492,14 +2258,20 @@ export default function Interviews() {
         </thead>
 
         <tbody>
-
+        {(selectedCandidate.jobApplications || []).length === 0 ? (
         <tr>
-        <td>ZR_4_JOB</td>
-        <td>Senior Associate</td>
-        <td>HCL</td>
-        <td>Pre-Screening</td>
+        <td colSpan={4}>No job applications found.</td>
         </tr>
-
+        ) : (
+        (selectedCandidate.jobApplications || []).map((job) => (
+        <tr key={job.openingJobId || job.id}>
+        <td>{job.openingJobId || "-"}</td>
+        <td>{job.postingTitle || "-"}</td>
+        <td>{job.company || job.clientId || "-"}</td>
+        <td>{job.jobOpeningStatus || job.stage || "-"}</td>
+        </tr>
+        ))
+        )}
         </tbody>
 
         </table>
@@ -2516,3 +2288,4 @@ export default function Interviews() {
     </div>
   );
 }
+

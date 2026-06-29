@@ -1309,26 +1309,42 @@
 
 /* Candidate form layout */
 .reusable-form-page.candidate-form {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
   padding: 0;
 }
 
 .reusable-form-page.candidate-form .multi-step-form {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
   margin: 0;
   padding: 0;
 }
 
 .reusable-form-page.candidate-form .multi-step-form-body {
+  flex: 1 1 auto;
   display: flex;
   flex-direction: column;
-  max-height: calc(100vh - 280px);
+  min-height: 0;
+  max-height: none;
   overflow: hidden;
 }
 
 .reusable-form-page.candidate-form .form-step-scroll {
-  flex: 1;
+  flex: 1 1 auto;
+  max-height: none;
   overflow-y: auto;
   padding-right: 6px;
-  padding-bottom: 20px;
+  padding-bottom: 0;
+  min-height: 0;
 }
 
 .reusable-form-page.candidate-form .step-indicator {
@@ -1539,103 +1555,74 @@
 }
 
 .skill-row-container {
-  margin-bottom: 14px;
+  margin-bottom: 16px;
 }
 
 .skill-row-container:last-of-type {
   margin-bottom: 0;
 }
 
-.candidate-skill-multiselect {
-  width: 100%;
+.skill-subsection {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
-.reusable-form-page.candidate-form .candidate-skill-multiselect .selected-items {
-  background: #eef2f6;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  color: #334155;
-  font-size: 12px;
-  min-height: 38px;
-  padding: 8px 36px 8px 12px;
+.skill-subsection-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
-.reusable-form-page.candidate-form .candidate-skill-multiselect .selected-item {
-  border-radius: 999px;
-  font-size: 11px;
-  padding: 3px 8px;
-}
-
-.reusable-form-page.candidate-form .candidate-skill-multiselect .selected-placeholder {
-  font-size: 12px;
-}
-
-.reusable-form-page.candidate-form .candidate-skill-multiselect .multiselect-dropdown {
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  box-shadow: 0 16px 30px rgba(15, 23, 42, 0.12);
-  padding: 14px;
-}
-
-.reusable-form-page.candidate-form .candidate-skill-multiselect .multiselect-search {
-  border-color: #bcd0ff;
-  font-size: 12px;
-  min-height: 38px;
-  padding: 8px 12px;
-}
-
-.reusable-form-page.candidate-form .candidate-skill-multiselect .multiselect-options {
-  gap: 8px;
-}
-
-.reusable-form-page.candidate-form .candidate-skill-multiselect .multiselect-option {
-  font-size: 12px;
-  line-height: 1.2;
-  margin-bottom: 0;
-  padding: 2px 4px;
-}
-
-.reusable-form-page.candidate-form .candidate-skill-multiselect .multiselect-option input {
-  appearance: none;
-  -webkit-appearance: none;
-  width: 16px;
-  min-width: 16px;
-  height: 16px;
-  min-height: 16px;
-  padding: 0;
+.skill-subsection-title {
   margin: 0;
-  flex: 0 0 16px;
-  border: 1px solid #565d64;
-  border-radius: 4px;
-  background: #eff1f4;
-  cursor: pointer;
-  position: relative;
+  color: #111827;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
-.reusable-form-page.candidate-form .candidate-skill-multiselect .multiselect-option input:checked {
-  background: #1f6ad7;
-  border-color: #1f6ad7;
+.skill-subsection-divider {
+  flex: 1;
+  border-bottom: 1px dotted #cbd5e1;
 }
 
-.reusable-form-page.candidate-form .candidate-skill-multiselect .multiselect-option input:checked::after {
-  content: "";
-  position: absolute;
-  left: 4px;
-  top: 1px;
-  width: 5px;
-  height: 9px;
-  border: solid #ffffff;
-  border-width: 0 2px 2px 0;
-  transform: rotate(45deg);
+.skill-subsection-header .add-skill-button {
+  margin-top: 0;
 }
 
-.secondary-skill-grid {
-  margin-top: 10px;
+.skill-compact-grid {
+  --skill-name-width: minmax(160px, 0.95fr);
+  --skill-level-width: minmax(142px, 0.82fr);
+  --skill-years-width: minmax(96px, 0.58fr);
+  --skill-rating-width: minmax(108px, 0.64fr);
+  --skill-action-width: 140px;
+  --skill-row-gap: 10px;
+  max-width: none;
+  grid-template-columns:
+    var(--skill-name-width)
+    minmax(248px, 1.4fr)
+    minmax(258px, 1.05fr);
+  gap: 12px;
+  align-items: end;
+}
+
+.secondary-skill-add-cell {
+  display: flex;
+  align-items: flex-end;
+  min-height: 66px;
+}
+
+.secondary-skill-add-cell .add-skill-button {
+  margin-top: 0;
+  white-space: nowrap;
 }
 
 .secondary-skill-actions {
   margin-top: 10px;
   display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .secondary-skill-actions-cell {
@@ -1683,12 +1670,14 @@
   position: relative;
   display: flex;
   align-items: flex-end;
-  gap: 10px;
+  gap: var(--skill-row-gap);
+  min-width: 0;
 }
 
 .skill-primary-secondary-cell {
   display: flex;
-  align-items: flex-start;
+  align-items: flex-end;
+  min-width: 0;
 }
 
 .skill-primary-secondary-fields {
@@ -1701,12 +1690,16 @@
 .skill-split-fields {
   flex: 1;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
+  grid-template-columns: minmax(142px, 1fr) minmax(96px, 0.68fr);
+  gap: var(--skill-row-gap);
+  align-items: end;
+  min-width: 0;
 }
 
-.skill-rating-comments-fields {
-  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+.skill-rating-with-remove {
+  grid-template-columns: minmax(108px, 1fr) var(--skill-action-width) 32px;
+  align-items: end;
+  gap: 10px;
 }
 
 .skill-split-fields .form-field {
@@ -1722,21 +1715,22 @@
 }
 
 .skill-rating-stars {
-  min-height: 38px;
+  min-height: 34px;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   padding: 0 2px;
+  white-space: nowrap;
 }
 
 .skill-rating-star {
   border: none;
   background: transparent;
   color: #cbd5e1;
-  font-size: 28px;
+  font-size: 24px;
   line-height: 1;
   cursor: pointer;
-  padding: 0;
+  padding: 0 1px;
   transition: color 0.15s ease, transform 0.15s ease;
 }
 
@@ -1758,20 +1752,29 @@
   background: transparent;
   border: none;
   color: #ef4444;
-  font-size: 24px;
+  font-size: 0;
   line-height: 1;
   cursor: pointer;
-  padding: 4px 8px;
-  margin-bottom: 6px;
-  /* Align with input field */
+  padding: 0;
+  margin: 0 0 4px;
+  width: 32px;
+  height: 32px;
+  border-radius: 7px;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: color 0.2s;
+  justify-self: center;
+  transition: color 0.2s, background-color 0.2s;
 }
 
 .remove-skill-button:hover {
+  background: #fee2e2;
   color: #dc2626;
+}
+
+.remove-skill-button svg {
+  width: 16px;
+  height: 16px;
 }
 
 .candidate-section-actions {
@@ -1780,11 +1783,16 @@
 }
 
 .add-skill-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-width: 0;
   background: #3b82f6;
   color: #fff;
   border: none;
   border-radius: 6px;
-  padding: 8px 16px;
+  padding: 6px 12px;
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
@@ -1793,6 +1801,25 @@
 
 .add-skill-button:hover {
   background: #2563eb;
+}
+
+.reusable-form-page.candidate-form .add-skill-button {
+  width: 100%;
+  max-width: 140px;
+  min-width: 0;
+  min-height: 32px;
+  padding: 5px 9px;
+  font-size: 11px;
+  line-height: 1.2;
+  margin: 0 0 4px;
+  white-space: normal;
+  text-align: center;
+}
+
+.skill-compact-grid .form-field input,
+.skill-compact-grid .form-field select {
+  min-height: 34px;
+  padding: 6px 10px;
 }
 
 .candidate-span-2 {
@@ -2069,13 +2096,14 @@
 }
 
 .reusable-form-page.candidate-form .form-buttons {
+  flex: 0 0 auto;
   justify-content: space-between;
   gap: 12px;
-  margin-top: 28px;
-  padding-top: 16px;
+  margin-top: 2px;
+  padding-top: 4px;
+  padding-bottom: 0;
   border-top: 1px solid #e2e8f0;
-  position: sticky;
-  bottom: 0;
+  position: static;
   background: #fff;
   z-index: 5;
 }
@@ -2086,7 +2114,7 @@
 
 .reusable-form-page.candidate-form .form-btn {
   border-radius: 8px;
-  padding: 8px 14px;
+  padding: 6px 14px;
   font-size: 12px;
 }
 
@@ -2388,6 +2416,14 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .skill-compact-grid {
+    max-width: none;
+    grid-template-columns:
+      var(--skill-name-width)
+      minmax(248px, 1.4fr)
+      minmax(258px, 1.05fr);
+  }
+
   .source-info-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
@@ -2401,6 +2437,25 @@
 
   .candidate-grid {
     grid-template-columns: 1fr;
+  }
+
+  .skill-compact-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .skill-split-fields,
+  .skill-rating-with-remove {
+    grid-template-columns: 1fr;
+  }
+
+  .skill-rating-with-remove {
+    gap: 10px;
+  }
+
+  .reusable-form-page.candidate-form .add-skill-button,
+  .remove-skill-button {
+    justify-self: start;
+    margin-bottom: 0;
   }
 
   .candidate-span-2,
@@ -2495,6 +2550,10 @@
     grid-template-columns: 1fr;
   }
 
+  .skill-compact-grid {
+    grid-template-columns: 1fr;
+  }
+
   .candidate-span-2,
   .candidate-span-3 {
     grid-column: 1 / -1;
@@ -2530,13 +2589,20 @@
   .candidate-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
+
+  .skill-compact-grid {
+    grid-template-columns:
+      var(--skill-name-width)
+      minmax(248px, 1.4fr)
+      minmax(258px, 1.05fr);
+  }
+
 }
 
 /* Extra large devices (large laptops and desktops, 1200px and up) */
 @media only screen and (min-width: 1200px) {
 
-  .reusable-form-page.job-opening-form .multi-step-form-body,
-  .reusable-form-page.candidate-form .multi-step-form-body {
+  .reusable-form-page.job-opening-form .multi-step-form-body {
     max-height: calc(100vh - 260px);
   }
 }
@@ -2572,7 +2638,6 @@
   }
 
   .reusable-form-page.job-opening-form .multi-step-form-body,
-  .reusable-form-page.candidate-form .multi-step-form-body,
   .reusable-form-page.client-form .multi-step-form-body {
     max-height: calc(100vh - 240px);
   }
@@ -2588,6 +2653,21 @@
   .candidate-grid,
   .client-grid {
     grid-template-columns: 1fr;
+  }
+
+  .skill-compact-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .skill-split-fields,
+  .skill-rating-with-remove {
+    grid-template-columns: 1fr;
+  }
+
+  .reusable-form-page.candidate-form .add-skill-button,
+  .remove-skill-button {
+    justify-self: start;
+    margin-bottom: 0;
   }
 
   .candidate-span-2,
