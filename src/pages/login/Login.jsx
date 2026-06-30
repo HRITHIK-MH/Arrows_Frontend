@@ -115,7 +115,7 @@ const getAuthErrorMessage = (err, fallbackMessage) => {
   const status = Number(err?.response?.status || 0);
   const data = err?.response?.data;
 
-  const identityUrl = String(import.meta.env.VITE_BACKEND_URL || import.meta.env.VITE_IDENTITY_SERVICE_URL || 'http://localhost:8080').trim();
+  const identityUrl = String(import.meta.env.VITE_IDENTITY_SERVICE_URL || import.meta.env.VITE_BACKEND_URL || 'http://localhost:8080').trim();
 
   if (typeof data === 'string' && data.trim()) {
     return data.trim();
@@ -133,11 +133,11 @@ const getAuthErrorMessage = (err, fallbackMessage) => {
   }
 
   if (status >= 500) {
-    return `Login service is unavailable. Check identity service at ${identityUrl} and try again.`;
+    return `Login service is unavailable. Check service at ${identityUrl} and try again.`;
   }
 
   if (!err?.response) {
-    return `Cannot reach login service. Check identity service at ${identityUrl}.`;
+    return `Cannot reach login service. Check service at ${identityUrl}.`;
   }
 
   return err?.message || fallbackMessage;
