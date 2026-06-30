@@ -259,29 +259,6 @@ const Login = () => {
     };
   }, [navigate, persistAuthSession]);
 
-  useEffect(() => {
-    if (window.location.pathname !== '/login/sso-callback') {
-      return;
-    }
-
-    const fetchSsoData = async () => {
-      try {
-        const res = await fetch('/api/sso/callback');
-        if (!res.ok) throw new Error(`Callback returned ${res.status}`);
-        const data = await res.json();
-
-        console.log('SSO callback data:', data);
-        localStorage.setItem('authToken', data.token);
-        localStorage.setItem('userEmail', data.email);
-        window.location.href = '/dashboard';
-      } catch (err) {
-        console.error('Error fetching SSO callback data:', err);
-      }
-    };
-
-    fetchSsoData();
-  }, []);
-
   const validateEmail = async () => {
     try {
       await new Promise((resolve, reject) => {
