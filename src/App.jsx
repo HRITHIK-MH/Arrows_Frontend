@@ -6,6 +6,7 @@ import { useEffect, Suspense, lazy } from "react";
 import TopBar from "./pages/layout/TopBar.jsx";
 import Sidebar from "./pages/layout/Sidebar.jsx";
 import Login from "./pages/login/Login.jsx";
+import SsoCallbackPage from "./pages/login/SsoCallbackPage.jsx";
 import { isBusinessStakeholder } from "./pages/layout/routesConfig.js";
 import { hasAuthSession } from "./utils/authSession.js";
 
@@ -154,7 +155,7 @@ export default function App() {
           <Routes key={location.pathname}>
             <Route path="/" element={<Navigate to="/login" replace />} />
             <Route path="/login" element={<Login />} />
-            <Route path="/login/sso-callback" element={<Login />} />
+            <Route path="/login/sso-callback" element={<SsoCallbackPage />} />
             <Route path="/sso/callback" element={<Login />} />
             <Route path="/dashboard" element={<RequireAuth><Dashboard /></RequireAuth>} />
             <Route path="/headcount" element={<RequireBusinessStakeholder><Headcount /></RequireBusinessStakeholder>} />
@@ -184,5 +185,3 @@ export default function App() {
     </div>
   );
 }
-
-

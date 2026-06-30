@@ -22,7 +22,7 @@ export default function ForgotPasswordModal({ isOpen, onClose, onSent }) {
     setEmailError('')
     setStatus('sending')
     try {
-      const base = import.meta.env.VITE_API_URL || ''
+      const base = import.meta.env.VITE_BACKEND_URL || ''
       const res = await fetch(`${base}/api/auth/forgot-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

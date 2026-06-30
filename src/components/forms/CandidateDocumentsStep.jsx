@@ -1,7 +1,8 @@
 import React, { useMemo, useState, useEffect, useRef } from "react";
 import * as pdfjsLib from "pdfjs-dist";
 import pdfjsWorkerSrc from "pdfjs-dist/build/pdf.worker.min.mjs?url";
-import { normalizeParsedResumePayload } from "../../api/resumeParserService";
+import { normalizeParsedResumePayload, parseResume } from "../../api/resumeParserService";
+import { isValidCurrentCompany, isValidCurrentDesignation } from "../../utils/resumeGuardrailValidator";
 
 const ALLOWED_EXTENSIONS = new Set(["pdf", "doc", "docx"]);
 
@@ -255,6 +256,7 @@ const extractLatestExperienceEntry = (text) => {
 
   const scopedLines = experienceIndex >= 0 ? lines.slice(experienceIndex + 1) : lines;
   const datePrefixPattern = /^(\d{1,2}[/-]\d{4}|\d{4})\s*(?:to|–|-|—)?\s*(present|current|now|\d{1,2}[/-]\d{4}|\d{4})?/i;
+  const dateRangePattern = /(?:\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\s+\d{4}\b|\b\d{1,2}[/-]\d{4}\b|\b\d{4}\b)\s*(?:to|–|-|—)\s*(?:present|current|now|\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\s+\d{4}\b|\b\d{1,2}[/-]\d{4}\b|\b\d{4}\b)/i;
   const scoreDateText = (dateText) => {
     const lower = String(dateText || "").toLowerCase();
     if (/present|current|now/.test(lower)) return Number.MAX_SAFE_INTEGER;
@@ -270,6 +272,26 @@ const extractLatestExperienceEntry = (text) => {
 
   for (let index = 0; index < scopedLines.length; index += 1) {
     const line = scopedLines[index];
+    const inlineDateRange = line.match(dateRangePattern);
+    if (inlineDateRange) {
+      const companyText = line
+        .replace(inlineDateRange[0], "")
+        .split(/[|,]/)
+        .map((part) => cleanRoleOrCompanyValue(part))
+        .find(Boolean) || "";
+      const roleText = cleanRoleOrCompanyValue(scopedLines[index - 1] || "");
+
+      if (companyText || roleText) {
+        candidates.push({
+          company: companyText,
+          role: roleText,
+          score: scoreDateText(inlineDateRange[0]),
+          index,
+        });
+        continue;
+      }
+    }
+
     const dateMatch = line.match(datePrefixPattern);
     if (!dateMatch) continue;
 
@@ -474,7 +496,7 @@ const extractCompanyAndRole = (text) => {
     const experienceIndex = lines.findIndex((line) => /^experience$/i.test(line) || /professional\s+experience/i.test(line));
     if (experienceIndex >= 0) {
       const windowLines = lines.slice(experienceIndex + 1, experienceIndex + 6);
-      const meaningfulLines = windowLines.filter((line) => !/@|\b(?:present|yrs?|years?|months?)\b/i.test(line));
+      const meaningfulLines = windowLines.filter((line) => !/@|\b(?:yrs?|years?|months?)\b/i.test(line));
       if (!role && meaningfulLines[0]) {
         role = cleanRoleOrCompanyValue(meaningfulLines[0]);
       }
@@ -735,31 +757,12 @@ const CandidateDocumentsStep = ({ formData, onChange, onSetStepFields }) => {
 
     let parsed;
     try {
-      const form = new FormData();
-      form.append("file", file);
-      console.debug("[ResumeDebug] GPT request payload handoff:", {
-        transport: "multipart/form-data",
-        url: "/api/candidates/documents/parse",
-        fieldName: "file",
-        fileName: file?.name,
-      });
-      const res = await fetch("/api/candidates/documents/parse", { method: "POST", body: form });
-      console.debug("[ResumeDebug] API response status:", {
-        status: res.status,
-        statusText: res.statusText,
-        ok: res.ok,
-        contentType: res.headers.get("content-type"),
-      });
-      const json = await res.json();
-      console.debug("[ResumeDebug] GPT/API raw response:", json);
-      parsed = normalizeParsedResumePayload(json?.data || json);
-      console.debug("[ResumeDebug] Parsed JSON:", json?.data || json);
-      console.debug("[ResumeDebug] Normalized candidate form JSON:", parsed);
+      parsed = await parseResume(file);
+      console.debug("[ResumeDebug] Candidate document parse successful:", parsed);
       if (!parsed) throw new Error("No parse result");
     } catch (err) {
-      // fallback to client-side parsing if server-side fails
       // eslint-disable-next-line no-console
-      console.warn("Server-side resume parse failed, falling back to client parsing:", err);
+      console.warn("Resume parse failed:", err);
     }
 
     if (parsed) {
@@ -825,11 +828,19 @@ const CandidateDocumentsStep = ({ formData, onChange, onSetStepFields }) => {
         updates.candidateType = "fresher";
         fieldNames.add("candidateType");
       }
-      if (!isParsedInternshipCandidate && !normalizeText(formData.currentCompanyName) && parsed.currentCompany) {
+      if (
+        !isParsedInternshipCandidate &&
+        (!normalizeText(formData.currentCompanyName) || !isValidCurrentCompany(formData.currentCompanyName)) &&
+        isValidCurrentCompany(parsed.currentCompany)
+      ) {
         updates.currentCompanyName = parsed.currentCompany;
         fieldNames.add("currentCompanyName");
       }
-      if (!isParsedInternshipCandidate && !normalizeText(formData.jobTitleRole) && parsed.currentDesignation) {
+      if (
+        !isParsedInternshipCandidate &&
+        (!normalizeText(formData.jobTitleRole) || !isValidCurrentDesignation(formData.jobTitleRole)) &&
+        isValidCurrentDesignation(parsed.currentDesignation)
+      ) {
         updates.jobTitleRole = parsed.currentDesignation;
         fieldNames.add("jobTitleRole");
       }
@@ -876,11 +887,7 @@ const CandidateDocumentsStep = ({ formData, onChange, onSetStepFields }) => {
           configSkillOptions,
         });
 
-        if (matchedSkills.length === 0 && parsedSkills[0]) {
-          // fallback: use first parsed skill as-is
-          updates.primarySkill = parsedSkills[0];
-          fieldNames.add("primarySkill");
-        } else if (matchedSkills.length > 0) {
+        if (matchedSkills.length > 0) {
           updates.primarySkill = matchedSkills[0];
           fieldNames.add("primarySkill");
           if (!normalizeText(formData.secondarySkill) && matchedSkills[1]) {
@@ -889,8 +896,10 @@ const CandidateDocumentsStep = ({ formData, onChange, onSetStepFields }) => {
           }
         }
 
-        if ((matchedSkills.length > 0 || parsedSkills.length > 0) && !Array.isArray(formData.skills)
-          || formData.skills?.every((row) => !normalizeText(row?.primarySkill))) {
+        if (
+          matchedSkills.length > 0 &&
+          (!Array.isArray(formData.skills) || formData.skills?.every((row) => !normalizeText(row?.primarySkill)))
+        ) {
           const existingSkillRows = Array.isArray(formData.skills) ? formData.skills : [];
           const hasExistingPrimarySkill = existingSkillRows.some((row) => normalizeText(row?.primarySkill));
           const skillDefaults = {
@@ -902,10 +911,17 @@ const CandidateDocumentsStep = ({ formData, onChange, onSetStepFields }) => {
           };
 
           if (!hasExistingPrimarySkill) {
-            const skillsToAdd = matchedSkills.length > 0 ? matchedSkills : parsedSkills;
-            updates.skills = skillsToAdd.map((skillValue) => createSkillRow(skillValue, skillDefaults));
+            updates.skills = matchedSkills.map((skillValue) => createSkillRow(skillValue, skillDefaults));
             fieldNames.add("skills");
           }
+        } else if (
+          matchedSkills.length === 0 &&
+          Array.isArray(formData.skills) &&
+          formData.skills.length > 1 &&
+          formData.skills.every((row) => !normalizeText(row?.primarySkill) && !normalizeText(row?.secondarySkill))
+        ) {
+          updates.skills = [createSkillRow("")];
+          fieldNames.add("skills");
         }
       }
 
@@ -1041,11 +1057,19 @@ const CandidateDocumentsStep = ({ formData, onChange, onSetStepFields }) => {
         updates.candidateType = "fresher";
         fieldNames.add("candidateType");
       }
-      if (!isInternshipCandidate && !normalizeText(formData.currentCompanyName) && company) {
+      if (
+        !isInternshipCandidate &&
+        (!normalizeText(formData.currentCompanyName) || !isValidCurrentCompany(formData.currentCompanyName)) &&
+        isValidCurrentCompany(company)
+      ) {
         updates.currentCompanyName = company;
         fieldNames.add("currentCompanyName");
       }
-      if (!isInternshipCandidate && !normalizeText(formData.jobTitleRole) && role) {
+      if (
+        !isInternshipCandidate &&
+        (!normalizeText(formData.jobTitleRole) || !isValidCurrentDesignation(formData.jobTitleRole)) &&
+        isValidCurrentDesignation(role)
+      ) {
         updates.jobTitleRole = role;
         fieldNames.add("jobTitleRole");
       }

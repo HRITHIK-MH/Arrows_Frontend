@@ -1,6 +1,6 @@
 import API, { createServiceApi } from './axiosConfig';
 
-const candidateApi = createServiceApi('candidate');
+const candidateApi = createServiceApi('');
 
 export const fetchCandidates = async ({ page = 1, limit = 100, search, source, rating, stage, status, sortBy = 'modifiedTime', sortOrder = 'desc' } = {}) => {
   const payload = {

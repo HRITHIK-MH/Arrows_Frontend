@@ -115,7 +115,7 @@ const getAuthErrorMessage = (err, fallbackMessage) => {
   const status = Number(err?.response?.status || 0);
   const data = err?.response?.data;
 
-  const identityUrl = String(import.meta.env.VITE_IDENTITY_SERVICE_URL || import.meta.env.VITE_BACKEND_URL || 'http://localhost:8080').trim();
+  const identityUrl = String(import.meta.env.VITE_BACKEND_URL || import.meta.env.VITE_IDENTITY_SERVICE_URL || 'http://localhost:8080').trim();
 
   if (typeof data === 'string' && data.trim()) {
     return data.trim();
@@ -175,9 +175,14 @@ const Login = () => {
     if (response?.name) {
       localStorage.setItem('userName', String(response.name).trim());
     }
-    if (response?.token) {
-      localStorage.setItem('token', response.token);
-      localStorage.setItem('authToken', response.token);
+
+    const incomingToken = String(
+      response?.token || response?.access_token || response?.accessToken || response?.jwt || ''
+    ).trim();
+
+    if (incomingToken) {
+      localStorage.setItem('token', incomingToken);
+      localStorage.setItem('authToken', incomingToken);
       startAuthSession();
     }
   }, [email]);
@@ -198,6 +203,13 @@ const Login = () => {
       });
     }
   }, []);
+
+  useEffect(() => {
+    const hasStoredToken = Boolean(localStorage.getItem('authToken') || localStorage.getItem('token'));
+    if (hasStoredToken && window.location.pathname === '/login') {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [navigate]);
 
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
@@ -246,6 +258,29 @@ const Login = () => {
       active = false;
     };
   }, [navigate, persistAuthSession]);
+
+  useEffect(() => {
+    if (window.location.pathname !== '/login/sso-callback') {
+      return;
+    }
+
+    const fetchSsoData = async () => {
+      try {
+        const res = await fetch('/api/sso/callback');
+        if (!res.ok) throw new Error(`Callback returned ${res.status}`);
+        const data = await res.json();
+
+        console.log('SSO callback data:', data);
+        localStorage.setItem('authToken', data.token);
+        localStorage.setItem('userEmail', data.email);
+        window.location.href = '/dashboard';
+      } catch (err) {
+        console.error('Error fetching SSO callback data:', err);
+      }
+    };
+
+    fetchSsoData();
+  }, []);
 
   const validateEmail = async () => {
     try {
@@ -330,7 +365,7 @@ const Login = () => {
         persistAuthSession(response, inferredRole);
       }
 
-      navigate('/dashboard');
+      navigate('/dashboard', { replace: true });
     } catch (err) {
       if (USE_LOGIN_API) {
         setError(getAuthErrorMessage(err, 'Login failed'));
@@ -343,19 +378,17 @@ const Login = () => {
   };
 
   const handleSsoLogin = async () => {
-    setError('');
-    setSsoLoading(true);
-    try {
-      const url = await fetchSsoAuthorizeUrl(email.trim() || undefined);
-      if (!url) {
-        throw new Error('SSO authorize URL is not available');
-      }
-      window.location.href = url;
-    } catch (err) {
-      setError(getAuthErrorMessage(err, 'Unable to start SSO login'));
-      setSsoLoading(false);
-    }
-  };
+  setError('');
+  setSsoLoading(true);
+  try {
+    const url = await fetchSsoAuthorizeUrl(email.trim() || undefined);
+    if (!url) throw new Error('SSO authorize URL is not available');
+    window.location.href = url; // go to Microsoft login
+  } catch (err) {
+    setError(getAuthErrorMessage(err, 'Unable to start SSO login'));
+    setSsoLoading(false);
+  }
+};
 
   return (
   <div className="login-container">

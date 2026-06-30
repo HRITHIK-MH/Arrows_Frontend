@@ -1,117 +1,121 @@
 import axios from 'axios';
 
-const SERVICE_ENV_MAP = {
-  identity: 'VITE_IDENTITY_SERVICE_URL',
-  tenant: 'VITE_TENANT_SERVICE_URL',
-  clientJob: 'VITE_CLIENT_JOB_SERVICE_URL',
-  candidate: 'VITE_CANDIDATE_SERVICE_URL',
-  applicationPipeline: 'VITE_APP_PIPELINE_SERVICE_URL',
-  interview: 'VITE_INTERVIEW_SERVICE_URL',
-  masterData: 'VITE_MASTER_DATA_SERVICE_URL',
-  notification: 'VITE_NOTIFICATION_SERVICE_URL',
-  headcount: 'VITE_HEADCOUNT_SERVICE_URL',
-};
-
-const DEFAULT_API_PATH = '/api';
-
-function normalizeUrl(value) {
-  return String(value || '').trim().replace(/\/+$/, '');
-}
-
-function buildApiBaseUrl(base) {
-  if (!base) return '';
-  const url = normalizeUrl(base);
-  if (!url) return '';
-  if (/\/api$/i.test(url)) {
-    return url;
+function normalizeApiBaseUrl(url = '') {
+  const trimmed = String(url || '').trim().replace(/\/+$/, '');
+  if (!trimmed) {
+    return '';
   }
-  return `${url}/api`;
-}
-
-function getEnvUrl(key) {
-  return normalizeUrl(import.meta.env[key] || '');
-}
-
-function getServiceUrl(serviceName) {
-  if (!serviceName) return '';
-  const envKey = SERVICE_ENV_MAP[serviceName];
-  return envKey ? getEnvUrl(envKey) : '';
-}
-
-export function resolveApiBaseUrl(serviceName) {
-  const serviceUrl = getServiceUrl(serviceName);
-  if (serviceUrl) {
-    return buildApiBaseUrl(serviceUrl);
+  if (/^https?:\/\//i.test(trimmed)) {
+    return /\/api(\/|$)/i.test(trimmed) ? trimmed : `${trimmed}/api`;
   }
+  return trimmed.replace(/^\/+/, '').replace(/\/+/g, '/');
+}
 
-  const backendUrl = getEnvUrl('VITE_BACKEND_URL');
-  const configuredApiUrl = getEnvUrl('VITE_API_URL');
+export const resolveApiBaseUrl = (serviceName = '') => {
+  const backendConfigured = String(import.meta.env.VITE_BACKEND_URL || '').trim();
+  const fallback = '/api';
   const host = String(window?.location?.hostname || '').toLowerCase();
   const isLocalHost = host === 'localhost' || host === '127.0.0.1' || host === '0.0.0.0';
+  const normalizedService = String(serviceName || '').trim().replace(/^\/+/, '');
+  const shouldUseRootApi = normalizedService.toLowerCase() === 'clientjob';
+
+  const joinService = (base) => {
+    if (!normalizedService || shouldUseRootApi) return base;
+    return `${base.replace(/\/+$/, '')}/${normalizedService}`.replace(/\/+/, '/');
+  };
 
   if (isLocalHost) {
-    return DEFAULT_API_PATH;
+    return joinService('/api');
   }
 
-  if (backendUrl) {
-    return buildApiBaseUrl(backendUrl);
+  if (backendConfigured && !/https?:\/\/api\.example\.com\/?$/i.test(backendConfigured)) {
+    return joinService(normalizeApiBaseUrl(backendConfigured));
   }
 
-  if (configuredApiUrl) {
-    return buildApiBaseUrl(configuredApiUrl);
+  return joinService(fallback);
+};
+
+// Create axios instance with default config
+const API = axios.create({
+  baseURL: resolveApiBaseUrl(),
+  timeout: 10000,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+const normalizeServiceUrl = (serviceName, url = '') => {
+  const normalizedService = String(serviceName || '').trim().replace(/^\/+/, '');
+  const shouldUseRootApi = normalizedService.toLowerCase() === 'clientjob';
+  const prefix = normalizedService && !shouldUseRootApi ? `/${normalizedService}` : '';
+  const trimmedUrl = String(url || '').trim();
+  if (!trimmedUrl) {
+    return prefix;
+  }
+  if (/^https?:\/\//i.test(trimmedUrl)) {
+    return trimmedUrl;
+  }
+  const path = trimmedUrl.replace(/^\/+/, '');
+  return `${prefix}/${path}`.replace(/\/+/g, '/');
+};
+
+export const createServiceApi = (serviceName) => {
+  const name = serviceName == null ? '' : String(serviceName);
+  if (!name) {
+    // Don't throw in runtime; allow a root API when no service name provided.
+    // This makes consumers more tolerant and avoids initialization crashes.
+    console.warn('createServiceApi called without a service name — using root API');
   }
 
-  return DEFAULT_API_PATH;
-}
+  return {
+    get: (url, config) => API.get(normalizeServiceUrl(name, url), config),
+    post: (url, data, config) => API.post(normalizeServiceUrl(name, url), data, config),
+    put: (url, data, config) => API.put(normalizeServiceUrl(name, url), data, config),
+    patch: (url, data, config) => API.patch(normalizeServiceUrl(name, url), data, config),
+    delete: (url, config) => API.delete(normalizeServiceUrl(name, url), config),
+    request: (config) => API.request({ ...config, url: normalizeServiceUrl(name, config?.url) }),
+  };
+};
 
-function makeApiInstance(baseURL) {
-  const instance = axios.create({
-    baseURL,
-    timeout: 10000,
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  });
+// Request interceptor to add auth token
+API.interceptors.request.use(
+  (config) => {
+    const skipAuth = Boolean(config?.skipAuth);
+    const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+    if (token && !skipAuth) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
 
-  instance.interceptors.request.use(
-    (config) => {
-      const skipAuth = Boolean(config?.skipAuth);
-      const token = localStorage.getItem('authToken') || localStorage.getItem('token');
-      if (token && !skipAuth) {
-        config.headers.Authorization = `Bearer ${token}`;
-      }
+const shouldRedirectToLogin = () => {
+  const pathname = String(window?.location?.pathname || '').toLowerCase();
+  return pathname !== '/login' && pathname !== '/login/sso-callback';
+};
 
-      if (config?.service) {
-        config.baseURL = resolveApiBaseUrl(config.service);
-      }
-
-      return config;
-    },
-    (error) => Promise.reject(error),
-  );
-
-  instance.interceptors.response.use(
-    (response) => response,
-    (error) => {
-      const skipAuthRedirect = Boolean(error?.config?.skipAuthRedirect);
-      if (!error.response) {
-        console.error('Network error: backend may be unavailable at API base URL', instance.defaults.baseURL);
-      } else if (error.response?.status === 401 && !skipAuthRedirect) {
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('user');
+// Response interceptor for error handling
+API.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const skipAuthRedirect = Boolean(error?.config?.skipAuthRedirect);
+    if (!error.response) {
+      console.error('Network error: backend may be unavailable at API base URL', API.defaults.baseURL);
+    } else if (error.response?.status === 401 && !skipAuthRedirect) {
+      // Token expired or unauthorized
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('user');
+      if (shouldRedirectToLogin()) {
         window.location.href = '/login';
-      } else if (error.response?.status === 403) {
-        console.error('Access forbidden:', error.message);
-      } else if (error.response?.status >= 500) {
-        console.error('Server error:', error.message);
       }
-      return Promise.reject(error);
-    },
-  );
+    } else if (error.response?.status === 403) {
+      console.error('Access forbidden:', error.message);
+    } else if (error.response?.status >= 500) {
+      console.error('Server error:', error.message);
+    }
+    return Promise.reject(error);
+  }
+);
 
-  return instance;
-}
-
-const API = makeApiInstance(resolveApiBaseUrl());
-export const createServiceApi = (serviceName) => makeApiInstance(resolveApiBaseUrl(serviceName));
 export default API;

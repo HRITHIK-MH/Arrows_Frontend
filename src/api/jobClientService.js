@@ -1,6 +1,6 @@
 import API, { createServiceApi } from './axiosConfig';
 
-const clientJobApi = createServiceApi('clientJob');
+const clientJobApi = createServiceApi('');
 
 const unwrapList = (response) => {
   const payload = response?.data;
@@ -217,13 +217,22 @@ export const toClientRequest = (row = {}) => ({
 });
 
 export const createClient = (payload) =>
-  clientJobApi.post('/clients', toClientRequest(payload));
+  clientJobApi.post('/clients', toClientRequest(payload), {
+    skipAuth: true,
+    skipAuthRedirect: true,
+  });
 
 export const updateClient = (clientId, payload) =>
-  clientJobApi.put(`/clients/${encodeURIComponent(clientId)}`, toClientRequest(payload));
+  clientJobApi.put(`/clients/${encodeURIComponent(clientId)}`, toClientRequest(payload), {
+    skipAuth: true,
+    skipAuthRedirect: true,
+  });
 
 export const deleteClient = (clientId) =>
-  clientJobApi.delete(`/clients/${encodeURIComponent(clientId)}`);
+  clientJobApi.delete(`/clients/${encodeURIComponent(clientId)}`, {
+    skipAuth: true,
+    skipAuthRedirect: true,
+  });
 
 export const normalizeClientRecord = (row, index = 0) => ({
   clientId: row?.clientId || row?.id || `CL-${index + 1}`,

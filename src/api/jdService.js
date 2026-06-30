@@ -1,5 +1,6 @@
 import { buildJdGenerationPrompt, buildJdMappingPrompt, JD_PARSE_PROMPT } from "./jdPrompts";
 import { JD_SCHEMA } from "./jdSchema";
+import { applyJdGuardrails } from "../utils/jdGuardrailValidator";
 
 const cleanValue = (value) => {
   if (value === null || value === undefined) return "";
@@ -186,38 +187,40 @@ export const parseJdTextWithAzure = async (jdText) => {
     throw new Error("GPT returned invalid ARROWS Job Form JSON.");
   }
 
-  const normalized = normalizeJdJson(mappedJd);
+  const normalized = applyJdGuardrails(normalizeJdJson(mappedJd));
   console.debug("[JDDebug] Mapped ARROWS Job Form JSON:", normalized);
   return normalized;
 };
 
-export const buildJdSchemaFromForm = (formData = {}, labels = {}) => ({
-  job_information: {
-    job_id: cleanValue(formData.jobPositionId),
-    job_name: cleanValue(formData.positionName),
-    position_level: cleanValue(labels.positionLevel || formData.positionLevel),
-    work_type: cleanValue(labels.workType || formData.hiringType),
-    employment_type: cleanValue(labels.employmentType || formData.jobType),
-    number_of_positions: Number(formData.noOfPositions) || 0,
-    location: cleanList(labels.location || formData.location),
-  },
-  experience_requirements: {
-    minimum_experience: Number(formData.minExperience) || 0,
-    maximum_experience: Number(formData.maxExperience) || 0,
-  },
-  compensation: {
-    minimum_ctc: cleanValue(formData.minSalary),
-    maximum_ctc: cleanValue(formData.maxSalary),
-  },
-  skills: {
-    technical_skills: cleanList(labels.technicalSkills || formData.technicalSkills),
-    additional_skills: cleanList(formData.additionalSkills),
-    soft_skills: cleanList(labels.softSkills || formData.softSkills),
-  },
-  job_description: cleanValue(formData.jdPrompt || formData.generatedJd),
-});
+export const buildJdSchemaFromForm = (formData = {}, labels = {}) =>
+  applyJdGuardrails({
+    job_information: {
+      job_id: cleanValue(formData.jobPositionId),
+      job_name: cleanValue(formData.positionName),
+      position_level: cleanValue(labels.positionLevel || formData.positionLevel),
+      work_type: cleanValue(labels.workType || formData.hiringType),
+      employment_type: cleanValue(labels.employmentType || formData.jobType),
+      number_of_positions: Number(formData.noOfPositions) || 0,
+      location: cleanList(labels.location || formData.location),
+    },
+    experience_requirements: {
+      minimum_experience: Number(formData.minExperience) || 0,
+      maximum_experience: Number(formData.maxExperience) || 0,
+    },
+    compensation: {
+      minimum_ctc: cleanValue(formData.minSalary),
+      maximum_ctc: cleanValue(formData.maxSalary),
+    },
+    skills: {
+      technical_skills: cleanList(labels.technicalSkills || formData.technicalSkills),
+      additional_skills: cleanList(formData.additionalSkills),
+      soft_skills: cleanList(labels.softSkills || formData.softSkills),
+    },
+    job_description: cleanValue(formData.jdPrompt || formData.generatedJd),
+  });
 
 export const generateJdWithAzure = async (jobFormJson, sourceJdText = "") => {
+  const guardedJobFormJson = applyJdGuardrails(jobFormJson);
   const content = await callAzure({
     stage: "jd-generation",
     jsonMode: true,
@@ -228,7 +231,7 @@ export const generateJdWithAzure = async (jobFormJson, sourceJdText = "") => {
       },
       {
         role: "user",
-        content: buildJdGenerationPrompt(jobFormJson, sourceJdText),
+        content: buildJdGenerationPrompt(guardedJobFormJson, sourceJdText),
       },
     ],
   });

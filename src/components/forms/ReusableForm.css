@@ -28,7 +28,12 @@
 }
 
 .reusable-form-page.job-opening-form {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
   padding: 0;
+  overflow: hidden;
 }
 
 .job-section {
@@ -481,22 +486,29 @@
 }
 
 .reusable-form-page.job-opening-form .multi-step-form {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
   margin: 0;
   padding: 0;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .reusable-form-page.job-opening-form .multi-step-form-body {
   display: flex;
+  flex: 1 1 auto;
   flex-direction: column;
-  max-height: calc(100vh - 280px);
+  min-height: 0;
   overflow: hidden;
 }
 
 .reusable-form-page.job-opening-form .form-step-scroll {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   padding-right: 6px;
-  padding-bottom: 20px;
+  padding-bottom: 8px;
 }
 
 .reusable-form-page.job-opening-form.read-only .form-step-scroll {
@@ -504,13 +516,14 @@
 }
 
 .reusable-form-page.job-opening-form .step-indicator {
-  --step-width: 150px;
+  --step-width: 132px;
+  flex: 0 0 auto;
   display: flex;
   justify-content: center;
   width: 100%;
-  max-width: calc(var(--step-width) * 3 + 64px);
-  margin: 6px auto 24px;
-  gap: 32px;
+  max-width: calc(var(--step-width) * 3 + 48px);
+  margin: 0 auto 8px;
+  gap: 24px;
 }
 
 .reusable-form-page.job-opening-form .step-indicator::before {
@@ -524,15 +537,15 @@
 }
 
 .reusable-form-page.job-opening-form .step-circle {
-  width: 28px;
-  height: 28px;
+  width: 20px;
+  height: 20px;
   border-width: 2px;
   box-shadow: none;
 }
 
 .reusable-form-page.job-opening-form .step-dot {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
   background-color: #cbd5e1;
 }
 
@@ -576,10 +589,10 @@
 .reusable-form-page.job-opening-form .step:not(:last-child)::after {
   content: '';
   position: absolute;
-  top: 14px;
-  left: calc(50% + 14px);
+  top: 10px;
+  left: calc(50% + 10px);
   height: 2px;
-  width: calc(var(--step-width) + 4px);
+  width: calc(var(--step-width) + 8px);
   background-color: #e5e7eb;
   z-index: 0;
 }
@@ -596,25 +609,28 @@
 }
 
 .reusable-form-page.job-opening-form .step-label {
-  font-size: 12px;
+  margin-top: 4px;
+  font-size: 10.5px;
+  line-height: 1.2;
   white-space: nowrap;
 }
 
 @media (max-width: 768px) {
   .reusable-form-page.job-opening-form .step-indicator {
-    --step-width: 110px;
-    gap: 18px;
+    --step-width: 96px;
+    gap: 12px;
   }
 }
 
 .reusable-form-page.job-opening-form .form-buttons {
+  flex: 0 0 auto;
   justify-content: space-between;
   gap: 12px;
-  margin-top: 28px;
-  padding-top: 16px;
+  margin-top: 2px;
+  padding-top: 4px;
+  padding-bottom: 0;
   border-top: 1px solid #e2e8f0;
-  position: sticky;
-  bottom: 0;
+  position: static;
   background: #fff;
   z-index: 5;
 }
@@ -630,7 +646,7 @@
 
 .reusable-form-page.job-opening-form .form-btn {
   border-radius: 8px;
-  padding: 8px 14px;
+  padding: 6px 14px;
   font-size: 12px;
 }
 
@@ -2523,14 +2539,22 @@
     padding: 0;
   }
 
-  .reusable-form-page.job-opening-form .step-indicator,
+  .reusable-form-page.job-opening-form .step-indicator {
+    --step-width: 88px;
+    --step-gap: 10px;
+    margin-bottom: 8px;
+  }
+
   .reusable-form-page.candidate-form .step-indicator {
     --step-width: 96px;
     --step-gap: 12px;
     margin-bottom: 18px;
   }
 
-  .reusable-form-page.job-opening-form .step-label,
+  .reusable-form-page.job-opening-form .step-label {
+    font-size: 10.5px;
+  }
+
   .reusable-form-page.candidate-form .step-label {
     font-size: 11px;
   }
@@ -2594,7 +2618,7 @@
 /* Medium devices (landscape tablets, 768px and up) */
 @media only screen and (min-width: 768px) {
   .reusable-form-page.job-opening-form .step-indicator {
-    --step-width: 140px;
+    --step-width: 124px;
   }
 
   .reusable-form-page.candidate-form .step-indicator {
@@ -2623,10 +2647,6 @@
 
 /* Extra large devices (large laptops and desktops, 1200px and up) */
 @media only screen and (min-width: 1200px) {
-
-  .reusable-form-page.job-opening-form .multi-step-form-body {
-    max-height: calc(100vh - 260px);
-  }
 }
 
 @media only screen and (max-width: 1200px) {
@@ -2655,11 +2675,10 @@
   }
 
   .reusable-form-page.job-opening-form .step-indicator {
-    --step-width: 130px;
-    gap: 20px;
+    --step-width: 120px;
+    gap: 18px;
   }
 
-  .reusable-form-page.job-opening-form .multi-step-form-body,
   .reusable-form-page.client-form .multi-step-form-body {
     max-height: calc(100vh - 240px);
   }
@@ -3009,4 +3028,3 @@
     width: 100%;
   }
 }
-
