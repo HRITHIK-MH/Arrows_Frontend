@@ -7,7 +7,6 @@ import TopBar from "./pages/layout/TopBar.jsx";
 import Sidebar from "./pages/layout/Sidebar.jsx";
 import Login from "./pages/login/Login.jsx";
 import AuthCallback from "./pages/login/AuthCallback.jsx";
-import SsoCallbackPage from "./pages/login/SsoCallbackPage.jsx";
 import { isBusinessStakeholder } from "./pages/layout/routesConfig.js";
 import { hasAuthSession } from "./utils/authSession.js";
 
@@ -50,7 +49,23 @@ const isAuthenticated = () => hasAuthSession();
 
 function RequireAuth({ children }) {
   const location = useLocation();
-  return isAuthenticated() ? (
+  const [checkingAuth, setCheckingAuth] = React.useState(true);
+  const [authenticated, setAuthenticated] = React.useState(false);
+
+  React.useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      setAuthenticated(isAuthenticated());
+      setCheckingAuth(false);
+    }, 10);
+
+    return () => window.clearTimeout(timeout);
+  }, []);
+
+  if (checkingAuth) {
+    return <LoadingFallback />;
+  }
+
+  return authenticated ? (
     children
   ) : (
     <Navigate to="/login" replace state={{ from: location }} />
@@ -58,7 +73,23 @@ function RequireAuth({ children }) {
 }
 
 function RequireBusinessStakeholder({ children }) {
-  return isAuthenticated() && isBusinessStakeholder() ? (
+  const [checkingAuth, setCheckingAuth] = React.useState(true);
+  const [authenticated, setAuthenticated] = React.useState(false);
+
+  React.useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      setAuthenticated(isAuthenticated() && isBusinessStakeholder());
+      setCheckingAuth(false);
+    }, 10);
+
+    return () => window.clearTimeout(timeout);
+  }, []);
+
+  if (checkingAuth) {
+    return <LoadingFallback />;
+  }
+
+  return authenticated ? (
     children
   ) : (
     <Navigate to="/dashboard" replace />
@@ -159,8 +190,8 @@ export default function App() {
             <Route path="/" element={<Navigate to="/login" replace />} />
             <Route path="/login" element={<Login />} />
             <Route path="/auth/callback" element={<AuthCallback />} />
-            <Route path="/login/sso-callback" element={<SsoCallbackPage />} />
-            <Route path="/sso/callback" element={<Login />} />
+            <Route path="/login/sso-callback" element={<AuthCallback />} />
+            <Route path="/sso/callback" element={<AuthCallback />} />
             <Route path="/dashboard" element={<RequireAuth><Dashboard /></RequireAuth>} />
             <Route path="/headcount" element={<RequireBusinessStakeholder><Headcount /></RequireBusinessStakeholder>} />
             <Route path="/headcount/:employeeId" element={<RequireBusinessStakeholder><HeadcountDetails /></RequireBusinessStakeholder>} />
