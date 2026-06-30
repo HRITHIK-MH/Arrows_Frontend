@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect, useRef } from "react";
 import * as pdfjsLib from "pdfjs-dist";
 import pdfjsWorkerSrc from "pdfjs-dist/build/pdf.worker.min.mjs?url";
-import { normalizeParsedResumePayload } from "../../api/resumeParserService";
+import { normalizeParsedResumePayload, parseResume } from "../../api/resumeParserService";
 
 const ALLOWED_EXTENSIONS = new Set(["pdf", "doc", "docx"]);
 
@@ -735,31 +735,12 @@ const CandidateDocumentsStep = ({ formData, onChange, onSetStepFields }) => {
 
     let parsed;
     try {
-      const form = new FormData();
-      form.append("file", file);
-      console.debug("[ResumeDebug] GPT request payload handoff:", {
-        transport: "multipart/form-data",
-        url: "/api/candidates/documents/parse",
-        fieldName: "file",
-        fileName: file?.name,
-      });
-      const res = await fetch("/api/candidates/documents/parse", { method: "POST", body: form });
-      console.debug("[ResumeDebug] API response status:", {
-        status: res.status,
-        statusText: res.statusText,
-        ok: res.ok,
-        contentType: res.headers.get("content-type"),
-      });
-      const json = await res.json();
-      console.debug("[ResumeDebug] GPT/API raw response:", json);
-      parsed = normalizeParsedResumePayload(json?.data || json);
-      console.debug("[ResumeDebug] Parsed JSON:", json?.data || json);
-      console.debug("[ResumeDebug] Normalized candidate form JSON:", parsed);
+      parsed = await parseResume(file);
+      console.debug("[ResumeDebug] Candidate document parse successful:", parsed);
       if (!parsed) throw new Error("No parse result");
     } catch (err) {
-      // fallback to client-side parsing if server-side fails
       // eslint-disable-next-line no-console
-      console.warn("Server-side resume parse failed, falling back to client parsing:", err);
+      console.warn("Resume parse failed:", err);
     }
 
     if (parsed) {

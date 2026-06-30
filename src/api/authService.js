@@ -40,7 +40,7 @@ export const loginWithPassword = async ({ email, password }) => {
 // 🔑 Fetch SSO authorize URL
 export const fetchSsoAuthorizeUrl = async (loginHint) => {
   const redirectUri = `${window.location.origin}/login/sso-callback`;
-  const response = await identityApi.get('/sso/authorize', {
+  const response = await identityApi.get('/sso/authorize-url', {
     params: {
       ...(loginHint ? { login_hint: String(loginHint).trim() } : {}),
       redirect_uri: redirectUri,
