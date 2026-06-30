@@ -1,39 +1,32 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { exchangeSsoCallback } from '../../api/authService';
 
 export default function AuthCallback() {
   const navigate = useNavigate();
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const code = params.get('code');
-    const state = params.get('state');
-    const error = params.get('error');
+    const token = params.get('token');
+    const email = params.get('email');
+    const name = params.get('name');
+    const userId = params.get('userId') || params.get('user_id');
+    const tokenType = params.get('tokenType') || params.get('token_type');
 
-    if (error) {
-      console.error('SSO callback error:', error, params.get('error_description'));
+    if (!token) {
+      console.error('Missing SSO token in callback.');
       navigate('/login');
       return;
     }
 
-    if (!code || !state) {
-      console.error('Missing SSO callback code/state.');
-      navigate('/login');
-      return;
-    }
+    localStorage.setItem('authToken', token);
+    localStorage.setItem('token', token);
+    if (email) localStorage.setItem('userEmail', email);
+    if (name) localStorage.setItem('userName', name);
+    if (userId) localStorage.setItem('userId', userId);
+    if (tokenType) localStorage.setItem('tokenType', tokenType);
 
-    const completeSso = async () => {
-      try {
-        await exchangeSsoCallback({ code, state });
-        navigate('/dashboard', { replace: true });
-      } catch (err) {
-        console.error('SSO login failed:', err);
-        navigate('/login');
-      }
-    };
-
-    completeSso();
+    window.history.replaceState({}, document.title, '/dashboard');
+    navigate('/dashboard', { replace: true });
   }, [navigate]);
 
   return (
