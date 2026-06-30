@@ -1,5 +1,6 @@
 import { PROMPT_ARROWS_PARSE } from './resumePrompts';
 import { mapParsedSkills } from './skillMapper';
+import { applyResumeGuardrails } from '../utils/resumeGuardrailValidator';
 import { mapResumeToCandidateForm } from '../utils/resumeFieldMapper';
 
 const normalizeValue = (value) => {
@@ -105,19 +106,52 @@ export const normalizeParsedResumePayload = (parsedData = {}) => {
 const stripJsonCodeBlock = (value) =>
   String(value || '').replace(/```json|```/gi, '').trim();
 
+let azureResumeParseDebugContext = {
+  messageContentExists: false,
+  responseKeys: [],
+};
+
+const getDebugValueType = (value) => {
+  if (value === null) return 'null';
+  if (value === undefined) return 'undefined';
+  return typeof value;
+};
+
+const logResumeParseFailureSummary = (content, error) => {
+  const preview = String(content || '').substring(0, 500);
+  console.error(`==================================================
+RESUME PARSE FAILURE SUMMARY
+==================================================
+Azure message exists: ${Boolean(azureResumeParseDebugContext.messageContentExists)}
+GPT content type: ${getDebugValueType(content)}
+GPT content length: ${content?.length ?? 0}
+GPT content preview:
+${preview}
+
+JSON parse error:
+${error?.message || ''}
+
+Available Azure response keys:
+${JSON.stringify(azureResumeParseDebugContext.responseKeys || [])}
+==================================================`);
+};
+
 const extractJson = (value) => {
   const cleanValue = stripJsonCodeBlock(value);
   if (!cleanValue) return null;
 
   try {
     return JSON.parse(cleanValue);
-  } catch (_parseError) {
+  } catch (error) {
+    logResumeParseFailureSummary(cleanValue, error);
+
     const jsonMatch = cleanValue.match(/\{[\s\S]*\}/);
     if (!jsonMatch) return null;
 
     try {
       return JSON.parse(jsonMatch[0]);
-    } catch (_nestedParseError) {
+    } catch (error) {
+      logResumeParseFailureSummary(jsonMatch[0], error);
       return null;
     }
   }
@@ -193,7 +227,15 @@ const callAzureOpenAi = async (messages, stageName) => {
     throw new Error(`Azure OpenAI ${stageName} failed: ${response.status} ${responseText}`);
   }
 
+  azureResumeParseDebugContext = {
+    messageContentExists: false,
+    responseKeys: [],
+  };
   const responseJson = extractJson(responseText) || {};
+  azureResumeParseDebugContext = {
+    messageContentExists: !!responseJson?.choices?.[0]?.message?.content,
+    responseKeys: Object.keys(responseJson),
+  };
   console.debug(`[ResumeDebug] Azure raw response (${stageName}):`, responseJson);
   logTiming(`Azure Call (${stageName})`, startedAt, {
     status: response.status,
@@ -264,10 +306,13 @@ export const parseResume = async (file) => {
       throw new Error('GPT returned invalid resume JSON');
     }
 
+    const validatedResume = applyResumeGuardrails(resumeJson);
+    console.debug('[ResumeDebug] Guardrail-validated resume JSON:', validatedResume);
+
     const skillMappingStartedAt = getNow();
-    const candidateForm = mapResumeToCandidateForm(resumeJson);
+    const candidateForm = mapResumeToCandidateForm(validatedResume);
     const parsedResponse = {
-      resumeJson,
+      resumeJson: validatedResume,
       candidateForm,
     };
     const mappedResponse = mapParsedSkills(parsedResponse);
@@ -304,10 +349,11 @@ export const mapResumeToFormFields = (parsedData = {}) => {
     return normalizedPayload;
   }
 
-  const candidateForm = mapResumeToCandidateForm(parsedData);
+  const guardedParsedData = applyResumeGuardrails(parsedData);
+  const candidateForm = mapResumeToCandidateForm(guardedParsedData);
   if (candidateForm?.candidate_information || candidateForm?.skills_information) {
     const normalizedCandidateForm = normalizeParsedResumePayload({
-      resumeJson: parsedData,
+      resumeJson: guardedParsedData,
       candidateForm,
     });
     console.debug('[ResumeDebug] Candidate form JSON from local mapper:', candidateForm);
@@ -316,13 +362,13 @@ export const mapResumeToFormFields = (parsedData = {}) => {
     return normalizedCandidateForm;
   }
 
-  const personal = parsedData.personal_information || {};
-  const professional = parsedData.professional_information || {};
-  const skills = parsedData.skills || [];
-  const education = parsedData.education || [];
-  const certifications = parsedData.certifications || [];
-  const projects = parsedData.projects || [];
-  const employment = parsedData.employment_history || [];
+  const personal = guardedParsedData.personal_information || {};
+  const professional = guardedParsedData.professional_information || {};
+  const skills = guardedParsedData.skills || [];
+  const education = guardedParsedData.education || [];
+  const certifications = guardedParsedData.certifications || [];
+  const projects = guardedParsedData.projects || [];
+  const employment = guardedParsedData.employment_history || [];
 
   const candidateFormJson = {
     // Personal Information
@@ -368,7 +414,7 @@ export const mapResumeToFormFields = (parsedData = {}) => {
       .join('; '),
 
     // Raw parsed data for reference
-    _parsedResume: parsedData,
+    _parsedResume: guardedParsedData,
   };
   console.debug('[ResumeDebug] Candidate form JSON:', candidateFormJson);
   console.groupEnd();
