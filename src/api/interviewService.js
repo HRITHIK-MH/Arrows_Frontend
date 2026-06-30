@@ -1,6 +1,6 @@
 import API, { createServiceApi } from './axiosConfig';
 
-const interviewApi = createServiceApi('interview');
+const interviewApi = createServiceApi('');
 
 export const fetchInterviews = async ({ page = 1, limit = 100, search, candidateId, status, interviewType, sortBy = 'interviewDateTime', sortOrder = 'asc' } = {}) => {
   const payload = {

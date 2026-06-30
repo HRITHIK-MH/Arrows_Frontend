@@ -115,7 +115,7 @@ const getAuthErrorMessage = (err, fallbackMessage) => {
   const status = Number(err?.response?.status || 0);
   const data = err?.response?.data;
 
-  const identityUrl = String(import.meta.env.VITE_IDENTITY_SERVICE_URL || import.meta.env.VITE_BACKEND_URL || 'http://localhost:8080').trim();
+  const identityUrl = String(import.meta.env.VITE_BACKEND_URL || import.meta.env.VITE_IDENTITY_SERVICE_URL || 'http://localhost:8080').trim();
 
   if (typeof data === 'string' && data.trim()) {
     return data.trim();
@@ -175,9 +175,14 @@ const Login = () => {
     if (response?.name) {
       localStorage.setItem('userName', String(response.name).trim());
     }
-    if (response?.token) {
-      localStorage.setItem('token', response.token);
-      localStorage.setItem('authToken', response.token);
+
+    const incomingToken = String(
+      response?.token || response?.access_token || response?.accessToken || response?.jwt || ''
+    ).trim();
+
+    if (incomingToken) {
+      localStorage.setItem('token', incomingToken);
+      localStorage.setItem('authToken', incomingToken);
       startAuthSession();
     }
   }, [email]);
@@ -198,6 +203,13 @@ const Login = () => {
       });
     }
   }, []);
+
+  useEffect(() => {
+    const hasStoredToken = Boolean(localStorage.getItem('authToken') || localStorage.getItem('token'));
+    if (hasStoredToken && window.location.pathname === '/login') {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [navigate]);
 
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
@@ -330,7 +342,7 @@ const Login = () => {
         persistAuthSession(response, inferredRole);
       }
 
-      navigate('/dashboard');
+      navigate('/dashboard', { replace: true });
     } catch (err) {
       if (USE_LOGIN_API) {
         setError(getAuthErrorMessage(err, 'Login failed'));
