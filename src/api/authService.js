@@ -48,7 +48,7 @@ export const fetchSsoAuthorizeUrl = async (loginHint) => {
     skipAuth: true,
     skipAuthRedirect: true,
   });
-  // Extract from wrapped response format: response.data.data.authorizationUrl
+
   const wrappedData = normalizeAuthPayload(response?.data || response || {});
   if (typeof wrappedData === 'string') {
     return wrappedData.trim();
