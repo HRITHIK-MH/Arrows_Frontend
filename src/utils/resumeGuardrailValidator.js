@@ -35,11 +35,16 @@ const DESIGNATION_ACTION_KEYWORDS = [
   'automated',
 ];
 
-const ACTIVE_END_DATE_PATTERN = /\b(present|current|till\s*date|to\s*date|ongoing|now)\b/i;
+const ACTIVE_END_DATE_PATTERN = /\b(present|current|still|till\s*date|to\s*date|ongoing|now)\b/i;
 
 const normalizeText = (value) => String(value ?? '').replace(/\s+/g, ' ').trim();
 
 const normalizeToken = (value) => normalizeText(value).toLowerCase();
+
+const stripLeadingLabel = (value, labels = []) => {
+  const labelPattern = labels.join('|');
+  return normalizeText(value).replace(new RegExp(`^(?:${labelPattern})\\s*[:\\-]\\s*`, 'i'), '');
+};
 
 const isObject = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
 
@@ -106,13 +111,19 @@ const getStartDateValue = (employmentRecord = {}) =>
 const getPeriodValue = (employmentRecord = {}) =>
   getFirstTextValue(employmentRecord, ['period', 'duration', 'date_range', 'dates', 'tenure']);
 
+const cleanCompanyValue = (value) =>
+  stripLeadingLabel(value, ['client', 'company', 'employer', 'organization', 'organisation']).split(',')[0].trim();
+
+const cleanDesignationValue = (value) =>
+  stripLeadingLabel(value, ['role', 'designation', 'job\\s*title', 'title', 'position']).trim();
+
 const containsResponsibilityKeyword = (value, keywords = RESPONSIBILITY_KEYWORDS) => {
   const normalized = normalizeToken(value);
   return keywords.some((keyword) => new RegExp(`\\b${keyword}\\b`, 'i').test(normalized));
 };
 
 export const isValidCurrentCompany = (value) => {
-  const company = normalizeText(value);
+  const company = cleanCompanyValue(value);
   if (!company) return false;
   if (company.length > 80) return false;
   if (containsResponsibilityKeyword(company)) return false;
@@ -135,8 +146,9 @@ const looksLikeResponsibilitySentence = (value) => {
 };
 
 export const isValidCurrentDesignation = (value) => {
-  const designation = normalizeText(value);
+  const designation = cleanDesignationValue(value);
   if (!designation) return false;
+  if (/^(client|company|employer|organization|organisation|location)\s*[:\-]/i.test(designation)) return false;
   if (designation.length > 100) return false;
   if (designation.split(/\s+/).length > 10) return false;
   if (looksLikeResponsibilitySentence(designation)) return false;
@@ -219,8 +231,8 @@ export const applyResumeGuardrails = (resumeJson = {}) => {
     return guardedResumeJson;
   }
 
-  const currentCompany = getCompanyValue(activeEmployment);
-  const currentDesignation = getDesignationValue(activeEmployment);
+  const currentCompany = cleanCompanyValue(getCompanyValue(activeEmployment));
+  const currentDesignation = cleanDesignationValue(getDesignationValue(activeEmployment));
 
   if (isValidCurrentCompany(currentCompany)) {
     professionalInformation.current_company = currentCompany;
