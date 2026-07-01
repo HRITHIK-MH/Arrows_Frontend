@@ -39,7 +39,7 @@ const normalizeText = (value, fallback = '-') => {
 
 export const fetchJobs = async () =>
   unwrapList(
-    await clientJobApi.get('/jobs', {
+    await clientJobApi.get('/job-openings', {
       skipAuth: true,
       skipAuthRedirect: true,
     })
@@ -120,13 +120,13 @@ export const createJob = async (row) =>
   });
 
 export const updateJob = async (jobId, row) =>
-  clientJobApi.put(`/jobs/${encodeURIComponent(jobId)}`, toJobRequest(row), {
+  clientJobApi.patch(`/job-openings/${encodeURIComponent(jobId)}/status`, toJobRequest(row), {
     skipAuth: true,
     skipAuthRedirect: true,
   });
 
 export const deleteJob = async (jobId) =>
-  clientJobApi.delete(`/jobs/${encodeURIComponent(jobId)}`, {
+  clientJobApi.delete(`/job-openings/${encodeURIComponent(jobId)}`, {
     skipAuth: true,
     skipAuthRedirect: true,
   });
