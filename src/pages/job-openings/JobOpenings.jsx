@@ -21,9 +21,14 @@ import {
   deleteJob as deleteJobApi,
   fetchClientRequirementMeta,
   fetchClients,
+  fetchEmploymentTypes,
   fetchJobInformationMeta,
   fetchJobs,
+  fetchLocations,
+  fetchPositionLevels,
   fetchSkills,
+  fetchSoftSkills,
+  fetchWorkTypes,
   normalizeJobRecord as normalizeApiJob,
   toSkillOption,
   updateJob as updateJobApi,
@@ -478,6 +483,11 @@ export default function JobOpenings({ createMode = false }) {
   const [sortConfig, setSortConfig] = React.useState({ key: null, direction: 'asc' });
   const [clientOptions, setClientOptions] = React.useState(() => getClientOptions(loadClientRows()));
   const [technicalSkillOptions, setTechnicalSkillOptions] = React.useState([]);
+  const [softSkillOptions, setSoftSkillOptions] = React.useState([]);
+  const [positionLevelOptions, setPositionLevelOptions] = React.useState([]);
+  const [workTypeOptions, setWorkTypeOptions] = React.useState([]);
+  const [employmentTypeOptions, setEmploymentTypeOptions] = React.useState([]);
+  const [locationOptions, setLocationOptions] = React.useState([]);
   const [metaDropdownOptions, setMetaDropdownOptions] = React.useState({});
   const addJobOpeningMenuRef = React.useRef(null);
   const createModeInitializedRef = React.useRef(false);
@@ -531,10 +541,26 @@ export default function JobOpenings({ createMode = false }) {
 
     const syncWithBackend = async () => {
       try {
-        const [jobs, clients, skills, jobInfoMeta, clientRequirementMeta] = await Promise.all([
+        const [
+          jobs,
+          clients,
+          skills,
+          softSkills,
+          positionLevels,
+          workTypes,
+          employmentTypes,
+          locations,
+          jobInfoMeta,
+          clientRequirementMeta,
+        ] = await Promise.all([
           fetchJobs(),
           fetchClients(),
           fetchSkills(),
+          fetchSoftSkills(),
+          fetchPositionLevels(),
+          fetchWorkTypes(),
+          fetchEmploymentTypes(),
+          fetchLocations(),
           fetchJobInformationMeta(),
           fetchClientRequirementMeta(),
         ]);
@@ -563,6 +589,61 @@ export default function JobOpenings({ createMode = false }) {
 
           if (mappedSkills.length > 0) {
             setTechnicalSkillOptions(mappedSkills);
+          }
+        }
+
+        if (Array.isArray(softSkills) && softSkills.length > 0) {
+          const mappedSoftSkills = softSkills
+            .map((item) => toOptionRecord(item))
+            .filter(Boolean)
+            .filter((option, index, list) => list.findIndex((item) => item.value === option.value) === index);
+
+          if (mappedSoftSkills.length > 0) {
+            setSoftSkillOptions(mappedSoftSkills);
+          }
+        }
+
+        if (Array.isArray(positionLevels) && positionLevels.length > 0) {
+          const mappedPositionLevels = positionLevels
+            .map((item) => toOptionRecord(item))
+            .filter(Boolean)
+            .filter((option, index, list) => list.findIndex((item) => item.value === option.value) === index);
+
+          if (mappedPositionLevels.length > 0) {
+            setPositionLevelOptions(mappedPositionLevels);
+          }
+        }
+
+        if (Array.isArray(workTypes) && workTypes.length > 0) {
+          const mappedWorkTypes = workTypes
+            .map((item) => toOptionRecord(item))
+            .filter(Boolean)
+            .filter((option, index, list) => list.findIndex((item) => item.value === option.value) === index);
+
+          if (mappedWorkTypes.length > 0) {
+            setWorkTypeOptions(mappedWorkTypes);
+          }
+        }
+
+        if (Array.isArray(employmentTypes) && employmentTypes.length > 0) {
+          const mappedEmploymentTypes = employmentTypes
+            .map((item) => toOptionRecord(item))
+            .filter(Boolean)
+            .filter((option, index, list) => list.findIndex((item) => item.value === option.value) === index);
+
+          if (mappedEmploymentTypes.length > 0) {
+            setEmploymentTypeOptions(mappedEmploymentTypes);
+          }
+        }
+
+        if (Array.isArray(locations) && locations.length > 0) {
+          const mappedLocations = locations
+            .map((item) => toOptionRecord(item))
+            .filter(Boolean)
+            .filter((option, index, list) => list.findIndex((item) => item.value === option.value) === index);
+
+          if (mappedLocations.length > 0) {
+            setLocationOptions(mappedLocations);
           }
         }
 
@@ -1308,6 +1389,49 @@ export default function JobOpenings({ createMode = false }) {
             return field;
           }
 
+          const fieldName = String(field.name || "").trim();
+          if (fieldName === "positionLevel" && positionLevelOptions.length > 0) {
+            return {
+              ...field,
+              options: positionLevelOptions,
+            };
+          }
+
+          if (fieldName === "location" && locationOptions.length > 0) {
+            return {
+              ...field,
+              options: locationOptions,
+            };
+          }
+
+          if (fieldName === "jobType" && employmentTypeOptions.length > 0) {
+            return {
+              ...field,
+              options: employmentTypeOptions,
+            };
+          }
+
+          if (fieldName === "hiringType" && workTypeOptions.length > 0) {
+            return {
+              ...field,
+              options: workTypeOptions,
+            };
+          }
+
+          if (fieldName === "softSkills" && softSkillOptions.length > 0) {
+            return {
+              ...field,
+              options: softSkillOptions,
+            };
+          }
+
+          if (fieldName === "technicalSkills" && technicalSkillOptions.length > 0) {
+            return {
+              ...field,
+              options: technicalSkillOptions,
+            };
+          }
+
           const metaOptions = getMetaOptionsForField(metaDropdownOptions, field.name);
           if (metaOptions.length > 0) {
             return {
@@ -1316,17 +1440,10 @@ export default function JobOpenings({ createMode = false }) {
             };
           }
 
-          if (field.name === "clientName") {
+          if (fieldName === "clientName") {
             return {
               ...field,
               options: clientOptions,
-            };
-          }
-
-          if (field.name === "technicalSkills" && technicalSkillOptions.length > 0) {
-            return {
-              ...field,
-              options: technicalSkillOptions,
             };
           }
 

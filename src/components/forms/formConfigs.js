@@ -929,11 +929,7 @@ export const candidateConfig = {
           type: "select",
           required: false,
           placeholder: "Select",
-          options: [
-            { value: "male", label: "Male" },
-            { value: "female", label: "Female" },
-            { value: "other", label: "Other" }
-          ]
+          options: []
         },
         {
           name: "dateOfBirth",
@@ -948,14 +944,7 @@ export const candidateConfig = {
           required: true,
           validationRule: "requiredField",
           placeholder: "Select",
-          options: [
-            { value: "0-1", label: "0-1 years" },
-            { value: "1-3", label: "1-3 years" },
-            { value: "3-5", label: "3-5 years" },
-            { value: "5-8", label: "5-8 years" },
-            { value: "8-12", label: "8-12 years" },
-            { value: "12+", label: "12+ years" }
-          ]
+          options: []
         },
         {
           name: "offersInHand",
@@ -964,12 +953,7 @@ export const candidateConfig = {
           required: true,
           validationRule: "requiredField",
           placeholder: "Select",
-          options: [
-            { value: "0", label: "0" },
-            { value: "1", label: "1" },
-            { value: "2", label: "2" },
-            { value: "3+", label: "3+" }
-          ]
+          options: []
         },
         {
           name: "currentCompanyName",
@@ -993,10 +977,7 @@ export const candidateConfig = {
           type: "select",
           required: false,
           placeholder: "Select Employment Type",
-          options: [
-            { value: "full-time", label: "Full Time" },
-            { value: "contract", label: "Contract" },
-          ]
+          options: []
         },
         {
           name: "noticePeriod",
@@ -1030,20 +1011,7 @@ export const candidateConfig = {
           validationRule: "requiredField",
           placeholder: "Select Primary Skill",
           allowAddMore: true,
-          options: [
-            { value: "html5", label: "HTML5" },
-            { value: "css3", label: "CSS3" },
-            { value: "javascript", label: "JavaScript" },
-            { value: "jquery", label: "jQuery" },
-            { value: "bootstrap", label: "Bootstrap" },
-            { value: "angular-4", label: "Angular 4" },
-            { value: "backbone-js", label: "Backbone.js" },
-            { value: "java", label: "Core Java" },
-            { value: "python", label: "Python" },
-            { value: "react", label: "React" },
-            { value: "node", label: "Node.js" },
-            { value: "aws", label: "AWS" }
-          ]
+          options: []
         },
         {
           name: "secondarySkill",
@@ -1053,20 +1021,7 @@ export const candidateConfig = {
           validationRule: "requiredField",
           placeholder: "Select Secondary Skill",
           allowAddMore: true,
-          options: [
-            { value: "html5", label: "HTML5" },
-            { value: "css3", label: "CSS3" },
-            { value: "javascript", label: "JavaScript" },
-            { value: "jquery", label: "jQuery" },
-            { value: "bootstrap", label: "Bootstrap" },
-            { value: "angular-4", label: "Angular 4" },
-            { value: "backbone-js", label: "Backbone.js" },
-            { value: "java", label: "Core Java" },
-            { value: "python", label: "Python" },
-            { value: "react", label: "React" },
-            { value: "node", label: "Node.js" },
-            { value: "aws", label: "AWS" }
-          ]
+          options: []
         },
         {
           name: "skillExperienceLevel",
@@ -1075,11 +1030,7 @@ export const candidateConfig = {
           required: true,
           validationRule: "requiredField",
           placeholder: "Select Experience Level",
-          options: [
-            { value: "beginner", label: "Beginner" },
-            { value: "intermediate", label: "Intermediate" },
-            { value: "expert", label: "Expert" }
-          ]
+          options: []
         },
         {
           name: "skillExperienceYears",
@@ -1105,11 +1056,7 @@ export const candidateConfig = {
           required: true,
           validationRule: "requiredField",
           placeholder: "Select Experience Level",
-          options: [
-            { value: "beginner", label: "Beginner" },
-            { value: "intermediate", label: "Intermediate" },
-            { value: "expert", label: "Expert" }
-          ]
+          options: []
         },
         {
           name: "secondarySkillExperienceYears",
@@ -1134,7 +1081,7 @@ export const candidateConfig = {
           type: "select",
           required: false,
           placeholder: "Select Recruiter",
-          options: RECRUITER_OPTIONS
+          options: []
         },
         {
           name: "sourceName",
@@ -1143,7 +1090,7 @@ export const candidateConfig = {
           required: true,
           validationRule: "sourceReference",
           placeholder: "Select Source Name",
-          options: SOURCE_NAME_OPTIONS
+          options: []
         },
         {
           name: "sourcedDate",

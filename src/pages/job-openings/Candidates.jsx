@@ -23,9 +23,18 @@ import {
   deleteCandidate,
   fetchCandidates,
   fetchCandidateFiltersMeta,
+  fetchCandidateGenders,
+  fetchCandidateExperienceYears,
+  fetchCandidateOffersInHand,
+  fetchExperienceLevels,
+  fetchPrimarySkills,
+  fetchSources,
   updateCandidate,
 } from "../../api/candidateService";
-import { fetchSkills, toSkillOption } from "../../api/jobClientService";
+import {
+  fetchEmploymentTypes,
+  toSkillOption,
+} from "../../api/jobClientService";
 import { fetchRecruiters } from "../../api/teamService";
 import styles from "./Candidates.module.scss";
 
@@ -509,7 +518,13 @@ export default function Candidates() {
   const [activeDraftId, setActiveDraftId] = React.useState(null);
   const [candidateFormKey, setCandidateFormKey] = React.useState(0);
   const [candidateMetaOptions, setCandidateMetaOptions] = React.useState({});
-  const [candidateSkillOptions, setCandidateSkillOptions] = React.useState([]);
+  const [candidateGenderOptions, setCandidateGenderOptions] = React.useState([]);
+  const [candidateExperienceYearsOptions, setCandidateExperienceYearsOptions] = React.useState([]);
+  const [candidateOffersInHandOptions, setCandidateOffersInHandOptions] = React.useState([]);
+  const [candidateEmploymentTypeOptions, setCandidateEmploymentTypeOptions] = React.useState([]);
+  const [candidatePrimarySkillOptions, setCandidatePrimarySkillOptions] = React.useState([]);
+  const [candidateExperienceLevelOptions, setCandidateExperienceLevelOptions] = React.useState([]);
+  const [candidateSourceOptions, setCandidateSourceOptions] = React.useState([]);
   const [candidateRecruiterOptions, setCandidateRecruiterOptions] = React.useState([]);
   const [jobMapOptions, setJobMapOptions] = React.useState(() => loadJobMapOptions());
   const mapDropdownRef = React.useRef(null);
@@ -681,9 +696,25 @@ export default function Candidates() {
 
     const loadDropdownMetadata = async () => {
       try {
-        const [candidateMeta, skills, recruiters] = await Promise.all([
+        const [
+          candidateMeta,
+          genders,
+          experienceYears,
+          offersInHand,
+          employmentTypes,
+          primarySkills,
+          experienceLevels,
+          sources,
+          recruiters,
+        ] = await Promise.all([
           fetchCandidateFiltersMeta(),
-          fetchSkills(),
+          fetchCandidateGenders(),
+          fetchCandidateExperienceYears(),
+          fetchCandidateOffersInHand(),
+          fetchEmploymentTypes(),
+          fetchPrimarySkills(),
+          fetchExperienceLevels(),
+          fetchSources(),
           fetchRecruiters(),
         ]);
 
@@ -694,14 +725,47 @@ export default function Candidates() {
           setCandidateMetaOptions(mappedMeta);
         }
 
-        if (Array.isArray(skills) && skills.length > 0) {
-          const mappedSkills = skills
-            .map((skill) => toSkillOption(skill))
-            .filter(Boolean)
-            .filter((option, index, list) => list.findIndex((entry) => entry.value === option.value) === index);
-          if (mappedSkills.length > 0) {
-            setCandidateSkillOptions(mappedSkills);
-          }
+        const normalizeOptions = (rawOptions) =>
+          Array.isArray(rawOptions)
+            ? rawOptions
+                .map((option) => toOptionRecord(option))
+                .filter(Boolean)
+                .filter((option, index, list) => list.findIndex((entry) => entry.value === option.value) === index)
+            : [];
+
+        const genderOptions = normalizeOptions(genders);
+        if (genderOptions.length > 0) {
+          setCandidateGenderOptions(genderOptions);
+        }
+
+        const experienceYearOptions = normalizeOptions(experienceYears);
+        if (experienceYearOptions.length > 0) {
+          setCandidateExperienceYearsOptions(experienceYearOptions);
+        }
+
+        const offersOptions = normalizeOptions(offersInHand);
+        if (offersOptions.length > 0) {
+          setCandidateOffersInHandOptions(offersOptions);
+        }
+
+        const employmentTypeOptions = normalizeOptions(employmentTypes);
+        if (employmentTypeOptions.length > 0) {
+          setCandidateEmploymentTypeOptions(employmentTypeOptions);
+        }
+
+        const primarySkillOptions = normalizeOptions(primarySkills);
+        if (primarySkillOptions.length > 0) {
+          setCandidatePrimarySkillOptions(primarySkillOptions);
+        }
+
+        const experienceLevelOptions = normalizeOptions(experienceLevels);
+        if (experienceLevelOptions.length > 0) {
+          setCandidateExperienceLevelOptions(experienceLevelOptions);
+        }
+
+        const sourceOptions = normalizeOptions(sources);
+        if (sourceOptions.length > 0) {
+          setCandidateSourceOptions(sourceOptions);
         }
 
         if (Array.isArray(recruiters) && recruiters.length > 0) {
@@ -803,10 +867,59 @@ export default function Candidates() {
           };
         }
 
-        if ((field.name === "primarySkill" || field.name === "secondarySkill") && candidateSkillOptions.length > 0) {
+        if (field.name === "gender" && candidateGenderOptions.length > 0) {
           return {
             ...field,
-            options: candidateSkillOptions,
+            options: candidateGenderOptions,
+          };
+        }
+
+        if (field.name === "yearsExperience" && candidateExperienceYearsOptions.length > 0) {
+          return {
+            ...field,
+            options: candidateExperienceYearsOptions,
+          };
+        }
+
+        if (field.name === "offersInHand" && candidateOffersInHandOptions.length > 0) {
+          return {
+            ...field,
+            options: candidateOffersInHandOptions,
+          };
+        }
+
+        if (field.name === "employmentType" && candidateEmploymentTypeOptions.length > 0) {
+          return {
+            ...field,
+            options: candidateEmploymentTypeOptions,
+          };
+        }
+
+        if ((field.name === "primarySkill" || field.name === "secondarySkill") && candidatePrimarySkillOptions.length > 0) {
+          return {
+            ...field,
+            options: candidatePrimarySkillOptions,
+          };
+        }
+
+        if ((field.name === "skillExperienceLevel" || field.name === "secondarySkillExperienceLevel") && candidateExperienceLevelOptions.length > 0) {
+          return {
+            ...field,
+            options: candidateExperienceLevelOptions,
+          };
+        }
+
+        if (field.name === "sourceName" && candidateSourceOptions.length > 0) {
+          return {
+            ...field,
+            options: candidateSourceOptions,
+          };
+        }
+
+        if (field.name === "recruiterId" && candidateRecruiterOptions.length > 0) {
+          return {
+            ...field,
+            options: candidateRecruiterOptions,
           };
         }
 
@@ -833,7 +946,7 @@ export default function Candidates() {
       setIsAddCandidateMenuOpen(false);
     },
     onSaveDraft: saveCandidateDraft,
-  }), [candidateMetaOptions, candidateRecruiterOptions, candidateSkillOptions, editingIndex, saveCandidateDraft]);
+  }), [candidateMetaOptions, candidateRecruiterOptions, editingIndex, saveCandidateDraft]);
 
   const handleSearchChange = React.useCallback((e) => {
     setSearchTerm(e.target.value);

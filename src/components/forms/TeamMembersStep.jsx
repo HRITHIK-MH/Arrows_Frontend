@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { fetchRecruiters } from "../../api/teamService";
+import { fetchJobTeamMembers, fetchRecruiters } from "../../api/teamService";
 
 const TEAM_MEMBERS = [];
 
@@ -65,12 +65,25 @@ const TeamMembersStep = ({
   useEffect(() => {
     let cancelled = false;
 
-    const loadRecruiters = async () => {
+    const loadTeamMembers = async () => {
       try {
         const openingJobId = String(formData.openingJobId || formData.jobPositionId || '').trim();
-        const recruiters = await fetchRecruiters({ openingJobId: openingJobId || undefined });
-        if (!cancelled && Array.isArray(recruiters) && recruiters.length > 0) {
-          setApiMembers(recruiters);
+        let teamMembers = [];
+
+        if (openingJobId) {
+          teamMembers = await fetchJobTeamMembers(openingJobId);
+        }
+
+        if ((!Array.isArray(teamMembers) || teamMembers.length === 0) && openingJobId) {
+          teamMembers = await fetchRecruiters({ openingJobId });
+        }
+
+        if ((!Array.isArray(teamMembers) || teamMembers.length === 0) && !openingJobId) {
+          teamMembers = await fetchRecruiters();
+        }
+
+        if (!cancelled && Array.isArray(teamMembers) && teamMembers.length > 0) {
+          setApiMembers(teamMembers);
         }
       } catch (error) {
         if (!cancelled) {
@@ -80,7 +93,7 @@ const TeamMembersStep = ({
       }
     };
 
-    loadRecruiters();
+    loadTeamMembers();
     return () => {
       cancelled = true;
     };

@@ -136,10 +136,15 @@ const FALLBACK_CLIENTS = [
   { clientId: 'TEST-2', clientName: 'Test2' },
 ];
 
+const CLIENTS_ENDPOINT = '/clients';
+const CLIENTS_CREATE_META_ENDPOINT = '/clients/create/meta';
+const CLIENTS_META_FILTERS_ENDPOINT = '/clients/meta/filters';
+const CLIENT_ENDPOINT = '/clients/{clientId}';
+
 export const fetchClients = async () => {
   try {
     const clients = unwrapList(
-      await clientJobApi.get('/clients', {
+      await clientJobApi.get(CLIENTS_ENDPOINT, {
         // Client list endpoint currently fails when local login token is attached.
         // Skip auth header so dropdown options can still load.
         skipAuth: true,
@@ -158,6 +163,32 @@ export const fetchClients = async () => {
   }
 };
 
+export const fetchClientFiltersMeta = async () => {
+  const response = await clientJobApi.get(CLIENTS_META_FILTERS_ENDPOINT, {
+    skipAuth: true,
+    skipAuthRedirect: true,
+  });
+  return response?.data?.data || response?.data || null;
+};
+
+export const fetchClientCreateMeta = async () => {
+  const response = await clientJobApi.get(CLIENTS_CREATE_META_ENDPOINT, {
+    skipAuth: true,
+    skipAuthRedirect: true,
+  });
+  return response?.data?.data || response?.data || null;
+};
+
+export const fetchClientById = async (clientId) => {
+  if (!clientId) return null;
+  const endpoint = CLIENT_ENDPOINT.replace('{clientId}', encodeURIComponent(clientId));
+  const response = await clientJobApi.get(endpoint, {
+    skipAuth: true,
+    skipAuthRedirect: true,
+  });
+  return response?.data?.data || response?.data || null;
+};
+
 const toSlug = (value) =>
   String(value || '')
     .trim()
@@ -167,7 +198,47 @@ const toSlug = (value) =>
 
 export const fetchSkills = async () =>
   unwrapList(
-    await clientJobApi.get('/skills', {
+    await clientJobApi.get('/skills/technical', {
+      skipAuth: true,
+      skipAuthRedirect: true,
+    })
+  );
+
+export const fetchSoftSkills = async () =>
+  unwrapList(
+    await clientJobApi.get('/skills/soft', {
+      skipAuth: true,
+      skipAuthRedirect: true,
+    })
+  );
+
+export const fetchPositionLevels = async () =>
+  unwrapList(
+    await clientJobApi.get('/positions/levels', {
+      skipAuth: true,
+      skipAuthRedirect: true,
+    })
+  );
+
+export const fetchWorkTypes = async () =>
+  unwrapList(
+    await clientJobApi.get('/work-types', {
+      skipAuth: true,
+      skipAuthRedirect: true,
+    })
+  );
+
+export const fetchEmploymentTypes = async () =>
+  unwrapList(
+    await clientJobApi.get('/employment-types', {
+      skipAuth: true,
+      skipAuthRedirect: true,
+    })
+  );
+
+export const fetchLocations = async () =>
+  unwrapList(
+    await clientJobApi.get('/locations', {
       skipAuth: true,
       skipAuthRedirect: true,
     })
@@ -217,22 +288,26 @@ export const toClientRequest = (row = {}) => ({
 });
 
 export const createClient = (payload) =>
-  clientJobApi.post('/clients', toClientRequest(payload), {
+  clientJobApi.post(CLIENTS_ENDPOINT, toClientRequest(payload), {
     skipAuth: true,
     skipAuthRedirect: true,
   });
 
-export const updateClient = (clientId, payload) =>
-  clientJobApi.put(`/clients/${encodeURIComponent(clientId)}`, toClientRequest(payload), {
+export const updateClient = (clientId, payload) => {
+  const endpoint = CLIENT_ENDPOINT.replace('{clientId}', encodeURIComponent(clientId));
+  return clientJobApi.put(endpoint, toClientRequest(payload), {
     skipAuth: true,
     skipAuthRedirect: true,
   });
+};
 
-export const deleteClient = (clientId) =>
-  clientJobApi.delete(`/clients/${encodeURIComponent(clientId)}`, {
+export const deleteClient = (clientId) => {
+  const endpoint = CLIENT_ENDPOINT.replace('{clientId}', encodeURIComponent(clientId));
+  return clientJobApi.delete(endpoint, {
     skipAuth: true,
     skipAuthRedirect: true,
   });
+};
 
 export const normalizeClientRecord = (row, index = 0) => ({
   clientId: row?.clientId || row?.id || `CL-${index + 1}`,

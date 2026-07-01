@@ -10,30 +10,49 @@ const unwrapRecruiterItems = (payload) => {
   return [];
 };
 
+const normalizeRecruiterItem = (item, index) => {
+  if (!item || typeof item !== 'object') return null;
+
+  const recruiterId = String(item?.userId || item?.id || item?.recruiterId || '').trim();
+  const recruiterName = String(item?.name || item?.displayName || item?.fullName || '').trim();
+  if (!recruiterId || !recruiterName) return null;
+
+  return {
+    id: recruiterId,
+    name: recruiterName,
+    email:
+      String(item?.email || item?.contactEmail || item?.userEmail || '')
+        .trim() || `${recruiterName.toLowerCase().replace(/\s+/g, '.')}@email.com`,
+    role: String(item?.assignmentRole || item?.role || 'Recruiter')
+      .replace(/_/g, ' ')
+      .toLowerCase()
+      .replace(/\b\w/g, (ch) => ch.toUpperCase()),
+    sortIndex: Number.isFinite(Number(item?.sortIndex)) ? Number(item?.sortIndex) : index,
+  };
+};
+
 export const fetchRecruiters = async ({ openingJobId } = {}) => {
-  const response = await clientJobApi.get('/users/recruiters', {
+  const response = await clientJobApi.get('/recruiters', {
     params: openingJobId ? { openingJobId } : undefined,
     skipAuthRedirect: true,
   });
   const items = unwrapRecruiterItems(response?.data);
 
   return items
-    .map((item, index) => {
-      const recruiterId = String(item?.userId || item?.id || '').trim();
-      const recruiterName = String(item?.name || '').trim();
-      if (!recruiterId || !recruiterName) return null;
+    .map((item, index) => normalizeRecruiterItem(item, index))
+    .filter(Boolean);
+};
 
-      return {
-        id: recruiterId,
-        name: recruiterName,
-        email: String(item?.email || '').trim() || `${recruiterName.toLowerCase().replace(/\s+/g, '.')}@email.com`,
-        role: String(item?.assignmentRole || 'Recruiter')
-          .replace(/_/g, ' ')
-          .toLowerCase()
-          .replace(/\b\w/g, (ch) => ch.toUpperCase()),
-        sortIndex: index,
-      };
-    })
+export const fetchJobTeamMembers = async (openingJobId) => {
+  if (!openingJobId) return [];
+
+  const response = await clientJobApi.get(`/jobs/${encodeURIComponent(openingJobId)}/team-members`, {
+    skipAuthRedirect: true,
+  });
+  const items = unwrapRecruiterItems(response?.data);
+
+  return items
+    .map((item, index) => normalizeRecruiterItem(item, index))
     .filter(Boolean);
 };
 

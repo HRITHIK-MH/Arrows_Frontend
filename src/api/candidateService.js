@@ -4,6 +4,15 @@ const candidateApi = createServiceApi('');
 const CANDIDATE_INFORMATION_ENDPOINT = '/candidates/information';
 const CANDIDATE_INFORMATION_META_ENDPOINT = '/candidates/information/meta';
 
+const unwrapList = (response) => {
+  const payload = response?.data;
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload?.data)) return payload.data;
+  if (Array.isArray(payload?.items)) return payload.items;
+  if (Array.isArray(payload?.content)) return payload.content;
+  return [];
+};
+
 export const fetchCandidates = async ({ page = 1, limit = 100, search, source, rating, stage, status, sortBy = 'modifiedTime', sortOrder = 'desc' } = {}) => {
   const params = {
     page,
@@ -24,6 +33,62 @@ export const fetchCandidates = async ({ page = 1, limit = 100, search, source, r
   });
   return response?.data?.data || { items: [], pagination: { page, limit, totalRecords: 0, totalPages: 0 } };
 };
+
+export const fetchCandidateGenders = async () =>
+  unwrapList(
+    await candidateApi.get('/candidates/genders', {
+      skipAuth: true,
+      skipAuthRedirect: true,
+    })
+  );
+
+export const fetchCandidateExperienceYears = async () =>
+  unwrapList(
+    await candidateApi.get('/candidates/experience-years', {
+      skipAuth: true,
+      skipAuthRedirect: true,
+    })
+  );
+
+export const fetchCandidateOffersInHand = async () =>
+  unwrapList(
+    await candidateApi.get('/candidates/offers-in-hand', {
+      skipAuth: true,
+      skipAuthRedirect: true,
+    })
+  );
+
+export const fetchPrimarySkills = async () =>
+  unwrapList(
+    await candidateApi.get('/skills/primary', {
+      skipAuth: true,
+      skipAuthRedirect: true,
+    })
+  );
+
+export const fetchExperienceLevels = async () =>
+  unwrapList(
+    await candidateApi.get('/experience-levels', {
+      skipAuth: true,
+      skipAuthRedirect: true,
+    })
+  );
+
+export const fetchSources = async () =>
+  unwrapList(
+    await candidateApi.get('/sources', {
+      skipAuth: true,
+      skipAuthRedirect: true,
+    })
+  );
+
+export const fetchEmploymentTypes = async () =>
+  unwrapList(
+    await candidateApi.get('/employment-types', {
+      skipAuth: true,
+      skipAuthRedirect: true,
+    })
+  );
 
 export const fetchCandidateFiltersMeta = async () => {
   // Retry once on transient timeouts/network blips. Increase per-request timeout.
