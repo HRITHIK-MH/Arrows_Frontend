@@ -257,6 +257,23 @@ const cleanRoleOrCompanyValue = (value) =>
     .replace(/\s{2,}/g, " ")
     .trim();
 
+const cleanDesignationValue = (value) =>
+  cleanRoleOrCompanyValue(value)
+    .replace(/^(?:role|designation|job\s*title|title|position)\s*[:\-]\s*/i, "")
+    .trim();
+
+const cleanCompanyValue = (value) =>
+  cleanRoleOrCompanyValue(value)
+    .replace(/^(?:client|company|employer|organization|organisation)\s*[:\-]\s*/i, "")
+    .split(",")[0]
+    .trim();
+
+const getLabelledResumeValue = (value, labels = []) => {
+  const labelPattern = labels.join("|");
+  const match = normalizeText(value).match(new RegExp(`^(?:${labelPattern})\\s*[:\\-]\\s*(.+)$`, "i"));
+  return match?.[1] ? match[1].trim() : "";
+};
+
 const extractLatestExperienceEntry = (text) => {
   const lines = getResumeLines(text);
   if (lines.length === 0) return { company: "", role: "" };
@@ -267,10 +284,10 @@ const extractLatestExperienceEntry = (text) => {
 
   const scopedLines = experienceIndex >= 0 ? lines.slice(experienceIndex + 1) : lines;
   const datePrefixPattern = /^(\d{1,2}[/-]\d{4}|\d{4})\s*(?:to|–|-|—)?\s*(present|current|now|\d{1,2}[/-]\d{4}|\d{4})?/i;
-  const dateRangePattern = /(?:\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\s+\d{4}\b|\b\d{1,2}[/-]\d{4}\b|\b\d{4}\b)\s*(?:to|–|-|—)\s*(?:present|current|now|\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\s+\d{4}\b|\b\d{1,2}[/-]\d{4}\b|\b\d{4}\b)/i;
+  const dateRangePattern = /(?:\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\s+\d{4}\b|\b\d{1,2}[/-]\d{4}\b|\b\d{4}\b)\s*(?:to|–|-|—)\s*(?:present|current|now|still|\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\s+\d{4}\b|\b\d{1,2}[/-]\d{4}\b|\b\d{4}\b)/i;
   const scoreDateText = (dateText) => {
     const lower = String(dateText || "").toLowerCase();
-    if (/present|current|now/.test(lower)) return Number.MAX_SAFE_INTEGER;
+    if (/present|current|now|still/.test(lower)) return Number.MAX_SAFE_INTEGER;
     const match = lower.match(/(\d{1,2})[/-](\d{4})|(\d{4})/);
     if (!match) return 0;
     if (match[2]) {
@@ -285,12 +302,22 @@ const extractLatestExperienceEntry = (text) => {
     const line = scopedLines[index];
     const inlineDateRange = line.match(dateRangePattern);
     if (inlineDateRange) {
-      const companyText = line
-        .replace(inlineDateRange[0], "")
-        .split(/[|,]/)
-        .map((part) => cleanRoleOrCompanyValue(part))
-        .find(Boolean) || "";
-      const roleText = cleanRoleOrCompanyValue(scopedLines[index - 1] || "");
+      const lineWithoutDate = line.replace(inlineDateRange[0], "").replace(/\bdate\s*$/i, "").trim();
+      const labelledRole = getLabelledResumeValue(lineWithoutDate, ["role", "designation", "job\\s*title", "title", "position"]);
+      const nearbyCompanyLine = scopedLines
+        .slice(Math.max(0, index - 4), index)
+        .reverse()
+        .find((nearbyLine) => /^(?:client|company|employer|organization|organisation)\s*[:\-]/i.test(nearbyLine));
+
+      const companyText = nearbyCompanyLine
+        ? cleanCompanyValue(nearbyCompanyLine)
+        : lineWithoutDate
+            .split(/[|,]/)
+            .map((part) => cleanCompanyValue(part))
+            .find(Boolean) || "";
+      const roleText = labelledRole
+        ? cleanDesignationValue(labelledRole)
+        : cleanDesignationValue(scopedLines[index - 1] || "");
 
       if (companyText || roleText) {
         candidates.push({
@@ -464,7 +491,7 @@ const getSkillDefaultsFromExperience = (yearsBucket, yearsNumber) => {
 
 const createSkillRow = (primarySkill, defaults = {}) => ({
   primarySkill: primarySkill || "",
-  enableSecondarySkill: defaults.enableSecondarySkill ?? true,
+  enableSecondarySkill: defaults.enableSecondarySkill ?? false,
   secondarySkill: "",
   skillExperienceLevel: defaults.skillExperienceLevel || "",
   skillExperienceYears: defaults.skillExperienceYears || "",
@@ -486,11 +513,11 @@ const extractCompanyAndRole = (text) => {
     };
   }
 
-  const companyLine = lines.find((line) => /^(?:current\s+company|company|organization|employer)\s*[:\-]/i.test(line));
+  const companyLine = lines.find((line) => /^(?:current\s+company|client|company|organization|organisation|employer)\s*[:\-]/i.test(line));
   const roleLine = lines.find((line) => /^(?:current\s+(?:designation|role)|designation|job\s*title|title|role)\s*[:\-]/i.test(line));
 
-  let company = cleanRoleOrCompanyValue(companyLine?.replace(/^(?:current\s+company|company|organization|employer)\s*[:\-]\s*/i, "") || "");
-  let role = cleanRoleOrCompanyValue(roleLine?.replace(/^(?:current\s+(?:designation|role)|designation|job\s*title|title|role)\s*[:\-]\s*/i, "") || "");
+  let company = cleanCompanyValue(companyLine || "");
+  let role = cleanDesignationValue(roleLine || "");
 
   if (!company || !role) {
     const lineWithAt = lines.find((line) => /\s+at\s+/i.test(line) && !/@|http|linkedin/i.test(line));
@@ -846,16 +873,16 @@ const CandidateBasicInfoStep = ({
           if (
             !isInternshipCandidate &&
             (!normalizeText(formData.currentCompanyName) || !isValidCurrentCompany(formData.currentCompanyName)) &&
-            isValidCurrentCompany(mappedData.currentCompany)
+            isValidCurrentCompany(cleanCompanyValue(mappedData.currentCompany))
           ) {
-            updates.currentCompanyName = mappedData.currentCompany;
+            updates.currentCompanyName = cleanCompanyValue(mappedData.currentCompany);
           }
           if (
             !isInternshipCandidate &&
             (!normalizeText(formData.jobTitleRole) || !isValidCurrentDesignation(formData.jobTitleRole)) &&
-            isValidCurrentDesignation(mappedData.currentDesignation)
+            isValidCurrentDesignation(cleanDesignationValue(mappedData.currentDesignation))
           ) {
-            updates.jobTitleRole = mappedData.currentDesignation;
+            updates.jobTitleRole = cleanDesignationValue(mappedData.currentDesignation);
           }
           if (!isInternshipCandidate && !normalizeText(formData.employmentType) && normalizeText(mappedData.employmentType)) {
             updates.employmentType = mappedData.employmentType;
@@ -1074,16 +1101,16 @@ const CandidateBasicInfoStep = ({
         if (
           !isInternshipCandidate &&
           (!normalizeText(formData.currentCompanyName) || !isValidCurrentCompany(formData.currentCompanyName)) &&
-          isValidCurrentCompany(company)
+          isValidCurrentCompany(cleanCompanyValue(company))
         ) {
-          updates.currentCompanyName = company;
+          updates.currentCompanyName = cleanCompanyValue(company);
         }
         if (
           !isInternshipCandidate &&
           (!normalizeText(formData.jobTitleRole) || !isValidCurrentDesignation(formData.jobTitleRole)) &&
-          isValidCurrentDesignation(role)
+          isValidCurrentDesignation(cleanDesignationValue(role))
         ) {
-          updates.jobTitleRole = role;
+          updates.jobTitleRole = cleanDesignationValue(role);
         }
         if (!isInternshipCandidate && !normalizeText(formData.candidateType) && (company || role) && updates.candidateType === "fresher") {
           updates.candidateType = "experienced";
