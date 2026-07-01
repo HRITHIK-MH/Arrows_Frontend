@@ -1,20 +1,23 @@
 import API, { createServiceApi } from './axiosConfig';
 
 const candidateApi = createServiceApi('');
+const CANDIDATE_INFORMATION_ENDPOINT = '/candidates/information';
 
 export const fetchCandidates = async ({ page = 1, limit = 100, search, source, rating, stage, status, sortBy = 'modifiedTime', sortOrder = 'desc' } = {}) => {
-  const payload = {
+  const params = {
     page,
     limit,
-    search,
-    source,
-    rating,
-    stage,
-    status,
-    sortBy,
-    sortOrder,
+    ...(search ? { search } : {}),
+    ...(source ? { source } : {}),
+    ...(rating ? { rating } : {}),
+    ...(stage ? { stage } : {}),
+    ...(status ? { status } : {}),
+    ...(sortBy ? { sortBy } : {}),
+    ...(sortOrder ? { sortOrder } : {}),
   };
-  const response = await candidateApi.post('/candidates', payload, {
+
+  const response = await candidateApi.get('/candidates', {
+    params,
     skipAuth: true,
     skipAuthRedirect: true,
   });
@@ -34,8 +37,10 @@ export const fetchCandidateDetail = async (candidateId) => {
 };
 
 export const createCandidate = async (candidate) => {
-  // Use the information endpoint which expects the CandidateInformationRequest shape
-  const response = await candidateApi.post('/candidates/information', candidate);
+  const response = await candidateApi.post(CANDIDATE_INFORMATION_ENDPOINT, candidate, {
+    skipAuth: true,
+    skipAuthRedirect: true,
+  });
   return response?.data?.data || null;
 };
 
