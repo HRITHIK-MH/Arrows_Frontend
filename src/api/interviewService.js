@@ -13,12 +13,12 @@ export const fetchInterviews = async ({ page = 1, limit = 100, search, candidate
     sortBy,
     sortOrder,
   };
-  const response = await interviewApi.get('/api/interviews', { params, skipAuthRedirect: true });
+  const response = await interviewApi.get('/interviews', { params, skipAuthRedirect: true });
   return response?.data?.data || { items: [], pagination: { page, limit, totalRecords: 0, totalPages: 0 } };
 };
 
 export const fetchInterviewFiltersMeta = async () => {
-  const response = await interviewApi.get('/api/interviews/meta/filters', {
+  const response = await interviewApi.get('/interviews/meta/filters', {
     skipAuthRedirect: true,
   });
   return response?.data?.data || response?.data || null;

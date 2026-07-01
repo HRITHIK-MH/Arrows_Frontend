@@ -2,6 +2,7 @@ import API, { createServiceApi } from './axiosConfig';
 
 const candidateApi = createServiceApi('');
 const CANDIDATE_INFORMATION_ENDPOINT = '/candidates/information';
+const CANDIDATE_INFORMATION_META_ENDPOINT = '/candidates/information/meta';
 
 export const fetchCandidates = async ({ page = 1, limit = 100, search, source, rating, stage, status, sortBy = 'modifiedTime', sortOrder = 'desc' } = {}) => {
   const params = {
@@ -30,9 +31,7 @@ export const fetchCandidateFiltersMeta = async () => {
   let attempt = 0;
   while (attempt < maxAttempts) {
     try {
-      const response = await candidateApi.get('/candidates/meta/filters', {
-        skipAuthRedirect: true,
-        timeout: 30000,
+      const response = await candidateApi.get(CANDIDATE_INFORMATION_META_ENDPOINT, {
       });
       return response?.data?.data || response?.data || null;
     } catch (err) {
