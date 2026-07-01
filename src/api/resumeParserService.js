@@ -1,14 +1,39 @@
-import { PROMPT_ARROWS_MAPPING, PROMPT_ARROWS_PARSE } from './resumePrompts';
+import { PROMPT_ARROWS_PARSE } from './resumePrompts';
 import { mapParsedSkills } from './skillMapper';
+import { applyResumeGuardrails } from '../utils/resumeGuardrailValidator';
+import { mapResumeToCandidateForm } from '../utils/resumeFieldMapper';
 
 const normalizeValue = (value) => {
   if (value === null || value === undefined) return '';
   return String(value).trim();
 };
 
+const getNow = () =>
+  typeof performance !== 'undefined' && typeof performance.now === 'function'
+    ? performance.now()
+    : Date.now();
+
+const logTiming = (label, startedAt, details = {}) => {
+  console.debug(`[ResumeTiming] ${label}:`, {
+    durationMs: Math.round((getNow() - startedAt) * 100) / 100,
+    ...details,
+  });
+};
+
 const normalizeNumberValue = (value) => {
   if (value === null || value === undefined || value === '') return '';
   return value;
+};
+
+const normalizeEmploymentType = (...values) => {
+  const combinedValue = values.map(normalizeValue).filter(Boolean).join(' ').toLowerCase();
+  if (!combinedValue) return '';
+
+  if (/\b(intern|internship|trainee)\b/.test(combinedValue)) return 'internship';
+  if (/\b(contract|contractor|c2c|1099)\b/.test(combinedValue)) return 'contract';
+  if (/\b(full[\s-]?time|permanent|employee|w2|payroll)\b/.test(combinedValue)) return 'full-time';
+
+  return '';
 };
 
 const normalizeSkills = (skills) => {
@@ -47,7 +72,7 @@ const mapArrowsCandidateFormToFlatFields = (candidateForm = {}) => {
     candidateType: normalizeValue(company.candidate_type).toLowerCase(),
     currentCompany: normalizeValue(company.current_company_name),
     currentDesignation: normalizeValue(company.job_title_role),
-    employmentType: normalizeValue(company.employment_type).toLowerCase(),
+    employmentType: normalizeEmploymentType(company.employment_type, company.job_title_role),
     noticePeriod: normalizeNumberValue(company.notice_period_days),
     currentCtc: normalizeNumberValue(company.current_ctc_lpa),
     expectedCtc: normalizeNumberValue(company.expected_ctc_lpa),
@@ -81,19 +106,52 @@ export const normalizeParsedResumePayload = (parsedData = {}) => {
 const stripJsonCodeBlock = (value) =>
   String(value || '').replace(/```json|```/gi, '').trim();
 
+let azureResumeParseDebugContext = {
+  messageContentExists: false,
+  responseKeys: [],
+};
+
+const getDebugValueType = (value) => {
+  if (value === null) return 'null';
+  if (value === undefined) return 'undefined';
+  return typeof value;
+};
+
+const logResumeParseFailureSummary = (content, error) => {
+  const preview = String(content || '').substring(0, 500);
+  console.error(`==================================================
+RESUME PARSE FAILURE SUMMARY
+==================================================
+Azure message exists: ${Boolean(azureResumeParseDebugContext.messageContentExists)}
+GPT content type: ${getDebugValueType(content)}
+GPT content length: ${content?.length ?? 0}
+GPT content preview:
+${preview}
+
+JSON parse error:
+${error?.message || ''}
+
+Available Azure response keys:
+${JSON.stringify(azureResumeParseDebugContext.responseKeys || [])}
+==================================================`);
+};
+
 const extractJson = (value) => {
   const cleanValue = stripJsonCodeBlock(value);
   if (!cleanValue) return null;
 
   try {
     return JSON.parse(cleanValue);
-  } catch (_parseError) {
+  } catch (error) {
+    logResumeParseFailureSummary(cleanValue, error);
+
     const jsonMatch = cleanValue.match(/\{[\s\S]*\}/);
     if (!jsonMatch) return null;
 
     try {
       return JSON.parse(jsonMatch[0]);
-    } catch (_nestedParseError) {
+    } catch (error) {
+      logResumeParseFailureSummary(jsonMatch[0], error);
       return null;
     }
   }
@@ -109,6 +167,7 @@ const getAzureOpenAiConfig = () => {
 };
 
 const callAzureOpenAi = async (messages, stageName) => {
+  const startedAt = getNow();
   const { endpoint, deployment, apiVersion, apiKey } = getAzureOpenAiConfig();
 
   if (!endpoint || !deployment || !apiKey) {
@@ -147,10 +206,12 @@ const callAzureOpenAi = async (messages, stageName) => {
 
   let response = await sendRequest(payload);
   let responseText = await response.text();
+  let retriedWithoutJsonMode = false;
 
   if (!response.ok && /response_format|json_object/i.test(responseText)) {
     const fallbackPayload = { ...payload };
     delete fallbackPayload.response_format;
+    retriedWithoutJsonMode = true;
     console.warn(`[ResumeDebug] Azure rejected JSON mode for ${stageName}; retrying without response_format.`);
     response = await sendRequest(fallbackPayload);
     responseText = await response.text();
@@ -166,8 +227,20 @@ const callAzureOpenAi = async (messages, stageName) => {
     throw new Error(`Azure OpenAI ${stageName} failed: ${response.status} ${responseText}`);
   }
 
+  azureResumeParseDebugContext = {
+    messageContentExists: false,
+    responseKeys: [],
+  };
   const responseJson = extractJson(responseText) || {};
+  azureResumeParseDebugContext = {
+    messageContentExists: !!responseJson?.choices?.[0]?.message?.content,
+    responseKeys: Object.keys(responseJson),
+  };
   console.debug(`[ResumeDebug] Azure raw response (${stageName}):`, responseJson);
+  logTiming(`Azure Call (${stageName})`, startedAt, {
+    status: response.status,
+    retriedWithoutJsonMode,
+  });
 
   return responseJson?.choices?.[0]?.message?.content || responseJson?.choices?.[0]?.text || '';
 };
@@ -202,7 +275,13 @@ export const parseResume = async (file) => {
   });
 
   try {
+    const extractionStartedAt = getNow();
     const resumeText = await extractResumeText(file);
+    logTiming('PDF/File Extraction', extractionStartedAt, {
+      fileType: file?.type,
+      fileSize: file?.size,
+      extractedChars: resumeText.length,
+    });
     console.debug('[ResumeDebug] Extracted resume text length:', {
       length: resumeText.length,
       preview: resumeText.slice(0, 500),
@@ -217,7 +296,7 @@ export const parseResume = async (file) => {
         { role: 'system', content: PROMPT_ARROWS_PARSE },
         { role: 'user', content: resumeText },
       ],
-      'resume-json-generation'
+      'Azure Call 1 - resume-json-generation'
     );
     console.debug('[ResumeDebug] GPT response (resume JSON text):', resumeJsonText);
 
@@ -227,27 +306,21 @@ export const parseResume = async (file) => {
       throw new Error('GPT returned invalid resume JSON');
     }
 
-    const candidateFormText = await callAzureOpenAi(
-      [
-        { role: 'system', content: PROMPT_ARROWS_MAPPING },
-        { role: 'user', content: JSON.stringify(resumeJson, null, 2) },
-      ],
-      'candidate-form-mapping'
-    );
-    console.debug('[ResumeDebug] GPT response (candidate form text):', candidateFormText);
+    const validatedResume = applyResumeGuardrails(resumeJson);
+    console.debug('[ResumeDebug] Guardrail-validated resume JSON:', validatedResume);
 
-    const candidateForm = extractJson(candidateFormText);
-    console.debug('[ResumeDebug] Parsed candidate form JSON:', candidateForm);
-    if (!candidateForm) {
-      throw new Error('GPT returned invalid candidate form JSON');
-    }
-
+    const skillMappingStartedAt = getNow();
+    const candidateForm = mapResumeToCandidateForm(validatedResume);
     const parsedResponse = {
-      resumeJson,
+      resumeJson: validatedResume,
       candidateForm,
     };
     const mappedResponse = mapParsedSkills(parsedResponse);
+    logTiming('Skill Mapping', skillMappingStartedAt, {
+      path: 'local-resume-field-mapper',
+    });
     const normalizedResponse = normalizeParsedResumePayload(mappedResponse);
+    console.debug('[ResumeDebug] Candidate form JSON from local mapper:', candidateForm);
     console.debug('[ResumeDebug] Combined parsed JSON:', parsedResponse);
     console.debug('[ResumeDebug] Normalized candidate form JSON:', normalizedResponse);
     return normalizedResponse;
@@ -276,13 +349,26 @@ export const mapResumeToFormFields = (parsedData = {}) => {
     return normalizedPayload;
   }
 
-  const personal = parsedData.personal_information || {};
-  const professional = parsedData.professional_information || {};
-  const skills = parsedData.skills || [];
-  const education = parsedData.education || [];
-  const certifications = parsedData.certifications || [];
-  const projects = parsedData.projects || [];
-  const employment = parsedData.employment_history || [];
+  const guardedParsedData = applyResumeGuardrails(parsedData);
+  const candidateForm = mapResumeToCandidateForm(guardedParsedData);
+  if (candidateForm?.candidate_information || candidateForm?.skills_information) {
+    const normalizedCandidateForm = normalizeParsedResumePayload({
+      resumeJson: guardedParsedData,
+      candidateForm,
+    });
+    console.debug('[ResumeDebug] Candidate form JSON from local mapper:', candidateForm);
+    console.debug('[ResumeDebug] Candidate form JSON:', normalizedCandidateForm);
+    console.groupEnd();
+    return normalizedCandidateForm;
+  }
+
+  const personal = guardedParsedData.personal_information || {};
+  const professional = guardedParsedData.professional_information || {};
+  const skills = guardedParsedData.skills || [];
+  const education = guardedParsedData.education || [];
+  const certifications = guardedParsedData.certifications || [];
+  const projects = guardedParsedData.projects || [];
+  const employment = guardedParsedData.employment_history || [];
 
   const candidateFormJson = {
     // Personal Information
@@ -299,7 +385,7 @@ export const mapResumeToFormFields = (parsedData = {}) => {
     totalExperience: professional.total_experience_years || 0,
     currentCompany: professional.current_company || '',
     currentDesignation: professional.current_designation || '',
-    employmentType: professional.employment_type || '',
+    employmentType: normalizeEmploymentType(professional.employment_type, professional.current_designation),
     noticePeriod: professional.notice_period_days || 0,
     currentCtc: professional.current_ctc || '',
     expectedCtc: professional.expected_ctc || '',
@@ -328,7 +414,7 @@ export const mapResumeToFormFields = (parsedData = {}) => {
       .join('; '),
 
     // Raw parsed data for reference
-    _parsedResume: parsedData,
+    _parsedResume: guardedParsedData,
   };
   console.debug('[ResumeDebug] Candidate form JSON:', candidateFormJson);
   console.groupEnd();
