@@ -114,7 +114,7 @@ export const toJobRequest = (row = {}) => {
 };
 
 export const createJob = async (row) =>
-  clientJobApi.post('/jobs', toJobRequest(row), {
+  clientJobApi.post('/job-openings/job-information', toJobRequest(row), {
     skipAuth: true,
     skipAuthRedirect: true,
   });
@@ -174,7 +174,7 @@ export const fetchSkills = async () =>
   );
 
 export const fetchJobInformationMeta = async () => {
-  const response = await clientJobApi.get('/jobs/job-information/meta', {
+  const response = await clientJobApi.get('/job-openings/job-information/meta', {
     skipAuth: true,
     skipAuthRedirect: true,
   });
@@ -182,7 +182,7 @@ export const fetchJobInformationMeta = async () => {
 };
 
 export const fetchClientRequirementMeta = async () => {
-  const response = await clientJobApi.get('/jobs/client-requirement/meta', {
+  const response = await clientJobApi.get('/job-openings/client-requirement/meta', {
     skipAuth: true,
     skipAuthRedirect: true,
   });
