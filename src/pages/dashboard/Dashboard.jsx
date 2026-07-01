@@ -46,13 +46,13 @@ const STAKEHOLDER_DASHBOARD_TABS = [
       DASHBOARD_UUID_MAP.business_stakeholder ||
       DASHBOARD_UUID_MAP.businessstakeholder,
   },
-  {
-    key: "accountManager",
-    label: "Recruitment",
-    dashboardUuid:
-      DASHBOARD_UUID_MAP.account_manager ||
-      DASHBOARD_UUID_MAP.accountmanager,
-  },
+  // {
+  //   key: "accountManager",
+  //   label: "Recruitment",
+  //   dashboardUuid:
+  //     DASHBOARD_UUID_MAP.account_manager ||
+  //     DASHBOARD_UUID_MAP.accountmanager,
+  // },
 ];
 
 const normalizeStoredValue = (value) =>
