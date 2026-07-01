@@ -25,10 +25,24 @@ export const fetchCandidates = async ({ page = 1, limit = 100, search, source, r
 };
 
 export const fetchCandidateFiltersMeta = async () => {
-  const response = await candidateApi.get('/candidates/meta/filters', {
-    skipAuthRedirect: true,
-  });
-  return response?.data?.data || response?.data || null;
+  // Retry once on transient timeouts/network blips. Increase per-request timeout.
+  const maxAttempts = 2;
+  let attempt = 0;
+  while (attempt < maxAttempts) {
+    try {
+      const response = await candidateApi.get('/candidates/meta/filters', {
+        skipAuthRedirect: true,
+        timeout: 30000,
+      });
+      return response?.data?.data || response?.data || null;
+    } catch (err) {
+      attempt += 1;
+      if (attempt >= maxAttempts) throw err;
+      // small backoff before retrying
+      await new Promise((res) => setTimeout(res, 500));
+    }
+  }
+  return null;
 };
 
 export const fetchCandidateDetail = async (candidateId) => {

@@ -38,7 +38,8 @@ export const resolveApiBaseUrl = (serviceName = '') => {
 // Create axios instance with default config
 const API = axios.create({
   baseURL: resolveApiBaseUrl(),
-  timeout: 10000,
+  // increase timeout to be more tolerant during local dev and slow networks
+  timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -101,7 +102,11 @@ API.interceptors.response.use(
   (error) => {
     const skipAuthRedirect = Boolean(error?.config?.skipAuthRedirect);
     if (!error.response) {
-      console.error('Network error: backend may be unavailable at API base URL', API.defaults.baseURL);
+      console.error(
+        'Network error: backend may be unavailable at API base URL',
+        API.defaults.baseURL,
+        '- ensure the backend is running and set VITE_BACKEND_URL if needed'
+      );
     } else if (error.response?.status === 401 && !skipAuthRedirect) {
       // Token expired or unauthorized
       localStorage.removeItem('authToken');
