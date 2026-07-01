@@ -1,6 +1,8 @@
 import * as React from "react";
 import { FiArrowLeft, FiCheck, FiEye, FiFileText, FiTrash2, FiX } from "react-icons/fi";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { parseResume } from "../../api/resumeParserService";
+import { calculateAtsScore } from "../../utils/atsScoreCalculator";
 import styles from "./JobDescription.module.scss";
 
 const fallbackJob = {
@@ -148,14 +150,24 @@ const toTitleCase = (value) =>
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
 
-const deriveCandidateFromFile = (file, existingRows, recruiterName) => {
+const deriveCandidateFromFile = (
+  file,
+  existingRows,
+  recruiterName,
+  parsedResume = null,
+  atsResult = null
+) => {
   const baseName = String(file?.name || "")
     .replace(/\.[^/.]+$/, "")
     .replace(/[_\-]+/g, " ")
     .trim();
 
   const tokens = baseName.split(/\s+/).filter(Boolean);
-  const fullName = toTitleCase(tokens.slice(0, 2).join(" ")) || "Uploaded Candidate";
+  const parsedFullName = [parsedResume?.firstName, parsedResume?.lastName]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+  const fullName = parsedFullName || toTitleCase(tokens.slice(0, 2).join(" ")) || "Uploaded Candidate";
   const emailToken = fullName
     .toLowerCase()
     .replace(/[^a-z0-9\s]/g, "")
@@ -171,17 +183,22 @@ const deriveCandidateFromFile = (file, existingRows, recruiterName) => {
   const nextNumericId = (numericIds.length ? Math.max(...numericIds) : 0) + 1;
   const candidateId = `C${String(nextNumericId).padStart(6, "0")}`;
 
-  const matchingScore = Math.max(65, Math.min(95, 60 + Math.round((file?.size || 0) / 100000)));
+  const matchingScore =
+    typeof atsResult?.score === "number"
+      ? atsResult.score
+      : Math.max(65, Math.min(95, 60 + Math.round((file?.size || 0) / 100000)));
 
   return {
     rowId: `${candidateId}-${Date.now()}`,
     candidateId,
     candidateName: fullName,
-    candidateEmail: "",
+    candidateEmail: parsedResume?.email || "",
     recruiterName: recruiterName || "",
     source: "Uploaded Document",
     rating: "0/5",
     matchingScore,
+    atsBreakdown: atsResult?.breakdown || null,
+    parsedResume: parsedResume || null,
     stage: "Map Candidates",
     status: "In Progress",
   };
@@ -237,6 +254,7 @@ const JobDescription = () => {
   const [isUploadModalOpen, setIsUploadModalOpen] = React.useState(false);
   const [uploadCandidateFile, setUploadCandidateFile] = React.useState(null);
   const [uploadProgress, setUploadProgress] = React.useState(0);
+  const [isCandidateParsing, setIsCandidateParsing] = React.useState(false);
   const [candidatePreview, setCandidatePreview] = React.useState(null);
   const [preScreeningModal, setPreScreeningModal] = React.useState(null);
   const [stageMoveToast, setStageMoveToast] = React.useState("");
@@ -463,11 +481,28 @@ const JobDescription = () => {
     }
   };
 
-  const handleUploadSubmit = () => {
-    if (!uploadCandidateFile) return;
+  const handleUploadSubmit = async () => {
+    if (!uploadCandidateFile || isCandidateParsing) return;
+
+    setIsCandidateParsing(true);
+    setUploadProgress(88);
+
+    let parsedResume = null;
+    let atsResult = null;
+
+    try {
+      parsedResume = await parseResume(uploadCandidateFile);
+      atsResult = calculateAtsScore({ job, resume: parsedResume });
+      setUploadProgress(100);
+    } catch (error) {
+      console.error("[ATS] Candidate resume parsing failed; using fallback matching score.", {
+        message: error?.message,
+      });
+    }
+
     setCandidateRows((prev) => [
       ...prev,
-      deriveCandidateFromFile(uploadCandidateFile, prev, job.hiringManager || ""),
+      deriveCandidateFromFile(uploadCandidateFile, prev, job.hiringManager || "", parsedResume, atsResult),
     ]);
     setActiveStage("Map Candidates");
     setSearchTerm("");
@@ -477,6 +512,7 @@ const JobDescription = () => {
       uploadModalInputRef.current.value = "";
     }
     setIsUploadModalOpen(false);
+    setIsCandidateParsing(false);
   };
 
   const getScoreCircleStyle = (score) => {
@@ -761,6 +797,22 @@ const JobDescription = () => {
                     : "-"}
                 </strong>
               </div>
+              {candidatePreview.atsBreakdown ? (
+                <>
+                  <div className={styles.previewItem}>
+                    <span>Skill Match</span>
+                    <strong>{candidatePreview.atsBreakdown.skills}%</strong>
+                  </div>
+                  <div className={styles.previewItem}>
+                    <span>Experience Match</span>
+                    <strong>{candidatePreview.atsBreakdown.experience}%</strong>
+                  </div>
+                  <div className={styles.previewItem}>
+                    <span>Title Match</span>
+                    <strong>{candidatePreview.atsBreakdown.title}%</strong>
+                  </div>
+                </>
+              ) : null}
               <div className={styles.previewItem}>
                 <span>Stage</span>
                 <strong>{candidatePreview.stage || "-"}</strong>
@@ -1116,9 +1168,9 @@ const JobDescription = () => {
                 type="button"
                 className={styles.uploadModalSubmitBtn}
                 onClick={handleUploadSubmit}
-                disabled={!uploadCandidateFile}
+                disabled={!uploadCandidateFile || isCandidateParsing}
               >
-                Submit
+                {isCandidateParsing ? "Parsing..." : "Submit"}
               </button>
               <button
                 type="button"

@@ -4,6 +4,7 @@ import * as pdfjsLib from "pdfjs-dist";
 import pdfjsWorkerSrc from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 import FormField from "./FormField";
 import { parseResume, mapResumeToFormFields, normalizeParsedResumePayload } from "../../api/resumeParserService";
+import { isValidCurrentCompany, isValidCurrentDesignation } from "../../utils/resumeGuardrailValidator";
 
 const normalizeText = (value) => String(value || "").replace(/\s+/g, " ").trim();
 
@@ -266,6 +267,7 @@ const extractLatestExperienceEntry = (text) => {
 
   const scopedLines = experienceIndex >= 0 ? lines.slice(experienceIndex + 1) : lines;
   const datePrefixPattern = /^(\d{1,2}[/-]\d{4}|\d{4})\s*(?:to|–|-|—)?\s*(present|current|now|\d{1,2}[/-]\d{4}|\d{4})?/i;
+  const dateRangePattern = /(?:\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\s+\d{4}\b|\b\d{1,2}[/-]\d{4}\b|\b\d{4}\b)\s*(?:to|–|-|—)\s*(?:present|current|now|\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\s+\d{4}\b|\b\d{1,2}[/-]\d{4}\b|\b\d{4}\b)/i;
   const scoreDateText = (dateText) => {
     const lower = String(dateText || "").toLowerCase();
     if (/present|current|now/.test(lower)) return Number.MAX_SAFE_INTEGER;
@@ -281,6 +283,26 @@ const extractLatestExperienceEntry = (text) => {
 
   for (let index = 0; index < scopedLines.length; index += 1) {
     const line = scopedLines[index];
+    const inlineDateRange = line.match(dateRangePattern);
+    if (inlineDateRange) {
+      const companyText = line
+        .replace(inlineDateRange[0], "")
+        .split(/[|,]/)
+        .map((part) => cleanRoleOrCompanyValue(part))
+        .find(Boolean) || "";
+      const roleText = cleanRoleOrCompanyValue(scopedLines[index - 1] || "");
+
+      if (companyText || roleText) {
+        candidates.push({
+          company: companyText,
+          role: roleText,
+          score: scoreDateText(inlineDateRange[0]),
+          index,
+        });
+        continue;
+      }
+    }
+
     const dateMatch = line.match(datePrefixPattern);
     if (!dateMatch) continue;
 
@@ -484,7 +506,7 @@ const extractCompanyAndRole = (text) => {
     const experienceIndex = lines.findIndex((line) => /^experience$/i.test(line) || /professional\s+experience/i.test(line));
     if (experienceIndex >= 0) {
       const windowLines = lines.slice(experienceIndex + 1, experienceIndex + 6);
-      const meaningfulLines = windowLines.filter((line) => !/@|\b(?:present|yrs?|years?|months?)\b/i.test(line));
+      const meaningfulLines = windowLines.filter((line) => !/@|\b(?:yrs?|years?|months?)\b/i.test(line));
       if (!role && meaningfulLines[0]) {
         role = cleanRoleOrCompanyValue(meaningfulLines[0]);
       }
@@ -821,10 +843,18 @@ const CandidateBasicInfoStep = ({
             }
           }
 
-          if (!isInternshipCandidate && !normalizeText(formData.currentCompanyName) && normalizeText(mappedData.currentCompany)) {
+          if (
+            !isInternshipCandidate &&
+            (!normalizeText(formData.currentCompanyName) || !isValidCurrentCompany(formData.currentCompanyName)) &&
+            isValidCurrentCompany(mappedData.currentCompany)
+          ) {
             updates.currentCompanyName = mappedData.currentCompany;
           }
-          if (!isInternshipCandidate && !normalizeText(formData.jobTitleRole) && normalizeText(mappedData.currentDesignation)) {
+          if (
+            !isInternshipCandidate &&
+            (!normalizeText(formData.jobTitleRole) || !isValidCurrentDesignation(formData.jobTitleRole)) &&
+            isValidCurrentDesignation(mappedData.currentDesignation)
+          ) {
             updates.jobTitleRole = mappedData.currentDesignation;
           }
           if (!isInternshipCandidate && !normalizeText(formData.employmentType) && normalizeText(mappedData.employmentType)) {
@@ -844,7 +874,7 @@ const CandidateBasicInfoStep = ({
             const skillsList = normalizeSkillInput(mappedData.skills);
             const primarySkillOptions = Array.isArray(fieldMap.primarySkill?.options) ? fieldMap.primarySkill.options : [];
             const mappedSkillValues = mapSkillTextsToValues(skillsList, primarySkillOptions);
-            const skillValuesForRows = mappedSkillValues.length > 0 ? mappedSkillValues : skillsList;
+            const skillValuesForRows = mappedSkillValues;
             console.debug("[ResumeDebug] Skills mapping result from GPT/API data:", {
               rawSkills: mappedData.skills,
               skillsList,
@@ -869,6 +899,12 @@ const CandidateBasicInfoStep = ({
                 skillRating: mappedData.skillRating || undefined,
               };
               updates.skills = skillValuesForRows.map((skillValue) => createSkillRow(skillValue, skillDefaults));
+            } else if (
+              skillValuesForRows.length === 0 &&
+              existingSkillRows.length > 1 &&
+              existingSkillRows.every((row) => !normalizeText(row?.primarySkill) && !normalizeText(row?.secondarySkill))
+            ) {
+              updates.skills = [createSkillRow("")];
             }
           }
 
@@ -1035,10 +1071,18 @@ const CandidateBasicInfoStep = ({
         if (isInternshipCandidate && !normalizeText(formData.candidateType)) {
           updates.candidateType = "fresher";
         }
-        if (!isInternshipCandidate && !normalizeText(formData.currentCompanyName) && company) {
+        if (
+          !isInternshipCandidate &&
+          (!normalizeText(formData.currentCompanyName) || !isValidCurrentCompany(formData.currentCompanyName)) &&
+          isValidCurrentCompany(company)
+        ) {
           updates.currentCompanyName = company;
         }
-        if (!isInternshipCandidate && !normalizeText(formData.jobTitleRole) && role) {
+        if (
+          !isInternshipCandidate &&
+          (!normalizeText(formData.jobTitleRole) || !isValidCurrentDesignation(formData.jobTitleRole)) &&
+          isValidCurrentDesignation(role)
+        ) {
           updates.jobTitleRole = role;
         }
         if (!isInternshipCandidate && !normalizeText(formData.candidateType) && (company || role) && updates.candidateType === "fresher") {
@@ -1150,9 +1194,13 @@ const CandidateBasicInfoStep = ({
     );
   };
 
-  const skillRows = Array.isArray(formData.skills) && formData.skills.length > 0
+  const rawSkillRows = Array.isArray(formData.skills) && formData.skills.length > 0
     ? formData.skills
     : [createSkillRow(formData.primarySkill || "")];
+  const skillRows = rawSkillRows.length > 1 &&
+    rawSkillRows.every((row) => !normalizeText(row?.primarySkill) && !normalizeText(row?.secondarySkill))
+    ? [rawSkillRows[0]]
+    : rawSkillRows;
   const primarySkillRowCount = skillRows.filter((skill) => !skill.isSecondaryOnly).length;
   const secondarySkillRowCount = skillRows.filter((skill, index) => index === 0 || skill.enableSecondarySkill).length;
 
