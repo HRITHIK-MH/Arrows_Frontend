@@ -7,7 +7,7 @@ import { FaFacebookF, FaLinkedinIn, FaInstagram, FaTwitter } from "react-icons/f
 import { MdOutlineEmail } from "react-icons/md";
 import { TbLockPassword } from "react-icons/tb";
 import { useNavigate } from 'react-router-dom';
-import { exchangeSsoCallback, fetchSsoAuthorizeUrl, loginWithPassword } from '../../api/authService';
+import { exchangeSsoCallback, loginWithPassword } from '../../api/authService';
 import { deriveNameFromEmail } from '../../utils/userDisplay';
 import arrowLogo from "../../assets/login/logo_login.png";
 import { startAuthSession } from '../../utils/authSession';
@@ -151,11 +151,11 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [ssoLoading, setSsoLoading] = useState(false);
   const [error, setError] = useState('');
   const [emailError, setEmailError] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
+  const showSsoButton = false;
   const navigate = useNavigate();
   const hasInitialized = useRef(false);
 
@@ -373,19 +373,6 @@ const Login = () => {
     }
   };
 
-  const handleSsoLogin = async () => {
-  setError('');
-  setSsoLoading(true);
-  try {
-    const url = await fetchSsoAuthorizeUrl(email.trim() || undefined);
-    if (!url) throw new Error('SSO authorize URL is not available');
-    window.location.href = url; // go to Microsoft login
-  } catch (err) {
-    setError(getAuthErrorMessage(err, 'Unable to start SSO login'));
-    setSsoLoading(false);
-  }
-};
-
   return (
   <div className="login-container">
     <div className="login-right">
@@ -475,16 +462,6 @@ const Login = () => {
             {loading ? "Signing In..." : "Sign In"}
           </button>
 
-          <div className="login-divider">or</div>
-
-          <button
-            type="button"
-            className="login-btn"
-            disabled={loading || ssoLoading}
-            onClick={handleSsoLogin}
-          >
-            {ssoLoading ? "Opening SSO..." : "Sign in with SSO"}
-          </button>
         </form>
       </div>
     </div>
