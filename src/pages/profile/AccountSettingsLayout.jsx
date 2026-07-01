@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "../../context/ThemeContext";
+import { getDisplayName, getAvatarInitials, formatRoleLabel } from "../../utils/userDisplay";
 import "../../components/ProfileModal.css";
 
 const ACCOUNT_MENU_ITEMS = [
@@ -41,7 +42,8 @@ export default function AccountSettingsLayout({ defaultSection = "Profile" }) {
     localStorage.getItem("userJobTitle") ||
     ""
   ).trim();
-  const displayName = storedName || storedEmail.split("@")[0] || "";
+  const displayName = getDisplayName(storedName, storedEmail);
+  const displayRole = formatRoleLabel(storedRole);
 
   const sectionDescription = useMemo(() => {
     const descriptions = {
@@ -93,7 +95,7 @@ export default function AccountSettingsLayout({ defaultSection = "Profile" }) {
 
   const renderProfile = () => (
     <div className="settingsProfileSummary">
-      <div className="profileModalAvatar">{(displayName || "U").charAt(0).toUpperCase()}</div>
+      <div className="profileModalAvatar">{getAvatarInitials(storedName, storedEmail)}</div>
 
       <div className="profileModalInfo">
         <div className="profileModalRow">
@@ -102,7 +104,7 @@ export default function AccountSettingsLayout({ defaultSection = "Profile" }) {
         </div>
         <div className="profileModalRow">
           <label className="profileModalLabel">Role</label>
-          <input className="profileModalInput" type="text" value={storedRole} readOnly />
+          <input className="profileModalInput" type="text" value={displayRole} readOnly />
         </div>
         <div className="profileModalRow">
           <label className="profileModalLabel">Email</label>

@@ -8,6 +8,7 @@ import { MdOutlineEmail } from "react-icons/md";
 import { TbLockPassword } from "react-icons/tb";
 import { useNavigate } from 'react-router-dom';
 import { exchangeSsoCallback, fetchSsoAuthorizeUrl, loginWithPassword } from '../../api/authService';
+import { deriveNameFromEmail } from '../../utils/userDisplay';
 import arrowLogo from "../../assets/login/logo_login.png";
 import { startAuthSession } from '../../utils/authSession';
 import ForgotPasswordModal from './ForgotPasswordModal';
@@ -23,7 +24,9 @@ const LOGIN_CREDENTIALS_BY_ROLE = {
     { email: 'accmanager@method-hub.com', password: 'accmanager' }
   ],
   businessStakeholder: [
-    { email: 'demo-admin@method-hub.com', password: 'Arrows@2026' }
+    { email: 'demo-admin@method-hub.com', password: 'Arrows@2026' },
+    { email: 'Prabhu.D@method-hub.com', password: 'Pr@bHu!2026#D' },
+    { email: 'karthik@method-hub.com', password: 'K@rTh!k#2026' }
   ]
 };
 
@@ -172,8 +175,23 @@ const Login = () => {
     } else {
       localStorage.removeItem('userPersona');
     }
-    if (response?.name) {
-      localStorage.setItem('userName', String(response.name).trim());
+
+    const normalizedName = String(response?.name || '').trim();
+    const looksLikeEmailName = normalizedName.includes('@') && normalizedName.split('@').length === 2;
+    const lowerName = normalizedName.toLowerCase();
+    const isGenericRoleName = [
+      'business stakeholder',
+      'businessstakeholder',
+      'account manager',
+      'accountmanager',
+      'recruiter',
+    ].includes(lowerName);
+    const nameValue = normalizedName && !looksLikeEmailName && !isGenericRoleName
+      ? normalizedName
+      : deriveNameFromEmail(emailValue);
+
+    if (nameValue) {
+      localStorage.setItem('userName', nameValue);
     }
 
     const incomingToken = String(

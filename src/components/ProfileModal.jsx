@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import "./ProfileModal.css";
+import { getDisplayName, getAvatarInitials, formatRoleLabel } from "../utils/userDisplay";
 
 export default function ProfileModal({ onClose }) {
   const modalRef = useRef(null);
@@ -13,7 +14,8 @@ export default function ProfileModal({ onClose }) {
     localStorage.getItem("userJobTitle") ||
     ""
   ).trim();
-  const displayName = storedName || storedEmail.split("@")[0] || "";
+  const displayName = getDisplayName(storedName, storedEmail);
+  const displayRole = formatRoleLabel(storedRole);
 
   // Close on Escape key
   useEffect(() => {
@@ -37,7 +39,7 @@ export default function ProfileModal({ onClose }) {
 
         <div className="profileModalBody">
           {/* Avatar */}
-          <div className="profileModalAvatar">{(displayName || "U").charAt(0).toUpperCase()}</div>
+          <div className="profileModalAvatar">{getAvatarInitials(storedName, storedEmail)}</div>
 
           {/* Info */}
           <div className="profileModalInfo">
@@ -47,7 +49,7 @@ export default function ProfileModal({ onClose }) {
             </div>
             <div className="profileModalRow">
               <label className="profileModalLabel">Role</label>
-              <input className="profileModalInput" type="text" value={storedRole} readOnly />
+              <input className="profileModalInput" type="text" value={displayRole} readOnly />
             </div>
             <div className="profileModalRow">
               <label className="profileModalLabel">Email</label>
