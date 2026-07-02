@@ -38,6 +38,12 @@ function attachSessionCookieIfMissing(proxy, sessionCookie) {
   });
 }
 
+function stripOriginHeader(proxy) {
+  proxy.on('proxyReq', (proxyReq) => {
+    proxyReq.removeHeader('origin');
+  });
+}
+
 function supersetGuestTokenPlugin(env) {
   const supersetBaseUrl = trimTrailingSlash(env.VITE_SUPERSET_URL || DEFAULT_SUPERSET_URL);
   const sessionCookie = env.SUPERSET_SESSION_COOKIE || '';
@@ -375,6 +381,7 @@ export default defineConfig(({ mode }) => {
         '/api': {
           target: env.VITE_BACKEND_URL || 'http://localhost:3001',
           changeOrigin: true,
+          configure: stripOriginHeader,
         },
       },
     },

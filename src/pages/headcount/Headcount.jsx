@@ -11,7 +11,7 @@ import {
 } from "react-icons/fi";
 import ReusableForm from "../../components/forms/ReusableForm";
 import { employeeConfig } from "../../components/forms/formConfigs";
-import { addEmployee, fetchActiveEmployees, updateEmployee } from "../../api/headcountService";
+import { addEmployee, fetchActiveEmployees, fetchExitedEmployees, updateEmployee } from "../../api/headcountService";
 
 const HEADCOUNT_STORAGE_KEY = "headcount:employees:v1";
 
@@ -77,13 +77,15 @@ const extractEmployeeList = (data) => {
   return [];
 };
 
-const mergeWithStoredExitedEmployees = (apiEmployees, storedEmployees) => {
-  const apiEmployeeIds = new Set(apiEmployees.map((employee) => String(getEmployeeId(employee))));
+const mergeEmployees = (apiEmployees, exitedApiEmployees, storedEmployees) => {
+  const apiEmployeeIds = new Set(
+    [...apiEmployees, ...exitedApiEmployees].map((employee) => String(getEmployeeId(employee)))
+  );
   const storedExitedEmployees = storedEmployees.filter(
     (employee) => isExitedEmployee(employee) && !apiEmployeeIds.has(String(getEmployeeId(employee)))
   );
 
-  return [...apiEmployees, ...storedExitedEmployees];
+  return [...apiEmployees, ...exitedApiEmployees, ...storedExitedEmployees];
 };
 
 export default function Headcount() {
@@ -305,8 +307,15 @@ export default function Headcount() {
       setIsLoading(true);
       setError(null);
       try {
-        const data = await fetchActiveEmployees({ page: 1, limit: 1000 });
-        setEmployees(mergeWithStoredExitedEmployees(extractEmployeeList(data), loadStoredEmployees()));
+        const [activeData, exitedData] = await Promise.all([
+          fetchActiveEmployees({ page: 1, limit: 1000 }),
+          fetchExitedEmployees({ page: 1, limit: 1000 }),
+        ]);
+        setEmployees(mergeEmployees(
+          extractEmployeeList(activeData),
+          extractEmployeeList(exitedData),
+          loadStoredEmployees()
+        ));
       } catch (err) {
         setEmployees((current) => {
           if (current.length > 0) {

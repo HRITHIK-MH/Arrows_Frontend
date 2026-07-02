@@ -79,8 +79,9 @@ const omitEmptyValues = (payload) =>
     Object.entries(payload).filter(([, value]) => value !== undefined && value !== null && value !== '')
   );
 
-const toHeadcountRequest = (employeeData = {}) =>
+const toAddHeadcountRequest = (employeeData = {}) =>
   omitEmptyValues({
+    employee_id: firstValue(employeeData.employee_id, employeeData.employeeId, employeeData.id),
     consultant_name: firstValue(employeeData.consultant_name, employeeData.consultantName),
     joining_date: firstValue(employeeData.joiningDate, employeeData.joining_date),
     entity: firstValue(employeeData.entity),
@@ -92,6 +93,19 @@ const toHeadcountRequest = (employeeData = {}) =>
     created_by: firstValue(employeeData.createdBy, employeeData.created_by, 'Demo Admin'),
   });
 
+const toUpdateHeadcountRequest = (employeeData = {}) =>
+  omitEmptyValues({
+    consultant_name: firstValue(employeeData.consultant_name, employeeData.consultantName),
+    joining_date: firstValue(employeeData.joiningDate, employeeData.joining_date),
+    entity: firstValue(employeeData.entity),
+    work_location: firstValue(employeeData.workLocation, employeeData.work_location),
+    mode: firstValue(employeeData.mode),
+    cost: firstValue(employeeData.cost),
+    customer: firstValue(employeeData.customer),
+    billing_type: firstValue(employeeData.billingType, employeeData.billing_type),
+    updated_by: firstValue(employeeData.updatedBy, employeeData.updated_by, 'Demo Admin'),
+  });
+
 /**
  * Add a new employee to headcount
  * @param {Object} employeeData - Employee details
@@ -99,7 +113,7 @@ const toHeadcountRequest = (employeeData = {}) =>
  */
 export const addEmployee = async (employeeData) => {
   try {
-    const response = await headcountApi.post('/headcount/addEmployee', toHeadcountRequest(employeeData));
+    const response = await headcountApi.post('/headcount/addEmployee', toAddHeadcountRequest(employeeData));
     return normalizeHeadcountEmployee(response?.data?.data || response?.data || {});
   } catch (error) {
     console.error('Error adding employee:', error);
@@ -142,6 +156,40 @@ export const fetchActiveEmployees = async ({
 };
 
 /**
+ * Get list of exited employees with optional filters and pagination
+ * @param {Object} options - Filter and pagination options
+ * @returns {Promise<Object>} Exited employees list with pagination info
+ */
+export const fetchExitedEmployees = async ({
+  page = 1,
+  limit = 10,
+  search = '',
+  billType = '',
+  entity = '',
+  customer = ''
+} = {}) => {
+  try {
+    const response = await headcountApi.get('/headcount/exitedEmployees', {
+      params: {
+        page,
+        limit,
+        search: search || undefined,
+        bill_type: billType || undefined,
+        entity: entity || undefined,
+        customer: customer || undefined,
+      },
+    });
+    return normalizeHeadcountEmployees(response?.data) || { ...EMPTY_EMPLOYEES_RESPONSE, currentPage: page };
+  } catch (error) {
+    if ([204, 404].includes(error?.response?.status)) {
+      return { ...EMPTY_EMPLOYEES_RESPONSE, currentPage: page };
+    }
+    console.error('Error fetching exited employees:', error);
+    throw error;
+  }
+};
+
+/**
  * Update employee details
  * @param {string} employeeId - Employee ID to update
  * @param {Object} employeeData - Updated employee data
@@ -149,7 +197,7 @@ export const fetchActiveEmployees = async ({
  */
 export const updateEmployee = async (employeeId, employeeData) => {
   try {
-    const response = await headcountApi.put(`/headcount/updateEmployee/${employeeId}`, toHeadcountRequest(employeeData));
+    const response = await headcountApi.put(`/headcount/updateEmployee/${employeeId}`, toUpdateHeadcountRequest(employeeData));
     return normalizeHeadcountEmployee(response?.data?.data || response?.data || {});
   } catch (error) {
     console.error('Error updating employee:', error);
