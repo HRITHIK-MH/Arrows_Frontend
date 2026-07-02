@@ -380,28 +380,15 @@ const Login = () => {
   const handleSsoLogin = async () => {
   setError('');
   setSsoLoading(true);
-
   try {
     const url = await fetchSsoAuthorizeUrl(email.trim() || undefined);
-    console.log('Fetched SSO authorize URL:', url);
-
-    if (!url) {
-      throw new Error('SSO authorize URL is not available');
-    }
-
-    // Step 1: Redirect user to Microsoft login
-    window.location.href = url;
-
-    // Step 2: After successful login, Azure AD redirects to your backend callback
-    // The backend returns JSON (token, email, etc.)
-    // You can handle that JSON in a separate function or route like /login/sso-callback
+    if (!url) throw new Error('SSO authorize URL is not available');
+    window.location.href = url; // go to Microsoft login
   } catch (err) {
-    console.error('SSO login failed:', err);
     setError(getAuthErrorMessage(err, 'Unable to start SSO login'));
     setSsoLoading(false);
   }
 };
-
 
   return (
   <div className="login-container">

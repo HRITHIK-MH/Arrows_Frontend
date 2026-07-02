@@ -40,7 +40,7 @@ export const loginWithPassword = async ({ email, password }) => {
 // 🔑 Fetch SSO authorize URL
 export const fetchSsoAuthorizeUrl = async (loginHint) => {
   const redirectUri = `${window.location.origin}/login/sso-callback`;
-  const response = await identityApi.get('/sso/authorize-url', {
+  const response = await identityApi.get('/sso/authorize', {
     params: {
       ...(loginHint ? { login_hint: String(loginHint).trim() } : {}),
       redirect_uri: redirectUri,
@@ -62,15 +62,30 @@ export const fetchSsoAuthorizeUrl = async (loginHint) => {
 // 🔑 Exchange SSO callback for token
 export const exchangeSsoCallback = async ({ code, state }) => {
   const redirectUri = `${window.location.origin}/login/sso-callback`;
-  const response = await identityApi.get('/sso/callback', {
-    params: { code, state, redirect_uri: redirectUri },
-    skipAuth: true,
-    skipAuthRedirect: true,
-  });
-  const data = normalizeAuthPayload(response?.data || {});
 
-  // ✅ Store JWT token if present
-  storeAuthToken(data);
+  try {
+    const response = await identityApi.get('/sso/callback', {
+      params: { code, state, redirect_uri: redirectUri },
+      skipAuth: true,
+      skipAuthRedirect: true,
+    });
 
-  return data;
+    const data = normalizeAuthPayload(response?.data || {});
+
+    // ✅ Store JWT token if present
+    const token = storeAuthToken(data);
+
+    // ✅ Store additional user info
+    if (data?.email) localStorage.setItem('userEmail', data.email);
+    if (data?.name) localStorage.setItem('userName', data.name);
+    if (data?.userId) localStorage.setItem('userId', data.userId);
+    if (data?.tokenType) localStorage.setItem('tokenType', data.tokenType);
+
+    console.log('SSO callback data stored:', { token, ...data });
+
+    return data;
+  } catch (error) {
+    console.error('Failed to exchange SSO callback:', error);
+    throw error;
+  }
 };
