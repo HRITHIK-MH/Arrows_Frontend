@@ -36,11 +36,38 @@ const readDocxText = async (file) => {
 };
 
 const readPdfText = async (file) => {
+  console.log("FILE TYPE:", file.type);
+  console.log("FILE NAME:", file.name);
+  console.log("FILE SIZE:", file.size);
   if (pdfjsLib.GlobalWorkerOptions.workerSrc !== pdfjsWorkerSrc) {
     pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorkerSrc;
   }
+  console.debug("[ResumeDebug] Candidate documents PDF.js worker configured:", {
+    workerSrc: pdfjsLib.GlobalWorkerOptions.workerSrc,
+    importedWorkerSrc: pdfjsWorkerSrc,
+    pdfjsVersion: pdfjsLib.version,
+  });
+
+  try {
+    const workerProbe = await fetch(pdfjsLib.GlobalWorkerOptions.workerSrc, { method: "GET" });
+    console.debug("[ResumeDebug] Candidate documents PDF.js worker fetch probe:", {
+      url: pdfjsLib.GlobalWorkerOptions.workerSrc,
+      status: workerProbe.status,
+      ok: workerProbe.ok,
+      contentType: workerProbe.headers.get("content-type"),
+      contentLength: workerProbe.headers.get("content-length"),
+    });
+  } catch (workerError) {
+    console.error("[ResumeDebug] Candidate documents PDF.js worker fetch probe failed:", {
+      url: pdfjsLib.GlobalWorkerOptions.workerSrc,
+      message: workerError?.message,
+    });
+  }
 
   const arrayBuffer = await file.arrayBuffer();
+  console.debug("[ResumeDebug] Candidate documents PDF arrayBuffer loaded:", {
+    byteLength: arrayBuffer.byteLength,
+  });
   const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
   const pdfDocument = await loadingTask.promise;
   const pages = [];
@@ -691,7 +718,17 @@ const CandidateDocumentsStep = ({ formData, onChange, onSetStepFields }) => {
 
   const isAllowedDocument = (file) => {
     const extension = file?.name?.split(".").pop()?.toLowerCase();
-    return Boolean(extension && ALLOWED_EXTENSIONS.has(extension));
+    const allowed = Boolean(extension && ALLOWED_EXTENSIONS.has(extension));
+    console.debug("[UploadDebug] Candidate document validation:", {
+      name: file?.name,
+      type: file?.type,
+      size: file?.size,
+      extension,
+      allowedExtensions: Array.from(ALLOWED_EXTENSIONS),
+      allowed,
+      rejectedBecause: allowed ? "" : "extension-not-allowed",
+    });
+    return allowed;
   };
 
   const addFiles = (fileList) => {
@@ -764,6 +801,8 @@ const CandidateDocumentsStep = ({ formData, onChange, onSetStepFields }) => {
         url: "/api/candidates/documents/parse",
         fieldName: "file",
         fileName: file?.name,
+        fileType: file?.type,
+        fileSize: file?.size,
       });
       const res = await fetch("/api/candidates/documents/parse", { method: "POST", body: form });
       console.debug("[ResumeDebug] API response status:", {
@@ -771,7 +810,17 @@ const CandidateDocumentsStep = ({ formData, onChange, onSetStepFields }) => {
         statusText: res.statusText,
         ok: res.ok,
         contentType: res.headers.get("content-type"),
+        contentLength: res.headers.get("content-length"),
       });
+      if (!res.ok) {
+        const responseText = await res.clone().text().catch((textError) => `Unable to read response body: ${textError?.message}`);
+        console.error("[ResumeDebug] Resume parse API rejected upload:", {
+          status: res.status,
+          statusText: res.statusText,
+          contentType: res.headers.get("content-type"),
+          responsePreview: responseText.slice(0, 1000),
+        });
+      }
       const json = await res.json();
       console.debug("[ResumeDebug] GPT/API raw response:", json);
       parsed = normalizeParsedResumePayload(json?.data || json);
