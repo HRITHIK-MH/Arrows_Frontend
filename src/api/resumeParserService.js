@@ -255,6 +255,9 @@ export const parseResume = async (file) => {
     throw new Error('No file provided for parsing');
   }
 
+  console.log("FILE TYPE:", file.type);
+  console.log("FILE NAME:", file.name);
+  console.log("FILE SIZE:", file.size);
   console.groupCollapsed('[ResumeDebug] Resume Upload -> Azure OpenAI Parse');
   console.debug('[ResumeDebug] Uploaded file received:', {
     name: file?.name,
@@ -432,6 +435,9 @@ export const extractResumeText = async (file) => {
   }
 
   const ext = file.name.split('.').pop().toLowerCase();
+  console.log("FILE TYPE:", file.type);
+  console.log("FILE NAME:", file.name);
+  console.log("FILE SIZE:", file.size);
   console.groupCollapsed('[ResumeDebug] File Extraction');
   console.debug('[ResumeDebug] Extracting resume text:', {
     name: file?.name,
@@ -448,8 +454,32 @@ export const extractResumeText = async (file) => {
       if (pdfjsLib.GlobalWorkerOptions.workerSrc !== pdfjsWorkerSrc.default) {
         pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorkerSrc.default;
       }
+      console.debug('[ResumeDebug] PDF.js worker configured:', {
+        workerSrc: pdfjsLib.GlobalWorkerOptions.workerSrc,
+        importedWorkerSrc: pdfjsWorkerSrc.default,
+        pdfjsVersion: pdfjsLib.version,
+      });
+
+      try {
+        const workerProbe = await fetch(pdfjsLib.GlobalWorkerOptions.workerSrc, { method: 'GET' });
+        console.debug('[ResumeDebug] PDF.js worker fetch probe:', {
+          url: pdfjsLib.GlobalWorkerOptions.workerSrc,
+          status: workerProbe.status,
+          ok: workerProbe.ok,
+          contentType: workerProbe.headers.get('content-type'),
+          contentLength: workerProbe.headers.get('content-length'),
+        });
+      } catch (workerError) {
+        console.error('[ResumeDebug] PDF.js worker fetch probe failed:', {
+          url: pdfjsLib.GlobalWorkerOptions.workerSrc,
+          message: workerError?.message,
+        });
+      }
 
       const arrayBuffer = await file.arrayBuffer();
+      console.debug('[ResumeDebug] PDF arrayBuffer loaded:', {
+        byteLength: arrayBuffer.byteLength,
+      });
       const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
       const pdfDocument = await loadingTask.promise;
       let text = '';

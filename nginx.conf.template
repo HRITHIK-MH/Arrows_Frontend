@@ -33,6 +33,22 @@ server {
         proxy_set_header Host $http_host;
     }
 
+    # Vite build assets must be served as files. Do not fall back to index.html
+    # for missing hashed assets, especially the PDF.js worker.
+    location /assets/ {
+        try_files $uri =404;
+    }
+
+    # PDF.js v4 ships its worker as .mjs. Some Nginx images do not map this
+    # extension correctly, causing browser module-worker load failures.
+    location ~* \.mjs$ {
+        types {
+            application/javascript mjs;
+        }
+        default_type application/javascript;
+        try_files $uri =404;
+    }
+
     # Superset embed proxy — Host must match the browser origin (like Vite hostRewrite)
     location /api/v1/ {
         proxy_pass ${SUPERSET_UPSTREAM}/api/v1/;
