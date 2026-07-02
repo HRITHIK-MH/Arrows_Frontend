@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect, useRef } from "react";
 import * as pdfjsLib from "pdfjs-dist";
 import pdfjsWorkerSrc from "pdfjs-dist/build/pdf.worker.min.mjs?url";
-import { normalizeParsedResumePayload, parseResume } from "../../api/resumeParserService";
+import { parseResume } from "../../api/resumeParserService";
 import { isValidCurrentCompany, isValidCurrentDesignation } from "../../utils/resumeGuardrailValidator";
 
 const ALLOWED_EXTENSIONS = new Set(["pdf", "doc", "docx"]);
@@ -36,11 +36,38 @@ const readDocxText = async (file) => {
 };
 
 const readPdfText = async (file) => {
+  console.log("FILE TYPE:", file.type);
+  console.log("FILE NAME:", file.name);
+  console.log("FILE SIZE:", file.size);
   if (pdfjsLib.GlobalWorkerOptions.workerSrc !== pdfjsWorkerSrc) {
     pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorkerSrc;
   }
+  console.debug("[ResumeDebug] Candidate documents PDF.js worker configured:", {
+    workerSrc: pdfjsLib.GlobalWorkerOptions.workerSrc,
+    importedWorkerSrc: pdfjsWorkerSrc,
+    pdfjsVersion: pdfjsLib.version,
+  });
+
+  try {
+    const workerProbe = await fetch(pdfjsLib.GlobalWorkerOptions.workerSrc, { method: "GET" });
+    console.debug("[ResumeDebug] Candidate documents PDF.js worker fetch probe:", {
+      url: pdfjsLib.GlobalWorkerOptions.workerSrc,
+      status: workerProbe.status,
+      ok: workerProbe.ok,
+      contentType: workerProbe.headers.get("content-type"),
+      contentLength: workerProbe.headers.get("content-length"),
+    });
+  } catch (workerError) {
+    console.error("[ResumeDebug] Candidate documents PDF.js worker fetch probe failed:", {
+      url: pdfjsLib.GlobalWorkerOptions.workerSrc,
+      message: workerError?.message,
+    });
+  }
 
   const arrayBuffer = await file.arrayBuffer();
+  console.debug("[ResumeDebug] Candidate documents PDF arrayBuffer loaded:", {
+    byteLength: arrayBuffer.byteLength,
+  });
   const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
   const pdfDocument = await loadingTask.promise;
   const pages = [];
@@ -691,7 +718,17 @@ const CandidateDocumentsStep = ({ formData, onChange, onSetStepFields }) => {
 
   const isAllowedDocument = (file) => {
     const extension = file?.name?.split(".").pop()?.toLowerCase();
-    return Boolean(extension && ALLOWED_EXTENSIONS.has(extension));
+    const allowed = Boolean(extension && ALLOWED_EXTENSIONS.has(extension));
+    console.debug("[UploadDebug] Candidate document validation:", {
+      name: file?.name,
+      type: file?.type,
+      size: file?.size,
+      extension,
+      allowedExtensions: Array.from(ALLOWED_EXTENSIONS),
+      allowed,
+      rejectedBecause: allowed ? "" : "extension-not-allowed",
+    });
+    return allowed;
   };
 
   const addFiles = (fileList) => {

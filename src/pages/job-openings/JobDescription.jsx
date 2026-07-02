@@ -465,6 +465,15 @@ const JobDescription = () => {
   const handleUploadFileChange = (event) => {
     const [file] = event.target.files || [];
     if (!file) return;
+    console.log("FILE TYPE:", file.type);
+    console.log("FILE NAME:", file.name);
+    console.log("FILE SIZE:", file.size);
+    console.debug("[UploadDebug] Job description candidate upload selected:", {
+      name: file.name,
+      type: file.type,
+      size: file.size,
+      lastModified: file.lastModified,
+    });
     setUploadCandidateFile(file);
     setUploadProgress(72);
   };
