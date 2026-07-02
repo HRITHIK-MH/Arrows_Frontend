@@ -1637,7 +1637,7 @@ export const employeeConfig = {
       component: EmployeeBasicInfoStep,
       fields: [
         {
-          name: "consultantName",
+          name: "consultant_name",
           label: "Consultant Name *",
           type: "text",
           required: true,
@@ -1805,7 +1805,7 @@ export const employeeConfig = {
       if (isEmptyValue(value)) {
         const fieldLabels = {
           joiningDate: 'Joining Date',
-          consultantName: 'Consultant Name',
+          consultant_name: 'Consultant Name',
           entity: 'Entity',
           workLocation: 'Work Location',
           mode: 'Mode',
@@ -1821,7 +1821,7 @@ export const employeeConfig = {
   },
   columns: [
     { key: "joiningDate", label: "Joining Date" },
-    { key: "consultantName", label: "Consultant Name" },
+    { key: "consultant_name", label: "Consultant Name" },
     { key: "entity", label: "Entity" },
     { key: "workLocation", label: "Work Location" },
     { key: "mode", label: "Mode" },

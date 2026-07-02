@@ -37,7 +37,9 @@ const loadStoredEmployees = () => {
 const isExitedEmployee = (employee) =>
   Boolean(employee?.isExited || employee?.status === "exited" || employee?.exitDetails);
 
-const getEmployeeId = (employee) => employee?.employeeId || employee?.id || employee?.serialNumber;
+const getEmployeeId = (employee) => employee?.employee_id || employee?.employeeId || employee?.id || employee?.serialNumber;
+
+const getConsultantName = (employee) => employee?.consultant_name || employee?.consultantName || "";
 
 const createEmployeeId = () => `emp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
@@ -127,7 +129,7 @@ export default function Headcount() {
     return activeEmployees.filter((employee) => {
       const matchesSearch =
         !searchTerm ||
-        String(employee.consultantName || "").toLowerCase().includes(searchTerm);
+        String(getConsultantName(employee)).toLowerCase().includes(searchTerm);
       const matchesBillingType =
         !activeFilters.billingType || employee.billingType === activeFilters.billingType;
       const matchesEntity = !activeFilters.entity || employee.entity === activeFilters.entity;
@@ -142,7 +144,7 @@ export default function Headcount() {
     return exitedEmployees.filter((employee) => {
       const matchesSearch =
         !searchTerm ||
-        String(employee.consultantName || "").toLowerCase().includes(searchTerm);
+        String(getConsultantName(employee)).toLowerCase().includes(searchTerm);
       const matchesBillingType =
         !exitedFilters.billingType || employee.billingType === exitedFilters.billingType;
       const matchesEntity = !exitedFilters.entity || employee.entity === exitedFilters.entity;
@@ -348,7 +350,8 @@ export default function Headcount() {
 
       const normalizedEmployee = {
         ...employeeData,
-        consultantName: String(employeeData.consultantName || "").trim(),
+        employee_id: editingEmployeeId || employeeData.employee_id || employeeData.employeeId || createEmployeeId(),
+        consultant_name: String(employeeData.consultant_name || employeeData.consultantName || "").trim(),
       };
 
       if (editingEmployeeId !== null) {
@@ -376,7 +379,7 @@ export default function Headcount() {
         const newEmployee = {
           ...normalizedEmployee,
           ...newEmployeeResponse,
-          employeeId: getEmployeeId(newEmployeeResponse) || createEmployeeId(),
+          employeeId: getEmployeeId(newEmployeeResponse) || getEmployeeId(normalizedEmployee),
           isExited: false,
           status: "active",
         };
@@ -574,7 +577,7 @@ export default function Headcount() {
                   paginatedEmployees.map((employee, index) => (
                     <tr key={getEmployeeId(employee)}>
                       <td>{startEntry + index}</td>
-                      <td>{employee.consultantName}</td>
+                      <td>{getConsultantName(employee)}</td>
                       <td>{formatMonthYear(employee.joiningDate)}</td>
                       <td>{employee.billingType}</td>
                       <td>{employee.entity}</td>
@@ -592,7 +595,7 @@ export default function Headcount() {
                           onClick={() =>
                             navigate(`/headcount/${getEmployeeId(employee)}`, { state: { employee } })
                           }
-                          aria-label={`View details for ${employee.consultantName || "employee"}`}
+                          aria-label={`View details for ${getConsultantName(employee) || "employee"}`}
                           title="View details"
                         >
                           <FiEye size={16} />

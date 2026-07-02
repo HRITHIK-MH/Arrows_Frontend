@@ -6,7 +6,9 @@ import { exitEmployee } from "../../api/headcountService";
 
 const HEADCOUNT_STORAGE_KEY = "headcount:employees:v1";
 
-const getEmployeeId = (employee) => employee?.employeeId || employee?.id || employee?.serialNumber;
+const getEmployeeId = (employee) => employee?.employee_id || employee?.employeeId || employee?.id || employee?.serialNumber;
+
+const getConsultantName = (employee) => employee?.consultant_name || employee?.consultantName || "";
 
 const loadEmployeeById = (employeeId) => {
   try {
@@ -18,6 +20,23 @@ const loadEmployeeById = (employeeId) => {
     console.error("Failed to load headcount employee details:", error);
     return null;
   }
+};
+
+const saveEmployee = (updatedEmployee) => {
+  const rawEmployees = localStorage.getItem(HEADCOUNT_STORAGE_KEY);
+  const employees = rawEmployees ? JSON.parse(rawEmployees) : [];
+  const currentEmployees = Array.isArray(employees) ? employees : [];
+  const updatedEmployeeId = getEmployeeId(updatedEmployee);
+  const hasExistingEmployee = currentEmployees.some(
+    (item) => String(getEmployeeId(item)) === String(updatedEmployeeId)
+  );
+  const nextEmployees = hasExistingEmployee
+    ? currentEmployees.map((item) =>
+        String(getEmployeeId(item)) === String(updatedEmployeeId) ? updatedEmployee : item
+      )
+    : [...currentEmployees, updatedEmployee];
+
+  localStorage.setItem(HEADCOUNT_STORAGE_KEY, JSON.stringify(nextEmployees));
 };
 
 const isExitedEmployee = (employee) =>
@@ -123,6 +142,7 @@ export default function HeadcountDetails() {
         status: "exited",
       };
       
+      saveEmployee(updatedEmployee);
       setEmployee(updatedEmployee);
       setIsExitModalOpen(false);
       setExitErrors({});
@@ -156,10 +176,10 @@ export default function HeadcountDetails() {
             <div className={styles.detailHero}>
               <div className={styles.detailIdentity}>
                 <div className={styles.detailAvatar}>
-                  {(employee.consultantName || "E").charAt(0).toUpperCase()}
+                  {(getConsultantName(employee) || "E").charAt(0).toUpperCase()}
                 </div>
                 <div className={styles.detailNameRow}>
-                  <h2 className={styles.detailEmployeeName}>{employee.consultantName || "Employee"}</h2>
+                  <h2 className={styles.detailEmployeeName}>{getConsultantName(employee) || "Employee"}</h2>
                   <span
                     className={`${styles.employeeStatusTag} ${
                       isExited ? styles.employeeStatusExited : styles.employeeStatusActive

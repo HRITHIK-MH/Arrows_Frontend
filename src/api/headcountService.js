@@ -1,4 +1,4 @@
-import API, { createServiceApi } from './axiosConfig';
+import { createServiceApi } from './axiosConfig';
 
 const headcountApi = createServiceApi('');
 
@@ -9,6 +9,89 @@ const EMPTY_EMPLOYEES_RESPONSE = {
   currentPage: 1,
 };
 
+const firstValue = (...values) => values.find((value) => value !== undefined && value !== null && value !== '');
+
+export const normalizeHeadcountEmployee = (employee = {}) => {
+  const exitDate = firstValue(employee.exitDate, employee.exit_date, employee.exitDetails?.exitDate);
+  const exitReason = firstValue(employee.exitReason, employee.exit_reason, employee.exitDetails?.exitReason);
+  const status = firstValue(employee.status, employee.employee_status);
+  const isExited = Boolean(
+    employee.isExited ||
+    String(status || '').toLowerCase() === 'exited' ||
+    exitDate ||
+    exitReason
+  );
+
+  return {
+    ...employee,
+    employee_id: firstValue(employee.employee_id, employee.employeeId, employee.id),
+    employeeId: firstValue(employee.employeeId, employee.employee_id, employee.id),
+    consultant_name: firstValue(employee.consultant_name, employee.consultantName, employee.first_name),
+    lastName: firstValue(employee.lastName, employee.last_name),
+    email: firstValue(employee.email),
+    joiningDate: firstValue(employee.joiningDate, employee.joining_date),
+    entity: firstValue(employee.entity),
+    workLocation: firstValue(employee.workLocation, employee.work_location),
+    mode: firstValue(employee.mode),
+    cost: firstValue(employee.cost),
+    customer: firstValue(employee.customer),
+    billingType: firstValue(employee.billingType, employee.billing_type, employee.bill_type),
+    createdBy: firstValue(employee.createdBy, employee.created_by),
+    updatedBy: firstValue(employee.updatedBy, employee.updated_by),
+    status: isExited ? 'exited' : (status || 'active'),
+    isExited,
+    exitDetails: isExited
+      ? {
+          ...employee.exitDetails,
+          exitDate,
+          exitReason,
+        }
+      : employee.exitDetails,
+  };
+};
+
+const normalizeHeadcountEmployees = (payload) => {
+  if (Array.isArray(payload)) {
+    return payload.map(normalizeHeadcountEmployee);
+  }
+  if (!payload || typeof payload !== 'object') {
+    return payload;
+  }
+
+  const normalizeListField = (fieldName) =>
+    Array.isArray(payload[fieldName])
+      ? { [fieldName]: payload[fieldName].map(normalizeHeadcountEmployee) }
+      : {};
+
+  return {
+    ...payload,
+    ...normalizeListField('content'),
+    ...normalizeListField('data'),
+    ...normalizeListField('employees'),
+    ...(payload.data && typeof payload.data === 'object' && !Array.isArray(payload.data)
+      ? { data: normalizeHeadcountEmployees(payload.data) }
+      : {}),
+  };
+};
+
+const omitEmptyValues = (payload) =>
+  Object.fromEntries(
+    Object.entries(payload).filter(([, value]) => value !== undefined && value !== null && value !== '')
+  );
+
+const toHeadcountRequest = (employeeData = {}) =>
+  omitEmptyValues({
+    consultant_name: firstValue(employeeData.consultant_name, employeeData.consultantName),
+    joining_date: firstValue(employeeData.joiningDate, employeeData.joining_date),
+    entity: firstValue(employeeData.entity),
+    work_location: firstValue(employeeData.workLocation, employeeData.work_location),
+    mode: firstValue(employeeData.mode),
+    cost: firstValue(employeeData.cost),
+    customer: firstValue(employeeData.customer),
+    billing_type: firstValue(employeeData.billingType, employeeData.billing_type),
+    created_by: firstValue(employeeData.createdBy, employeeData.created_by, 'Demo Admin'),
+  });
+
 /**
  * Add a new employee to headcount
  * @param {Object} employeeData - Employee details
@@ -16,8 +99,8 @@ const EMPTY_EMPLOYEES_RESPONSE = {
  */
 export const addEmployee = async (employeeData) => {
   try {
-    const response = await headcountApi.post('/headcount/addEmployee', employeeData);
-    return response?.data?.data || response?.data || {};
+    const response = await headcountApi.post('/headcount/addEmployee', toHeadcountRequest(employeeData));
+    return normalizeHeadcountEmployee(response?.data?.data || response?.data || {});
   } catch (error) {
     console.error('Error adding employee:', error);
     throw error;
@@ -48,7 +131,7 @@ export const fetchActiveEmployees = async ({
         customer: customer || undefined,
       },
     });
-    return response?.data || { ...EMPTY_EMPLOYEES_RESPONSE, currentPage: page };
+    return normalizeHeadcountEmployees(response?.data) || { ...EMPTY_EMPLOYEES_RESPONSE, currentPage: page };
   } catch (error) {
     if ([204, 404].includes(error?.response?.status)) {
       return { ...EMPTY_EMPLOYEES_RESPONSE, currentPage: page };
@@ -66,8 +149,8 @@ export const fetchActiveEmployees = async ({
  */
 export const updateEmployee = async (employeeId, employeeData) => {
   try {
-    const response = await headcountApi.put(`/headcount/updateEmployee/${employeeId}`, employeeData);
-    return response?.data || null;
+    const response = await headcountApi.put(`/headcount/updateEmployee/${employeeId}`, toHeadcountRequest(employeeData));
+    return normalizeHeadcountEmployee(response?.data?.data || response?.data || {});
   } catch (error) {
     console.error('Error updating employee:', error);
     throw error;
@@ -76,7 +159,7 @@ export const updateEmployee = async (employeeId, employeeData) => {
 
 /**
  * Exit an employee (mark as exited)
- * Backend expects: { employee_id, exitDate, exitReason } in POST body
+ * Backend expects: { employee_id, exit_date, exit_reason, updated_by } in POST body
  * @param {string} employeeId - Employee ID
  * @param {Object} exitData - Exit details { exitDate, exitReason }
  * @returns {Promise<Object>} Status response
@@ -85,8 +168,9 @@ export const exitEmployee = async (employeeId, exitData) => {
   try {
     const exitRequest = {
       employee_id: employeeId,
-      exitDate: exitData.exitDate,
-      exitReason: exitData.exitReason,
+      exit_date: exitData.exitDate,
+      exit_reason: exitData.exitReason,
+      updated_by: firstValue(exitData.updatedBy, exitData.updated_by, 'Demo Admin'),
     };
     const response = await headcountApi.post('/headcount/exitEmployee', exitRequest);
     return response?.data || null;
