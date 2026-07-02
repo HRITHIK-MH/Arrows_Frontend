@@ -77,6 +77,28 @@ const extractEmployeeList = (data) => {
   return [];
 };
 
+const formatApiErrorMessage = (message, fallbackMessage) => {
+  const text = String(message || "").trim();
+  if (!text) return fallbackMessage;
+
+  if (/^unknown entity:/i.test(text)) {
+    const entity = text.split(":").slice(1).join(":").trim();
+    return entity
+      ? `Something went wrong. The selected entity "${entity}" is not available.`
+      : "Something went wrong. The selected entity is not available.";
+  }
+
+  return text;
+};
+
+const getApiErrorMessage = (error, fallbackMessage) =>
+  formatApiErrorMessage(
+    error?.response?.data?.message ||
+      error?.response?.data?.error ||
+      error?.message,
+    fallbackMessage
+  );
+
 const mergeEmployees = (apiEmployees, exitedApiEmployees, storedEmployees) => {
   const apiEmployeeIds = new Set(
     [...apiEmployees, ...exitedApiEmployees].map((employee) => String(getEmployeeId(employee)))
@@ -364,12 +386,7 @@ export default function Headcount() {
       };
 
       if (editingEmployeeId !== null) {
-        // Update existing employee via API
-        try {
-          await updateEmployee(editingEmployeeId, normalizedEmployee);
-        } catch (err) {
-          console.warn("Headcount API update failed; saving locally instead:", err);
-        }
+        await updateEmployee(editingEmployeeId, normalizedEmployee);
         setEmployees((current) =>
           current.map((employee) =>
             String(getEmployeeId(employee)) === String(editingEmployeeId)
@@ -378,13 +395,7 @@ export default function Headcount() {
           )
         );
       } else {
-        // Add new employee via API
-        let newEmployeeResponse = {};
-        try {
-          newEmployeeResponse = await addEmployee(normalizedEmployee);
-        } catch (err) {
-          console.warn("Headcount API add failed; saving locally instead:", err);
-        }
+        const newEmployeeResponse = await addEmployee(normalizedEmployee);
         const newEmployee = {
           ...normalizedEmployee,
           ...newEmployeeResponse,
@@ -399,7 +410,7 @@ export default function Headcount() {
       setEditingEmployeeId(null);
       setSearchParams({});
     } catch (err) {
-      setError("Failed to save employee. Please try again.");
+      setError(getApiErrorMessage(err, "Failed to save employee. Please try again."));
       console.error("Error saving employee:", err);
     }
   };
@@ -443,6 +454,12 @@ export default function Headcount() {
             </div>
           </div>
 
+          {error ? (
+            <div className={styles.errorBanner}>
+              {error}
+            </div>
+          ) : null}
+
           <div className={styles.formPage}>
             <ReusableForm
               config={employeeFormConfig}
@@ -458,11 +475,11 @@ export default function Headcount() {
   return (
     <div className={styles.page} aria-label="Headcount">
       <section className={styles.card}>
-        {error && employees.length === 0 && (
-          <div className={styles.errorBanner} style={{ color: '#d32f2f', padding: '12px', marginBottom: '16px', backgroundColor: '#ffebee', borderRadius: '4px', border: '1px solid #ef5350' }}>
+        {error ? (
+          <div className={styles.errorBanner}>
             {error}
           </div>
-        )}
+        ) : null}
         <div className={styles.tableSection}>
           <div className={styles.tabsHeader}>
             <div className={styles.tabs} role="tablist" aria-label="Headcount employee status">

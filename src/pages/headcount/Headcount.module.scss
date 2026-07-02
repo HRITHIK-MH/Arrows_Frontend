@@ -139,6 +139,18 @@
   margin: 0;
 }
 
+.errorBanner {
+  background: #fef2f2;
+  border: 1px solid #fca5a5;
+  border-radius: 6px;
+  color: #b91c1c;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.45;
+  margin-bottom: 16px;
+  padding: 10px 12px;
+}
+
 .tabsHeader {
   display: flex;
   align-items: center;
