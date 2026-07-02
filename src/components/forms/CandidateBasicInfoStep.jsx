@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { FiTrash2 } from "react-icons/fi";
 import * as pdfjsLib from "pdfjs-dist";
-import pdfjsWorkerSrc from "pdfjs-dist/build/pdf.worker.min.mjs?url";
+
 import FormField from "./FormField";
 import { parseResume, mapResumeToFormFields, normalizeParsedResumePayload } from "../../api/resumeParserService";
 import { isValidCurrentCompany, isValidCurrentDesignation } from "../../utils/resumeGuardrailValidator";
