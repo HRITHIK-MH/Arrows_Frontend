@@ -12,6 +12,7 @@ import {
 import ReusableForm from "../../components/forms/ReusableForm";
 import { employeeConfig } from "../../components/forms/formConfigs";
 import { addEmployee, fetchActiveEmployees, fetchExitedEmployees, updateEmployee } from "../../api/headcountService";
+import { fetchHeadcountDropdownOptions } from "../../api/masterDataService";
 
 const HEADCOUNT_STORAGE_KEY = "headcount:employees:v1";
 
@@ -22,6 +23,19 @@ const getInitialForm = () => {
   });
   return initial;
 };
+
+const applyDropdownOptions = (config, dropdownOptions) => ({
+  ...config,
+  steps: config.steps.map((step) => ({
+    ...step,
+    fields: (step.fields || []).map((field) => {
+      const options = dropdownOptions?.[field.name];
+      return Array.isArray(options) && options.length > 0
+        ? { ...field, options }
+        : field;
+    }),
+  })),
+});
 
 const loadStoredEmployees = () => {
   try {
@@ -121,6 +135,7 @@ export default function Headcount() {
   const [editingEmployeeId, setEditingEmployeeId] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [dropdownOptions, setDropdownOptions] = useState({});
   const [activeTab, setActiveTab] = useState(() =>
     location.state?.headcountTab === "exited" ? "exited" : "active"
   );
@@ -364,6 +379,18 @@ export default function Headcount() {
   }, []);
 
   useEffect(() => {
+    const loadDropdownOptions = async () => {
+      try {
+        setDropdownOptions(await fetchHeadcountDropdownOptions());
+      } catch (err) {
+        console.error("Error loading headcount dropdown options:", err);
+      }
+    };
+
+    loadDropdownOptions();
+  }, []);
+
+  useEffect(() => {
     if (!error) return undefined;
 
     const timer = window.setTimeout(() => {
@@ -417,12 +444,12 @@ export default function Headcount() {
 
   const employeeFormConfig = useMemo(
     () => ({
-      ...employeeConfig,
+      ...applyDropdownOptions(employeeConfig, dropdownOptions),
       showCancelAction: true,
       cancelLabel: "Cancel",
       onCancel: closeForm,
     }),
-    []
+    [dropdownOptions]
   );
 
   if (isLoading) {
