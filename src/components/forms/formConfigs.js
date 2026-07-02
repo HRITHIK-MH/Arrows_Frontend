@@ -1659,13 +1659,13 @@ export const employeeConfig = {
           validationRule: "requiredField",
           placeholder: "Select option",
           options: [
-            { value: "S&R Professional LLC", label: "S&R Professional LLC" },
-            { value: "SEW Tech Inc DBA Methodhub", label: "SEW Tech Inc DBA Methodhub" },
-            { value: "MethodHub Consulting Inc.", label: "MethodHub Consulting Inc." },
-            { value: "Zortech Solutions Inc. - Canada", label: "Zortech Solutions Inc. - Canada" },
-            { value: "Zortech Solutions Inc. - USA", label: "Zortech Solutions Inc. - USA" },
-            { value: "MethodHub Software Ltd", label: "MethodHub Software Ltd" },
-            { value: "Nemera Group", label: "Nemera Group" }
+            { value: "MHC", label: "MHC" },
+            { value: "MSL", label: "MSL" },
+            { value: "Nemera", label: "Nemera" },
+            { value: "S&R", label: "S&R" },
+            { value: "SEWT", label: "SEWT" },
+            { value: "Zor CAD", label: "Zor CAD" },
+            { value: "Zor US", label: "Zor US" }
           ]
         },
         {
@@ -1696,7 +1696,6 @@ export const employeeConfig = {
             { value: "Intern", label: "Intern" },
             { value: "Permanent", label: "Permanent" },
             { value: "T4", label: "T4" },
-            { value: "Vendor", label: "Vendor" },
             { value: "W2", label: "W2" }
           ]
         },
