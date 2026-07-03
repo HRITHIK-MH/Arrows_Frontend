@@ -45,28 +45,6 @@ const isValidPhoneNumber = (value, minDigits = 10, maxDigits = 10) => {
 
 const isFresherCandidate = (formData) => formData?.candidateType === "fresher";
 
-const SOURCE_DIRECTORY = [
-  { id: "SRC-001", name: "Resume Inbox" },
-  { id: "SRC-002", name: "Employee Referral" },
-  { id: "SRC-003", name: "LinkedIn" },
-  { id: "SRC-004", name: "Seek" },
-  { id: "SRC-005", name: "Naukri" },
-  { id: "SRC-006", name: "Through Website" }
-];
-
-const RECRUITER_DIRECTORY = [];
-
-const SOURCE_NAME_OPTIONS = SOURCE_DIRECTORY.map(({ id, name }) => ({
-  value: name,
-  label: name,
-  sourceId: id,
-}));
-
-const RECRUITER_OPTIONS = RECRUITER_DIRECTORY.map(({ id, name }) => ({
-  value: id,
-  label: `${id} - ${name}`,
-}));
-
 // Example configurations for different forms
 // Job Application Form Configuration
 export const jobApplicationConfig = {
@@ -929,11 +907,7 @@ export const candidateConfig = {
           type: "select",
           required: false,
           placeholder: "Select",
-          options: [
-            { value: "male", label: "Male" },
-            { value: "female", label: "Female" },
-            { value: "other", label: "Other" }
-          ]
+          options: []
         },
         {
           name: "dateOfBirth",
@@ -948,14 +922,7 @@ export const candidateConfig = {
           required: true,
           validationRule: "requiredField",
           placeholder: "Select",
-          options: [
-            { value: "0-1", label: "0-1 years" },
-            { value: "1-3", label: "1-3 years" },
-            { value: "3-5", label: "3-5 years" },
-            { value: "5-8", label: "5-8 years" },
-            { value: "8-12", label: "8-12 years" },
-            { value: "12+", label: "12+ years" }
-          ]
+          options: []
         },
         {
           name: "offersInHand",
@@ -964,12 +931,7 @@ export const candidateConfig = {
           required: true,
           validationRule: "requiredField",
           placeholder: "Select",
-          options: [
-            { value: "0", label: "0" },
-            { value: "1", label: "1" },
-            { value: "2", label: "2" },
-            { value: "3+", label: "3+" }
-          ]
+          options: []
         },
         {
           name: "currentCompanyName",
@@ -993,10 +955,7 @@ export const candidateConfig = {
           type: "select",
           required: false,
           placeholder: "Select Employment Type",
-          options: [
-            { value: "full-time", label: "Full Time" },
-            { value: "contract", label: "Contract" },
-          ]
+          options: []
         },
         {
           name: "noticePeriod",
@@ -1030,20 +989,7 @@ export const candidateConfig = {
           validationRule: "requiredField",
           placeholder: "Select Primary Skill",
           allowAddMore: true,
-          options: [
-            { value: "html5", label: "HTML5" },
-            { value: "css3", label: "CSS3" },
-            { value: "javascript", label: "JavaScript" },
-            { value: "jquery", label: "jQuery" },
-            { value: "bootstrap", label: "Bootstrap" },
-            { value: "angular-4", label: "Angular 4" },
-            { value: "backbone-js", label: "Backbone.js" },
-            { value: "java", label: "Core Java" },
-            { value: "python", label: "Python" },
-            { value: "react", label: "React" },
-            { value: "node", label: "Node.js" },
-            { value: "aws", label: "AWS" }
-          ]
+          options: []
         },
         {
           name: "secondarySkill",
@@ -1053,20 +999,7 @@ export const candidateConfig = {
           validationRule: "requiredField",
           placeholder: "Select Secondary Skill",
           allowAddMore: true,
-          options: [
-            { value: "html5", label: "HTML5" },
-            { value: "css3", label: "CSS3" },
-            { value: "javascript", label: "JavaScript" },
-            { value: "jquery", label: "jQuery" },
-            { value: "bootstrap", label: "Bootstrap" },
-            { value: "angular-4", label: "Angular 4" },
-            { value: "backbone-js", label: "Backbone.js" },
-            { value: "java", label: "Core Java" },
-            { value: "python", label: "Python" },
-            { value: "react", label: "React" },
-            { value: "node", label: "Node.js" },
-            { value: "aws", label: "AWS" }
-          ]
+          options: []
         },
         {
           name: "skillExperienceLevel",
@@ -1075,11 +1008,7 @@ export const candidateConfig = {
           required: true,
           validationRule: "requiredField",
           placeholder: "Select Experience Level",
-          options: [
-            { value: "beginner", label: "Beginner" },
-            { value: "intermediate", label: "Intermediate" },
-            { value: "expert", label: "Expert" }
-          ]
+          options: []
         },
         {
           name: "skillExperienceYears",
@@ -1105,11 +1034,7 @@ export const candidateConfig = {
           required: true,
           validationRule: "requiredField",
           placeholder: "Select Experience Level",
-          options: [
-            { value: "beginner", label: "Beginner" },
-            { value: "intermediate", label: "Intermediate" },
-            { value: "expert", label: "Expert" }
-          ]
+          options: []
         },
         {
           name: "secondarySkillExperienceYears",
@@ -1134,7 +1059,7 @@ export const candidateConfig = {
           type: "select",
           required: false,
           placeholder: "Select Recruiter",
-          options: RECRUITER_OPTIONS
+          options: []
         },
         {
           name: "sourceName",
@@ -1143,7 +1068,7 @@ export const candidateConfig = {
           required: true,
           validationRule: "sourceReference",
           placeholder: "Select Source Name",
-          options: SOURCE_NAME_OPTIONS
+          options: []
         },
         {
           name: "sourcedDate",
@@ -1522,7 +1447,7 @@ export const clientConfig = {
           label: "Primary Contact Person *",
           type: "text",
           required: true,
-          validationRule: "requiredField",
+          validationRule: "contactPersonName",
           placeholder: "Person Name"
         },
         {
@@ -1530,7 +1455,7 @@ export const clientConfig = {
           label: "Secondary Contact Person *",
           type: "text",
           required: true,
-          validationRule: "requiredField",
+          validationRule: "contactPersonName",
           placeholder: "Person Name"
         },
         {
@@ -1604,6 +1529,27 @@ export const clientConfig = {
 
       return { isValid: true };
     },
+    contactPersonName: async (value, fieldName) => {
+      const fieldLabels = {
+        primaryContactPerson: "Primary Contact Person",
+        secondaryContactPerson: "Secondary Contact Person",
+      };
+      const fieldLabel = fieldLabels[fieldName] || "Contact Person";
+
+      if (isEmptyValue(value)) {
+        return { isValid: false, message: `${fieldLabel} is required` };
+      }
+
+      if (/\d/.test(String(value))) {
+        return { isValid: false, message: `${fieldLabel} should not contain numbers` };
+      }
+
+      if (!/^[A-Za-z\s.\-']+$/.test(String(value).trim())) {
+        return { isValid: false, message: `${fieldLabel} should only contain letters, spaces, dots, hyphens or apostrophes` };
+      }
+
+      return { isValid: true };
+    },
     namePrefixRequired: async (value) => {
       if (!value || value === 'none') {
         return { isValid: false, message: 'Title is required' };
@@ -1645,7 +1591,7 @@ export const employeeConfig = {
           placeholder: "Enter consultant name"
         },
         {
-          name: "joiningDate",
+          name: "joining_date",
           label: "Joining Date *",
           type: "date",
           required: true,
@@ -1658,29 +1604,16 @@ export const employeeConfig = {
           required: true,
           validationRule: "requiredField",
           placeholder: "Select option",
-          options: [
-            { value: "MHC", label: "MHC" },
-            { value: "MSL", label: "MSL" },
-            { value: "Nemera", label: "Nemera" },
-            { value: "S&R", label: "S&R" },
-            { value: "SEWT", label: "SEWT" },
-            { value: "Zor CAD", label: "Zor CAD" },
-            { value: "Zor US", label: "Zor US" }
-          ]
+          options: []
         },
         {
-          name: "workLocation",
+          name: "work_location",
           label: "Work Location *",
           type: "select",
           required: true,
           validationRule: "requiredField",
           placeholder: "Select option",
-          options: [
-            { value: "USA", label: "USA" },
-            { value: "Canada", label: "Canada" },
-            { value: "India", label: "India" },
-            { value: "Thailand", label: "Thailand" }
-          ]
+          options: []
         },
         {
           name: "mode",
@@ -1689,15 +1622,7 @@ export const employeeConfig = {
           required: true,
           validationRule: "requiredField",
           placeholder: "Select option",
-          options: [
-            { value: "1099", label: "1099" },
-            { value: "C2C", label: "C2C" },
-            { value: "Consultant", label: "Consultant" },
-            { value: "Intern", label: "Intern" },
-            { value: "Permanent", label: "Permanent" },
-            { value: "T4", label: "T4" },
-            { value: "W2", label: "W2" }
-          ]
+          options: []
         },
         {
           name: "cost",
@@ -1706,9 +1631,7 @@ export const employeeConfig = {
           required: true,
           validationRule: "requiredField",
           placeholder: "Select option",
-          options: [
-            { value: "Direct", label: "Direct" }
-          ]
+          options: []
         },
         {
           name: "customer",
@@ -1717,84 +1640,16 @@ export const employeeConfig = {
           required: true,
           validationRule: "requiredField",
           placeholder: "Select option",
-          options: [
-            { value: "AIS", label: "AIS" },
-            { value: "Altimetrik Corp", label: "Altimetrik Corp" },
-            { value: "Atos IT Solutions Inc.", label: "Atos IT Solutions Inc." },
-            { value: "Avanade", label: "Avanade" },
-            { value: "Axtria", label: "Axtria" },
-            { value: "AYCAP", label: "AYCAP" },
-            { value: "Bi-Soft LLC", label: "Bi-Soft LLC" },
-            { value: "Centra Credit Union", label: "Centra Credit Union" },
-            { value: "Cigniti Technologies Inc. (A Coforge Company)", label: "Cigniti Technologies Inc. (A Coforge Company)" },
-            { value: "CX Sphere", label: "CX Sphere" },
-            { value: "Deloitte", label: "Deloitte" },
-            { value: "DITS Inc", label: "DITS Inc" },
-            { value: "ESSILOR", label: "ESSILOR" },
-            { value: "Expleo", label: "Expleo" },
-            { value: "EY", label: "EY" },
-            { value: "Factorized Technology Solutions Private Limited", label: "Factorized Technology Solutions Private Limited" },
-            { value: "First Meridian Business Services Pvt. Ltd.", label: "First Meridian Business Services Pvt. Ltd." },
-            { value: "Focused Forward Inc", label: "Focused Forward Inc" },
-            { value: "Halliburton Energy Services ,Inc.", label: "Halliburton Energy Services ,Inc." },
-            { value: "IMERYS", label: "IMERYS" },
-            { value: "Internal", label: "Internal" },
-            { value: "Infosys", label: "Infosys" },
-            { value: "ISUZU", label: "ISUZU" },
-            { value: "KBTG", label: "KBTG" },
-            { value: "Kinder Morgan, Inc.", label: "Kinder Morgan, Inc." },
-            { value: "Kindred", label: "Kindred" },
-            { value: "Kovan Technologies", label: "Kovan Technologies" },
-            { value: "LH BANK", label: "LH BANK" },
-            { value: "Logix Guru", label: "Logix Guru" },
-            { value: "Mindboard, Inc", label: "Mindboard, Inc" },
-            { value: "MAPMYID INC", label: "MAPMYID INC" },
-            { value: "Ness USA, Inc.", label: "Ness USA, Inc." },
-            { value: "Nitor Infotech Inc", label: "Nitor Infotech Inc" },
-            { value: "Nucore Corporation", label: "Nucore Corporation" },
-            { value: "Objects On Net Inc.", label: "Objects On Net Inc." },
-            { value: "PTT", label: "PTT" },
-            { value: "Palace Gate Corporation", label: "Palace Gate Corporation" },
-            { value: "PWC", label: "PWC" },
-            { value: "RFPIO Inc DBA Responsive", label: "RFPIO Inc DBA Responsive" },
-            { value: "SCG", label: "SCG" },
-            { value: "SEW-Tech Inc.", label: "SEW-Tech Inc." },
-            { value: "OnPoint Warranty Solutions LLC", label: "OnPoint Warranty Solutions LLC" },
-            { value: "S&R Professionals LLC", label: "S&R Professionals LLC" },
-            { value: "Softility Inc", label: "Softility Inc" },
-            { value: "TransUnion LLC", label: "TransUnion LLC" },
-            { value: "Smart Folks Inc", label: "Smart Folks Inc" },
-            { value: "Social Finance, Inc.", label: "Social Finance, Inc." },
-            { value: "SRB Systems LLC", label: "SRB Systems LLC" },
-            { value: "SUMMIT", label: "SUMMIT" },
-            { value: "Synersys Technologies Inc", label: "Synersys Technologies Inc" },
-            { value: "Tao Digital Solutions Inc.", label: "Tao Digital Solutions Inc." },
-            { value: "TCRB", label: "TCRB" },
-            { value: "Tekizma", label: "Tekizma" },
-            { value: "TELUS", label: "TELUS" },
-            { value: "THAI INS. RES.", label: "THAI INS. RES." },
-            { value: "TIRD", label: "TIRD" },
-            { value: "TISCO", label: "TISCO" },
-            { value: "UniqueHire Consulting LLP", label: "UniqueHire Consulting LLP" },
-            { value: "UST GLOBAL", label: "UST GLOBAL" },
-            { value: "V-Soft", label: "V-Soft" },
-            { value: "Yupp Video Services India Pvt. Ltd.(Apalya)", label: "Yupp Video Services India Pvt. Ltd.(Apalya)" },
-            { value: "Zortech Solutions Inc. - Canada", label: "Zortech Solutions Inc. - Canada" },
-            { value: "Zortech", label: "Zortech" },
-            { value: "TRUE", label: "TRUE" }
-          ]
+          options: []
         },
         {
-          name: "billingType",
+          name: "billing_type",
           label: "Billing Type *",
           type: "select",
           required: true,
           validationRule: "requiredField",
           placeholder: "Select option",
-          options: [
-            { value: "Billable", label: "Billable" },
-            { value: "Non-Billable", label: "Non-Billable" }
-          ]
+          options: []
         }
       ]
     }
@@ -1803,14 +1658,14 @@ export const employeeConfig = {
     requiredField: async (value, fieldName) => {
       if (isEmptyValue(value)) {
         const fieldLabels = {
-          joiningDate: 'Joining Date',
+          joining_date: 'Joining Date',
           consultant_name: 'Consultant Name',
           entity: 'Entity',
-          workLocation: 'Work Location',
+          work_location: 'Work Location',
           mode: 'Mode',
           cost: 'Cost',
           customer: 'Customer',
-          billingType: 'Billing Type'
+          billing_type: 'Billing Type'
         };
         const fieldLabel = fieldLabels[fieldName] || fieldName;
         return { isValid: false, message: `${fieldLabel} is required` };
@@ -1819,13 +1674,13 @@ export const employeeConfig = {
     }
   },
   columns: [
-    { key: "joiningDate", label: "Joining Date" },
+    { key: "joining_date", label: "Joining Date" },
     { key: "consultant_name", label: "Consultant Name" },
     { key: "entity", label: "Entity" },
-    { key: "workLocation", label: "Work Location" },
+    { key: "work_location", label: "Work Location" },
     { key: "mode", label: "Mode" },
     { key: "cost", label: "Cost" },
     { key: "customer", label: "Customer" },
-    { key: "billingType", label: "Billing Type" }
+    { key: "billing_type", label: "Billing Type" }
   ]
 };
