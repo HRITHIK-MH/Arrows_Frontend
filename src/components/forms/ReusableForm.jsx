@@ -5,6 +5,7 @@ import * as pdfjsLib from 'pdfjs-dist';
 import pdfjsWorkerSrc from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import { validateMandatoryField } from '../../utils/formValidation';
 import { buildJdSchemaFromForm, generateJdWithAzure, parseJdTextWithAzure } from '../../api/jdService';
+import { isJobDescriptionDocument } from '../../utils/documentTypeValidator';
 import FormField from './FormField';
 import MultiStepForm from './MultiStepForm';
 import './ReusableForm.css';
@@ -765,6 +766,15 @@ const FormStep = ({
 
         if (!documentText) {
           setJdExtractionStatus({ state: 'warning', message: getUnsupportedFileMessage(extension) });
+          return;
+        }
+
+        if (!isJobDescriptionDocument(rawDocumentText)) {
+          console.warn('[JDDebug] Wrong document uploaded in JD field.', {
+            fileName: uploadedFile?.name,
+            textPreview: rawDocumentText.slice(0, 500),
+          });
+          setJdExtractionStatus({ state: 'warning', message: 'Wrong document uploaded. Please upload a JD document.' });
           return;
         }
 

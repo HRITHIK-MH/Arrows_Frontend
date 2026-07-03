@@ -131,36 +131,20 @@ export const deleteJob = async (jobId) =>
     skipAuthRedirect: true,
   });
 
-const FALLBACK_CLIENTS = [
-  { clientId: 'TEST-1', clientName: 'Test1' },
-  { clientId: 'TEST-2', clientName: 'Test2' },
-];
-
 const CLIENTS_ENDPOINT = '/clients';
 const CLIENTS_CREATE_META_ENDPOINT = '/clients/create/meta';
 const CLIENTS_META_FILTERS_ENDPOINT = '/clients/meta/filters';
 const CLIENT_ENDPOINT = '/clients/{clientId}';
 
 export const fetchClients = async () => {
-  try {
-    const clients = unwrapList(
-      await clientJobApi.get(CLIENTS_ENDPOINT, {
-        // Client list endpoint currently fails when local login token is attached.
-        // Skip auth header so dropdown options can still load.
-        skipAuth: true,
-        skipAuthRedirect: true,
-      })
-    );
-
-    if (Array.isArray(clients) && clients.length > 0) {
-      return clients;
-    }
-
-    return FALLBACK_CLIENTS;
-  } catch (error) {
-    console.warn('Failed to load clients from backend, using fallback clients:', error);
-    return FALLBACK_CLIENTS;
-  }
+  return unwrapList(
+    await clientJobApi.get(CLIENTS_ENDPOINT, {
+      // Client list endpoint currently fails when local login token is attached.
+      // Skip auth header so dropdown options can still load.
+      skipAuth: true,
+      skipAuthRedirect: true,
+    })
+  );
 };
 
 export const fetchClientFiltersMeta = async () => {

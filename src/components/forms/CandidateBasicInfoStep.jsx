@@ -5,6 +5,7 @@ import pdfjsWorkerSrc from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 import FormField from "./FormField";
 import { parseResume, mapResumeToFormFields, normalizeParsedResumePayload } from "../../api/resumeParserService";
 import { isValidCurrentCompany, isValidCurrentDesignation } from "../../utils/resumeGuardrailValidator";
+import { isResumeDocument } from "../../utils/documentTypeValidator";
 
 const normalizeText = (value) => String(value || "").replace(/\s+/g, " ").trim();
 
@@ -828,8 +829,32 @@ const CandidateBasicInfoStep = ({
     let isCancelled = false;
 
     const parseAndMapResume = async () => {
+      let extractedText = "";
+
       try {
         setResumeExtractionStatus({ state: "loading", message: "Reading resume and extracting fields..." });
+        extractedText = await readResumeText(sourceFile);
+        if (isCancelled) return;
+
+        if (!extractedText) {
+          console.debug("[ResumeDebug] Resume pre-check produced no text.");
+          parsedResumeRef.current = fileKey;
+          setResumeExtractionStatus({ state: "warning", message: "Resume uploaded, but no readable text was found." });
+          console.groupEnd();
+          return;
+        }
+
+        if (!isResumeDocument(extractedText)) {
+          console.warn("[ResumeDebug] Wrong document uploaded in resume field.", {
+            fileName: sourceFile?.name,
+            textPreview: extractedText.slice(0, 500),
+          });
+          parsedResumeRef.current = fileKey;
+          setResumeExtractionStatus({ state: "warning", message: "Wrong document uploaded. Please upload a resume." });
+          console.groupEnd();
+          return;
+        }
+
         const parsedData = await parseResume(sourceFile);
         if (isCancelled) return;
 
@@ -1002,7 +1027,6 @@ const CandidateBasicInfoStep = ({
       }
 
       try {
-        const extractedText = await readResumeText(sourceFile);
         if (isCancelled) return;
 
         if (!extractedText) {
