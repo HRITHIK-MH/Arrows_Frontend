@@ -3,6 +3,7 @@ import * as pdfjsLib from "pdfjs-dist";
 import pdfjsWorkerSrc from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 import { parseResume } from "../../api/resumeParserService";
 import { isValidCurrentCompany, isValidCurrentDesignation } from "../../utils/resumeGuardrailValidator";
+import { isResumeDocument } from "../../utils/documentTypeValidator";
 
 const ALLOWED_EXTENSIONS = new Set(["pdf", "doc", "docx"]);
 
@@ -793,7 +794,24 @@ const CandidateDocumentsStep = ({ formData, onChange, onSetStepFields }) => {
     });
 
     let parsed;
+    let text = "";
     try {
+      text = await readResumeText(file);
+      if (!text) {
+        console.debug("[ResumeDebug] Candidate document extraction produced no text.");
+        console.groupEnd();
+        return;
+      }
+
+      if (!isResumeDocument(text)) {
+        console.warn("[ResumeDebug] Wrong document uploaded in resume documents field.", {
+          fileName: file?.name,
+          textPreview: text.slice(0, 500),
+        });
+        console.groupEnd();
+        return;
+      }
+
       parsed = await parseResume(file);
       console.debug("[ResumeDebug] Candidate document parse successful:", parsed);
       if (!parsed) throw new Error("No parse result");
@@ -977,7 +995,6 @@ const CandidateDocumentsStep = ({ formData, onChange, onSetStepFields }) => {
       console.groupEnd();
     } else {
       // --- fallback: local parsing (previous behavior) ---
-      const text = await readResumeText(file);
       if (!text) {
         console.debug("[ResumeDebug] Local extraction produced no text.");
         console.groupEnd();
