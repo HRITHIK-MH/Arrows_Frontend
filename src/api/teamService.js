@@ -61,7 +61,7 @@ export const saveTeamMembers = async ({ openingJobId, teamMembers = [], permissi
     return null;
   }
 
-  return clientJobApi.post('/jobs/team-members', {
+  return clientJobApi.post('/job-openings/team-members', {
     openingJobId,
     teamMembers,
     permissions: {
