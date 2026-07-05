@@ -14,8 +14,6 @@ import { employeeConfig } from "../../components/forms/formConfigs";
 import { addEmployee, fetchActiveEmployees, fetchExitedEmployees, updateEmployee } from "../../api/headcountService";
 import { fetchHeadcountDropdownOptions } from "../../api/masterDataService";
 
-const HEADCOUNT_STORAGE_KEY = "headcount:employees:v1";
-
 const getInitialForm = () => {
   const initial = {};
   employeeConfig.steps[0].fields.forEach((field) => {
@@ -37,17 +35,6 @@ const applyDropdownOptions = (config, dropdownOptions) => ({
   })),
 });
 
-const loadStoredEmployees = () => {
-  try {
-    const rawEmployees = localStorage.getItem(HEADCOUNT_STORAGE_KEY);
-    const parsedEmployees = rawEmployees ? JSON.parse(rawEmployees) : [];
-    return Array.isArray(parsedEmployees) ? parsedEmployees : [];
-  } catch (error) {
-    console.error("Failed to load headcount employees:", error);
-    return [];
-  }
-};
-
 const isExitedEmployee = (employee) =>
   Boolean(employee?.isExited || employee?.status === "exited" || employee?.exitDetails);
 
@@ -56,6 +43,16 @@ const getEmployeeId = (employee) => employee?.employee_id || employee?.employeeI
 const getConsultantName = (employee) => employee?.consultant_name || employee?.consultantName || "";
 
 const createEmployeeId = () => `emp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+const withHeadcountFieldAliases = (employee = {}) => ({
+  ...employee,
+  joining_date: employee.joining_date ?? employee.joiningDate ?? "",
+  joiningDate: employee.joiningDate ?? employee.joining_date ?? "",
+  work_location: employee.work_location ?? employee.workLocation ?? "",
+  workLocation: employee.workLocation ?? employee.work_location ?? "",
+  billing_type: employee.billing_type ?? employee.billingType ?? employee.bill_type ?? "",
+  billingType: employee.billingType ?? employee.billing_type ?? employee.bill_type ?? "",
+});
 
 const ROWS_PER_PAGE_OPTIONS = [10, 25, 50];
 
@@ -113,23 +110,12 @@ const getApiErrorMessage = (error, fallbackMessage) =>
     fallbackMessage
   );
 
-const mergeEmployees = (apiEmployees, exitedApiEmployees, storedEmployees) => {
-  const apiEmployeeIds = new Set(
-    [...apiEmployees, ...exitedApiEmployees].map((employee) => String(getEmployeeId(employee)))
-  );
-  const storedExitedEmployees = storedEmployees.filter(
-    (employee) => isExitedEmployee(employee) && !apiEmployeeIds.has(String(getEmployeeId(employee)))
-  );
-
-  return [...apiEmployees, ...exitedApiEmployees, ...storedExitedEmployees];
-};
-
 export default function Headcount() {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const formAction = searchParams.get("action");
-  const [employees, setEmployees] = useState(() => loadStoredEmployees());
+  const [employees, setEmployees] = useState([]);
   const [isAddingEmployee, setIsAddingEmployee] = useState(false);
   const [formData, setFormData] = useState(() => getInitialForm());
   const [editingEmployeeId, setEditingEmployeeId] = useState(null);
@@ -222,18 +208,10 @@ export default function Headcount() {
   const paginatedEmployees = displayedEmployees.slice(startEntry === 0 ? 0 : startEntry - 1, endEntry);
 
   useEffect(() => {
-    try {
-      localStorage.setItem(HEADCOUNT_STORAGE_KEY, JSON.stringify(employees));
-    } catch (error) {
-      console.error("Failed to save headcount employees:", error);
-    }
-  }, [employees]);
-
-  useEffect(() => {
     const editEmployee = location.state?.editEmployee;
     if (!editEmployee) return;
 
-    setFormData(editEmployee);
+    setFormData(withHeadcountFieldAliases(editEmployee));
     setEditingEmployeeId(getEmployeeId(editEmployee) ?? null);
     setIsAddingEmployee(true);
     setSearchParams({ action: "edit" }, { replace: true, state: null });
@@ -348,27 +326,13 @@ export default function Headcount() {
           fetchActiveEmployees({ page: 1, limit: 1000 }),
           fetchExitedEmployees({ page: 1, limit: 1000 }),
         ]);
-        setEmployees(mergeEmployees(
-          extractEmployeeList(activeData),
-          extractEmployeeList(exitedData),
-          loadStoredEmployees()
-        ));
+        setEmployees([
+          ...extractEmployeeList(activeData),
+          ...extractEmployeeList(exitedData),
+        ]);
       } catch (err) {
-        setEmployees((current) => {
-          if (current.length > 0) {
-            setError(null);
-            return current;
-          }
-
-          const savedEmployees = loadStoredEmployees();
-          if (savedEmployees.length > 0) {
-            setError(null);
-            return savedEmployees;
-          }
-
-          setError("Failed to load employees");
-          return current;
-        });
+        setEmployees([]);
+        setError("Failed to load employees");
         console.error("Error loading employees:", err);
       } finally {
         setIsLoading(false);
@@ -406,11 +370,11 @@ export default function Headcount() {
       const employeeData = { ...data };
       delete employeeData.serialNumber;
 
-      const normalizedEmployee = {
+      const normalizedEmployee = withHeadcountFieldAliases({
         ...employeeData,
         employee_id: editingEmployeeId || employeeData.employee_id || employeeData.employeeId || createEmployeeId(),
         consultant_name: String(employeeData.consultant_name || employeeData.consultantName || "").trim(),
-      };
+      });
 
       if (editingEmployeeId !== null) {
         await updateEmployee(editingEmployeeId, normalizedEmployee);
@@ -423,13 +387,13 @@ export default function Headcount() {
         );
       } else {
         const newEmployeeResponse = await addEmployee(normalizedEmployee);
-        const newEmployee = {
+        const newEmployee = withHeadcountFieldAliases({
           ...normalizedEmployee,
           ...newEmployeeResponse,
           employeeId: getEmployeeId(newEmployeeResponse) || getEmployeeId(normalizedEmployee),
           isExited: false,
           status: "active",
-        };
+        });
         setEmployees((current) => [...current, newEmployee]);
       }
 

@@ -22,19 +22,27 @@ const fetchMasterOptions = async (endpoint, key) => {
 };
 
 export const fetchHeadcountDropdownOptions = async () => {
-  const [entities, locations, modes, costBands, customers] = await Promise.all([
+  const results = await Promise.allSettled([
     fetchMasterOptions('/master/entities', 'entities'),
     fetchMasterOptions('/master/locations', 'locations'),
     fetchMasterOptions('/master/modes', 'modes'),
     fetchMasterOptions('/master/costBands', 'costBands'),
     fetchMasterOptions('/master/customers', 'customers'),
+    fetchMasterOptions('/master/billingTypes', 'billingTypes'),
   ]);
+
+  const [entities, locations, modes, costBands, customers, billingTypes] = results.map((result) =>
+    result.status === 'fulfilled' ? result.value : []
+  );
 
   return {
     entity: entities,
+    work_location: locations,
     workLocation: locations,
     mode: modes,
     cost: costBands,
     customer: customers,
+    billing_type: billingTypes,
+    billingType: billingTypes,
   };
 };

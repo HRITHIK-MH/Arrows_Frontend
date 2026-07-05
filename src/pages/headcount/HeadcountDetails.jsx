@@ -1,46 +1,24 @@
 import styles from "./Headcount.module.scss";
 import { FiChevronLeft, FiEdit2, FiX } from "react-icons/fi";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { exitEmployee } from "../../api/headcountService";
-
-const HEADCOUNT_STORAGE_KEY = "headcount:employees:v1";
+import { exitEmployee, fetchActiveEmployees, fetchExitedEmployees } from "../../api/headcountService";
 
 const getEmployeeId = (employee) => employee?.employee_id || employee?.employeeId || employee?.id || employee?.serialNumber;
 
 const getConsultantName = (employee) => employee?.consultant_name || employee?.consultantName || "";
 
-const loadEmployeeById = (employeeId) => {
-  try {
-    const rawEmployees = localStorage.getItem(HEADCOUNT_STORAGE_KEY);
-    const employees = rawEmployees ? JSON.parse(rawEmployees) : [];
-    if (!Array.isArray(employees)) return null;
-    return employees.find((employee) => String(getEmployeeId(employee)) === String(employeeId)) || null;
-  } catch (error) {
-    console.error("Failed to load headcount employee details:", error);
-    return null;
-  }
-};
-
-const saveEmployee = (updatedEmployee) => {
-  const rawEmployees = localStorage.getItem(HEADCOUNT_STORAGE_KEY);
-  const employees = rawEmployees ? JSON.parse(rawEmployees) : [];
-  const currentEmployees = Array.isArray(employees) ? employees : [];
-  const updatedEmployeeId = getEmployeeId(updatedEmployee);
-  const hasExistingEmployee = currentEmployees.some(
-    (item) => String(getEmployeeId(item)) === String(updatedEmployeeId)
-  );
-  const nextEmployees = hasExistingEmployee
-    ? currentEmployees.map((item) =>
-        String(getEmployeeId(item)) === String(updatedEmployeeId) ? updatedEmployee : item
-      )
-    : [...currentEmployees, updatedEmployee];
-
-  localStorage.setItem(HEADCOUNT_STORAGE_KEY, JSON.stringify(nextEmployees));
-};
-
 const isExitedEmployee = (employee) =>
   Boolean(employee?.isExited || employee?.status === "exited" || employee?.exitDetails);
+
+const extractEmployeeList = (data) => {
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data?.content)) return data.content;
+  if (Array.isArray(data?.data)) return data.data;
+  if (Array.isArray(data?.data?.content)) return data.data.content;
+  if (Array.isArray(data?.employees)) return data.employees;
+  return [];
+};
 
 const parseDateValue = (value) => {
   const dateText = String(value);
@@ -69,11 +47,58 @@ export default function HeadcountDetails() {
   const navigate = useNavigate();
   const { state } = useLocation();
   const { employeeId } = useParams();
-  const [employee, setEmployee] = useState(() => state?.employee || loadEmployeeById(employeeId));
+  const [employee, setEmployee] = useState(() => state?.employee || null);
+  const [isLoading, setIsLoading] = useState(!state?.employee);
+  const [loadError, setLoadError] = useState("");
   const [isExitModalOpen, setIsExitModalOpen] = useState(false);
   const [exitForm, setExitForm] = useState({ exitDate: "", exitReason: "" });
   const [exitErrors, setExitErrors] = useState({});
   const isExited = isExitedEmployee(employee);
+
+  useEffect(() => {
+    if (state?.employee) {
+      setEmployee(state.employee);
+      setIsLoading(false);
+      setLoadError("");
+      return;
+    }
+
+    let isMounted = true;
+
+    const loadEmployee = async () => {
+      setIsLoading(true);
+      setLoadError("");
+      try {
+        const [activeData, exitedData] = await Promise.all([
+          fetchActiveEmployees({ page: 1, limit: 1000 }),
+          fetchExitedEmployees({ page: 1, limit: 1000 }),
+        ]);
+        if (!isMounted) return;
+        const employees = [
+          ...extractEmployeeList(activeData),
+          ...extractEmployeeList(exitedData),
+        ];
+        setEmployee(
+          employees.find((item) => String(getEmployeeId(item)) === String(employeeId)) || null
+        );
+      } catch (error) {
+        if (!isMounted) return;
+        console.error("Failed to load headcount employee details:", error);
+        setLoadError("Employee details could not be loaded.");
+        setEmployee(null);
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    loadEmployee();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [employeeId, state?.employee]);
 
   const handleBack = () => {
     navigate("/headcount", { state: { headcountTab: isExited ? "exited" : "active" } });
@@ -142,7 +167,6 @@ export default function HeadcountDetails() {
         status: "exited",
       };
       
-      saveEmployee(updatedEmployee);
       setEmployee(updatedEmployee);
       setIsExitModalOpen(false);
       setExitErrors({});
@@ -171,7 +195,11 @@ export default function HeadcountDetails() {
       </section>
 
       <section className={styles.detailPage}>
-        {employee ? (
+        {isLoading ? (
+          <div className={styles.detailMissing}>
+            <h2>Loading employee details</h2>
+          </div>
+        ) : employee ? (
           <>
             <div className={styles.detailHero}>
               <div className={styles.detailIdentity}>
@@ -238,7 +266,7 @@ export default function HeadcountDetails() {
         ) : (
           <div className={styles.detailMissing}>
             <h2>Employee not found</h2>
-            <p>This employee is not available in the current headcount list.</p>
+            <p>{loadError || "This employee is not available in the current headcount list."}</p>
           </div>
         )}
 
