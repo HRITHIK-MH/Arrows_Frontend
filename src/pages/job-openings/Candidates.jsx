@@ -527,7 +527,7 @@ export default function Candidates() {
 
   React.useEffect(() => {
     loadCandidates();
-  }, [loadCandidates]);
+  }, []); // Run only on component mount to avoid duplicate fetches
 
   React.useEffect(() => {
     let isMounted = true;
@@ -2121,6 +2121,7 @@ export default function Candidates() {
               config={candidateFormWithDraft}
               onSubmit={handleCandidateSubmit}
               initialData={editingData}
+              isSubmitting={loading}
             />
           </div>
         )}

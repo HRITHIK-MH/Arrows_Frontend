@@ -17,7 +17,8 @@ const MultiStepForm = ({
   onCancel,
   hideStepper = false,
   initialData = null,
-  readOnly = false
+  readOnly = false,
+  isSubmitting = false,
 }) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState(() => initialData || {});
@@ -327,7 +328,7 @@ const MultiStepForm = ({
                 type="button"
                 className="form-btn primary"
                 onClick={handleNext}
-                disabled={readOnly}
+                disabled={readOnly || isSubmitting}
               >
                 Next
               </button>
@@ -336,9 +337,9 @@ const MultiStepForm = ({
                 type="button"
                 className="form-btn primary"
                 onClick={handleSubmit}
-                disabled={readOnly}
+                disabled={readOnly || isSubmitting}
               >
-                {submitLabel}
+                {isSubmitting ? 'Saving...' : submitLabel}
               </button>
             )}
           </div>

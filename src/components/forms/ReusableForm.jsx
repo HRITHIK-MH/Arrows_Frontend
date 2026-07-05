@@ -1581,7 +1581,7 @@ const FormStep = ({
 };
 
 // Main reusable form component
-const ReusableForm = ({ config, onSubmit, initialData, readOnly = false }) => {
+const ReusableForm = ({ config, onSubmit, initialData, readOnly = false, isSubmitting = false }) => {
   const [validationErrors, setValidationErrors] = useState({});
   const [showDraftRestoredMessage, setShowDraftRestoredMessage] = useState(false);
 
@@ -1984,6 +1984,7 @@ const ReusableForm = ({ config, onSubmit, initialData, readOnly = false }) => {
         onCancel={config.onCancel}
         initialData={resolvedInitialData}
         readOnly={readOnly}
+        isSubmitting={isSubmitting}
       />
     </div>
   );
