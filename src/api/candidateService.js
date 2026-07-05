@@ -13,7 +13,17 @@ const unwrapList = (response) => {
   return [];
 };
 
-export const fetchCandidates = async ({ page = 1, limit = 100, search, source, rating, stage, status, sortBy = 'modifiedTime', sortOrder = 'desc' } = {}) => {
+export const fetchCandidates = async ({
+  page = 1,
+  limit = 20,
+  search,
+  source,
+  rating,
+  stage,
+  status,
+  sortBy = 'modifiedTime',
+  sortOrder = 'desc'
+} = {}) => {
   const params = {
     page,
     limit,
@@ -26,13 +36,32 @@ export const fetchCandidates = async ({ page = 1, limit = 100, search, source, r
     ...(sortOrder ? { sortOrder } : {}),
   };
 
-  const response = await candidateApi.get('/candidates', {
-    params,
-    skipAuth: true,
-    skipAuthRedirect: true,
-  });
-  return response?.data?.data || { items: [], pagination: { page, limit, totalRecords: 0, totalPages: 0 } };
+  try {
+    const response = await candidateApi.get('/candidates', {
+      params,
+      skipAuth: true,
+      skipAuthRedirect: true,
+    });
+    return response?.data?.data || {
+      items: [],
+      pagination: { page, limit, totalRecords: 0, totalPages: 0 },
+    };
+  } catch (err) {
+    console.warn('Retrying fetchCandidates after error...', err);
+    // Retry once after a short delay
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    const retryResponse = await candidateApi.get('/candidates', {
+      params,
+      skipAuth: true,
+      skipAuthRedirect: true,
+    });
+    return retryResponse?.data?.data || {
+      items: [],
+      pagination: { page, limit, totalRecords: 0, totalPages: 0 },
+    };
+  }
 };
+
 
 export const fetchCandidateGenders = async () =>
   unwrapList(
