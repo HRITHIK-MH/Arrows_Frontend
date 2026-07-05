@@ -32,6 +32,80 @@ const unwrapList = (response) => {
   return [];
 };
 
+const extractApiEnvelope = (response) => {
+  const payload = response?.data;
+  if (!payload || typeof payload !== 'object') {
+    return { status: true, message: '', data: payload };
+  }
+
+  if (Object.prototype.hasOwnProperty.call(payload, 'status')) {
+    return {
+      status: payload.status,
+      message: payload.message,
+      data: payload.data,
+      statusCode: payload.statusCode,
+    };
+  }
+
+  return { status: true, message: '', data: payload };
+};
+
+const toApiError = (fallbackMessage, envelope) => {
+  const message = String(envelope?.message || fallbackMessage || 'Request failed').trim();
+  const error = new Error(message || 'Request failed');
+  error.response = {
+    data: {
+      status: false,
+      statusCode: envelope?.statusCode || 400,
+      message,
+      data: envelope?.data ?? null,
+    },
+  };
+  return error;
+};
+
+const assertApiSucceeded = (response, fallbackMessage) => {
+  const envelope = extractApiEnvelope(response);
+  if (envelope.status === false) {
+    throw toApiError(fallbackMessage, envelope);
+  }
+  return envelope;
+};
+
+const assertJobCreatePersisted = (response) => {
+  const envelope = assertApiSucceeded(response, 'Failed to save job opening in DB.');
+  const data = envelope?.data;
+
+  if (!data || typeof data !== 'object') {
+    throw toApiError('Job opening save did not return persisted data.', envelope);
+  }
+
+  const isSaved = data.saved;
+  const openingJobId = String(data.openingJobId || data.jobPositionId || '').trim();
+
+  if (isSaved === false || !openingJobId) {
+    throw toApiError('Job opening was not saved in DB. Please try again.', envelope);
+  }
+
+  return response;
+};
+
+const assertJobUpdatePersisted = (response) => {
+  const envelope = assertApiSucceeded(response, 'Failed to update job opening in DB.');
+  const data = envelope?.data;
+
+  if (!data || typeof data !== 'object') {
+    throw toApiError('Job opening update did not return persisted data.', envelope);
+  }
+
+  const openingJobId = String(data.openingJobId || data.jobPositionId || data.jobId || '').trim();
+  if (!openingJobId) {
+    throw toApiError('Job opening update was not confirmed by DB.', envelope);
+  }
+
+  return response;
+};
+
 const normalizeText = (value, fallback = '-') => {
   const text = String(value ?? '').trim();
   return text || fallback;
@@ -114,16 +188,16 @@ export const toJobRequest = (row = {}) => {
 };
 
 export const createJob = async (row) =>
-  clientJobApi.post('/job-openings/job-information', toJobRequest(row), {
+  assertJobCreatePersisted(await clientJobApi.post('/job-openings/job-information', toJobRequest(row), {
     skipAuth: true,
     skipAuthRedirect: true,
-  });
+  }));
 
 export const updateJob = async (jobId, row) =>
-  clientJobApi.patch(`/job-openings/${encodeURIComponent(jobId)}/status`, toJobRequest(row), {
+  assertJobUpdatePersisted(await clientJobApi.patch(`/job-openings/${encodeURIComponent(jobId)}/status`, toJobRequest(row), {
     skipAuth: true,
     skipAuthRedirect: true,
-  });
+  }));
 
 export const deleteJob = async (jobId) =>
   clientJobApi.delete(`/job-openings/${encodeURIComponent(jobId)}`, {

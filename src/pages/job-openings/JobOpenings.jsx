@@ -63,6 +63,11 @@ const isUuid = (value) =>
     String(value || "").trim(),
   );
 
+const unwrapApiData = (response) => {
+  const payload = response?.data;
+  return payload && typeof payload === "object" && "data" in payload ? payload.data : payload;
+};
+
 const isSeededJobOpeningRow = (row) => {
   const jobId = String(row?.openingJobId || row?.jobPositionId || row?.jobId || "").trim();
   const postingTitle = String(row?.postingTitle || row?.positionName || row?.jobTitle || "").trim().toLowerCase();
@@ -74,9 +79,9 @@ const cleanSeededJobOpeningRows = (rows = []) =>
 
 const saveJobOpeningTableData = (rows) => {
   try {
-    localStorage.setItem(JOB_OPENING_TABLE_STORAGE_KEY, JSON.stringify(rows));
+    localStorage.removeItem(JOB_OPENING_TABLE_STORAGE_KEY);
   } catch (error) {
-    console.error("Failed to save job openings:", error);
+    console.error("Failed to clear cached job openings:", error);
   }
 };
 
@@ -441,20 +446,7 @@ export default function JobOpenings({ createMode = false }) {
   const [showJobOpeningForm, setShowJobOpeningForm] = React.useState(false);
   const [showDataTable, setShowDataTable] = React.useState(true);
   const [submittedData, setSubmittedData] = React.useState(() => {
-    try {
-      const savedData = localStorage.getItem(JOB_OPENING_TABLE_STORAGE_KEY);
-      const parsedData = savedData ? JSON.parse(savedData) : null;
-      if (Array.isArray(parsedData) && parsedData.length > 0) {
-        const cleanedRows = cleanSeededJobOpeningRows(parsedData);
-        if (cleanedRows.length !== parsedData.length) {
-          saveJobOpeningTableData(cleanedRows);
-        }
-        return cleanedRows;
-      }
-    } catch (error) {
-      console.error("Failed to load saved job openings:", error);
-    }
-
+    saveJobOpeningTableData();
     return [];
   });
   const [showSuccessMessage, setShowSuccessMessage] = React.useState(false);
@@ -510,8 +502,8 @@ export default function JobOpenings({ createMode = false }) {
   }, []);
 
   React.useEffect(() => {
-    saveJobOpeningTableData(submittedData);
-  }, [submittedData]);
+    saveJobOpeningTableData();
+  }, []);
 
   React.useEffect(() => {
     const refreshClientOptions = () => {
@@ -567,11 +559,11 @@ export default function JobOpenings({ createMode = false }) {
 
         if (!isMounted) return;
 
-        if (Array.isArray(jobs) && jobs.length > 0) {
-          const normalizedJobs = jobs.map((job, index) => normalizeApiJob(job, index));
-          setSubmittedData(normalizedJobs);
-          saveJobOpeningTableData(normalizedJobs);
-        }
+        const normalizedJobs = Array.isArray(jobs)
+          ? jobs.map((job, index) => normalizeApiJob(job, index))
+          : [];
+        setSubmittedData(normalizedJobs);
+        saveJobOpeningTableData();
 
         if (Array.isArray(clients) && clients.length > 0) {
           const clientRows = clients.map((client) => ({
@@ -652,7 +644,11 @@ export default function JobOpenings({ createMode = false }) {
           setMetaDropdownOptions(mappedMetaOptions);
         }
       } catch (error) {
-        console.warn("Job form metadata sync failed, using cached local data:", error);
+        console.warn("Job form metadata sync failed. Job openings table will not use cached local data:", error);
+        if (isMounted) {
+          setSubmittedData([]);
+        }
+        saveJobOpeningTableData();
       }
     };
 
@@ -1240,12 +1236,22 @@ export default function JobOpenings({ createMode = false }) {
       const hasValidClientId = isUuid(normalized.clientId);
       const hasValidTitle = Boolean(String(normalized.postingTitle || "").trim());
 
+      if (!hasValidTitle) {
+        throw new Error("Position name is required to save the JD in DB.");
+      }
+
+      if (!hasValidClientId) {
+        throw new Error("Please select a valid client from the DB before creating the JD.");
+      }
+
       if (isEditMode && isUuid(existingJobId) && hasValidClientId && hasValidTitle) {
         const response = await updateJobApi(existingJobId, normalized);
-        normalized = { ...normalized, ...normalizeApiJob(response?.data || {}, editingIndex || 0) };
+        normalized = { ...normalized, ...normalizeApiJob(unwrapApiData(response) || {}, editingIndex || 0) };
       } else if (!isEditMode && hasValidClientId && hasValidTitle) {
         const response = await createJobApi(normalized);
-        normalized = { ...normalized, ...normalizeApiJob(response?.data || {}, submittedData.length) };
+        normalized = { ...normalized, ...normalizeApiJob(unwrapApiData(response) || {}, submittedData.length) };
+      } else {
+        throw new Error("Unable to save JD in DB. Please try again.");
       }
 
       if (Array.isArray(safeData.teamMembers) && safeData.teamMembers.length > 0) {
@@ -1288,7 +1294,8 @@ export default function JobOpenings({ createMode = false }) {
         }
       }
     } catch (error) {
-      console.warn("Job save API failed, applying local save:", error);
+      console.error("Job save API failed:", error);
+      throw error;
     }
 
     if (editingIndex !== null) {
@@ -1450,7 +1457,6 @@ export default function JobOpenings({ createMode = false }) {
           return field;
         }),
       })),
-      localSubmitOnly: true,
       showDraftAction: editingIndex === null,
       showCancelAction: true,
       cancelLabel: "Cancel",
