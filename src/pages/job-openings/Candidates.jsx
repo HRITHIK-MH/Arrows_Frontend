@@ -358,6 +358,7 @@ export default function Candidates() {
   const [editingIndex, setEditingIndex] = React.useState(null);
   const [editingData, setEditingData] = React.useState(null);
   const [successMessage, setSuccessMessage] = React.useState("");
+  const [errorMessage, setErrorMessage] = React.useState("");
   const [searchTerm, setSearchTerm] = React.useState('');
   const [filterSource, setFilterSource] = React.useState('');
   const [filterRating, setFilterRating] = React.useState('');
@@ -647,6 +648,74 @@ export default function Candidates() {
         }
       } catch (error) {
         console.warn("Candidate dropdown metadata sync failed:", error);
+        
+        // Hardcoded fallback options when API fails
+        if (!isMounted) return;
+        
+        // Fallback gender options
+        setCandidateGenderOptions([
+          { value: "Male", label: "Male" },
+          { value: "Female", label: "Female" },
+          { value: "Other", label: "Other" },
+          { value: "Prefer not to say", label: "Prefer not to say" },
+        ]);
+
+        // Fallback experience years options
+        setCandidateExperienceYearsOptions([
+          { value: "0-1", label: "0-1 years" },
+          { value: "1-3", label: "1-3 years" },
+          { value: "3-5", label: "3-5 years" },
+          { value: "5-7", label: "5-7 years" },
+          { value: "7-10", label: "7-10 years" },
+          { value: "10+", label: "10+ years" },
+        ]);
+
+        // Fallback offers in hand options
+        setCandidateOffersInHandOptions([
+          { value: "Yes", label: "Yes" },
+          { value: "No", label: "No" },
+          { value: "In Process", label: "In Process" },
+        ]);
+
+        // Fallback employment type options
+        setCandidateEmploymentTypeOptions([
+          { value: "Full-time", label: "Full-time" },
+          { value: "Part-time", label: "Part-time" },
+          { value: "Contract", label: "Contract" },
+          { value: "Temporary", label: "Temporary" },
+          { value: "Freelance", label: "Freelance" },
+        ]);
+
+        // Fallback primary skill options
+        setCandidatePrimarySkillOptions([
+          { value: "JavaScript", label: "JavaScript" },
+          { value: "Python", label: "Python" },
+          { value: "Java", label: "Java" },
+          { value: "React", label: "React" },
+          { value: "Node.js", label: "Node.js" },
+          { value: "SQL", label: "SQL" },
+          { value: "AWS", label: "AWS" },
+          { value: "Azure", label: "Azure" },
+          { value: "Docker", label: "Docker" },
+          { value: "Kubernetes", label: "Kubernetes" },
+        ]);
+
+        // Fallback experience level options
+        setCandidateExperienceLevelOptions([
+          { value: "Beginner", label: "Beginner" },
+          { value: "Intermediate", label: "Intermediate" },
+          { value: "Expert", label: "Expert" },
+        ]);
+
+        // Fallback source options
+        setCandidateSourceOptions([
+          { value: "LinkedIn", label: "LinkedIn" },
+          { value: "Indeed", label: "Indeed" },
+          { value: "Referral", label: "Referral" },
+          { value: "Job Board", label: "Job Board" },
+          { value: "Direct Application", label: "Direct Application" },
+          { value: "Recruiter", label: "Recruiter" },
+        ]);
       }
     };
 
@@ -1309,6 +1378,8 @@ export default function Candidates() {
     setEditingIndex(null);
     setActiveDraftId(null);
     setEditingData(null);
+    setErrorMessage("");
+    setSuccessMessage("");
   }, []);
 
   const handleCandidateSubmit = React.useCallback(async (data) => {
@@ -1361,11 +1432,27 @@ export default function Candidates() {
       closeCandidateForm();
     } catch (error) {
       console.error('Candidate save failed:', error);
-      const apiMessage =
-        error?.response?.data?.message ||
-        error?.response?.data?.error ||
-        'Unable to save candidate right now. Please try again.';
-      alert(apiMessage);
+      
+      // Extract error message from various possible locations
+      let errorMsg = 'Unable to save candidate right now. Please try again.';
+      
+      if (error?.response?.data?.message) {
+        errorMsg = error.response.data.message;
+      } else if (error?.response?.data?.error) {
+        errorMsg = error.response.data.error;
+      } else if (error?.response?.data?.errors && Array.isArray(error.response.data.errors)) {
+        errorMsg = error.response.data.errors.map((e) => e.message || e).join(', ');
+      } else if (error?.message) {
+        errorMsg = error.message;
+      }
+      
+      // Display error message to user
+      setErrorMessage(errorMsg);
+      
+      // Auto-dismiss error after 6 seconds
+      window.setTimeout(() => {
+        setErrorMessage("");
+      }, 6000);
     } finally {
       setLoading(false);
     }
@@ -1926,6 +2013,12 @@ export default function Candidates() {
       {successMessage && (
         <div className={styles.successMessage}>
           ✓ {successMessage}
+        </div>
+      )}
+
+      {errorMessage && (
+        <div className={styles.errorMessage}>
+          ✗ {errorMessage}
         </div>
       )}
 
