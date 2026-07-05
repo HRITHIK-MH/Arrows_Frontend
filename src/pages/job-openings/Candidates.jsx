@@ -393,6 +393,7 @@ export default function Candidates() {
   const mapDropdownRef = React.useRef(null);
   const addCandidateMenuRef = React.useRef(null);
   const resumeUploadRef = React.useRef(null);
+  const loadCandidatesRequestRef = React.useRef(0);
 
   React.useEffect(() => {
     window.dispatchEvent(new CustomEvent("topbar-page-label-change", {
@@ -486,6 +487,8 @@ export default function Candidates() {
   }, []);
 
   const loadCandidates = React.useCallback(async () => {
+    const requestId = loadCandidatesRequestRef.current + 1;
+    loadCandidatesRequestRef.current = requestId;
     setLoading(true);
     setCandidateLoadError("");
     try {
@@ -499,6 +502,10 @@ export default function Candidates() {
       const apiCandidates = Array.isArray(response.items) ? response.items : [];
       const normalizedCandidates = normalizeCandidateRows(apiCandidates);
 
+      if (requestId !== loadCandidatesRequestRef.current) {
+        return;
+      }
+
       setSubmittedData(normalizedCandidates);
       setPagination((prev) => ({
         ...prev,
@@ -508,16 +515,20 @@ export default function Candidates() {
         totalPages: response.pagination?.totalPages ?? (Math.ceil(normalizedCandidates.length / prev.limit) || 1),
       }));
     } catch (error) {
+      if (requestId !== loadCandidatesRequestRef.current) {
+        return;
+      }
       console.error('Failed to load candidate list:', error);
-      setSubmittedData([]);
       setCandidateLoadError("Failed to load candidates.");
       setPagination((prev) => ({
         ...prev,
-        totalRecords: 0,
-        totalPages: 1,
+        totalRecords: prev.totalRecords,
+        totalPages: prev.totalPages || 1,
       }));
     } finally {
-      setLoading(false);
+      if (requestId === loadCandidatesRequestRef.current) {
+        setLoading(false);
+      }
     }
   }, [pagination.limit, pagination.page]);
 

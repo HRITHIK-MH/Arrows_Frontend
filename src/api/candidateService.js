@@ -36,30 +36,47 @@ export const fetchCandidates = async ({
     ...(sortOrder ? { sortOrder } : {}),
   };
 
-  try {
-    const response = await candidateApi.get('/candidates', {
-      params,
-      skipAuth: true,
-      skipAuthRedirect: true,
-    });
-    return response?.data?.data || {
-      items: [],
-      pagination: { page, limit, totalRecords: 0, totalPages: 0 },
-    };
-  } catch (err) {
-    console.warn('Retrying fetchCandidates after error...', err);
-    // Retry once after a short delay
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    const retryResponse = await candidateApi.get('/candidates', {
-      params,
-      skipAuth: true,
-      skipAuthRedirect: true,
-    });
-    return retryResponse?.data?.data || {
-      items: [],
-      pagination: { page, limit, totalRecords: 0, totalPages: 0 },
-    };
+  const fallback = {
+    items: [],
+    pagination: { page, limit, totalRecords: 0, totalPages: 0 },
+  };
+
+  const retryDelaysMs = [1000, 2500];
+  const maxAttempts = retryDelaysMs.length + 1;
+  let lastError;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      const response = await candidateApi.get('/candidates', {
+        params,
+        timeout: 90000,
+        skipAuth: true,
+        skipAuthRedirect: true,
+      });
+
+      const payload = response?.data;
+      const wrappedData = payload?.data;
+      const isSuccessEnvelope = payload?.status !== false;
+
+      if (!isSuccessEnvelope) {
+        const apiMessage = String(payload?.message || 'Failed to load candidates.').trim();
+        throw new Error(apiMessage || 'Failed to load candidates.');
+      }
+
+      return wrappedData || fallback;
+    } catch (err) {
+      lastError = err;
+      if (attempt >= maxAttempts) {
+        break;
+      }
+
+      const retryAfter = retryDelaysMs[attempt - 1] || 1000;
+      console.warn(`fetchCandidates attempt ${attempt} failed; retrying in ${retryAfter}ms`, err);
+      await new Promise((resolve) => setTimeout(resolve, retryAfter));
+    }
   }
+
+  throw lastError || new Error('Failed to load candidates.');
 };
 
 
