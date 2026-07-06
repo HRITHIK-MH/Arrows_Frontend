@@ -22,12 +22,45 @@ const getInitialForm = () => {
   return initial;
 };
 
+const formatBillingTypeLabel = (value) => {
+  const text = String(value ?? "").trim();
+  if (!text) return "";
+
+  const token = text
+    .toLowerCase()
+    .replace(/[_-]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (token === "billable") return "Billable";
+  if (token === "non billable" || token === "nonbillable") return "Non-Billable";
+
+  return text;
+};
+
+const mapBillingTypeOptions = (options = []) =>
+  (Array.isArray(options) ? options : [])
+    .map((option) => {
+      const value = String(option?.value ?? option ?? "").trim();
+      if (!value) return null;
+
+      return {
+        ...(option && typeof option === "object" ? option : {}),
+        value,
+        label: formatBillingTypeLabel(option?.label ?? value),
+      };
+    })
+    .filter(Boolean);
+
 const applyDropdownOptions = (config, dropdownOptions) => ({
   ...config,
   steps: config.steps.map((step) => ({
     ...step,
     fields: (step.fields || []).map((field) => {
-      const options = dropdownOptions?.[field.name];
+      const options =
+        field.name === "billing_type"
+          ? mapBillingTypeOptions(dropdownOptions?.[field.name])
+          : dropdownOptions?.[field.name];
       return Array.isArray(options) && options.length > 0
         ? { ...field, options }
         : field;
@@ -722,7 +755,7 @@ export default function Headcount() {
               >
                 <option value="">Select Bill Type</option>
                 {currentFilterOptions.billingType.map((option) => (
-                  <option key={option} value={option}>{option}</option>
+                  <option key={option} value={option}>{formatBillingTypeLabel(option)}</option>
                 ))}
               </select>
 

@@ -12,7 +12,25 @@ const EMPTY_EMPLOYEES_RESPONSE = {
 const firstValue = (...values) => values.find((value) => value !== undefined && value !== null && value !== '');
 
 const FAILURE_STATUS_VALUES = new Set(['failed', 'failure', 'error', 'not_found', 'not found']);
+const READ_TIMEOUT_MS = 90000;
 const MUTATION_TIMEOUT_MS = 90000;
+const READ_RETRY_DELAYS_MS = [1500];
+
+const normalizeBillTypeFilter = (value = '') => {
+  const text = String(value || '').trim();
+  if (!text) return '';
+
+  const token = text
+    .toLowerCase()
+    .replace(/[_-]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  if (token === 'billable') return 'billable';
+  if (token === 'non billable' || token === 'nonbillable') return 'non-billable';
+
+  return text;
+};
 
 const extractBackendErrorMessage = (payload, fallback) =>
   firstValue(
@@ -25,6 +43,35 @@ const extractBackendErrorMessage = (payload, fallback) =>
 
 const extractBackendSuccessMessage = (payload, fallback) =>
   firstValue(payload?.message, payload?.data?.message, fallback);
+
+const shouldRetryReadError = (error) =>
+  error?.code === 'ECONNABORTED' || !error?.response;
+
+const waitForRetry = (delayMs) => new Promise((resolve) => window.setTimeout(resolve, delayMs));
+
+const getWithRetry = async (url, config = {}) => {
+  const attempts = READ_RETRY_DELAYS_MS.length + 1;
+  let lastError;
+
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      return await headcountApi.get(url, {
+        timeout: READ_TIMEOUT_MS,
+        ...config,
+      });
+    } catch (error) {
+      lastError = error;
+      if (!shouldRetryReadError(error) || attempt >= attempts) {
+        break;
+      }
+
+      const retryDelay = READ_RETRY_DELAYS_MS[attempt - 1] || 1000;
+      await waitForRetry(retryDelay);
+    }
+  }
+
+  throw lastError;
+};
 
 const assertSuccessfulMutation = (payload, fallbackMessage) => {
   if (!payload || typeof payload !== 'object') {
@@ -124,7 +171,7 @@ const toAddHeadcountRequest = (employeeData = {}) =>
     mode: firstValue(employeeData.mode),
     cost: firstValue(employeeData.cost),
     customer: firstValue(employeeData.customer),
-    billing_type: firstValue(employeeData.billingType, employeeData.billing_type),
+    billing_type: normalizeBillTypeFilter(firstValue(employeeData.billingType, employeeData.billing_type)),
     created_by: firstValue(employeeData.createdBy, employeeData.created_by, 'Demo Admin'),
   });
 
@@ -137,7 +184,7 @@ const toUpdateHeadcountRequest = (employeeData = {}) =>
     mode: firstValue(employeeData.mode),
     cost: firstValue(employeeData.cost),
     customer: firstValue(employeeData.customer),
-    billing_type: firstValue(employeeData.billingType, employeeData.billing_type),
+    billing_type: normalizeBillTypeFilter(firstValue(employeeData.billingType, employeeData.billing_type)),
     updated_by: firstValue(employeeData.updatedBy, employeeData.updated_by, 'Demo Admin'),
   });
 
@@ -193,13 +240,14 @@ export const fetchActiveEmployees = async ({
   customer = ''
 } = {}) => {
   try {
-    const response = await headcountApi.get('/headcount/activeEmployees', {
+    const normalizedBillType = normalizeBillTypeFilter(billType);
+    const response = await getWithRetry('/headcount/activeEmployees', {
       skipAuthRedirect: true,
       params: {
         page,
         limit,
         search: search || undefined,
-        bill_type: billType || undefined,
+        bill_type: normalizedBillType || undefined,
         entity: entity || undefined,
         customer: customer || undefined,
       },
@@ -228,13 +276,14 @@ export const fetchExitedEmployees = async ({
   customer = ''
 } = {}) => {
   try {
-    const response = await headcountApi.get('/headcount/exitedEmployees', {
+    const normalizedBillType = normalizeBillTypeFilter(billType);
+    const response = await getWithRetry('/headcount/exitedEmployees', {
       skipAuthRedirect: true,
       params: {
         page,
         limit,
         search: search || undefined,
-        bill_type: billType || undefined,
+        bill_type: normalizedBillType || undefined,
         entity: entity || undefined,
         customer: customer || undefined,
       },
@@ -257,7 +306,7 @@ export const fetchExitedEmployees = async ({
  */
 export const fetchEmployeeById = async (employeeId) => {
   try {
-    const response = await headcountApi.get(`/headcount/employee/${employeeId}`, {
+    const response = await getWithRetry(`/headcount/employee/${employeeId}`, {
       skipAuthRedirect: true,
     });
     return normalizeHeadcountEmployee(response?.data || {});
