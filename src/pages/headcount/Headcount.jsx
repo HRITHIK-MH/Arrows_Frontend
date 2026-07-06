@@ -325,8 +325,8 @@ export default function Headcount() {
       setError(null);
       try {
         const [activeData, exitedData] = await Promise.all([
-          fetchActiveEmployees({ page: 1, limit: 50 }),
-          fetchExitedEmployees({ page: 1, limit: 50 }),
+          fetchActiveEmployees({ page: 1, limit: 1000 }),
+          fetchExitedEmployees({ page: 1, limit: 1000 }),
         ]);
         const loadedEmployees = [
           ...extractEmployeeList(activeData),
