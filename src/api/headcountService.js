@@ -196,6 +196,27 @@ export const fetchExitedEmployees = async ({
   }
 };
 
+
+/**
+ * Get one employee by employee id.
+ * @param {string} employeeId - Employee ID
+ * @returns {Promise<Object|null>} Employee details
+ */
+export const fetchEmployeeById = async (employeeId) => {
+  try {
+    const response = await headcountApi.get(`/headcount/employee/${employeeId}`, {
+      skipAuthRedirect: true,
+    });
+    return normalizeHeadcountEmployee(response?.data || {});
+  } catch (error) {
+    if ([404, 204].includes(error?.response?.status)) {
+      return null;
+    }
+    console.error('Error fetching employee by id:', error);
+    throw error;
+  }
+};
+
 /**
  * Update employee details
  * @param {string} employeeId - Employee ID to update

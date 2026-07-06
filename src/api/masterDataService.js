@@ -21,6 +21,11 @@ const fetchMasterOptions = async (endpoint, key, requestOptions = {}) => {
   return toOptions(extractList(response?.data, key));
 };
 
+const HARDCODED_BILLING_TYPES = [
+  { value: 'BILLABLE', label: 'billable' },
+  { value: 'NON_BILLABLE', label: 'non-billable' },
+];
+
 export const fetchHeadcountDropdownOptions = async () => {
   const results = await Promise.allSettled([
     fetchMasterOptions('/master/entities', 'entities', { skipAuthRedirect: true }),
@@ -28,10 +33,9 @@ export const fetchHeadcountDropdownOptions = async () => {
     fetchMasterOptions('/master/modes', 'modes', { skipAuthRedirect: true }),
     fetchMasterOptions('/master/costBands', 'costBands', { skipAuthRedirect: true }),
     fetchMasterOptions('/master/customers', 'customers', { skipAuthRedirect: true }),
-    fetchMasterOptions('/master/billingTypes', 'billingTypes', { skipAuthRedirect: true }),
   ]);
 
-  const [entities, locations, modes, costBands, customers, billingTypes] = results.map((result) =>
+  const [entities, locations, modes, costBands, customers] = results.map((result) =>
     result.status === 'fulfilled' ? result.value : []
   );
 
@@ -42,7 +46,7 @@ export const fetchHeadcountDropdownOptions = async () => {
     mode: modes,
     cost: costBands,
     customer: customers,
-    billing_type: billingTypes,
-    billingType: billingTypes,
+    billing_type: HARDCODED_BILLING_TYPES,
+    billingType: HARDCODED_BILLING_TYPES,
   };
 };

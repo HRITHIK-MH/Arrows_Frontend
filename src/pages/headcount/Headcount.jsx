@@ -1,5 +1,5 @@
 import styles from "./Headcount.module.scss";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import {
   FiChevronLeft,
@@ -11,7 +11,7 @@ import {
 } from "react-icons/fi";
 import ReusableForm from "../../components/forms/ReusableForm";
 import { employeeConfig } from "../../components/forms/formConfigs";
-import { addEmployee, fetchActiveEmployees, fetchExitedEmployees, updateEmployee } from "../../api/headcountService";
+import { addEmployee, fetchActiveEmployees, fetchEmployeeById, fetchExitedEmployees, updateEmployee } from "../../api/headcountService";
 import { fetchHeadcountDropdownOptions } from "../../api/masterDataService";
 
 const getInitialForm = () => {
@@ -46,13 +46,128 @@ const createEmployeeId = () => `emp-${Date.now()}-${Math.random().toString(36).s
 
 const withHeadcountFieldAliases = (employee = {}) => ({
   ...employee,
+  consultant_name: employee.consultant_name ?? employee.consultantName ?? "",
+  entity: employee.entity ?? "",
   joining_date: employee.joining_date ?? employee.joiningDate ?? "",
   joiningDate: employee.joiningDate ?? employee.joining_date ?? "",
-  work_location: employee.work_location ?? employee.workLocation ?? "",
-  workLocation: employee.workLocation ?? employee.work_location ?? "",
-  billing_type: employee.billing_type ?? employee.billingType ?? employee.bill_type ?? "",
-  billingType: employee.billingType ?? employee.billing_type ?? employee.bill_type ?? "",
+  work_location:
+    employee.work_location ??
+    employee.workLocation ??
+    employee.work_mode ??
+    employee.workMode ??
+    "",
+  workLocation:
+    employee.workLocation ??
+    employee.work_location ??
+    employee.workMode ??
+    employee.work_mode ??
+    "",
+  mode: employee.mode ?? employee.employment_type ?? employee.employmentType ?? "",
+  cost: employee.cost ?? employee.payRate ?? employee.pay_rate ?? "",
+  customer: employee.customer ?? employee.clientName ?? employee.client_name ?? "",
+  billing_type:
+    employee.billing_type ??
+    employee.billingType ??
+    employee.bill_type ??
+    employee.billType ??
+    "",
+  billingType:
+    employee.billingType ??
+    employee.billing_type ??
+    employee.bill_type ??
+    employee.billType ??
+    "",
 });
+
+const normalizeOptionToken = (value) =>
+  String(value ?? "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+
+const resolveDropdownOptionValue = (rawValue, options = []) => {
+  if (rawValue === undefined || rawValue === null || rawValue === "") {
+    return "";
+  }
+
+  const valueAsString = String(rawValue);
+  const normalizedValue = normalizeOptionToken(rawValue);
+  const optionList = Array.isArray(options) ? options : [];
+
+  const exactMatch = optionList.find((option) => String(option?.value ?? "") === valueAsString);
+  if (exactMatch) {
+    return exactMatch.value;
+  }
+
+  const normalizedMatch = optionList.find((option) => {
+    const optionValueToken = normalizeOptionToken(option?.value);
+    const optionLabelToken = normalizeOptionToken(option?.label);
+    return normalizedValue && (optionValueToken === normalizedValue || optionLabelToken === normalizedValue);
+  });
+
+  return normalizedMatch ? normalizedMatch.value : rawValue;
+};
+
+const toHeadcountFormData = (employee = {}, dropdownOptions = {}) => {
+  const aliasedEmployee = withHeadcountFieldAliases(employee);
+  const locationOptions = dropdownOptions.work_location || dropdownOptions.workLocation || [];
+  const billingOptions = dropdownOptions.billing_type || dropdownOptions.billingType || [];
+
+  const normalizedWorkLocation = resolveDropdownOptionValue(aliasedEmployee.work_location, locationOptions);
+  const normalizedBillingType = resolveDropdownOptionValue(aliasedEmployee.billing_type, billingOptions);
+
+  return {
+    ...aliasedEmployee,
+    entity: resolveDropdownOptionValue(aliasedEmployee.entity, dropdownOptions.entity || []),
+    work_location: normalizedWorkLocation,
+    workLocation: normalizedWorkLocation,
+    mode: resolveDropdownOptionValue(aliasedEmployee.mode, dropdownOptions.mode || []),
+    cost: resolveDropdownOptionValue(aliasedEmployee.cost, dropdownOptions.cost || []),
+    customer: resolveDropdownOptionValue(aliasedEmployee.customer, dropdownOptions.customer || []),
+    billing_type: normalizedBillingType,
+    billingType: normalizedBillingType,
+  };
+};
+
+const ensureOptionForValue = (options = [], value) => {
+  if (value === undefined || value === null || value === "") {
+    return Array.isArray(options) ? options : [];
+  }
+
+  const safeOptions = Array.isArray(options) ? options : [];
+  const normalizedValue = normalizeOptionToken(value);
+  const hasMatch = safeOptions.some((option) => {
+    const optionValueToken = normalizeOptionToken(option?.value);
+    const optionLabelToken = normalizeOptionToken(option?.label);
+    return normalizedValue && (optionValueToken === normalizedValue || optionLabelToken === normalizedValue);
+  });
+
+  if (hasMatch) {
+    return safeOptions;
+  }
+
+  return [{ value, label: String(value) }, ...safeOptions];
+};
+
+const withEditFallbackOptions = (config, formValues = {}) => {
+  const fallbackFields = new Set(["work_location", "mode", "cost"]);
+
+  return {
+    ...config,
+    steps: (config.steps || []).map((step) => ({
+      ...step,
+      fields: (step.fields || []).map((field) => {
+        if (!fallbackFields.has(field.name)) {
+          return field;
+        }
+
+        return {
+          ...field,
+          options: ensureOptionForValue(field.options, formValues[field.name]),
+        };
+      }),
+    })),
+  };
+};
 
 const ROWS_PER_PAGE_OPTIONS = [10, 25, 50];
 
@@ -213,10 +328,31 @@ export default function Headcount() {
     const editEmployee = location.state?.editEmployee;
     if (!editEmployee) return;
 
-    setFormData(withHeadcountFieldAliases(editEmployee));
-    setEditingEmployeeId(getEmployeeId(editEmployee) ?? null);
-    setIsAddingEmployee(true);
-    setSearchParams({ action: "edit" }, { replace: true, state: null });
+    let isMounted = true;
+
+    const loadEditEmployee = async () => {
+      const editId = getEmployeeId(editEmployee);
+      try {
+        const fullEmployee = editId ? await fetchEmployeeById(editId) : null;
+        if (!isMounted) return;
+        setFormData(withHeadcountFieldAliases(fullEmployee || editEmployee));
+        setEditingEmployeeId(editId ?? null);
+        setIsAddingEmployee(true);
+        setSearchParams({ action: "edit" }, { replace: true, state: null });
+      } catch {
+        if (!isMounted) return;
+        setFormData(withHeadcountFieldAliases(editEmployee));
+        setEditingEmployeeId(editId ?? null);
+        setIsAddingEmployee(true);
+        setSearchParams({ action: "edit" }, { replace: true, state: null });
+      }
+    };
+
+    loadEditEmployee();
+
+    return () => {
+      isMounted = false;
+    };
   }, [location.state, setSearchParams]);
 
   useEffect(() => {
@@ -251,11 +387,11 @@ export default function Headcount() {
     setSearchParams({ action: "add" });
   };
 
-  const closeForm = () => {
+  const closeForm = useCallback(() => {
     setIsAddingEmployee(false);
     setEditingEmployeeId(null);
     setSearchParams({});
-  };
+  }, [setSearchParams]);
 
   const updateActiveFilter = (fieldName, value) => {
     setCurrentPage(1);
@@ -424,14 +560,25 @@ export default function Headcount() {
     }
   };
 
+  const formInitialData = useMemo(
+    () =>
+      isAddingEmployee && editingEmployeeId !== null
+        ? toHeadcountFormData(formData, dropdownOptions)
+        : formData,
+    [dropdownOptions, editingEmployeeId, formData, isAddingEmployee]
+  );
+
   const employeeFormConfig = useMemo(
     () => ({
-      ...applyDropdownOptions(employeeConfig, dropdownOptions),
+      ...withEditFallbackOptions(
+        applyDropdownOptions(employeeConfig, dropdownOptions),
+        formInitialData
+      ),
       showCancelAction: true,
       cancelLabel: "Cancel",
       onCancel: closeForm,
     }),
-    [dropdownOptions]
+    [closeForm, dropdownOptions, formInitialData]
   );
 
   if (isLoading) {
@@ -473,7 +620,7 @@ export default function Headcount() {
             <ReusableForm
               config={employeeFormConfig}
               onSubmit={handleSubmit}
-              initialData={formData}
+              initialData={formInitialData}
               isSubmitting={isSavingEmployee}
             />
           </div>

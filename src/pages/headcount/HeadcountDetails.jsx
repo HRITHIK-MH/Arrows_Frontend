@@ -2,7 +2,12 @@ import styles from "./Headcount.module.scss";
 import { FiChevronLeft, FiEdit2, FiX } from "react-icons/fi";
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { exitEmployee, fetchActiveEmployees, fetchExitedEmployees } from "../../api/headcountService";
+import {
+  exitEmployee,
+  fetchActiveEmployees,
+  fetchEmployeeById,
+  fetchExitedEmployees,
+} from "../../api/headcountService";
 
 const getEmployeeId = (employee) => employee?.employee_id || employee?.employeeId || employee?.id || employee?.serialNumber;
 
@@ -18,6 +23,32 @@ const extractEmployeeList = (data) => {
   if (Array.isArray(data?.data?.content)) return data.data.content;
   if (Array.isArray(data?.employees)) return data.employees;
   return [];
+};
+
+const extractTotal = (data, fallback = 0) => {
+  const total = Number(data?.total ?? data?.totalElements ?? fallback);
+  return Number.isFinite(total) ? total : fallback;
+};
+
+const findEmployeeByPaging = async (employeeId, fetcher) => {
+  const pageSize = 200;
+  let page = 1;
+  let totalPages = 1;
+
+  do {
+    const payload = await fetcher({ page, limit: pageSize });
+    const employees = extractEmployeeList(payload);
+    const found = employees.find((item) => String(getEmployeeId(item)) === String(employeeId));
+    if (found) {
+      return found;
+    }
+
+    const total = extractTotal(payload, employees.length);
+    totalPages = Math.max(1, Math.ceil(total / pageSize));
+    page += 1;
+  } while (page <= totalPages && page <= 25);
+
+  return null;
 };
 
 const parseDateValue = (value) => {
@@ -56,36 +87,60 @@ export default function HeadcountDetails() {
   const isExited = isExitedEmployee(employee);
 
   useEffect(() => {
-    if (state?.employee) {
-      setEmployee(state.employee);
-      setIsLoading(false);
-      setLoadError("");
-      return;
-    }
-
     let isMounted = true;
 
     const loadEmployee = async () => {
+      const stateEmployee = state?.employee || null;
+      if (stateEmployee) setEmployee(stateEmployee);
+
       setIsLoading(true);
       setLoadError("");
+
       try {
-        const [activeData, exitedData] = await Promise.all([
-          fetchActiveEmployees({ page: 1, limit: 1000 }),
-          fetchExitedEmployees({ page: 1, limit: 1000 }),
-        ]);
+        const details = await fetchEmployeeById(employeeId);
         if (!isMounted) return;
-        const employees = [
-          ...extractEmployeeList(activeData),
-          ...extractEmployeeList(exitedData),
-        ];
-        setEmployee(
-          employees.find((item) => String(getEmployeeId(item)) === String(employeeId)) || null
-        );
+        if (details) {
+          setEmployee(details);
+          return;
+        }
+
+        const fromActive = await findEmployeeByPaging(employeeId, fetchActiveEmployees);
+        if (!isMounted) return;
+        if (fromActive) {
+          setEmployee(fromActive);
+          return;
+        }
+
+        const fromExited = await findEmployeeByPaging(employeeId, fetchExitedEmployees);
+        if (!isMounted) return;
+        setEmployee(fromExited || stateEmployee || null);
+        if (!fromExited && !stateEmployee) {
+          setLoadError("Employee details could not be loaded.");
+        }
       } catch (error) {
         if (!isMounted) return;
         console.error("Failed to load headcount employee details:", error);
-        setLoadError("Employee details could not be loaded.");
-        setEmployee(null);
+
+        try {
+          const fromActive = await findEmployeeByPaging(employeeId, fetchActiveEmployees);
+          if (!isMounted) return;
+          if (fromActive) {
+            setEmployee(fromActive);
+            return;
+          }
+
+          const fromExited = await findEmployeeByPaging(employeeId, fetchExitedEmployees);
+          if (!isMounted) return;
+          setEmployee(fromExited || stateEmployee || null);
+          if (!fromExited && !stateEmployee) {
+            setLoadError("Employee details could not be loaded.");
+          }
+        } catch (fallbackError) {
+          if (!isMounted) return;
+          console.error("Fallback employee lookup failed:", fallbackError);
+          setLoadError("Employee details could not be loaded.");
+          setEmployee(stateEmployee || null);
+        }
       } finally {
         if (isMounted) {
           setIsLoading(false);
