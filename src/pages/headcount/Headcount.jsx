@@ -1,5 +1,5 @@
 import styles from "./Headcount.module.scss";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import {
   FiChevronLeft,
@@ -122,6 +122,7 @@ export default function Headcount() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [dropdownOptions, setDropdownOptions] = useState({});
+  const [isSavingEmployee, setIsSavingEmployee] = useState(false);
   const [activeTab, setActiveTab] = useState(() =>
     location.state?.headcountTab === "exited" ? "exited" : "active"
   );
@@ -139,6 +140,7 @@ export default function Headcount() {
   });
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(ROWS_PER_PAGE_OPTIONS[0]);
+  const saveInFlightRef = useRef(false);
 
   const activeEmployees = useMemo(
     () => employees.filter((employee) => !isExitedEmployee(employee)),
@@ -326,13 +328,19 @@ export default function Headcount() {
           fetchActiveEmployees({ page: 1, limit: 1000 }),
           fetchExitedEmployees({ page: 1, limit: 1000 }),
         ]);
-        setEmployees([
+        const loadedEmployees = [
           ...extractEmployeeList(activeData),
           ...extractEmployeeList(exitedData),
-        ]);
+        ];
+
+        if (loadedEmployees.length === 0) {
+          throw new Error("No headcount data found in the database.");
+        }
+
+        setEmployees(loadedEmployees);
       } catch (err) {
         setEmployees([]);
-        setError("Failed to load employees");
+        setError(err?.message || "Failed to load employees");
         console.error("Error loading employees:", err);
       } finally {
         setIsLoading(false);
@@ -365,6 +373,13 @@ export default function Headcount() {
   }, [error]);
 
   const handleSubmit = async (data) => {
+    if (saveInFlightRef.current) {
+      return;
+    }
+
+    saveInFlightRef.current = true;
+    setIsSavingEmployee(true);
+
     try {
       setError(null);
       const employeeData = { ...data };
@@ -403,6 +418,9 @@ export default function Headcount() {
     } catch (err) {
       setError(getApiErrorMessage(err, "Failed to save employee. Please try again."));
       console.error("Error saving employee:", err);
+    } finally {
+      saveInFlightRef.current = false;
+      setIsSavingEmployee(false);
     }
   };
 
@@ -456,6 +474,7 @@ export default function Headcount() {
               config={employeeFormConfig}
               onSubmit={handleSubmit}
               initialData={formData}
+              isSubmitting={isSavingEmployee}
             />
           </div>
         </section>

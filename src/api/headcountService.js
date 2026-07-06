@@ -116,7 +116,9 @@ const toUpdateHeadcountRequest = (employeeData = {}) =>
  */
 export const addEmployee = async (employeeData) => {
   try {
-    const response = await headcountApi.post('/headcount/addEmployee', toAddHeadcountRequest(employeeData));
+    const response = await headcountApi.post('/headcount/addEmployee', toAddHeadcountRequest(employeeData), {
+      skipAuthRedirect: true,
+    });
     return normalizeHeadcountEmployee(response?.data?.data || response?.data || {});
   } catch (error) {
     console.error('Error adding employee:', error);
@@ -139,6 +141,7 @@ export const fetchActiveEmployees = async ({
 } = {}) => {
   try {
     const response = await headcountApi.get('/headcount/activeEmployees', {
+      skipAuthRedirect: true,
       params: {
         page,
         limit,
@@ -173,6 +176,7 @@ export const fetchExitedEmployees = async ({
 } = {}) => {
   try {
     const response = await headcountApi.get('/headcount/exitedEmployees', {
+      skipAuthRedirect: true,
       params: {
         page,
         limit,
@@ -200,7 +204,9 @@ export const fetchExitedEmployees = async ({
  */
 export const updateEmployee = async (employeeId, employeeData) => {
   try {
-    const response = await headcountApi.put(`/headcount/updateEmployee/${employeeId}`, toUpdateHeadcountRequest(employeeData));
+    const response = await headcountApi.put(`/headcount/updateEmployee/${employeeId}`, toUpdateHeadcountRequest(employeeData), {
+      skipAuthRedirect: true,
+    });
     return normalizeHeadcountEmployee(response?.data?.data || response?.data || {});
   } catch (error) {
     console.error('Error updating employee:', error);
@@ -223,7 +229,9 @@ export const exitEmployee = async (employeeId, exitData) => {
       exit_reason: exitData.exitReason,
       updated_by: firstValue(exitData.updatedBy, exitData.updated_by, 'Demo Admin'),
     };
-    const response = await headcountApi.post('/headcount/exitEmployee', exitRequest);
+    const response = await headcountApi.post('/headcount/exitEmployee', exitRequest, {
+      skipAuthRedirect: true,
+    });
     return response?.data || null;
   } catch (error) {
     console.error('Error exiting employee:', error);

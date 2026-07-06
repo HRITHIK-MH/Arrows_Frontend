@@ -143,6 +143,7 @@ export const fetchCandidateFiltersMeta = async () => {
   while (attempt < maxAttempts) {
     try {
       const response = await candidateApi.get(CANDIDATE_INFORMATION_META_ENDPOINT, {
+        skipAuthRedirect: true,
       });
       return response?.data?.data || response?.data || null;
     } catch (err) {
@@ -156,7 +157,9 @@ export const fetchCandidateFiltersMeta = async () => {
 };
 
 export const fetchCandidateDetail = async (candidateId) => {
-  const response = await candidateApi.get(`/candidates/${encodeURIComponent(candidateId)}`);
+  const response = await candidateApi.get(`/candidates/${encodeURIComponent(candidateId)}`, {
+    skipAuthRedirect: true,
+  });
   return response?.data?.data || null;
 };
 
@@ -169,13 +172,16 @@ export const createCandidate = async (candidate) => {
 };
 
 export const updateCandidate = async (candidateId, candidate) => {
-  const response = await candidateApi.put(`/candidates/${encodeURIComponent(candidateId)}`, candidate);
+  const response = await candidateApi.put(`/candidates/${encodeURIComponent(candidateId)}`, candidate, {
+    skipAuthRedirect: true,
+  });
   return response?.data?.data || null;
 };
 
 export const deleteCandidate = async (candidateId, options = { softDelete: true }) => {
   const response = await candidateApi.delete(`/candidates/${encodeURIComponent(candidateId)}`, {
     data: options,
+    skipAuthRedirect: true,
   });
   return response?.data?.data || null;
 };

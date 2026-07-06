@@ -16,19 +16,19 @@ const extractList = (payload, key) => {
   return [];
 };
 
-const fetchMasterOptions = async (endpoint, key) => {
-  const response = await masterDataApi.get(endpoint);
+const fetchMasterOptions = async (endpoint, key, requestOptions = {}) => {
+  const response = await masterDataApi.get(endpoint, requestOptions);
   return toOptions(extractList(response?.data, key));
 };
 
 export const fetchHeadcountDropdownOptions = async () => {
   const results = await Promise.allSettled([
-    fetchMasterOptions('/master/entities', 'entities'),
-    fetchMasterOptions('/master/locations', 'locations'),
-    fetchMasterOptions('/master/modes', 'modes'),
-    fetchMasterOptions('/master/costBands', 'costBands'),
-    fetchMasterOptions('/master/customers', 'customers'),
-    fetchMasterOptions('/master/billingTypes', 'billingTypes'),
+    fetchMasterOptions('/master/entities', 'entities', { skipAuthRedirect: true }),
+    fetchMasterOptions('/master/locations', 'locations', { skipAuthRedirect: true }),
+    fetchMasterOptions('/master/modes', 'modes', { skipAuthRedirect: true }),
+    fetchMasterOptions('/master/costBands', 'costBands', { skipAuthRedirect: true }),
+    fetchMasterOptions('/master/customers', 'customers', { skipAuthRedirect: true }),
+    fetchMasterOptions('/master/billingTypes', 'billingTypes', { skipAuthRedirect: true }),
   ]);
 
   const [entities, locations, modes, costBands, customers, billingTypes] = results.map((result) =>
