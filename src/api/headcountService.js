@@ -11,6 +11,38 @@ const EMPTY_EMPLOYEES_RESPONSE = {
 
 const firstValue = (...values) => values.find((value) => value !== undefined && value !== null && value !== '');
 
+const FAILURE_STATUS_VALUES = new Set(['failed', 'failure', 'error', 'not_found', 'not found']);
+const MUTATION_TIMEOUT_MS = 90000;
+
+const extractBackendErrorMessage = (payload, fallback) =>
+  firstValue(
+    payload?.message,
+    payload?.error,
+    payload?.data?.message,
+    payload?.data?.error,
+    fallback
+  );
+
+const extractBackendSuccessMessage = (payload, fallback) =>
+  firstValue(payload?.message, payload?.data?.message, fallback);
+
+const assertSuccessfulMutation = (payload, fallbackMessage) => {
+  if (!payload || typeof payload !== 'object') {
+    return;
+  }
+
+  if (payload.status === false) {
+    throw new Error(extractBackendErrorMessage(payload, fallbackMessage));
+  }
+
+  if (typeof payload.status === 'string') {
+    const normalizedStatus = payload.status.trim().toLowerCase();
+    if (FAILURE_STATUS_VALUES.has(normalizedStatus)) {
+      throw new Error(extractBackendErrorMessage(payload, fallbackMessage));
+    }
+  }
+};
+
 export const normalizeHeadcountEmployee = (employee = {}) => {
   const exitDate = firstValue(employee.exitDate, employee.exit_date, employee.exitDetails?.exitDate);
   const exitReason = firstValue(employee.exitReason, employee.exit_reason, employee.exitDetails?.exitReason);
@@ -118,9 +150,30 @@ export const addEmployee = async (employeeData) => {
   try {
     const response = await headcountApi.post('/headcount/addEmployee', toAddHeadcountRequest(employeeData), {
       skipAuthRedirect: true,
+      timeout: MUTATION_TIMEOUT_MS,
     });
-    return normalizeHeadcountEmployee(response?.data?.data || response?.data || {});
+    assertSuccessfulMutation(response?.data, 'Failed to save employee.');
+
+    const savedEmployee = response?.data?.data || response?.data || {};
+    if (!savedEmployee || typeof savedEmployee !== 'object') {
+      throw new Error('Failed to save employee. Empty response from backend.');
+    }
+
+    return {
+      employee: normalizeHeadcountEmployee(savedEmployee),
+      message: String(extractBackendSuccessMessage(response?.data, 'Employee added successfully.') || 'Employee added successfully.').trim(),
+      raw: response?.data || null,
+    };
   } catch (error) {
+    const backendMessage = extractBackendErrorMessage(error?.response?.data);
+    if (backendMessage) {
+      throw new Error(String(backendMessage).trim());
+    }
+
+    if (error?.code === 'ECONNABORTED') {
+      throw new Error('Save request timed out before backend responded. Please try again.');
+    }
+
     console.error('Error adding employee:', error);
     throw error;
   }
@@ -227,9 +280,23 @@ export const updateEmployee = async (employeeId, employeeData) => {
   try {
     const response = await headcountApi.put(`/headcount/updateEmployee/${employeeId}`, toUpdateHeadcountRequest(employeeData), {
       skipAuthRedirect: true,
+      timeout: MUTATION_TIMEOUT_MS,
     });
-    return normalizeHeadcountEmployee(response?.data?.data || response?.data || {});
+    assertSuccessfulMutation(response?.data, 'Failed to update employee.');
+    return {
+      message: String(extractBackendSuccessMessage(response?.data, 'Employee updated successfully.') || 'Employee updated successfully.').trim(),
+      raw: response?.data || null,
+    };
   } catch (error) {
+    const backendMessage = extractBackendErrorMessage(error?.response?.data);
+    if (backendMessage) {
+      throw new Error(String(backendMessage).trim());
+    }
+
+    if (error?.code === 'ECONNABORTED') {
+      throw new Error('Update request timed out before backend responded. Please try again.');
+    }
+
     console.error('Error updating employee:', error);
     throw error;
   }
@@ -252,9 +319,23 @@ export const exitEmployee = async (employeeId, exitData) => {
     };
     const response = await headcountApi.post('/headcount/exitEmployee', exitRequest, {
       skipAuthRedirect: true,
+      timeout: MUTATION_TIMEOUT_MS,
     });
-    return response?.data || null;
+    assertSuccessfulMutation(response?.data, 'Failed to save exit details.');
+    return {
+      message: String(extractBackendSuccessMessage(response?.data, 'Employee exit details saved successfully.') || 'Employee exit details saved successfully.').trim(),
+      raw: response?.data || null,
+    };
   } catch (error) {
+    const backendMessage = extractBackendErrorMessage(error?.response?.data);
+    if (backendMessage) {
+      throw new Error(String(backendMessage).trim());
+    }
+
+    if (error?.code === 'ECONNABORTED') {
+      throw new Error('Exit request timed out before backend responded. Please try again.');
+    }
+
     console.error('Error exiting employee:', error);
     throw error;
   }

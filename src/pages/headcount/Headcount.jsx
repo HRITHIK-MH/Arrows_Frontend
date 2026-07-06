@@ -249,6 +249,28 @@ const getApiErrorMessage = (error, fallbackMessage) =>
     fallbackMessage
   );
 
+const firstNonEmptyValue = (...values) =>
+  values.find((value) => value !== undefined && value !== null && String(value).trim() !== "");
+
+const validateHeadcountRequiredFields = (employee = {}) => {
+  const missing = [];
+
+  if (!firstNonEmptyValue(employee.work_location, employee.workLocation)) {
+    missing.push("Work Location");
+  }
+  if (!firstNonEmptyValue(employee.mode)) {
+    missing.push("Mode");
+  }
+  if (!firstNonEmptyValue(employee.cost)) {
+    missing.push("Cost");
+  }
+  if (!firstNonEmptyValue(employee.customer)) {
+    missing.push("Customer");
+  }
+
+  return missing;
+};
+
 export default function Headcount() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -267,6 +289,9 @@ export default function Headcount() {
   );
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [successMessage, setSuccessMessage] = useState(
+    () => String(location.state?.successMessage || "").trim()
+  );
   const [dropdownOptions, setDropdownOptions] = useState({});
   const [isSavingEmployee, setIsSavingEmployee] = useState(false);
   const [totalRecords, setTotalRecords] = useState(0);
@@ -488,6 +513,16 @@ export default function Headcount() {
     return () => window.clearTimeout(timer);
   }, [error]);
 
+  useEffect(() => {
+    if (!successMessage) return undefined;
+
+    const timer = window.setTimeout(() => {
+      setSuccessMessage("");
+    }, 3500);
+
+    return () => window.clearTimeout(timer);
+  }, [successMessage]);
+
   const handleSubmit = async (data) => {
     if (saveInFlightRef.current) {
       return;
@@ -498,6 +533,7 @@ export default function Headcount() {
 
     try {
       setError(null);
+      setSuccessMessage("");
       const employeeData = { ...data };
       delete employeeData.serialNumber;
 
@@ -507,11 +543,25 @@ export default function Headcount() {
         consultant_name: String(employeeData.consultant_name || employeeData.consultantName || "").trim(),
       });
 
-      if (editingEmployeeId !== null) {
-        await updateEmployee(editingEmployeeId, normalizedEmployee);
-      } else {
-        await addEmployee(normalizedEmployee);
+      const missingFields = validateHeadcountRequiredFields(normalizedEmployee);
+      if (missingFields.length > 0) {
+        setError(`Please fill required fields: ${missingFields.join(", ")}.`);
+        return;
       }
+
+      const saveResult =
+        editingEmployeeId !== null
+          ? await updateEmployee(editingEmployeeId, normalizedEmployee)
+          : await addEmployee(normalizedEmployee);
+
+      const backendSuccess =
+        String(saveResult?.message || saveResult?.raw?.message || "").trim();
+      setSuccessMessage(
+        backendSuccess ||
+          (editingEmployeeId !== null
+            ? "Employee updated successfully."
+            : "Employee added successfully.")
+      );
 
       setIsAddingEmployee(false);
       setEditingEmployeeId(null);
@@ -582,6 +632,12 @@ export default function Headcount() {
             </div>
           ) : null}
 
+          {successMessage ? (
+            <div className={styles.successBanner}>
+              {successMessage}
+            </div>
+          ) : null}
+
           <div className={styles.formPage}>
             <ReusableForm
               config={employeeFormConfig}
@@ -601,6 +657,11 @@ export default function Headcount() {
         {error ? (
           <div className={styles.errorBanner}>
             {error}
+          </div>
+        ) : null}
+        {successMessage ? (
+          <div className={styles.successBanner}>
+            {successMessage}
           </div>
         ) : null}
         <div className={styles.tableSection}>

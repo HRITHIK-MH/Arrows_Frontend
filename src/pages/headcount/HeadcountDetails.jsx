@@ -75,6 +75,29 @@ const formatDayMonthYear = (value) => {
   return `${day} ${month} ${year}`;
 };
 
+const toIsoDateString = (value) => {
+  const text = String(value || "").trim();
+  if (!text) return "";
+
+  const isoMatch = text.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (isoMatch) {
+    return text;
+  }
+
+  const dayFirstMatch = text.match(/^(\d{2})-(\d{2})-(\d{4})$/);
+  if (dayFirstMatch) {
+    return `${dayFirstMatch[3]}-${dayFirstMatch[2]}-${dayFirstMatch[1]}`;
+  }
+
+  const parsed = parseDateValue(text);
+  if (!parsed) return text;
+
+  const yyyy = parsed.getFullYear();
+  const mm = String(parsed.getMonth() + 1).padStart(2, "0");
+  const dd = String(parsed.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+};
+
 export default function HeadcountDetails() {
   const navigate = useNavigate();
   const { state } = useLocation();
@@ -86,6 +109,7 @@ export default function HeadcountDetails() {
   const [isExitModalOpen, setIsExitModalOpen] = useState(false);
   const [exitForm, setExitForm] = useState({ exitDate: "", exitReason: "" });
   const [exitErrors, setExitErrors] = useState({});
+  const [isSavingExit, setIsSavingExit] = useState(false);
   const isExited = isExitedEmployee(employee);
 
   useEffect(() => {
@@ -178,6 +202,9 @@ export default function HeadcountDetails() {
   };
 
   const closeExitModal = () => {
+    if (isSavingExit) {
+      return;
+    }
     setIsExitModalOpen(false);
     setExitErrors({});
   };
@@ -196,6 +223,10 @@ export default function HeadcountDetails() {
   const saveExitDetails = async (event) => {
     event.preventDefault();
 
+    if (isSavingExit) {
+      return;
+    }
+
     const nextErrors = {};
     if (!exitForm.exitDate) {
       nextErrors.exitDate = "Exit Date is required.";
@@ -209,14 +240,18 @@ export default function HeadcountDetails() {
       return;
     }
 
+    const exitDate = toIsoDateString(exitForm.exitDate);
     const exitDetails = {
-      exitDate: exitForm.exitDate,
+      exitDate,
       exitReason: exitForm.exitReason.trim(),
       savedAt: new Date().toISOString(),
     };
 
+    setIsSavingExit(true);
+
     try {
-      await exitEmployee(getEmployeeId(employee), exitDetails);
+      setExitErrors({});
+      const exitResult = await exitEmployee(getEmployeeId(employee), exitDetails);
       
       const updatedEmployee = {
         ...employee,
@@ -228,10 +263,19 @@ export default function HeadcountDetails() {
       setEmployee(updatedEmployee);
       setIsExitModalOpen(false);
       setExitErrors({});
-      navigate("/headcount", { state: { headcountTab: "exited" } });
+      navigate("/headcount", {
+        state: {
+          headcountTab: "exited",
+          successMessage:
+            String(exitResult?.message || exitResult?.raw?.message || "").trim() ||
+            "Employee exited successfully.",
+        },
+      });
     } catch (error) {
       console.error("Failed to save employee exit details:", error);
-      setExitErrors({ form: "Exit details could not be saved. Please try again." });
+      setExitErrors({ form: String(error?.message || "Exit details could not be saved. Please try again.") });
+    } finally {
+      setIsSavingExit(false);
     }
   };
 
@@ -343,7 +387,13 @@ export default function HeadcountDetails() {
           >
             <div className={styles.exitModalHeader}>
               <h2 id="exit-modal-title">Employee Exit</h2>
-              <button type="button" className={styles.exitModalClose} onClick={closeExitModal} aria-label="Close">
+              <button
+                type="button"
+                className={styles.exitModalClose}
+                onClick={closeExitModal}
+                aria-label="Close"
+                disabled={isSavingExit}
+              >
                 <FiX aria-hidden="true" />
               </button>
             </div>
@@ -389,11 +439,11 @@ export default function HeadcountDetails() {
             </div>
 
             <div className={styles.exitModalActions}>
-              <button type="button" className={styles.secondaryButton} onClick={closeExitModal}>
+              <button type="button" className={styles.secondaryButton} onClick={closeExitModal} disabled={isSavingExit}>
                 Cancel
               </button>
-              <button type="submit" className={styles.primaryButton}>
-                Save
+              <button type="submit" className={styles.primaryButton} disabled={isSavingExit}>
+                {isSavingExit ? "Saving..." : "Save"}
               </button>
             </div>
           </form>
