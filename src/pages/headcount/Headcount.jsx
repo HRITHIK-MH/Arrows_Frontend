@@ -35,9 +35,6 @@ const applyDropdownOptions = (config, dropdownOptions) => ({
   })),
 });
 
-const isExitedEmployee = (employee) =>
-  Boolean(employee?.isExited || employee?.status === "exited" || employee?.exitDetails);
-
 const getEmployeeId = (employee) => employee?.employee_id || employee?.employeeId || employee?.id || employee?.serialNumber;
 
 const getConsultantName = (employee) => employee?.consultant_name || employee?.consultantName || "";
@@ -209,10 +206,6 @@ const formatMonthYear = (value) => {
   return monthYearFormatter.format(parsedDate);
 };
 
-const getUniqueOptions = (employees, fieldName) =>
-  [...new Set(employees.map((employee) => String(employee[fieldName] || "").trim()).filter(Boolean))]
-    .sort((a, b) => a.localeCompare(b));
-
 const extractEmployeeList = (data) => {
   if (Array.isArray(data)) return data;
   if (Array.isArray(data?.content)) return data.content;
@@ -221,6 +214,18 @@ const extractEmployeeList = (data) => {
   if (Array.isArray(data?.employees)) return data.employees;
   return [];
 };
+
+const extractTotalRecords = (data, fallback = 0) => {
+  const total = Number(
+    data?.totalElements ?? data?.total ?? data?.count ?? data?.data?.totalElements ?? fallback
+  );
+  return Number.isFinite(total) ? total : fallback;
+};
+
+const optionValuesFromMaster = (options = []) =>
+  (Array.isArray(options) ? options : [])
+    .map((option) => String(option?.value ?? option ?? "").trim())
+    .filter(Boolean);
 
 const formatApiErrorMessage = (message, fallbackMessage) => {
   const text = String(message || "").trim();
@@ -249,14 +254,23 @@ export default function Headcount() {
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const formAction = searchParams.get("action");
+  const initialEditEmployee = location.state?.editEmployee || null;
   const [employees, setEmployees] = useState([]);
-  const [isAddingEmployee, setIsAddingEmployee] = useState(false);
-  const [formData, setFormData] = useState(() => getInitialForm());
-  const [editingEmployeeId, setEditingEmployeeId] = useState(null);
+  const [isAddingEmployee, setIsAddingEmployee] = useState(
+    () => Boolean(initialEditEmployee) || formAction === "add" || formAction === "edit"
+  );
+  const [formData, setFormData] = useState(() =>
+    initialEditEmployee ? withHeadcountFieldAliases(initialEditEmployee) : getInitialForm()
+  );
+  const [editingEmployeeId, setEditingEmployeeId] = useState(
+    () => (initialEditEmployee ? getEmployeeId(initialEditEmployee) ?? null : null)
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [dropdownOptions, setDropdownOptions] = useState({});
   const [isSavingEmployee, setIsSavingEmployee] = useState(false);
+  const [totalRecords, setTotalRecords] = useState(0);
+  const [listReloadKey, setListReloadKey] = useState(0);
   const [activeTab, setActiveTab] = useState(() =>
     location.state?.headcountTab === "exited" ? "exited" : "active"
   );
@@ -275,95 +289,49 @@ export default function Headcount() {
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(ROWS_PER_PAGE_OPTIONS[0]);
   const saveInFlightRef = useRef(false);
-
-  const activeEmployees = useMemo(
-    () => employees.filter((employee) => !isExitedEmployee(employee)),
-    [employees]
-  );
-  const exitedEmployees = useMemo(
-    () => employees.filter((employee) => isExitedEmployee(employee)),
-    [employees]
-  );
-  const filteredActiveEmployees = useMemo(() => {
-    const searchTerm = activeFilters.search.trim().toLowerCase();
-
-    return activeEmployees.filter((employee) => {
-      const matchesSearch =
-        !searchTerm ||
-        String(getConsultantName(employee)).toLowerCase().includes(searchTerm);
-      const matchesBillingType =
-        !activeFilters.billingType || employee.billingType === activeFilters.billingType;
-      const matchesEntity = !activeFilters.entity || employee.entity === activeFilters.entity;
-      const matchesCustomer = !activeFilters.customer || employee.customer === activeFilters.customer;
-
-      return matchesSearch && matchesBillingType && matchesEntity && matchesCustomer;
-    });
-  }, [activeEmployees, activeFilters]);
-  const filteredExitedEmployees = useMemo(() => {
-    const searchTerm = exitedFilters.search.trim().toLowerCase();
-
-    return exitedEmployees.filter((employee) => {
-      const matchesSearch =
-        !searchTerm ||
-        String(getConsultantName(employee)).toLowerCase().includes(searchTerm);
-      const matchesBillingType =
-        !exitedFilters.billingType || employee.billingType === exitedFilters.billingType;
-      const matchesEntity = !exitedFilters.entity || employee.entity === exitedFilters.entity;
-      const matchesCustomer = !exitedFilters.customer || employee.customer === exitedFilters.customer;
-
-      return matchesSearch && matchesBillingType && matchesEntity && matchesCustomer;
-    });
-  }, [exitedEmployees, exitedFilters]);
+  const currentFilters = activeTab === "active" ? activeFilters : exitedFilters;
   const activeFilterOptions = useMemo(
     () => ({
-      billingType: getUniqueOptions(activeEmployees, "billingType"),
-      entity: getUniqueOptions(activeEmployees, "entity"),
-      customer: getUniqueOptions(activeEmployees, "customer"),
+      billingType: optionValuesFromMaster(dropdownOptions.billing_type || dropdownOptions.billingType),
+      entity: optionValuesFromMaster(dropdownOptions.entity),
+      customer: optionValuesFromMaster(dropdownOptions.customer),
     }),
-    [activeEmployees]
+    [dropdownOptions]
   );
   const exitedFilterOptions = useMemo(
     () => ({
-      billingType: getUniqueOptions(exitedEmployees, "billingType"),
-      entity: getUniqueOptions(exitedEmployees, "entity"),
-      customer: getUniqueOptions(exitedEmployees, "customer"),
+      billingType: optionValuesFromMaster(dropdownOptions.billing_type || dropdownOptions.billingType),
+      entity: optionValuesFromMaster(dropdownOptions.entity),
+      customer: optionValuesFromMaster(dropdownOptions.customer),
     }),
-    [exitedEmployees]
+    [dropdownOptions]
   );
-  const currentFilters = activeTab === "active" ? activeFilters : exitedFilters;
   const currentFilterOptions = activeTab === "active" ? activeFilterOptions : exitedFilterOptions;
-  const displayedEmployees = activeTab === "active" ? filteredActiveEmployees : filteredExitedEmployees;
+  const displayedEmployees = employees;
   const hasActiveFilters = Object.values(activeFilters).some((value) => String(value || "").trim());
   const hasExitedFilters = Object.values(exitedFilters).some((value) => String(value || "").trim());
   const hasCurrentFilters = activeTab === "active" ? hasActiveFilters : hasExitedFilters;
-  const totalRecords = displayedEmployees.length;
   const totalPages = Math.max(1, Math.ceil(totalRecords / rowsPerPage));
   const visiblePage = Math.min(currentPage, totalPages);
   const startEntry = totalRecords === 0 ? 0 : (visiblePage - 1) * rowsPerPage + 1;
-  const endEntry = Math.min(visiblePage * rowsPerPage, totalRecords);
-  const paginatedEmployees = displayedEmployees.slice(startEntry === 0 ? 0 : startEntry - 1, endEntry);
+  const endEntry = totalRecords === 0 ? 0 : Math.min(startEntry + displayedEmployees.length - 1, totalRecords);
 
   useEffect(() => {
     const editEmployee = location.state?.editEmployee;
     if (!editEmployee) return;
 
     let isMounted = true;
+    const editId = getEmployeeId(editEmployee);
+    setSearchParams({ action: "edit" }, { replace: true, state: null });
 
     const loadEditEmployee = async () => {
-      const editId = getEmployeeId(editEmployee);
       try {
         const fullEmployee = editId ? await fetchEmployeeById(editId) : null;
         if (!isMounted) return;
         setFormData(withHeadcountFieldAliases(fullEmployee || editEmployee));
-        setEditingEmployeeId(editId ?? null);
-        setIsAddingEmployee(true);
-        setSearchParams({ action: "edit" }, { replace: true, state: null });
       } catch {
         if (!isMounted) return;
         setFormData(withHeadcountFieldAliases(editEmployee));
-        setEditingEmployeeId(editId ?? null);
-        setIsAddingEmployee(true);
-        setSearchParams({ action: "edit" }, { replace: true, state: null });
       }
     };
 
@@ -378,25 +346,8 @@ export default function Headcount() {
     const requestedTab = location.state?.headcountTab;
     if (requestedTab !== "active" && requestedTab !== "exited") return;
 
-    setActiveTab(requestedTab);
     navigate("/headcount", { replace: true, state: null });
   }, [location.state, navigate]);
-
-  useEffect(() => {
-    if (location.state?.editEmployee) return;
-
-    if (formAction === "add" && !isAddingEmployee) {
-      setFormData(getInitialForm());
-      setEditingEmployeeId(null);
-      setActiveTab("active");
-      setIsAddingEmployee(true);
-      return;
-    }
-
-    if (!formAction && isAddingEmployee && editingEmployeeId === null) {
-      setIsAddingEmployee(false);
-    }
-  }, [editingEmployeeId, formAction, isAddingEmployee, location.state]);
 
   const openForm = () => {
     setFormData(getInitialForm());
@@ -473,28 +424,38 @@ export default function Headcount() {
     setCurrentPage(Math.min(totalPages, visiblePage + 1));
   };
 
-  // Load employees from API on component mount
+  // Load employees from API with server-side pagination + filters
   useEffect(() => {
     const loadEmployees = async () => {
       setIsLoading(true);
       setError(null);
       try {
-        const [activeData, exitedData] = await Promise.all([
-          fetchActiveEmployees({ page: 1, limit: 1000 }),
-          fetchExitedEmployees({ page: 1, limit: 1000 }),
-        ]);
-        const loadedEmployees = [
-          ...extractEmployeeList(activeData),
-          ...extractEmployeeList(exitedData),
-        ];
+        const apiParams = {
+          page: currentPage,
+          limit: rowsPerPage,
+          search: currentFilters.search,
+          billType: currentFilters.billingType,
+          entity: currentFilters.entity,
+          customer: currentFilters.customer,
+        };
+        const payload =
+          activeTab === "active"
+            ? await fetchActiveEmployees(apiParams)
+            : await fetchExitedEmployees(apiParams);
 
-        if (loadedEmployees.length === 0) {
-          throw new Error("No headcount data found in the database.");
-        }
+        const loadedEmployees = extractEmployeeList(payload).map(withHeadcountFieldAliases);
+        const nextTotalRecords = extractTotalRecords(payload, loadedEmployees.length);
 
         setEmployees(loadedEmployees);
+        setTotalRecords(nextTotalRecords);
+
+        const nextTotalPages = Math.max(1, Math.ceil(nextTotalRecords / rowsPerPage));
+        if (currentPage > nextTotalPages) {
+          setCurrentPage(nextTotalPages);
+        }
       } catch (err) {
         setEmployees([]);
+        setTotalRecords(0);
         setError(err?.message || "Failed to load employees");
         console.error("Error loading employees:", err);
       } finally {
@@ -503,7 +464,7 @@ export default function Headcount() {
     };
 
     loadEmployees();
-  }, []);
+  }, [activeTab, currentFilters, currentPage, rowsPerPage, listReloadKey]);
 
   useEffect(() => {
     const loadDropdownOptions = async () => {
@@ -548,28 +509,14 @@ export default function Headcount() {
 
       if (editingEmployeeId !== null) {
         await updateEmployee(editingEmployeeId, normalizedEmployee);
-        setEmployees((current) =>
-          current.map((employee) =>
-            String(getEmployeeId(employee)) === String(editingEmployeeId)
-              ? { ...employee, ...normalizedEmployee }
-              : employee
-          )
-        );
       } else {
-        const newEmployeeResponse = await addEmployee(normalizedEmployee);
-        const newEmployee = withHeadcountFieldAliases({
-          ...normalizedEmployee,
-          ...newEmployeeResponse,
-          employeeId: getEmployeeId(newEmployeeResponse) || getEmployeeId(normalizedEmployee),
-          isExited: false,
-          status: "active",
-        });
-        setEmployees((current) => [...current, newEmployee]);
+        await addEmployee(normalizedEmployee);
       }
 
       setIsAddingEmployee(false);
       setEditingEmployeeId(null);
       setSearchParams({});
+      setListReloadKey((current) => current + 1);
     } catch (err) {
       setError(getApiErrorMessage(err, "Failed to save employee. Please try again."));
       console.error("Error saving employee:", err);
@@ -775,8 +722,8 @@ export default function Headcount() {
                 </tr>
               </thead>
               <tbody>
-                {paginatedEmployees.length ? (
-                  paginatedEmployees.map((employee, index) => (
+                {displayedEmployees.length ? (
+                  displayedEmployees.map((employee, index) => (
                     <tr key={getEmployeeId(employee)}>
                       <td>{startEntry + index}</td>
                       <td>{getConsultantName(employee)}</td>

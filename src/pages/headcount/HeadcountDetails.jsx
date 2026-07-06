@@ -34,6 +34,7 @@ const findEmployeeByPaging = async (employeeId, fetcher) => {
   const pageSize = 200;
   let page = 1;
   let totalPages = 1;
+  const maxPagesToScan = 5;
 
   do {
     const payload = await fetcher({ page, limit: pageSize });
@@ -46,7 +47,7 @@ const findEmployeeByPaging = async (employeeId, fetcher) => {
     const total = extractTotal(payload, employees.length);
     totalPages = Math.max(1, Math.ceil(total / pageSize));
     page += 1;
-  } while (page <= totalPages && page <= 25);
+  } while (page <= totalPages && page <= maxPagesToScan);
 
   return null;
 };
@@ -78,8 +79,9 @@ export default function HeadcountDetails() {
   const navigate = useNavigate();
   const { state } = useLocation();
   const { employeeId } = useParams();
-  const [employee, setEmployee] = useState(() => state?.employee || null);
-  const [isLoading, setIsLoading] = useState(!state?.employee);
+  const stateEmployee = state?.employee || null;
+  const [employee, setEmployee] = useState(() => stateEmployee);
+  const [isLoading, setIsLoading] = useState(!stateEmployee);
   const [loadError, setLoadError] = useState("");
   const [isExitModalOpen, setIsExitModalOpen] = useState(false);
   const [exitForm, setExitForm] = useState({ exitDate: "", exitReason: "" });
@@ -87,12 +89,13 @@ export default function HeadcountDetails() {
   const isExited = isExitedEmployee(employee);
 
   useEffect(() => {
+    if (stateEmployee) {
+      return;
+    }
+
     let isMounted = true;
 
     const loadEmployee = async () => {
-      const stateEmployee = state?.employee || null;
-      if (stateEmployee) setEmployee(stateEmployee);
-
       setIsLoading(true);
       setLoadError("");
 
@@ -153,7 +156,7 @@ export default function HeadcountDetails() {
     return () => {
       isMounted = false;
     };
-  }, [employeeId, state?.employee]);
+  }, [employeeId, stateEmployee]);
 
   const handleBack = () => {
     navigate("/headcount", { state: { headcountTab: isExited ? "exited" : "active" } });
