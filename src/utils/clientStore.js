@@ -28,6 +28,25 @@ const isSeededClientRow = (row) => {
   return SEEDED_CLIENT_IDS.has(clientId) || SEEDED_CLIENT_NAMES.has(clientName);
 };
 
+const isUuid = (value) =>
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{12}$/i.test(
+    String(value || "").trim(),
+  );
+
+const firstUuid = (...values) =>
+  values.map((value) => String(value || "").trim()).find((value) => isUuid(value)) || "";
+
+const getClientDbId = (client = {}) =>
+  firstUuid(
+    client?.id,
+    client?.clientId,
+    client?.clientID,
+    client?.clientUuid,
+    client?.clientUUID,
+    client?.clientMasterId,
+    client?.clientMasterID,
+  );
+
 export const loadClientRows = () => {
   if (typeof window === "undefined") return DEFAULT_CLIENTS;
 
@@ -63,7 +82,7 @@ export const getClientOptions = (rows = []) => {
 
   return rows.reduce((options, client) => {
     const clientName = String(client?.clientName || "").trim();
-    const clientId = String(client?.clientId || client?.clientID || "").trim();
+    const clientId = String(getClientDbId(client) || client?.clientId || client?.clientID || "").trim();
     if (!clientName || !clientId) return options;
 
     const optionKey = `${clientId.toLowerCase()}::${clientName.toLowerCase()}`;
@@ -71,10 +90,11 @@ export const getClientOptions = (rows = []) => {
     seen.add(optionKey);
 
     options.push({
-      value: clientName,
+      value: clientId,
       label: clientName,
       clientId,
       id: clientId,
+      clientName,
     });
 
     return options;

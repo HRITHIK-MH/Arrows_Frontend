@@ -63,6 +63,32 @@ const isUuid = (value) =>
     String(value || "").trim(),
   );
 
+const firstUuid = (...values) =>
+  values.map((value) => String(value || "").trim()).find((value) => isUuid(value)) || "";
+
+const getClientDbId = (client = {}) =>
+  firstUuid(
+    client?.id,
+    client?.clientId,
+    client?.clientID,
+    client?.clientUuid,
+    client?.clientUUID,
+    client?.clientMasterId,
+    client?.clientMasterID,
+  );
+
+const getPersistedJobOpeningId = (job = {}) =>
+  firstUuid(
+    job?.jobId,
+    job?.id,
+    job?.jobOpeningId,
+    job?.jobOpeningUuid,
+    job?.jobOpeningUUID,
+    job?.openingJobDbId,
+    job?.openingJobUUID,
+    job?.openingJobId,
+  );
+
 const unwrapApiData = (response) => {
   const payload = response?.data;
   return payload && typeof payload === "object" && "data" in payload ? payload.data : payload;
@@ -163,6 +189,45 @@ const mergeOptionsByKey = (current = [], incoming = []) => {
     }
   });
   return merged;
+};
+
+const resolveClientSelection = (formData = {}, options = []) => {
+  const selectedClientId = String(formData.clientId || "").trim();
+  const selectedClientValue = String(formData.clientName || "").trim();
+  const normalizedOptions = Array.isArray(options) ? options : [];
+
+  const matchedClient = normalizedOptions.find((option) => {
+    const optionValue = String(option?.value || "").trim();
+    const optionClientId = String(option?.clientId || option?.id || "").trim();
+    const optionLabel = String(option?.label || option?.clientName || "").trim();
+
+    return (
+      (selectedClientId && (optionClientId === selectedClientId || optionValue === selectedClientId)) ||
+      (selectedClientValue && (
+        optionValue === selectedClientValue ||
+        optionClientId === selectedClientValue ||
+        optionLabel === selectedClientValue
+      ))
+    );
+  });
+
+  const clientId = String(
+    matchedClient?.clientId ||
+      matchedClient?.id ||
+      (isUuid(matchedClient?.value) ? matchedClient.value : "") ||
+      selectedClientId ||
+      (isUuid(selectedClientValue) ? selectedClientValue : "")
+  ).trim();
+
+  const clientName = String(
+    matchedClient?.clientName ||
+      matchedClient?.label ||
+      (!isUuid(selectedClientValue) ? selectedClientValue : "") ||
+      formData.clientName ||
+      ""
+  ).trim();
+
+  return { clientId, clientName };
 };
 
 const buildMetaOptionMap = (...metaPayloads) => {
@@ -567,7 +632,8 @@ export default function JobOpenings({ createMode = false }) {
 
         if (Array.isArray(clients) && clients.length > 0) {
           const clientRows = clients.map((client) => ({
-            clientId: client?.clientId || client?.id || "",
+            ...client,
+            clientId: getClientDbId(client) || client?.clientId || client?.id || "",
             clientName: client?.clientName || client?.name || "",
           }));
           setClientOptions(getClientOptions(clientRows));
@@ -1211,9 +1277,12 @@ export default function JobOpenings({ createMode = false }) {
         resolvedFromTeamMembers ||
         "-"
       );
+    const resolvedClient = resolveClientSelection(safeData, clientOptions);
     let normalized = {
       ...safeData,
       jobId: safeData.jobId || null,
+      clientId: resolvedClient.clientId,
+      clientName: resolvedClient.clientName,
       jobPositionId,
       openingJobId: safeData.openingJobId || jobPositionId,
       postingTitle: safeData.postingTitle || safeData.positionName || "",
@@ -1246,10 +1315,17 @@ export default function JobOpenings({ createMode = false }) {
 
       if (isEditMode && isUuid(existingJobId) && hasValidClientId && hasValidTitle) {
         const response = await updateJobApi(existingJobId, normalized);
-        normalized = { ...normalized, ...normalizeApiJob(unwrapApiData(response) || {}, editingIndex || 0) };
+        const savedJob = normalizeApiJob(unwrapApiData(response) || {}, editingIndex || 0);
+        const persistedJobOpeningId = getPersistedJobOpeningId(savedJob) || existingJobId;
+        normalized = { ...normalized, ...savedJob, jobId: persistedJobOpeningId };
       } else if (!isEditMode && hasValidClientId && hasValidTitle) {
         const response = await createJobApi(normalized);
-        normalized = { ...normalized, ...normalizeApiJob(unwrapApiData(response) || {}, submittedData.length) };
+        const savedJob = normalizeApiJob(unwrapApiData(response) || {}, submittedData.length);
+        const persistedJobOpeningId = getPersistedJobOpeningId(savedJob);
+        if (!persistedJobOpeningId) {
+          throw new Error("JD was created but backend did not return a valid job id for team assignment.");
+        }
+        normalized = { ...normalized, ...savedJob, jobId: persistedJobOpeningId };
       } else {
         throw new Error("Unable to save JD in DB. Please try again.");
       }
@@ -1283,7 +1359,12 @@ export default function JobOpenings({ createMode = false }) {
           .filter(Boolean);
 
         if (teamMembersPayload.length > 0) {
+          const persistedJobOpeningId = getPersistedJobOpeningId(normalized);
+          if (!persistedJobOpeningId) {
+            throw new Error("Team members cannot be assigned until the saved JD has a valid backend job id.");
+          }
           await saveTeamMembersApi({
+            jobOpeningId: persistedJobOpeningId,
             openingJobId: normalized.openingJobId || normalized.jobPositionId,
             teamMembers: teamMembersPayload,
             permissions: {
@@ -1328,7 +1409,7 @@ export default function JobOpenings({ createMode = false }) {
     setIsAddJobOpeningMenuOpen(false);
     navigate("/job-openings");
     // Here you would typically send the data to your backend API
-  }, [activeDraftId, editingIndex, navigate, nextJobPositionId, persistJobOpeningDrafts, showTransientMessage, isJobIdUsed, submittedData]);
+  }, [activeDraftId, clientOptions, editingIndex, navigate, nextJobPositionId, persistJobOpeningDrafts, showTransientMessage, isJobIdUsed, submittedData]);
 
   const formatInrAmount = React.useCallback((value) => {
     const numericValue = Number(value);
@@ -1463,7 +1544,19 @@ export default function JobOpenings({ createMode = false }) {
       onCancel: handleCancelJobOpeningForm,
       onSaveDraft: saveJobOpeningDraft,
     }),
-    [clientOptions, editingIndex, handleCancelJobOpeningForm, metaDropdownOptions, saveJobOpeningDraft, technicalSkillOptions]
+    [
+      clientOptions,
+      editingIndex,
+      employmentTypeOptions,
+      handleCancelJobOpeningForm,
+      locationOptions,
+      metaDropdownOptions,
+      positionLevelOptions,
+      saveJobOpeningDraft,
+      softSkillOptions,
+      technicalSkillOptions,
+      workTypeOptions,
+    ]
   );
 
   React.useEffect(() => {

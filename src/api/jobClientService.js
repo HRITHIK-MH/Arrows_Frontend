@@ -81,7 +81,7 @@ const assertJobCreatePersisted = (response) => {
   }
 
   const isSaved = data.saved;
-  const openingJobId = String(data.openingJobId || data.jobPositionId || '').trim();
+  const openingJobId = String(data.openingJobId || data.jobPositionId || data.jobOpeningId || data.jobId || data.id || '').trim();
 
   if (isSaved === false || !openingJobId) {
     throw toApiError('Job opening was not saved in DB. Please try again.', envelope);
@@ -98,7 +98,7 @@ const assertJobUpdatePersisted = (response) => {
     throw toApiError('Job opening update did not return persisted data.', envelope);
   }
 
-  const openingJobId = String(data.openingJobId || data.jobPositionId || data.jobId || '').trim();
+  const openingJobId = String(data.openingJobId || data.jobPositionId || data.jobOpeningId || data.jobId || data.id || '').trim();
   if (!openingJobId) {
     throw toApiError('Job opening update was not confirmed by DB.', envelope);
   }
@@ -122,6 +122,20 @@ export const fetchJobs = async () =>
 const isUuid = (value) =>
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
     String(value || '').trim(),
+  );
+
+const firstUuid = (...values) =>
+  values.map((value) => String(value || '').trim()).find((value) => isUuid(value)) || '';
+
+const getClientDbId = (row = {}) =>
+  firstUuid(
+    row?.id,
+    row?.clientId,
+    row?.clientID,
+    row?.clientUuid,
+    row?.clientUUID,
+    row?.clientMasterId,
+    row?.clientMasterID,
   );
 
 const toIsoInstant = (value) => {
@@ -368,7 +382,7 @@ export const deleteClient = (clientId) => {
 };
 
 export const normalizeClientRecord = (row, index = 0) => ({
-  clientId: row?.clientId || row?.id || `CL-${index + 1}`,
+  clientId: getClientDbId(row) || row?.clientId || row?.id || `CL-${index + 1}`,
   clientName: normalizeText(row?.clientName || row?.name),
   contactEmail: normalizeText(row?.contactEmail || row?.email),
   contactNumber: normalizeText(row?.contactNumber || row?.phone),
@@ -382,7 +396,7 @@ export const normalizeClientRecord = (row, index = 0) => ({
 });
 
 export const toClientOption = (row) => {
-  const clientId = String(row?.clientId || row?.clientID || row?.id || '').trim();
+  const clientId = String(getClientDbId(row) || row?.clientId || row?.clientID || row?.id || '').trim();
   const clientName = String(row?.clientName || row?.name || '').trim();
 
   if (!clientId || !clientName) {
@@ -390,10 +404,11 @@ export const toClientOption = (row) => {
   }
 
   return {
-    value: clientName,
+    value: clientId,
     label: clientName,
     clientId,
     id: clientId,
+    clientName,
   };
 };
 
