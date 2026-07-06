@@ -258,7 +258,13 @@ export default function TopBar({ isSidebarOpen, setSidebarOpen }) {
 
            {menuOpen && (
             <ul className="profileMenu" role="menu" aria-label="Profile menu">
-              <li role="menuitem" className="profileMenuItem" onClick={() => { setMenuOpen(false); navigate("/profile"); }}>Profile</li>
+              <li
+                role="menuitem"
+                aria-disabled="true"
+                className="profileMenuItem profileMenuItemDisabled"
+              >
+                Profile
+              </li>
               <li
                 role="menuitem"
                 className="profileMenuItem profileMenuDanger"
