@@ -62,9 +62,28 @@ const withHeadcountFieldAliases = (employee = {}) => ({
     employee.workMode ??
     employee.work_mode ??
     "",
-  mode: employee.mode ?? employee.employment_type ?? employee.employmentType ?? "",
-  cost: employee.cost ?? employee.payRate ?? employee.pay_rate ?? "",
-  customer: employee.customer ?? employee.clientName ?? employee.client_name ?? "",
+  mode:
+    employee.mode ??
+    employee.work_mode ??
+    employee.workMode ??
+    employee.employment_type ??
+    employee.employmentType ??
+    "",
+  cost:
+    employee.cost ??
+    employee.payRate ??
+    employee.pay_rate ??
+    employee.cost_band ??
+    employee.costBand ??
+    "",
+  customer:
+    employee.customer ??
+    employee.customerName ??
+    employee.customer_name ??
+    employee.clientName ??
+    employee.client_name ??
+    employee.client ??
+    "",
   billing_type:
     employee.billing_type ??
     employee.billingType ??
@@ -149,7 +168,7 @@ const ensureOptionForValue = (options = [], value) => {
 };
 
 const withEditFallbackOptions = (config, formValues = {}) => {
-  const fallbackFields = new Set(["work_location", "mode", "cost"]);
+  const fallbackFields = new Set(["work_location", "mode", "cost", "customer"]);
 
   return {
     ...config,
