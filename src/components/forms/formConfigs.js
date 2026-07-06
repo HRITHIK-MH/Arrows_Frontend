@@ -4,6 +4,7 @@ import CandidateBasicInfoStep from "./CandidateBasicInfoStep";
 import CandidateDocumentsStep from "./CandidateDocumentsStep";
 import ClientBasicInfoStep from "./ClientBasicInfoStep";
 import EmployeeBasicInfoStep from "./EmployeeBasicInfoStep";
+import { resolveApiBaseUrl } from "../../api/axiosConfig";
 
 const isEmptyValue = (value) =>
   value === undefined ||

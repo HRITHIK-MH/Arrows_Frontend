@@ -5,6 +5,10 @@ const TEAM_MEMBERS = [];
 
 const ADD_NEW_MEMBER_OPTION = "__add_new_member__";
 const normalizeName = (value) => String(value || "").trim().replace(/\s+/g, " ");
+const isUuid = (value) =>
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    String(value || "").trim(),
+  );
 
 const buildEmailFromName = (name) => {
   const normalized = normalizeName(name).toLowerCase();
@@ -79,17 +83,19 @@ const TeamMembersStep = ({
     const loadTeamMembers = async () => {
       try {
         const openingJobId = String(formData.openingJobId || formData.jobPositionId || '').trim();
+        const persistedJobOpeningId = String(formData.jobId || formData.id || '').trim();
+        const hasPersistedJob = isUuid(persistedJobOpeningId);
         let teamMembers = [];
 
-        if (openingJobId) {
+        if (hasPersistedJob && openingJobId) {
           teamMembers = await fetchJobTeamMembers(openingJobId);
         }
 
-        if ((!Array.isArray(teamMembers) || teamMembers.length === 0) && openingJobId) {
+        if ((!Array.isArray(teamMembers) || teamMembers.length === 0) && hasPersistedJob && openingJobId) {
           teamMembers = await fetchRecruiters({ openingJobId });
         }
 
-        if ((!Array.isArray(teamMembers) || teamMembers.length === 0) && !openingJobId) {
+        if ((!Array.isArray(teamMembers) || teamMembers.length === 0)) {
           teamMembers = await fetchRecruiters();
         }
 
@@ -108,7 +114,7 @@ const TeamMembersStep = ({
     return () => {
       cancelled = true;
     };
-  }, [formData.openingJobId, formData.jobPositionId]);
+  }, [formData.id, formData.jobId, formData.openingJobId, formData.jobPositionId]);
 
   useEffect(() => {
     if (formData.teamMembers === undefined) {
@@ -226,10 +232,7 @@ const TeamMembersStep = ({
     }
 
     const openingJobId = String(formData.openingJobId || formData.jobPositionId || "").trim();
-    if (!openingJobId) {
-      alert("Job Opening ID is required before assigning team members.");
-      return;
-    }
+    const jobOpeningId = String(formData.jobId || formData.id || "").trim();
 
     const nextSelectedMembers = selectedMembers.includes(recruiterIdToAssign)
       ? selectedMembers
@@ -265,14 +268,17 @@ const TeamMembersStep = ({
 
     setIsAssigning(true);
     try {
-      await saveTeamMembers({
-        openingJobId,
-        teamMembers: teamMembersPayload,
-        permissions: {
-          visibility: formData.permissionVisibility,
-          access: formData.permissionAccess,
-        },
-      });
+      if (jobOpeningId) {
+        await saveTeamMembers({
+          jobOpeningId,
+          openingJobId,
+          teamMembers: teamMembersPayload,
+          permissions: {
+            visibility: formData.permissionVisibility,
+            access: formData.permissionAccess,
+          },
+        });
+      }
 
       if (nextCustomMembers !== customTeamMembers) {
         onChange("customTeamMembers", nextCustomMembers);
