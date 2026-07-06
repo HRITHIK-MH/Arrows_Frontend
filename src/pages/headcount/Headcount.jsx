@@ -70,6 +70,18 @@ const applyDropdownOptions = (config, dropdownOptions) => ({
 
 const getEmployeeId = (employee) => employee?.employee_id || employee?.employeeId || employee?.id || employee?.serialNumber;
 
+const getEmployeeRowKey = (employee, index) => {
+  const employeeId = getEmployeeId(employee);
+  const joiningDate = employee?.joiningDate || employee?.joining_date || "";
+  const exitDate = employee?.exitDetails?.exitDate || employee?.exitDate || employee?.exit_date || "";
+
+  if (employeeId) {
+    return `${employeeId}-${joiningDate || exitDate || "row"}-${index}`;
+  }
+
+  return `employee-row-${index}`;
+};
+
 const getConsultantName = (employee) => employee?.consultant_name || employee?.consultantName || "";
 
 const createEmployeeId = () => `emp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -818,7 +830,7 @@ export default function Headcount() {
               <tbody>
                 {displayedEmployees.length ? (
                   displayedEmployees.map((employee, index) => (
-                    <tr key={getEmployeeId(employee)}>
+                    <tr key={getEmployeeRowKey(employee, index)}>
                       <td>{startEntry + index}</td>
                       <td>{getConsultantName(employee)}</td>
                       <td>{formatMonthYear(employee.joiningDate)}</td>
