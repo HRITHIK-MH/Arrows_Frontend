@@ -393,10 +393,9 @@ const Login = () => {
   <div className="login-container">
     <div className="login-right">
       <div className="hero-copy">
-        <h1>MethodHub Admin Dashboard</h1>
+        <h1>Access Your Hiring Workspace</h1>
         <p>
-          Manage sales, inventory, billing, and reports from one smart dashboard.
-          MethodHub helps you run your business faster, smarter.
+          Log in to track applicants, manage job openings, schedule interviews, and make smarter hiring decisions—all in one place.
         </p>
       </div>
       <div className="footer-copy">© 2026, Powered by MethodHub</div>

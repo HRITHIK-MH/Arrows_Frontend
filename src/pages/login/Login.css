@@ -24,7 +24,7 @@
   align-items: center;
   justify-content: center;
   flex-direction: column;
-  padding: 2rem;
+  padding: 3rem 2rem;
   background: #f4f7fb;
   color: #111827;
   position: relative;
@@ -48,6 +48,7 @@
   align-items: center;
   justify-content: center;
   flex-direction: column;
+  padding: 3rem 2rem;
   background: #f4f7fb;
   color: #111827;
   position: relative;
@@ -56,31 +57,30 @@
 
 .login-logo {
   object-fit: contain;
-  margin-bottom: 1rem;
-  margin-left: 0;
-  width: 120px;
-  align-self: flex-start;
+  margin: 0 auto 0.75rem;
+  width: 102px;
+  align-self: center;
 }
 
 .login-card {
   width: 100%;
-  max-width: 520px;
-  padding: 2.3rem;
-  border-radius: 24px;
+  max-width: 430px;
+  padding: 1.85rem;
+  border-radius: 20px;
   background: #ffffff;
   box-shadow: 0 32px 80px rgba(15, 23, 42, 0.08);
   position: relative;
   z-index: 3;
-  margin-left: 0;
+  margin: 0 auto;
 }
 
 .login-card-heading h4 {
   margin: 0;
-  font-size: 0.85rem;
+  font-size: 0.78rem;
   letter-spacing: 0.28em;
   text-transform: uppercase;
   color: #f97316;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.4rem;
 }
 
 .login-right .hero-copy h1 {
@@ -103,8 +103,8 @@
 
 .login-card-heading p {
   margin: 0;
-  font-size: 1.15rem;
-  line-height: 1.75;
+  font-size: 1rem;
+  line-height: 1.6;
   color: #111827;
 }
 
@@ -112,6 +112,7 @@
   max-width: 540px;
   text-align: left;
   position: relative;
+  margin: auto 0;
 }
 
 .hero-copy h1 {
@@ -153,7 +154,9 @@
 }
 
 .footer-copy {
-  margin-top: auto;
+  position: absolute;
+  left: 5rem;
+  bottom: 3rem;
   font-size: 0.95rem;
   color: rgba(255, 255, 255, 0.78);
 }
@@ -164,24 +167,27 @@
 }
 
 .footer-copy {
-  margin-top: auto;
+  position: absolute;
+  left: 5rem;
+  bottom: 3rem;
   font-size: 0.95rem;
   color: rgba(255, 255, 255, 0.78);
 }
 
 .login-form {
-  margin-top: 2rem;
+  margin-top: 1.55rem;
 }
 
 .form-group {
-  margin-bottom: 1.25rem;
+  margin-bottom: 1rem;
 }
 
 .form-group label {
   display: block;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.55rem;
   color: #111827;
   font-weight: 600;
+  font-size: 0.92rem;
 }
 
 .input-wrapper {
@@ -190,29 +196,29 @@
 
 .input-wrapper input {
   width: 100%;
-  padding: 1rem 1rem 1rem 3rem;
-  border-radius: 16px;
+  padding: 0.82rem 0.9rem 0.82rem 2.65rem;
+  border-radius: 14px;
   border: 1px solid #e5e7eb;
   background: #f8fafc;
-  font-size: 1rem;
+  font-size: 0.92rem;
   color: #111827;
 }
 
 .input-icon {
   position: absolute;
-  left: 1rem;
+  left: 0.9rem;
   top: 50%;
   transform: translateY(-50%);
   color: #f97316;
 }
 
 .password-group input {
-  padding-right: 3rem;
+  padding-right: 2.65rem;
 }
 
 .toggle-password {
   position: absolute;
-  right: 1rem;
+  right: 0.9rem;
   top: 50%;
   transform: translateY(-50%);
   border: none;
@@ -240,7 +246,7 @@
   justify-content: space-between;
   align-items: center;
   gap: 1rem;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.2rem;
 }
 
 .remember-me {
@@ -248,7 +254,7 @@
   align-items: center;
   gap: 0.5rem;
   color: #4b5563;
-  font-size: 0.95rem;
+  font-size: 0.88rem;
 }
 
 .remember-me input {
@@ -265,6 +271,7 @@
   font-weight: 600;
   padding: 0;
   cursor: pointer;
+  font-size: 0.88rem;
 }
 
 .forgot-password:hover {
@@ -273,13 +280,13 @@
 
 .login-btn {
   width: 100%;
-  padding: 1rem;
+  padding: 0.82rem;
   background: linear-gradient(280deg, #035297 , #ff5722);
   color: #ffffff;
   border: none;
-  border-radius: 16px;
+  border-radius: 14px;
   cursor: pointer;
-  font-size: 1rem;
+  font-size: 0.92rem;
   font-weight: 700;
   transition: background 0.2s ease;
 }
@@ -300,9 +307,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 1.25rem 0;
+  margin: 1rem 0;
   color: #6c757d;
-  font-size: 0.95rem;
+  font-size: 0.88rem;
 }
 
 .login-divider::before,
@@ -316,8 +323,8 @@
 
 .error-message {
   color: #dc2626;
-  font-size: 0.95rem;
-  margin: 0.75rem 0 0;
+  font-size: 0.88rem;
+  margin: 0.65rem 0 0;
   text-align: left;
 }
 
@@ -336,13 +343,13 @@
 
   .login-left {
     min-height: auto;
-    padding: 1.5rem;
+    padding: 2rem 1.5rem;
     align-items: center;
   }
 
   .login-card {
-    padding: 2rem;
-    max-width: 640px;
+    padding: 1.85rem;
+    max-width: 430px;
   }
 
   .hero-copy h1 {
@@ -354,6 +361,7 @@
   }
 
   .footer-copy {
+    position: static;
     margin-top: 1.25rem;
   }
 }
@@ -370,12 +378,12 @@
 
   .login-logo {
     align-self: center;
-    width: 108px;
-    margin-bottom: 0.75rem;
+    width: 96px;
+    margin-bottom: 0.65rem;
   }
 
   .login-card {
-    padding: 1.75rem;
+    padding: 1.45rem;
     border-radius: 18px;
   }
 
@@ -405,7 +413,7 @@
 
 @media (max-width: 480px) {
   .login-card {
-    padding: 1.25rem;
+    padding: 1.15rem;
   }
 
   .hero-copy h1 {
