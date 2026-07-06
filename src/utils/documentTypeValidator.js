@@ -102,8 +102,12 @@ export const isJobDescriptionDocument = (text) => {
   const signals = getDocumentTypeSignals(text);
   if (!signals.normalized) return false;
 
-  const hasExplicitJdShape = signals.jdSectionScore >= 2 && signals.jdFieldScore >= 1;
-  const hasStrongJdShape = signals.jdSectionScore >= 3;
+  const hasExplicitJdShape =
+    (signals.jdSectionScore >= 2 && signals.jdFieldScore >= 1) ||
+    signals.jdFieldScore >= 2;
+  const hasStrongJdShape =
+    signals.jdSectionScore >= 3 ||
+    (signals.jdSectionScore >= 1 && signals.jdFieldScore >= 1);
   const looksMoreLikeResume = signals.resumeContactScore > 0 && signals.resumeScore > signals.jdScore;
 
   return (hasExplicitJdShape || hasStrongJdShape) && !looksMoreLikeResume;

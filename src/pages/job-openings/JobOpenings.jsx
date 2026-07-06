@@ -139,6 +139,12 @@ const normalizeOptionKey = (value) =>
     .replace(/[^a-z0-9]+/g, "")
     .replace(/(options?|dropdown|values?|list)$/g, "");
 
+const normalizeLookupToken = (value) =>
+  String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ");
+
 const toOptionRecord = (item) => {
   if (item === null || item === undefined) return null;
 
@@ -194,22 +200,42 @@ const mergeOptionsByKey = (current = [], incoming = []) => {
 const resolveClientSelection = (formData = {}, options = []) => {
   const selectedClientId = String(formData.clientId || "").trim();
   const selectedClientValue = String(formData.clientName || "").trim();
+  const selectedClientIdToken = normalizeLookupToken(selectedClientId);
+  const selectedClientValueToken = normalizeLookupToken(selectedClientValue);
   const normalizedOptions = Array.isArray(options) ? options : [];
 
-  const matchedClient = normalizedOptions.find((option) => {
+  let matchedClient = normalizedOptions.find((option) => {
     const optionValue = String(option?.value || "").trim();
     const optionClientId = String(option?.clientId || option?.id || "").trim();
     const optionLabel = String(option?.label || option?.clientName || "").trim();
 
+    const optionValueToken = normalizeLookupToken(optionValue);
+    const optionClientIdToken = normalizeLookupToken(optionClientId);
+    const optionLabelToken = normalizeLookupToken(optionLabel);
+
     return (
-      (selectedClientId && (optionClientId === selectedClientId || optionValue === selectedClientId)) ||
-      (selectedClientValue && (
-        optionValue === selectedClientValue ||
-        optionClientId === selectedClientValue ||
-        optionLabel === selectedClientValue
+      (selectedClientIdToken && (
+        optionClientIdToken === selectedClientIdToken ||
+        optionValueToken === selectedClientIdToken
+      )) ||
+      (selectedClientValueToken && (
+        optionValueToken === selectedClientValueToken ||
+        optionClientIdToken === selectedClientValueToken ||
+        optionLabelToken === selectedClientValueToken
       ))
     );
   });
+
+  if (!matchedClient && selectedClientValueToken) {
+    const partialMatches = normalizedOptions.filter((option) => {
+      const optionLabelToken = normalizeLookupToken(option?.label || option?.clientName || "");
+      return optionLabelToken && optionLabelToken.includes(selectedClientValueToken);
+    });
+
+    if (partialMatches.length === 1) {
+      [matchedClient] = partialMatches;
+    }
+  }
 
   const clientId = String(
     matchedClient?.clientId ||
@@ -1277,7 +1303,11 @@ export default function JobOpenings({ createMode = false }) {
         resolvedFromTeamMembers ||
         "-"
       );
-    const resolvedClient = resolveClientSelection(safeData, clientOptions);
+    const effectiveClientOptions =
+      Array.isArray(clientOptions) && clientOptions.length > 0
+        ? clientOptions
+        : getClientOptions(loadClientRows());
+    const resolvedClient = resolveClientSelection(safeData, effectiveClientOptions);
     let normalized = {
       ...safeData,
       jobId: safeData.jobId || null,

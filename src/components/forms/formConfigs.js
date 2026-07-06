@@ -688,57 +688,8 @@ export const jobOpeningConfig = {
           };
         }
 
-        try {
-          // Try to validate against backend if available.
-          // This field is auto-generated and disabled in UI, so auth failures
-          // should not block submission.
-          const authToken = localStorage.getItem('authToken') || localStorage.getItem('token');
-          const response = await fetch(`${resolveApiBaseUrl('clientJob')}/validate-job-position-id`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
-            },
-            body: JSON.stringify({ jobPositionId: trimmedValue })
-          });
-
-          if (response.ok) {
-            const result = await response.json();
-            return result;
-          } else if (response.status === 401 || response.status === 403) {
-            console.warn('Skipping backend Job Position ID validation due to authentication/authorization response');
-            return { isValid: true };
-          } else {
-            // Only block submission when backend explicitly marks the ID invalid.
-            // For endpoint/config/transient errors, keep client-side validation as source of truth.
-            try {
-              const error = await response.json();
-
-              if (typeof error?.isValid === 'boolean') {
-                return {
-                  isValid: error.isValid,
-                  message: error?.message || (error.isValid ? '' : 'This Job Position ID is not valid')
-                };
-              }
-
-              if (response.status === 400 || response.status === 409 || response.status === 422) {
-                return {
-                  isValid: false,
-                  message: error?.message || 'This Job Position ID is not valid'
-                };
-              }
-            } catch {
-              // Non-JSON backend response, fall back to client-side validation.
-            }
-
-            console.warn(`Skipping backend Job Position ID validation due to non-validation response: ${response.status}`);
-            return { isValid: true };
-          }
-        } catch (error) {
-          console.warn(`Backend validation unavailable for ${fieldName}, using client-side validation only`, error);
-          // Return success for client-side validation only
-          return { isValid: true };
-        }
+        // Backend doesn't expose validate-job-position-id; rely on client-side format checks.
+        return { isValid: true };
       }
 
       return { isValid: true };

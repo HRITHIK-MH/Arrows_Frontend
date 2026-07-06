@@ -55,3 +55,18 @@ test('rejects unrelated documents for both resume and JD upload flows', () => {
   assert.equal(isResumeDocument(unrelated), false);
   assert.equal(isJobDescriptionDocument(unrelated), false);
 });
+
+test('accepts field-based JD documents without explicit section titles', () => {
+  const fieldBasedJd = `
+Position Name: Java Developer
+Location: Chennai
+Employment Type: Full Time
+Work Type: Hybrid
+Minimum Experience: 3 years
+Maximum Experience: 6 years
+Compensation: 12 LPA
+`;
+
+  assert.equal(isJobDescriptionDocument(fieldBasedJd), true);
+  assert.equal(isResumeDocument(fieldBasedJd), false);
+});
