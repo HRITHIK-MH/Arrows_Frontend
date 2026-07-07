@@ -835,8 +835,8 @@ export default function Headcount() {
                 className={styles.selectField}
               >
                 <option value="">Select Bill Type</option>
-                {currentFilterOptions.billingType.map((option) => (
-                  <option key={option} value={option}>{formatBillingTypeLabel(option)}</option>
+                {currentFilterOptions.billingType.map((option, index) => (
+                  <option key={`${option}-${index}`} value={option}>{formatBillingTypeLabel(option)}</option>
                 ))}
               </select>
 
@@ -847,8 +847,8 @@ export default function Headcount() {
                 className={styles.selectField}
               >
                 <option value="">Select Entity</option>
-                {currentFilterOptions.entity.map((option) => (
-                  <option key={option} value={option}>{option}</option>
+                {currentFilterOptions.entity.map((option, index) => (
+                  <option key={`${option}-${index}`} value={option}>{option}</option>
                 ))}
               </select>
 
@@ -859,8 +859,8 @@ export default function Headcount() {
                 className={styles.selectField}
               >
                 <option value="">Select Customer</option>
-                {currentFilterOptions.customer.map((option) => (
-                  <option key={option} value={option}>{option}</option>
+                {currentFilterOptions.customer.map((option, index) => (
+                  <option key={`${option}-${index}`} value={option}>{option}</option>
                 ))}
               </select>
             </div>
