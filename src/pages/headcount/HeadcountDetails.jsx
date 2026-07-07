@@ -4,9 +4,7 @@ import { useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import {
   exitEmployee,
-  fetchActiveEmployees,
   fetchEmployeeById,
-  fetchExitedEmployees,
 } from "../../api/headcountService";
 
 const getEmployeeId = (employee) => employee?.employee_id || employee?.employeeId || employee?.id || employee?.serialNumber;
@@ -15,42 +13,6 @@ const getConsultantName = (employee) => employee?.consultant_name || employee?.c
 
 const isExitedEmployee = (employee) =>
   Boolean(employee?.isExited || employee?.status === "exited" || employee?.exitDetails);
-
-const extractEmployeeList = (data) => {
-  if (Array.isArray(data)) return data;
-  if (Array.isArray(data?.content)) return data.content;
-  if (Array.isArray(data?.data)) return data.data;
-  if (Array.isArray(data?.data?.content)) return data.data.content;
-  if (Array.isArray(data?.employees)) return data.employees;
-  return [];
-};
-
-const extractTotal = (data, fallback = 0) => {
-  const total = Number(data?.total ?? data?.totalElements ?? fallback);
-  return Number.isFinite(total) ? total : fallback;
-};
-
-const findEmployeeByPaging = async (employeeId, fetcher) => {
-  const pageSize = 200;
-  let page = 1;
-  let totalPages = 1;
-  const maxPagesToScan = 5;
-
-  do {
-    const payload = await fetcher({ page, limit: pageSize });
-    const employees = extractEmployeeList(payload);
-    const found = employees.find((item) => String(getEmployeeId(item)) === String(employeeId));
-    if (found) {
-      return found;
-    }
-
-    const total = extractTotal(payload, employees.length);
-    totalPages = Math.max(1, Math.ceil(total / pageSize));
-    page += 1;
-  } while (page <= totalPages && page <= maxPagesToScan);
-
-  return null;
-};
 
 const parseDateValue = (value) => {
   const dateText = String(value);
@@ -73,6 +35,11 @@ const formatDayMonthYear = (value) => {
   const year = parsedDate.getFullYear();
 
   return `${day} ${month} ${year}`;
+};
+
+const getDisplayValue = (value) => {
+  const text = String(value ?? "").trim();
+  return text || "-";
 };
 
 const toIsoDateString = (value) => {
@@ -113,60 +80,30 @@ export default function HeadcountDetails() {
   const isExited = isExitedEmployee(employee);
 
   useEffect(() => {
-    if (stateEmployee) {
-      return;
-    }
-
     let isMounted = true;
 
     const loadEmployee = async () => {
-      setIsLoading(true);
+      setIsLoading(!stateEmployee);
       setLoadError("");
 
       try {
         const details = await fetchEmployeeById(employeeId);
         if (!isMounted) return;
         if (details) {
-          setEmployee(details);
+          setEmployee((current) => ({ ...(current || stateEmployee || {}), ...details }));
           return;
         }
 
-        const fromActive = await findEmployeeByPaging(employeeId, fetchActiveEmployees);
-        if (!isMounted) return;
-        if (fromActive) {
-          setEmployee(fromActive);
-          return;
-        }
-
-        const fromExited = await findEmployeeByPaging(employeeId, fetchExitedEmployees);
-        if (!isMounted) return;
-        setEmployee(fromExited || stateEmployee || null);
-        if (!fromExited && !stateEmployee) {
+        setEmployee(stateEmployee || null);
+        if (!stateEmployee) {
           setLoadError("Employee details could not be loaded.");
         }
       } catch (error) {
         if (!isMounted) return;
         console.error("Failed to load headcount employee details:", error);
-
-        try {
-          const fromActive = await findEmployeeByPaging(employeeId, fetchActiveEmployees);
-          if (!isMounted) return;
-          if (fromActive) {
-            setEmployee(fromActive);
-            return;
-          }
-
-          const fromExited = await findEmployeeByPaging(employeeId, fetchExitedEmployees);
-          if (!isMounted) return;
-          setEmployee(fromExited || stateEmployee || null);
-          if (!fromExited && !stateEmployee) {
-            setLoadError("Employee details could not be loaded.");
-          }
-        } catch (fallbackError) {
-          if (!isMounted) return;
-          console.error("Fallback employee lookup failed:", fallbackError);
+        setEmployee(stateEmployee || null);
+        if (!stateEmployee) {
           setLoadError("Employee details could not be loaded.");
-          setEmployee(stateEmployee || null);
         }
       } finally {
         if (isMounted) {
@@ -344,8 +281,9 @@ export default function HeadcountDetails() {
               ) : null}
             </div>
 
-            <div className={styles.detailsBody}>
+            <div className={styles.viewFormGrid}>
               {[
+                ["Consultant Name", getConsultantName(employee)],
                 ["Joining Date", formatDayMonthYear(employee.joiningDate)],
                 ["Entity", employee.entity],
                 ["Work Location", employee.workLocation],
@@ -356,12 +294,12 @@ export default function HeadcountDetails() {
                 ["Exit Date", formatDayMonthYear(employee.exitDetails?.exitDate)],
                 ["Exit Reason", employee.exitDetails?.exitReason],
               ]
-                .filter(([, value]) => value !== undefined && value !== "" && value !== null)
+                .filter(([label]) => isExited || !["Exit Date", "Exit Reason"].includes(label))
                 .map(([label, value]) => (
-                  <article key={label} className={styles.detailBlock}>
-                    <span className={styles.detailLabel}>{label}</span>
-                    <strong className={styles.detailValue}>{String(value)}</strong>
-                  </article>
+                  <label key={label} className={styles.viewField}>
+                    <span>{label}</span>
+                    <output>{getDisplayValue(value)}</output>
+                  </label>
                 ))}
             </div>
           </>

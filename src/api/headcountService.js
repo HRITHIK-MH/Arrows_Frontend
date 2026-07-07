@@ -114,7 +114,9 @@ export const normalizeHeadcountEmployee = (employee = {}) => {
     work_location: firstValue(employee.work_location, employee.workLocation),
     workLocation: firstValue(employee.workLocation, employee.work_location),
     mode: firstValue(employee.mode),
-    cost: firstValue(employee.cost),
+    cost: firstValue(employee.cost, employee.cost_code, employee.costCode, employee.code_cost, employee.codeCost, employee.cost_band, employee.costBand),
+    cost_code: firstValue(employee.cost_code, employee.costCode, employee.code_cost, employee.codeCost, employee.cost),
+    costCode: firstValue(employee.costCode, employee.cost_code, employee.codeCost, employee.code_cost, employee.cost),
     customer: firstValue(employee.customer),
     billing_type: firstValue(employee.billing_type, employee.billingType, employee.bill_type),
     billingType: firstValue(employee.billingType, employee.billing_type, employee.bill_type),
@@ -299,24 +301,55 @@ export const fetchExitedEmployees = async ({
 };
 
 
+const findEmployeeInPayload = (payload, employeeId) => {
+  const employees = Array.isArray(payload)
+    ? payload
+    : payload?.content || payload?.data?.content || payload?.data || payload?.employees || [];
+
+  return Array.isArray(employees)
+    ? employees.find((employee) => String(firstValue(employee.employee_id, employee.employeeId, employee.id)) === String(employeeId))
+    : null;
+};
+
+const extractEmployeeTotal = (payload, fallback = 0) => {
+  const total = Number(payload?.totalElements ?? payload?.total ?? payload?.count ?? payload?.data?.totalElements ?? fallback);
+  return Number.isFinite(total) ? total : fallback;
+};
+
+const findEmployeeByPaging = async (employeeId, fetcher) => {
+  const pageSize = 200;
+  let page = 1;
+  let totalPages = 1;
+
+  do {
+    const payload = await fetcher({ page, limit: pageSize });
+    const found = findEmployeeInPayload(payload, employeeId);
+    if (found) {
+      return normalizeHeadcountEmployee(found);
+    }
+
+    const employees = Array.isArray(payload)
+      ? payload
+      : payload?.content || payload?.data?.content || payload?.data || payload?.employees || [];
+    totalPages = Math.max(1, Math.ceil(extractEmployeeTotal(payload, Array.isArray(employees) ? employees.length : 0) / pageSize));
+    page += 1;
+  } while (page <= totalPages);
+
+  return null;
+};
+
 /**
- * Get one employee by employee id.
+ * Get one employee by employee id from the existing list endpoints.
  * @param {string} employeeId - Employee ID
  * @returns {Promise<Object|null>} Employee details
  */
 export const fetchEmployeeById = async (employeeId) => {
-  try {
-    const response = await getWithRetry(`/headcount/employee/${employeeId}`, {
-      skipAuthRedirect: true,
-    });
-    return normalizeHeadcountEmployee(response?.data || {});
-  } catch (error) {
-    if ([404, 204].includes(error?.response?.status)) {
-      return null;
-    }
-    console.error('Error fetching employee by id:', error);
-    throw error;
+  const activeEmployee = await findEmployeeByPaging(employeeId, fetchActiveEmployees);
+  if (activeEmployee) {
+    return activeEmployee;
   }
+
+  return findEmployeeByPaging(employeeId, fetchExitedEmployees);
 };
 
 /**
