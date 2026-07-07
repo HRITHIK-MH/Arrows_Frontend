@@ -356,6 +356,7 @@ export default function Headcount() {
     entity: "",
     customer: "",
   });
+  const [searchInput, setSearchInput] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(ROWS_PER_PAGE_OPTIONS[0]);
   const saveInFlightRef = useRef(false);
@@ -377,7 +378,19 @@ export default function Headcount() {
     [dropdownOptions]
   );
   const currentFilterOptions = activeTab === "active" ? activeFilterOptions : exitedFilterOptions;
-  const displayedEmployees = employees;
+  const displayedEmployees = useMemo(() => {
+    const searchText = String(searchInput || "").trim().toLowerCase();
+
+    if (!searchText) {
+      return employees;
+    }
+
+    return employees.filter((employee) =>
+      Object.values(employee).some((value) =>
+        String(value || "").toLowerCase().includes(searchText)
+      )
+    );
+  }, [employees, searchInput]);
   const hasActiveFilters = Object.values(activeFilters).some((value) => String(value || "").trim());
   const hasExitedFilters = Object.values(exitedFilters).some((value) => String(value || "").trim());
   const hasCurrentFilters = activeTab === "active" ? hasActiveFilters : hasExitedFilters;
@@ -433,24 +446,24 @@ export default function Headcount() {
     setSearchParams({});
   }, [setSearchParams]);
 
-  const updateActiveFilter = (fieldName, value) => {
+  const updateActiveFilter = useCallback((fieldName, value) => {
     setCurrentPage(1);
     setActiveFilters((current) => ({ ...current, [fieldName]: value }));
-  };
+  }, []);
 
-  const updateExitedFilter = (fieldName, value) => {
+  const updateExitedFilter = useCallback((fieldName, value) => {
     setCurrentPage(1);
     setExitedFilters((current) => ({ ...current, [fieldName]: value }));
-  };
+  }, []);
 
-  const updateCurrentFilter = (fieldName, value) => {
+  const updateCurrentFilter = useCallback((fieldName, value) => {
     if (activeTab === "active") {
       updateActiveFilter(fieldName, value);
       return;
     }
 
     updateExitedFilter(fieldName, value);
-  };
+  }, [activeTab, updateActiveFilter, updateExitedFilter]);
 
   const clearActiveFilters = () => {
     setCurrentPage(1);
@@ -473,6 +486,7 @@ export default function Headcount() {
   };
 
   const clearCurrentFilters = () => {
+    setSearchInput("");
     if (activeTab === "active") {
       clearActiveFilters();
       return;
@@ -503,7 +517,6 @@ export default function Headcount() {
         const apiParams = {
           page: currentPage,
           limit: rowsPerPage,
-          search: currentFilters.search,
           billType: currentFilters.billingType,
           entity: currentFilters.entity,
           customer: currentFilters.customer,
@@ -534,7 +547,7 @@ export default function Headcount() {
     };
 
     loadEmployees();
-  }, [activeTab, currentFilters, currentPage, rowsPerPage, listReloadKey]);
+  }, [activeTab, currentFilters.billingType, currentFilters.entity, currentFilters.customer, currentPage, rowsPerPage, listReloadKey]);
 
   useEffect(() => {
     const loadDropdownOptions = async () => {
@@ -720,6 +733,7 @@ export default function Headcount() {
                 onClick={() => {
                   setActiveTab("active");
                   setCurrentPage(1);
+                  setSearchInput("");
                 }}
               >
                 Active Employees
@@ -732,6 +746,7 @@ export default function Headcount() {
                 onClick={() => {
                   setActiveTab("exited");
                   setCurrentPage(1);
+                  setSearchInput("");
                 }}
               >
                 Exited Employees
@@ -752,8 +767,8 @@ export default function Headcount() {
                 <input
                   id={`${activeTab}EmployeeSearch`}
                   type="search"
-                  value={currentFilters.search}
-                  onChange={(event) => updateCurrentFilter("search", event.target.value)}
+                  value={searchInput}
+                  onChange={(event) => setSearchInput(event.target.value)}
                   placeholder="Search here..."
                   className={styles.searchInput}
                 />
