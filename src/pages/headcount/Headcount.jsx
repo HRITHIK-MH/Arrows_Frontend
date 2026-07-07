@@ -11,7 +11,7 @@ import {
 } from "react-icons/fi";
 import ReusableForm from "../../components/forms/ReusableForm";
 import { employeeConfig } from "../../components/forms/formConfigs";
-import { addEmployee, fetchActiveEmployees, fetchEmployeeById, fetchExitedEmployees, updateEmployee } from "../../api/headcountService";
+import { addEmployee, fetchActiveEmployees, fetchExitedEmployees, updateEmployee } from "../../api/headcountService";
 import { fetchHeadcountDropdownOptions } from "../../api/masterDataService";
 
 const getInitialForm = () => {
@@ -414,14 +414,11 @@ export default function Headcount() {
     setSearchParams({ action: "edit" }, { replace: true, state: null });
 
     const loadEditEmployee = async () => {
-      try {
-        const fullEmployee = editId ? await fetchEmployeeById(editId) : null;
-        if (!isMounted) return;
-        setFormData(withHeadcountFieldAliases(fullEmployee || editEmployee));
-      } catch {
-        if (!isMounted) return;
-        setFormData(withHeadcountFieldAliases(editEmployee));
-      }
+      await Promise.resolve();
+      if (!isMounted) return;
+      setEditingEmployeeId(editId ?? null);
+      setFormData(withHeadcountFieldAliases(editEmployee));
+      setIsAddingEmployee(true);
     };
 
     loadEditEmployee();

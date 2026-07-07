@@ -18,7 +18,7 @@ export default function CreateJob() {
     { label: "Job Openings", path: "/jobs" },
     { label: "Candidates", path: "/candidates" },
     { label: "Interviews", path: "/dashboard" },
-    { label: "Reports", path: "/dashboard" },
+    // { label: "Reports", path: "/dashboard" },
     { label: "Chat", path: "/dashboard" },
     // { label: "Calendar", path: "/dashboard" }, // Disabled for later
     // { label: "User Roles", path: "/dashboard" }, // Disabled for later
