@@ -360,6 +360,10 @@ export default function Headcount() {
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(ROWS_PER_PAGE_OPTIONS[0]);
   const saveInFlightRef = useRef(false);
+  const [tabDataCache, setTabDataCache] = useState({
+    active: null,
+    exited: null,
+  });
   const currentFilters = activeTab === "active" ? activeFilters : exitedFilters;
   const activeFilterOptions = useMemo(
     () => ({
@@ -398,6 +402,8 @@ export default function Headcount() {
   const visiblePage = Math.min(currentPage, totalPages);
   const startEntry = totalRecords === 0 ? 0 : (visiblePage - 1) * rowsPerPage + 1;
   const endEntry = totalRecords === 0 ? 0 : Math.min(startEntry + displayedEmployees.length - 1, totalRecords);
+  const currentTabCache = tabDataCache[activeTab];
+  const hasCurrentTabCache = Boolean(currentTabCache?.employees);
 
   useEffect(() => {
     const editEmployee = location.state?.editEmployee;
@@ -500,6 +506,25 @@ export default function Headcount() {
     setRowsPerPage(Number(event.target.value));
   };
 
+  const switchTab = (nextTab) => {
+    const cachedTabData = tabDataCache[nextTab];
+
+    setActiveTab(nextTab);
+    setCurrentPage(1);
+    setSearchInput("");
+
+    if (cachedTabData?.employees) {
+      setEmployees(cachedTabData.employees);
+      setTotalRecords(cachedTabData.totalRecords || cachedTabData.employees.length || 0);
+      setIsLoading(false);
+      setError(null);
+    } else {
+      setEmployees([]);
+      setTotalRecords(0);
+      setIsLoading(true);
+    }
+  };
+
   const handlePreviousPage = () => {
     setCurrentPage(Math.max(1, visiblePage - 1));
   };
@@ -531,14 +556,23 @@ export default function Headcount() {
 
         setEmployees(loadedEmployees);
         setTotalRecords(nextTotalRecords);
+        setTabDataCache((current) => ({
+          ...current,
+          [activeTab]: {
+            employees: loadedEmployees,
+            totalRecords: nextTotalRecords,
+          },
+        }));
 
         const nextTotalPages = Math.max(1, Math.ceil(nextTotalRecords / rowsPerPage));
         if (currentPage > nextTotalPages) {
           setCurrentPage(nextTotalPages);
         }
       } catch (err) {
-        setEmployees([]);
-        setTotalRecords(0);
+        if (!hasCurrentTabCache) {
+          setEmployees([]);
+          setTotalRecords(0);
+        }
         setError(err?.message || "Failed to load employees");
         console.error("Error loading employees:", err);
       } finally {
@@ -547,7 +581,52 @@ export default function Headcount() {
     };
 
     loadEmployees();
-  }, [activeTab, currentFilters.billingType, currentFilters.entity, currentFilters.customer, currentPage, rowsPerPage, listReloadKey]);
+  }, [activeTab, currentFilters.billingType, currentFilters.entity, currentFilters.customer, currentPage, rowsPerPage, listReloadKey, hasCurrentTabCache]);
+
+  useEffect(() => {
+    const otherTab = activeTab === "active" ? "exited" : "active";
+    if (tabDataCache[otherTab]) {
+      return undefined;
+    }
+
+    let isMounted = true;
+
+    const preloadOtherTab = async () => {
+      try {
+        const payload =
+          otherTab === "active"
+            ? await fetchActiveEmployees({ page: 1, limit: rowsPerPage })
+            : await fetchExitedEmployees({ page: 1, limit: rowsPerPage });
+
+        if (!isMounted) return;
+
+        const loadedEmployees = extractEmployeeList(payload).map(withHeadcountFieldAliases);
+        const nextTotalRecords = extractTotalRecords(payload, loadedEmployees.length);
+
+        setTabDataCache((current) => {
+          if (current[otherTab]) {
+            return current;
+          }
+
+          return {
+            ...current,
+            [otherTab]: {
+              employees: loadedEmployees,
+              totalRecords: nextTotalRecords,
+            },
+          };
+        });
+      } catch (err) {
+        console.warn(`Failed to prefetch ${otherTab} headcount data:`, err);
+      }
+    };
+
+    preloadOtherTab();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [activeTab, rowsPerPage, tabDataCache, currentTabCache]);
 
   useEffect(() => {
     const loadDropdownOptions = async () => {
@@ -655,20 +734,6 @@ export default function Headcount() {
     [closeForm, dropdownOptions, formInitialData]
   );
 
-  if (isLoading) {
-    return (
-      <div className={styles.page} aria-label="Headcount">
-        <section className={styles.card}>
-          <div className={styles.infoRow}>
-            <div className={styles.infoContent}>
-              <p className={styles.description}><strong>Loading Headcount Data...</strong></p>
-            </div>
-          </div>
-        </section>
-      </div>
-    );
-  }
-
   if (isAddingEmployee) {
     return (
       <div className={styles.page} aria-label="Add employee">
@@ -730,11 +795,7 @@ export default function Headcount() {
                 role="tab"
                 aria-selected={activeTab === "active"}
                 className={`${styles.tabButton} ${activeTab === "active" ? styles.tabButtonActive : ""}`}
-                onClick={() => {
-                  setActiveTab("active");
-                  setCurrentPage(1);
-                  setSearchInput("");
-                }}
+                onClick={() => switchTab("active")}
               >
                 Active Employees
               </button>
@@ -743,11 +804,7 @@ export default function Headcount() {
                 role="tab"
                 aria-selected={activeTab === "exited"}
                 className={`${styles.tabButton} ${activeTab === "exited" ? styles.tabButtonActive : ""}`}
-                onClick={() => {
-                  setActiveTab("exited");
-                  setCurrentPage(1);
-                  setSearchInput("");
-                }}
+                onClick={() => switchTab("exited")}
               >
                 Exited Employees
               </button>
@@ -843,7 +900,13 @@ export default function Headcount() {
                 </tr>
               </thead>
               <tbody>
-                {displayedEmployees.length ? (
+                {isLoading && employees.length === 0 ? (
+                  <tr>
+                    <td className={styles.emptyState} colSpan={activeTab === "exited" ? 9 : 7}>
+                      Loading Headcount Data...
+                    </td>
+                  </tr>
+                ) : displayedEmployees.length ? (
                   displayedEmployees.map((employee, index) => (
                     <tr key={getEmployeeRowKey(employee, index)}>
                       <td>{startEntry + index}</td>
