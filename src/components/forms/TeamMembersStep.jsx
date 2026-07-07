@@ -1,15 +1,29 @@
 import { useEffect, useMemo, useState } from "react";
-import { fetchRecruiters } from "../../api/teamService";
+import { fetchJobTeamMembers, fetchRecruiters, saveTeamMembers } from "../../api/teamService";
 
 const TEAM_MEMBERS = [];
 
 const ADD_NEW_MEMBER_OPTION = "__add_new_member__";
 const normalizeName = (value) => String(value || "").trim().replace(/\s+/g, " ");
+const isUuid = (value) =>
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    String(value || "").trim(),
+  );
 
 const buildEmailFromName = (name) => {
   const normalized = normalizeName(name).toLowerCase();
   if (!normalized) return "";
   return "";
+};
+
+const getApiErrorMessage = (error) => {
+  const message = String(
+    error?.response?.data?.message ||
+      error?.response?.data?.error ||
+      error?.message ||
+      "Failed to save team members."
+  ).trim();
+  return message || "Failed to save team members.";
 };
 
 const generateMemberId = (members) => {
@@ -37,6 +51,7 @@ const TeamMembersStep = ({
   const [newTeamMemberName, setNewTeamMemberName] = useState("");
   const [isDeleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [memberToDelete, setMemberToDelete] = useState(null);
+  const [isAssigning, setIsAssigning] = useState(false);
   const customTeamMembers = Array.isArray(formData.customTeamMembers)
     ? formData.customTeamMembers
     : [];
@@ -65,12 +80,27 @@ const TeamMembersStep = ({
   useEffect(() => {
     let cancelled = false;
 
-    const loadRecruiters = async () => {
+    const loadTeamMembers = async () => {
       try {
         const openingJobId = String(formData.openingJobId || formData.jobPositionId || '').trim();
-        const recruiters = await fetchRecruiters({ openingJobId: openingJobId || undefined });
-        if (!cancelled && Array.isArray(recruiters) && recruiters.length > 0) {
-          setApiMembers(recruiters);
+        const persistedJobOpeningId = String(formData.jobId || formData.id || '').trim();
+        const hasPersistedJob = isUuid(persistedJobOpeningId);
+        let teamMembers = [];
+
+        if (hasPersistedJob && openingJobId) {
+          teamMembers = await fetchJobTeamMembers(openingJobId);
+        }
+
+        if ((!Array.isArray(teamMembers) || teamMembers.length === 0) && hasPersistedJob && openingJobId) {
+          teamMembers = await fetchRecruiters({ openingJobId });
+        }
+
+        if ((!Array.isArray(teamMembers) || teamMembers.length === 0)) {
+          teamMembers = await fetchRecruiters();
+        }
+
+        if (!cancelled && Array.isArray(teamMembers) && teamMembers.length > 0) {
+          setApiMembers(teamMembers);
         }
       } catch (error) {
         if (!cancelled) {
@@ -80,11 +110,11 @@ const TeamMembersStep = ({
       }
     };
 
-    loadRecruiters();
+    loadTeamMembers();
     return () => {
       cancelled = true;
     };
-  }, [formData.openingJobId, formData.jobPositionId]);
+  }, [formData.id, formData.jobId, formData.openingJobId, formData.jobPositionId]);
 
   useEffect(() => {
     if (formData.teamMembers === undefined) {
@@ -159,13 +189,19 @@ const TeamMembersStep = ({
     setModalOpen(false);
   };
 
-  const handleAssignSubmit = (event) => {
+  const handleAssignSubmit = async (event) => {
     if (event) {
       event.preventDefault();
     }
+
+    if (isAssigning) {
+      return;
+    }
+
     const trimmedNewMemberName = normalizeName(newTeamMemberName);
     const isAddingNewMember = selectedRecruiterId === ADD_NEW_MEMBER_OPTION;
     let recruiterIdToAssign = selectedRecruiterId;
+    let nextCustomMembers = customTeamMembers;
 
     if (isAddingNewMember) {
       if (!trimmedNewMemberName) {
@@ -186,7 +222,7 @@ const TeamMembersStep = ({
           email: buildEmailFromName(trimmedNewMemberName),
           role: recruiterRole.trim() || "Recruiter",
         };
-        onChange("customTeamMembers", [...customTeamMembers, newMember]);
+        nextCustomMembers = [...customTeamMembers, newMember];
         recruiterIdToAssign = newMember.id;
       }
     }
@@ -195,16 +231,71 @@ const TeamMembersStep = ({
       return;
     }
 
-    if (!selectedMembers.includes(recruiterIdToAssign)) {
-      onChange("teamMembers", [...selectedMembers, recruiterIdToAssign]);
+    const openingJobId = String(formData.openingJobId || formData.jobPositionId || "").trim();
+    const jobOpeningId = String(formData.jobId || formData.id || "").trim();
+
+    const nextSelectedMembers = selectedMembers.includes(recruiterIdToAssign)
+      ? selectedMembers
+      : [...selectedMembers, recruiterIdToAssign];
+    const nextRoles = recruiterRole.trim()
+      ? {
+          ...memberRoles,
+          [recruiterIdToAssign]: recruiterRole.trim(),
+        }
+      : memberRoles;
+
+    const directoryById = new Map(
+      [...baseMembers, ...nextCustomMembers].map((member) => [String(member?.id || "").trim(), member])
+    );
+
+    const teamMembersPayload = nextSelectedMembers
+      .map((memberId) => {
+        const key = String(memberId || "").trim();
+        if (!key) return null;
+
+        const member = directoryById.get(key) || {};
+        return {
+          userId: key,
+          name: String(member?.name || key).trim(),
+          role: String(nextRoles[key] || member?.role || "Recruiter").trim(),
+        };
+      })
+      .filter(Boolean);
+
+    if (teamMembersPayload.length === 0) {
+      return;
     }
-    if (recruiterRole.trim()) {
-      onChange("teamMemberRoles", {
-        ...memberRoles,
-        [recruiterIdToAssign]: recruiterRole.trim(),
-      });
+
+    setIsAssigning(true);
+    try {
+      if (jobOpeningId) {
+        await saveTeamMembers({
+          jobOpeningId,
+          openingJobId,
+          teamMembers: teamMembersPayload,
+          permissions: {
+            visibility: formData.permissionVisibility,
+            access: formData.permissionAccess,
+          },
+        });
+      }
+
+      if (nextCustomMembers !== customTeamMembers) {
+        onChange("customTeamMembers", nextCustomMembers);
+      }
+      if (!selectedMembers.includes(recruiterIdToAssign)) {
+        onChange("teamMembers", nextSelectedMembers);
+      }
+      if (recruiterRole.trim()) {
+        onChange("teamMemberRoles", nextRoles);
+      }
+      closeAssignModal();
+    } catch (error) {
+      console.error("Failed to assign team member:", error);
+      alert(getApiErrorMessage(error));
+    } finally {
+      setIsAssigning(false);
     }
-    closeAssignModal();
   };
 
   const resolveRecruiterRole = (recruiterId) => {
@@ -359,12 +450,13 @@ const TeamMembersStep = ({
                   className="modal-btn primary"
                   onClick={handleAssignSubmit}
                   disabled={
+                    isAssigning ||
                     !selectedRecruiterId ||
                     (selectedRecruiterId === ADD_NEW_MEMBER_OPTION &&
                       !newTeamMemberName.trim())
                   }
                 >
-                  Submit
+                  {isAssigning ? "Saving..." : "Submit"}
                 </button>
                 <button
                   type="button"

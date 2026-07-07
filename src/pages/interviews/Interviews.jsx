@@ -19,6 +19,12 @@ import {
   fetchAvailableInterviewers,
   fetchInterviewFiltersMeta,
   fetchInterviews,
+  fetchInterviewGroups,
+  createInterviewGroup,
+  addInterviewGroupTeamMember,
+  updateInterviewGroup,
+  deleteInterviewGroup,
+  deleteInterviewGroupTeamMember,
 } from "../../api/interviewService";
 import styles from "./Interviews.module.scss";
 
@@ -182,6 +188,24 @@ export default function Interviews() {
 
   const [groups, setGroups] = React.useState([]);
 
+  React.useEffect(() => {
+    const loadInterviewGroups = async () => {
+      try {
+        const response = await fetchInterviewGroups({ page: 1, limit: 100 });
+        if (Array.isArray(response?.items) && response.items.length > 0) {
+          setGroups(response.items);
+          if (!response.items.some((group) => group.id === selectedGroup)) {
+            setSelectedGroup(response.items[0]?.id || "");
+          }
+        }
+      } catch (error) {
+        console.warn("Failed to load interview groups:", error);
+      }
+    };
+
+    loadInterviewGroups();
+  }, []);
+
   // Fetch interviews data
   React.useEffect(() => {
     const loadInterviews = async () => {
@@ -227,7 +251,7 @@ export default function Interviews() {
       try {
         const [meta, availableUsers] = await Promise.all([
           fetchInterviewFiltersMeta(),
-          fetchAvailableInterviewers(),
+          fetchAvailableInterviewers(selectedGroup),
         ]);
 
         if (!isMounted) return;
@@ -273,7 +297,7 @@ export default function Interviews() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [selectedGroup]);
 
   React.useEffect(() => {
     return () => {
@@ -508,7 +532,7 @@ export default function Interviews() {
     setNewGroupInterviewer("");
   };
 
-  const handleSubmitCreateGroup = () => {
+  const handleSubmitCreateGroup = async () => {
     const groupName = newGroupName.trim();
     const roundName = newGroupRound.trim();
 
@@ -538,19 +562,36 @@ export default function Interviews() {
         ]
       : [];
 
-    const newGroupId = `${groupName}-${Date.now()}`;
-    const createdGroup = {
-      id: newGroupId,
+    const payload = {
+      name: groupName,
+      rounds: [roundName],
+      teamMembers: initialMembers,
+    };
+
+    const fallbackGroupId = `${groupName}-${Date.now()}`;
+    const fallbackGroup = {
+      id: fallbackGroupId,
       name: groupName,
       rounds: [roundName],
       teamMembers: initialMembers,
       members: initialMembers.length,
     };
 
-    setGroups((prev) => [...prev, createdGroup]);
-    setSelectedGroup(newGroupId);
-    setExpandedGroups((prev) => (prev.includes(newGroupId) ? prev : [...prev, newGroupId]));
-    handleCloseCreateGroupModal();
+    try {
+      const createdGroup = await createInterviewGroup(payload);
+      const group = createdGroup || fallbackGroup;
+      setGroups((prev) => [...prev, group]);
+      setSelectedGroup(group.id || fallbackGroupId);
+      setExpandedGroups((prev) => (prev.includes(group.id || fallbackGroupId) ? prev : [...prev, group.id || fallbackGroupId]));
+    } catch (error) {
+      console.error("Create interview group failed:", error);
+      showInfoPopup("Unable to create group at this time.", "Error");
+      setGroups((prev) => [...prev, fallbackGroup]);
+      setSelectedGroup(fallbackGroupId);
+      setExpandedGroups((prev) => (prev.includes(fallbackGroupId) ? prev : [...prev, fallbackGroupId]));
+    } finally {
+      handleCloseCreateGroupModal();
+    }
   };
 
   const handleAddMember = (groupId) => {
@@ -568,7 +609,7 @@ export default function Interviews() {
       "Edit Group",
       "Update group name",
       targetGroup.name,
-      (nextName) => {
+      async (nextName) => {
         const normalizedName = String(nextName || "").trim();
         if (!normalizedName || normalizedName === targetGroup.name) return;
 
@@ -580,9 +621,18 @@ export default function Interviews() {
           return;
         }
 
-        setGroups((prev) =>
-          prev.map((group) => (group.id === groupId ? { ...group, name: normalizedName } : group))
-        );
+        try {
+          await updateInterviewGroup(groupId, {
+            ...targetGroup,
+            name: normalizedName,
+          });
+          setGroups((prev) =>
+            prev.map((group) => (group.id === groupId ? { ...group, name: normalizedName } : group))
+          );
+        } catch (error) {
+          console.error("Edit interview group failed:", error);
+          showInfoPopup("Unable to update group name at this time.", "Error");
+        }
       }
     );
   };
@@ -594,16 +644,22 @@ export default function Interviews() {
     showConfirmPopup(
       "Delete Group",
       `Delete group \"${targetGroup.name}\"?`,
-      () => {
-        setGroups((prev) => {
-          const nextGroups = prev.filter((group) => group.id !== groupId);
-          setExpandedGroups((currentExpanded) => currentExpanded.filter((id) => id !== groupId));
-          setSelectedGroup((prevSelected) => {
-            if (prevSelected !== groupId) return prevSelected;
-            return nextGroups[0]?.id || "";
+      async () => {
+        try {
+          await deleteInterviewGroup(groupId);
+          setGroups((prev) => {
+            const nextGroups = prev.filter((group) => group.id !== groupId);
+            setExpandedGroups((currentExpanded) => currentExpanded.filter((id) => id !== groupId));
+            setSelectedGroup((prevSelected) => {
+              if (prevSelected !== groupId) return prevSelected;
+              return nextGroups[0]?.id || "";
+            });
+            return nextGroups;
           });
-          return nextGroups;
-        });
+        } catch (error) {
+          console.error("Delete interview group failed:", error);
+          showInfoPopup("Unable to delete group at this time.", "Error");
+        }
       },
       "Delete"
     );
@@ -666,7 +722,7 @@ export default function Interviews() {
     );
   };
 
-  const handleCreateMember = () => {
+  const handleCreateMember = async () => {
     if (!selectedGroup || !newMemberRound || !newMemberInterviewer) {
       return;
     }
@@ -676,55 +732,70 @@ export default function Interviews() {
       return;
     }
 
-    setGroups((prev) =>
-      prev.map((group) => {
-        if (group.id !== selectedGroup) return group;
+    const memberPayload = {
+      name: newMemberInterviewer,
+      email: interviewerMeta.email,
+      mobile: interviewerMeta.mobile,
+      round: newMemberRound,
+      designation: interviewerMeta.designation,
+      availability: interviewerMeta.availability,
+    };
 
-        const duplicateMember = group.teamMembers.some(
-          (member) =>
-            member.name.toLowerCase() === newMemberInterviewer.toLowerCase() &&
-            member.round.toLowerCase() === newMemberRound.toLowerCase()
-        );
-        if (duplicateMember) {
-          showInfoPopup("This interviewer already exists for the selected round.", "Duplicate Member");
-          return group;
-        }
+    const currentGroup = groups.find((group) => group.id === selectedGroup);
+    if (!currentGroup) {
+      return;
+    }
 
-        const updatedTeamMembers = [
-          ...group.teamMembers,
-          {
-            name: newMemberInterviewer,
-            email: interviewerMeta.email,
-            mobile: interviewerMeta.mobile,
-            round: newMemberRound,
-            designation: interviewerMeta.designation,
-            availability: interviewerMeta.availability,
-          },
-        ];
-
-        return {
-          ...group,
-          teamMembers: updatedTeamMembers,
-          members: updatedTeamMembers.length,
-        };
-      })
+    const duplicateMember = currentGroup.teamMembers.some(
+      (member) =>
+        member.name.toLowerCase() === newMemberInterviewer.toLowerCase() &&
+        member.round.toLowerCase() === newMemberRound.toLowerCase()
     );
+    if (duplicateMember) {
+      showInfoPopup("This interviewer already exists for the selected round.", "Duplicate Member");
+      return;
+    }
 
-    handleCloseModal();
-  };
+    const fallbackMember = {
+      ...memberPayload,
+    };
 
-  const handleDeleteMember = (groupId, memberIndex) => {
-    setGroups((prev) =>
-      prev.map((group) => {
-        if (group.id !== groupId) return group;
-        const updatedTeamMembers = group.teamMembers.filter((_, index) => index !== memberIndex);
-        return {
-          ...group,
-          teamMembers: updatedTeamMembers,
-          members: updatedTeamMembers.length,
-        };
-      })
-    );
+    try {
+      const createdMember = await addInterviewGroupTeamMember(selectedGroup, memberPayload);
+      const memberToAppend = createdMember && typeof createdMember === "object" ? createdMember : fallbackMember;
+
+      setGroups((prev) =>
+        prev.map((group) => {
+          if (group.id !== selectedGroup) return group;
+
+          const updatedTeamMembers = [...group.teamMembers, memberToAppend];
+
+          return {
+            ...group,
+            teamMembers: updatedTeamMembers,
+            members: updatedTeamMembers.length,
+          };
+        })
+      );
+    } catch (error) {
+      console.error("Add interview group member failed:", error);
+      showInfoPopup("Unable to add member at this time.", "Error");
+      setGroups((prev) =>
+        prev.map((group) => {
+          if (group.id !== selectedGroup) return group;
+
+          const updatedTeamMembers = [...group.teamMembers, fallbackMember];
+
+          return {
+            ...group,
+            teamMembers: updatedTeamMembers,
+            members: updatedTeamMembers.length,
+          };
+        })
+      );
+    } finally {
+      handleCloseModal();
+    }
   };
 
   const handleCloseModal = () => {

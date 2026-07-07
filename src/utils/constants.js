@@ -2,7 +2,7 @@
 export const API_ENDPOINTS = {
   JOB_OPENINGS: '/job-openings',
   CANDIDATES: '/candidates',
-  INTERVIEWS: '/interviews',
+  INTERVIEWS: '/api/interviews',
   HR_STAFF: '/hr-staff',
   APPLICATIONS: '/applications',
 };

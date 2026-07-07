@@ -23,15 +23,21 @@ import {
   deleteCandidate,
   fetchCandidates,
   fetchCandidateFiltersMeta,
+  fetchCandidateGenders,
+  fetchCandidateExperienceYears,
+  fetchCandidateOffersInHand,
+  fetchExperienceLevels,
+  fetchPrimarySkills,
+  fetchSources,
   updateCandidate,
 } from "../../api/candidateService";
-import { fetchSkills, toSkillOption } from "../../api/jobClientService";
+import {
+  fetchEmploymentTypes,
+  fetchJobs,
+  normalizeJobRecord,
+} from "../../api/jobClientService";
 import { fetchRecruiters } from "../../api/teamService";
 import styles from "./Candidates.module.scss";
-
-const JOB_OPENING_TABLE_STORAGE_KEY = "job-openings:table:v1";
-const SEEDED_JOB_OPENING_IDS = new Set(["ZR_1_JOB", "ZR_2_JOB", "ZR_3_JOB", "ZR_4_JOB"]);
-const SEEDED_JOB_OPENING_TITLES = new Set(["senior react developer", "product manager", "ui/ux designer"]);
 
 // Memoized filter bar component to prevent unnecessary re-renders
 const CandidateFilterBar = React.memo(({
@@ -121,55 +127,8 @@ const PROFILE_TABS = [
 
 const PIPELINE_STEPS = ["New", "In Review", "Engaged", "Offered", "Hired", "Rejected"];
 
-const PRIMARY_SKILL_OPTIONS = [
-  "Core Java",
-  "Spring Boot",
-  "Microservices",
-  "REST API",
-  "SQL",
-  "Kubernetes",
-];
-
-const SECONDARY_SKILL_OPTIONS = [
-  "Communication Skills",
-  "Time Management",
-  "Problem-Solving",
-  "Team Collaboration",
-  "Adaptability & Learning",
-];
-
-const EXPERIENCE_OPTIONS = ["1 Year", "2 Years", "3 Years", "4 Years", "5 Years"];
-
-const LAST_USED_OPTIONS = ["2025", "2024", "2023", "2022", "2021"];
 const CANDIDATE_DRAFT_STORAGE_KEY = "candidates:add-draft:v1";
-const LOCAL_CANDIDATE_STORAGE_KEY = "candidates:local-cache:v1";
 const createDraftId = () => `draft-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-
-const sanitizeStorageValue = (value) => {
-  if (value === null || value === undefined) return value;
-  if (Array.isArray(value)) return value.map((item) => sanitizeStorageValue(item));
-  if (typeof value !== "object") return value;
-  if (value instanceof Date) return value.toISOString();
-  if (typeof File !== "undefined" && value instanceof File) {
-    return {
-      name: value.name,
-      size: value.size,
-      type: value.type,
-      lastModified: value.lastModified,
-    };
-  }
-  if (typeof Blob !== "undefined" && value instanceof Blob) {
-    return {
-      size: value.size,
-      type: value.type,
-    };
-  }
-
-  return Object.entries(value).reduce((acc, [key, nestedValue]) => {
-    acc[key] = sanitizeStorageValue(nestedValue);
-    return acc;
-  }, {});
-};
 
 const getCandidateStorageId = (candidate) =>
   String(
@@ -198,34 +157,11 @@ const compareCandidateIds = (leftCandidateId, rightCandidateId) => {
   return String(leftCandidateId || "").localeCompare(String(rightCandidateId || ""));
 };
 
-const readLocalCandidates = () => {
-  if (typeof window === "undefined") return [];
-
-  try {
-    const rawCandidates = window.localStorage.getItem(LOCAL_CANDIDATE_STORAGE_KEY);
-    const parsedCandidates = rawCandidates ? JSON.parse(rawCandidates) : [];
-    return Array.isArray(parsedCandidates)
-      ? parsedCandidates.filter((candidate) => candidate && typeof candidate === "object")
-      : [];
-  } catch (error) {
-    console.error("Failed to read local candidate cache:", error);
-    return [];
-  }
-};
-
-const writeLocalCandidates = (candidates) => {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(
-    LOCAL_CANDIDATE_STORAGE_KEY,
-    JSON.stringify(candidates.map((candidate) => sanitizeStorageValue(candidate)))
-  );
-};
-
-const mergeCandidates = (apiCandidates = [], localCandidates = []) => {
+const normalizeCandidateRows = (apiCandidates = []) => {
   const merged = [];
   const seenIds = new Set();
 
-  [...localCandidates, ...apiCandidates].forEach((candidate) => {
+  apiCandidates.forEach((candidate) => {
     if (!candidate || typeof candidate !== "object") return;
     const candidateId = getCandidateStorageId(candidate);
     const dedupeKey = candidateId || JSON.stringify(candidate);
@@ -243,36 +179,6 @@ const mergeCandidates = (apiCandidates = [], localCandidates = []) => {
   );
 };
 
-const upsertLocalCandidate = (candidate) => {
-  const candidateId = getCandidateStorageId(candidate);
-  if (!candidateId) return;
-
-  const localCandidates = readLocalCandidates();
-  const nextCandidates = localCandidates.filter(
-    (existingCandidate) => getCandidateStorageId(existingCandidate) !== candidateId
-  );
-  nextCandidates.unshift(sanitizeStorageValue(candidate));
-  writeLocalCandidates(
-    nextCandidates.sort((leftCandidate, rightCandidate) =>
-      compareCandidateIds(leftCandidate?.candidateId, rightCandidate?.candidateId)
-    )
-  );
-};
-
-const removeLocalCandidate = (candidate) => {
-  const candidateId = getCandidateStorageId(candidate);
-  if (!candidateId) return;
-
-  const nextCandidates = readLocalCandidates().filter(
-    (existingCandidate) => getCandidateStorageId(existingCandidate) !== candidateId
-  );
-  writeLocalCandidates(
-    nextCandidates.sort((leftCandidate, rightCandidate) =>
-      compareCandidateIds(leftCandidate?.candidateId, rightCandidate?.candidateId)
-    )
-  );
-};
-
 const getNextCandidateId = (candidates = []) => {
   const maxNumericId = candidates.reduce((maxValue, item) => {
     const parsed = getCandidateIdNumber(item?.candidateId);
@@ -283,59 +189,23 @@ const getNextCandidateId = (candidates = []) => {
   return `C${String(maxNumericId + 1).padStart(3, "0")}`;
 };
 
-const loadJobMapOptions = () => {
-  if (typeof window === "undefined") return [];
+const toJobMapOption = (row, index) => {
+  const normalizedRow = normalizeJobRecord(row, index);
+  const openingJobId = String(normalizedRow?.openingJobId || normalizedRow?.jobPositionId || normalizedRow?.jobId || "").trim();
+  const postingTitle = String(normalizedRow?.postingTitle || normalizedRow?.positionName || normalizedRow?.jobTitle || "").trim();
+  if (!openingJobId) return null;
 
-  try {
-    const rawRows = window.localStorage.getItem(JOB_OPENING_TABLE_STORAGE_KEY);
-    const parsedRows = rawRows ? JSON.parse(rawRows) : [];
-    if (!Array.isArray(parsedRows)) return [];
-
-    return parsedRows
-      .map((row, index) => {
-        const openingJobId = String(row?.openingJobId || row?.jobPositionId || row?.jobId || "").trim();
-        const postingTitle = String(row?.postingTitle || row?.positionName || row?.jobTitle || "").trim();
-        if (
-          !openingJobId ||
-          SEEDED_JOB_OPENING_IDS.has(openingJobId) ||
-          SEEDED_JOB_OPENING_TITLES.has(postingTitle.toLowerCase())
-        ) {
-          return null;
-        }
-
-        return {
-          id: openingJobId || `job-${index + 1}`,
-          company: String(row?.clientName || row?.company || row?.clientId || "").trim(),
-          openingJobId,
-          postingTitle,
-          clientId: String(row?.clientId || "").trim(),
-          assignedRecruiter: String(row?.assignedRecruiters || row?.assignedRecruiter || "").trim(),
-          appliedDate: "",
-          jobOpeningStatus: String(row?.jobOpeningStatus || row?.jobStatus || row?.status || "").trim(),
-          hiringManager: String(row?.hiringManager || row?.accountManager || "").trim(),
-        };
-      })
-      .filter(Boolean);
-  } catch (error) {
-    console.error("Failed to load job opening options:", error);
-    return [];
-  }
-};
-
-const PRIMARY_SKILL_LABELS = {
-  java: "Core Java",
-  python: "Python",
-  react: "React",
-  node: "Node.js",
-  aws: "AWS",
-};
-
-const SECONDARY_SKILL_LABELS = {
-  java: "Core Java",
-  python: "Python",
-  react: "React",
-  node: "Node.js",
-  aws: "AWS",
+  return {
+    id: openingJobId,
+    company: String(normalizedRow?.clientName || normalizedRow?.company || normalizedRow?.clientId || "").trim(),
+    openingJobId,
+    postingTitle,
+    clientId: String(normalizedRow?.clientId || "").trim(),
+    assignedRecruiter: String(normalizedRow?.assignedRecruiters || normalizedRow?.assignedRecruiter || "").trim(),
+    appliedDate: "",
+    jobOpeningStatus: String(normalizedRow?.jobOpeningStatus || normalizedRow?.jobStatus || normalizedRow?.status || "").trim(),
+    hiringManager: String(normalizedRow?.hiringManager || normalizedRow?.accountManager || "").trim(),
+  };
 };
 
 const EXPERIENCE_LEVEL_LABELS = {
@@ -346,9 +216,9 @@ const EXPERIENCE_LEVEL_LABELS = {
 
 const createSkillDraft = () => ({
   name: "",
-  experience: EXPERIENCE_OPTIONS[0],
+  experience: "",
   rating: 0,
-  lastUsed: LAST_USED_OPTIONS[0],
+  lastUsed: "",
 });
 
 const formatFileSize = (bytes) => {
@@ -481,12 +351,14 @@ const getMetaOptionsForField = (metaOptionMap, fieldName) => {
 export default function Candidates() {
   const [showCandidateForm, setShowCandidateForm] = React.useState(false);
   const [showDataTable, setShowDataTable] = React.useState(true);
-  const [submittedData, setSubmittedData] = React.useState(() => readLocalCandidates());
+  const [submittedData, setSubmittedData] = React.useState([]);
   const [loading, setLoading] = React.useState(false);
+  const [candidateLoadError, setCandidateLoadError] = React.useState("");
   const [pagination, setPagination] = React.useState({ page: 1, limit: 100, totalRecords: 0, totalPages: 1 });
   const [editingIndex, setEditingIndex] = React.useState(null);
   const [editingData, setEditingData] = React.useState(null);
   const [successMessage, setSuccessMessage] = React.useState("");
+  const [errorMessage, setErrorMessage] = React.useState("");
   const [searchTerm, setSearchTerm] = React.useState('');
   const [filterSource, setFilterSource] = React.useState('');
   const [filterRating, setFilterRating] = React.useState('');
@@ -509,12 +381,19 @@ export default function Candidates() {
   const [activeDraftId, setActiveDraftId] = React.useState(null);
   const [candidateFormKey, setCandidateFormKey] = React.useState(0);
   const [candidateMetaOptions, setCandidateMetaOptions] = React.useState({});
-  const [candidateSkillOptions, setCandidateSkillOptions] = React.useState([]);
+  const [candidateGenderOptions, setCandidateGenderOptions] = React.useState([]);
+  const [candidateExperienceYearsOptions, setCandidateExperienceYearsOptions] = React.useState([]);
+  const [candidateOffersInHandOptions, setCandidateOffersInHandOptions] = React.useState([]);
+  const [candidateEmploymentTypeOptions, setCandidateEmploymentTypeOptions] = React.useState([]);
+  const [candidatePrimarySkillOptions, setCandidatePrimarySkillOptions] = React.useState([]);
+  const [candidateExperienceLevelOptions, setCandidateExperienceLevelOptions] = React.useState([]);
+  const [candidateSourceOptions, setCandidateSourceOptions] = React.useState([]);
   const [candidateRecruiterOptions, setCandidateRecruiterOptions] = React.useState([]);
-  const [jobMapOptions, setJobMapOptions] = React.useState(() => loadJobMapOptions());
+  const [jobMapOptions, setJobMapOptions] = React.useState([]);
   const mapDropdownRef = React.useRef(null);
   const addCandidateMenuRef = React.useRef(null);
   const resumeUploadRef = React.useRef(null);
+  const loadCandidatesRequestRef = React.useRef(0);
 
   React.useEffect(() => {
     window.dispatchEvent(new CustomEvent("topbar-page-label-change", {
@@ -553,8 +432,7 @@ export default function Candidates() {
   }, [currentUserRole]);
 
   const generateNextCandidateId = React.useCallback(() => {
-    const allKnownCandidates = mergeCandidates(submittedData, readLocalCandidates());
-    return getNextCandidateId(allKnownCandidates);
+    return getNextCandidateId(submittedData);
   }, [submittedData]);
 
   const showTransientMessage = React.useCallback((message) => {
@@ -572,17 +450,21 @@ export default function Candidates() {
   }, [jobMapOptions]);
 
   const sanitizeDraftValue = React.useCallback((value) => {
-    if (value === null || value === undefined) return value;
-    if (Array.isArray(value)) return value.map((item) => sanitizeDraftValue(item));
-    if (typeof value !== "object") return value;
-    if (value instanceof Date) return value.toISOString();
-    if (typeof File !== "undefined" && value instanceof File) return value.name;
-    if (typeof Blob !== "undefined" && value instanceof Blob) return "blob";
+    const sanitize = (input) => {
+      if (input === null || input === undefined) return input;
+      if (Array.isArray(input)) return input.map((item) => sanitize(item));
+      if (typeof input !== "object") return input;
+      if (input instanceof Date) return input.toISOString();
+      if (typeof File !== "undefined" && input instanceof File) return input.name;
+      if (typeof Blob !== "undefined" && input instanceof Blob) return "blob";
 
-    return Object.entries(value).reduce((acc, [key, nestedValue]) => {
-      acc[key] = sanitizeDraftValue(nestedValue);
-      return acc;
-    }, {});
+      return Object.entries(input).reduce((acc, [key, nestedValue]) => {
+        acc[key] = sanitize(nestedValue);
+        return acc;
+      }, {});
+    };
+
+    return sanitize(value);
   }, []);
 
   const persistCandidateDrafts = React.useCallback((drafts) => {
@@ -605,18 +487,10 @@ export default function Candidates() {
   }, []);
 
   const loadCandidates = React.useCallback(async () => {
-    const localCandidates = readLocalCandidates();
-
-    if (localCandidates.length > 0) {
-      setSubmittedData((currentCandidates) => mergeCandidates(currentCandidates, localCandidates));
-      setPagination((prev) => ({
-        ...prev,
-        totalRecords: Math.max(prev.totalRecords, localCandidates.length),
-        totalPages: Math.max(prev.totalPages, Math.ceil(localCandidates.length / prev.limit) || 1),
-      }));
-    }
-
+    const requestId = loadCandidatesRequestRef.current + 1;
+    loadCandidatesRequestRef.current = requestId;
     setLoading(true);
+    setCandidateLoadError("");
     try {
       const response = await fetchCandidates({
         page: pagination.page,
@@ -626,32 +500,35 @@ export default function Candidates() {
       });
 
       const apiCandidates = Array.isArray(response.items) ? response.items : [];
-      const mergedCandidates = mergeCandidates(apiCandidates, localCandidates);
+      const normalizedCandidates = normalizeCandidateRows(apiCandidates);
 
-      setSubmittedData(mergedCandidates);
+      if (requestId !== loadCandidatesRequestRef.current) {
+        return;
+      }
+
+      setSubmittedData(normalizedCandidates);
       setPagination((prev) => ({
         ...prev,
         page: response.pagination?.page ?? prev.page,
         limit: response.pagination?.limit ?? prev.limit,
-        totalRecords: Math.max(
-          response.pagination?.totalRecords ?? prev.totalRecords,
-          mergedCandidates.length
-        ),
-        totalPages: Math.max(
-          response.pagination?.totalPages ?? prev.totalPages,
-          Math.ceil(mergedCandidates.length / prev.limit) || 1
-        ),
+        totalRecords: response.pagination?.totalRecords ?? normalizedCandidates.length,
+        totalPages: response.pagination?.totalPages ?? (Math.ceil(normalizedCandidates.length / prev.limit) || 1),
       }));
     } catch (error) {
+      if (requestId !== loadCandidatesRequestRef.current) {
+        return;
+      }
       console.error('Failed to load candidate list:', error);
-      setSubmittedData(localCandidates);
+      setCandidateLoadError("Failed to load candidates.");
       setPagination((prev) => ({
         ...prev,
-        totalRecords: Math.max(prev.totalRecords, localCandidates.length),
-        totalPages: Math.max(prev.totalPages, Math.ceil(localCandidates.length / prev.limit) || 1),
+        totalRecords: prev.totalRecords,
+        totalPages: prev.totalPages || 1,
       }));
     } finally {
-      setLoading(false);
+      if (requestId === loadCandidatesRequestRef.current) {
+        setLoading(false);
+      }
     }
   }, [pagination.limit, pagination.page]);
 
@@ -661,18 +538,31 @@ export default function Candidates() {
 
   React.useEffect(() => {
     loadCandidates();
-  }, [loadCandidates]);
+  }, []); // Run only on component mount to avoid duplicate fetches
 
   React.useEffect(() => {
-    const refreshJobMapOptions = () => setJobMapOptions(loadJobMapOptions());
+    let isMounted = true;
 
-    refreshJobMapOptions();
-    window.addEventListener("focus", refreshJobMapOptions);
-    window.addEventListener("storage", refreshJobMapOptions);
+    const loadJobMapOptions = async () => {
+      try {
+        const jobs = await fetchJobs();
+        if (!isMounted) return;
+        setJobMapOptions(
+          (Array.isArray(jobs) ? jobs : [])
+            .map((job, index) => toJobMapOption(job, index))
+            .filter(Boolean)
+        );
+      } catch (error) {
+        if (!isMounted) return;
+        console.error("Failed to load job opening options:", error);
+        setJobMapOptions([]);
+      }
+    };
+
+    loadJobMapOptions();
 
     return () => {
-      window.removeEventListener("focus", refreshJobMapOptions);
-      window.removeEventListener("storage", refreshJobMapOptions);
+      isMounted = false;
     };
   }, []);
 
@@ -681,9 +571,25 @@ export default function Candidates() {
 
     const loadDropdownMetadata = async () => {
       try {
-        const [candidateMeta, skills, recruiters] = await Promise.all([
+        const [
+          candidateMeta,
+          genders,
+          experienceYears,
+          offersInHand,
+          employmentTypes,
+          primarySkills,
+          experienceLevels,
+          sources,
+          recruiters,
+        ] = await Promise.all([
           fetchCandidateFiltersMeta(),
-          fetchSkills(),
+          fetchCandidateGenders(),
+          fetchCandidateExperienceYears(),
+          fetchCandidateOffersInHand(),
+          fetchEmploymentTypes(),
+          fetchPrimarySkills(),
+          fetchExperienceLevels(),
+          fetchSources(),
           fetchRecruiters(),
         ]);
 
@@ -694,14 +600,47 @@ export default function Candidates() {
           setCandidateMetaOptions(mappedMeta);
         }
 
-        if (Array.isArray(skills) && skills.length > 0) {
-          const mappedSkills = skills
-            .map((skill) => toSkillOption(skill))
-            .filter(Boolean)
-            .filter((option, index, list) => list.findIndex((entry) => entry.value === option.value) === index);
-          if (mappedSkills.length > 0) {
-            setCandidateSkillOptions(mappedSkills);
-          }
+        const normalizeOptions = (rawOptions) =>
+          Array.isArray(rawOptions)
+            ? rawOptions
+                .map((option) => toOptionRecord(option))
+                .filter(Boolean)
+                .filter((option, index, list) => list.findIndex((entry) => entry.value === option.value) === index)
+            : [];
+
+        const genderOptions = normalizeOptions(genders);
+        if (genderOptions.length > 0) {
+          setCandidateGenderOptions(genderOptions);
+        }
+
+        const experienceYearOptions = normalizeOptions(experienceYears);
+        if (experienceYearOptions.length > 0) {
+          setCandidateExperienceYearsOptions(experienceYearOptions);
+        }
+
+        const offersOptions = normalizeOptions(offersInHand);
+        if (offersOptions.length > 0) {
+          setCandidateOffersInHandOptions(offersOptions);
+        }
+
+        const employmentTypeOptions = normalizeOptions(employmentTypes);
+        if (employmentTypeOptions.length > 0) {
+          setCandidateEmploymentTypeOptions(employmentTypeOptions);
+        }
+
+        const primarySkillOptions = normalizeOptions(primarySkills);
+        if (primarySkillOptions.length > 0) {
+          setCandidatePrimarySkillOptions(primarySkillOptions);
+        }
+
+        const experienceLevelOptions = normalizeOptions(experienceLevels);
+        if (experienceLevelOptions.length > 0) {
+          setCandidateExperienceLevelOptions(experienceLevelOptions);
+        }
+
+        const sourceOptions = normalizeOptions(sources);
+        if (sourceOptions.length > 0) {
+          setCandidateSourceOptions(sourceOptions);
         }
 
         if (Array.isArray(recruiters) && recruiters.length > 0) {
@@ -719,7 +658,75 @@ export default function Candidates() {
           }
         }
       } catch (error) {
-        console.warn("Candidate dropdown metadata sync failed, using local fallback options:", error);
+        console.warn("Candidate dropdown metadata sync failed:", error);
+        
+        // Hardcoded fallback options when API fails
+        if (!isMounted) return;
+        
+        // Fallback gender options
+        setCandidateGenderOptions([
+          { value: "Male", label: "Male" },
+          { value: "Female", label: "Female" },
+          { value: "Other", label: "Other" },
+          { value: "Prefer not to say", label: "Prefer not to say" },
+        ]);
+
+        // Fallback experience years options
+        setCandidateExperienceYearsOptions([
+          { value: "0-1", label: "0-1 years" },
+          { value: "1-3", label: "1-3 years" },
+          { value: "3-5", label: "3-5 years" },
+          { value: "5-7", label: "5-7 years" },
+          { value: "7-10", label: "7-10 years" },
+          { value: "10+", label: "10+ years" },
+        ]);
+
+        // Fallback offers in hand options
+        setCandidateOffersInHandOptions([
+          { value: "Yes", label: "Yes" },
+          { value: "No", label: "No" },
+          { value: "In Process", label: "In Process" },
+        ]);
+
+        // Fallback employment type options
+        setCandidateEmploymentTypeOptions([
+          { value: "Full-time", label: "Full-time" },
+          { value: "Part-time", label: "Part-time" },
+          { value: "Contract", label: "Contract" },
+          { value: "Temporary", label: "Temporary" },
+          { value: "Freelance", label: "Freelance" },
+        ]);
+
+        // Fallback primary skill options
+        setCandidatePrimarySkillOptions([
+          { value: "JavaScript", label: "JavaScript" },
+          { value: "Python", label: "Python" },
+          { value: "Java", label: "Java" },
+          { value: "React", label: "React" },
+          { value: "Node.js", label: "Node.js" },
+          { value: "SQL", label: "SQL" },
+          { value: "AWS", label: "AWS" },
+          { value: "Azure", label: "Azure" },
+          { value: "Docker", label: "Docker" },
+          { value: "Kubernetes", label: "Kubernetes" },
+        ]);
+
+        // Fallback experience level options
+        setCandidateExperienceLevelOptions([
+          { value: "Beginner", label: "Beginner" },
+          { value: "Intermediate", label: "Intermediate" },
+          { value: "Expert", label: "Expert" },
+        ]);
+
+        // Fallback source options
+        setCandidateSourceOptions([
+          { value: "LinkedIn", label: "LinkedIn" },
+          { value: "Indeed", label: "Indeed" },
+          { value: "Referral", label: "Referral" },
+          { value: "Job Board", label: "Job Board" },
+          { value: "Direct Application", label: "Direct Application" },
+          { value: "Recruiter", label: "Recruiter" },
+        ]);
       }
     };
 
@@ -796,17 +803,23 @@ export default function Candidates() {
           return field;
         }
 
-        if (field.name === "recruiterId" && candidateRecruiterOptions.length > 0) {
-          return {
-            ...field,
-            options: candidateRecruiterOptions,
-          };
-        }
+        const optionOverrides = {
+          recruiterId: candidateRecruiterOptions,
+          gender: candidateGenderOptions,
+          yearsExperience: candidateExperienceYearsOptions,
+          offersInHand: candidateOffersInHandOptions,
+          employmentType: candidateEmploymentTypeOptions,
+          primarySkill: candidatePrimarySkillOptions,
+          secondarySkill: candidatePrimarySkillOptions,
+          skillExperienceLevel: candidateExperienceLevelOptions,
+          secondarySkillExperienceLevel: candidateExperienceLevelOptions,
+          sourceName: candidateSourceOptions,
+        };
 
-        if ((field.name === "primarySkill" || field.name === "secondarySkill") && candidateSkillOptions.length > 0) {
+        if (Object.prototype.hasOwnProperty.call(optionOverrides, field.name)) {
           return {
             ...field,
-            options: candidateSkillOptions,
+            options: optionOverrides[field.name],
           };
         }
 
@@ -833,7 +846,19 @@ export default function Candidates() {
       setIsAddCandidateMenuOpen(false);
     },
     onSaveDraft: saveCandidateDraft,
-  }), [candidateMetaOptions, candidateRecruiterOptions, candidateSkillOptions, editingIndex, saveCandidateDraft]);
+  }), [
+    candidateEmploymentTypeOptions,
+    candidateExperienceLevelOptions,
+    candidateExperienceYearsOptions,
+    candidateGenderOptions,
+    candidateMetaOptions,
+    candidateOffersInHandOptions,
+    candidatePrimarySkillOptions,
+    candidateRecruiterOptions,
+    candidateSourceOptions,
+    editingIndex,
+    saveCandidateDraft,
+  ]);
 
   const handleSearchChange = React.useCallback((e) => {
     setSearchTerm(e.target.value);
@@ -1062,18 +1087,6 @@ export default function Candidates() {
     return styles.statusProgress;
   }, []);
 
-  const formatTimestamp = React.useCallback((date = new Date()) => {
-    const pad = (value) => String(value).padStart(2, "0");
-    const month = pad(date.getMonth() + 1);
-    const day = pad(date.getDate());
-    const year = date.getFullYear();
-    const minutes = pad(date.getMinutes());
-    let hours = date.getHours();
-    const period = hours >= 12 ? "PM" : "AM";
-    hours = hours % 12 || 12;
-    return `${month}/${day}/${year} ${pad(hours)}:${minutes} ${period}`;
-  }, []);
-
   const buildCandidateProfile = React.useCallback((row) => {
     const [firstName = "", lastName = ""] = String(row.candidateName || "").split(" ");
     const normalizedFirstName = row.firstName || firstName || "";
@@ -1083,13 +1096,7 @@ export default function Candidates() {
         .filter((skill) => skill && skill.primarySkill)
         .map((skill, index) => {
           const rawSkillName = String(skill.primarySkill || "").trim();
-          const normalizedSkillName = rawSkillName.toLowerCase();
-          const displaySkillName =
-            PRIMARY_SKILL_LABELS[normalizedSkillName] ||
-            PRIMARY_SKILL_OPTIONS.find(
-              (option) => option.toLowerCase() === normalizedSkillName
-            ) ||
-            rawSkillName;
+          const displaySkillName = rawSkillName;
 
           const yearsValue = String(skill.skillExperienceYears || "").trim();
           const displayExperience = yearsValue ? `${yearsValue} Years` : "-";
@@ -1111,13 +1118,7 @@ export default function Candidates() {
         .filter((skill) => skill && skill.secondarySkill)
         .map((skill, index) => {
           const rawSkillName = String(skill.secondarySkill || "").trim();
-          const normalizedSkillName = rawSkillName.toLowerCase();
-          const displaySkillName =
-            SECONDARY_SKILL_LABELS[normalizedSkillName] ||
-            SECONDARY_SKILL_OPTIONS.find(
-              (option) => option.toLowerCase() === normalizedSkillName
-            ) ||
-            rawSkillName;
+          const displaySkillName = rawSkillName;
 
           const yearsValue = String(skill.secondarySkillExperienceYears || "").trim();
           const displayExperience = yearsValue ? `${yearsValue} Years` : "-";
@@ -1341,16 +1342,25 @@ export default function Candidates() {
       lastName: row.lastName || lastName,
       primaryEmail: row.primaryEmail || row.candidateEmail || "",
       secondaryEmail: row.secondaryEmail || "",
-      phoneNumber: row.phoneNumber || "",
+      phoneNumber: row.phoneNumber || row.primaryPhone || "",
       gender: row.gender || "",
-      yearsExperience: row.yearsExperience || "",
+      dateOfBirth: row.dateOfBirth || "",
+      yearsExperience: row.yearsExperience || row.totalExperience || "",
       offersInHand: row.offersInHand || "",
-      currentCompanyName: row.currentCompanyName || "",
+      currentCompanyName: row.currentCompanyName || row.currentLocation || "",
       jobTitleRole: row.jobTitleRole || "",
       employmentType: row.employmentType || "",
       noticePeriod: row.noticePeriod || "",
       currentCtc: row.currentCtc || "",
       expectedCtc: row.expectedCtc || "",
+      primarySkill: row.primarySkill || "",
+      secondarySkill: row.secondarySkill || "",
+      skillExperienceLevel: row.skillExperienceLevel || "",
+      skillExperienceYears: row.skillExperienceYears || "",
+      skillRating: row.skillRating || "",
+      secondarySkillExperienceLevel: row.secondarySkillExperienceLevel || "",
+      secondarySkillExperienceYears: row.secondarySkillExperienceYears || "",
+      secondarySkillRating: row.secondarySkillRating || "",
       skills: Array.isArray(row.skills) ? row.skills : [],
       sourceId: row.sourceId || "",
       recruiterId: row.recruiterId || "",
@@ -1371,8 +1381,8 @@ export default function Candidates() {
     try {
       setLoading(true);
       await deleteCandidate(row.candidateId, { softDelete: true });
-      removeLocalCandidate(row);
       setSubmittedData((prev) => prev.filter((_, i) => i !== index));
+      await loadCandidates();
       showTransientMessage('Candidate deleted successfully');
     } catch (error) {
       console.error('Candidate delete failed:', error);
@@ -1380,7 +1390,7 @@ export default function Candidates() {
     } finally {
       setLoading(false);
     }
-  }, [showTransientMessage]);
+  }, [loadCandidates, showTransientMessage]);
 
   const closeCandidateForm = React.useCallback(() => {
     setShowCandidateForm(false);
@@ -1388,18 +1398,16 @@ export default function Candidates() {
     setEditingIndex(null);
     setActiveDraftId(null);
     setEditingData(null);
+    setErrorMessage("");
+    setSuccessMessage("");
   }, []);
 
   const handleCandidateSubmit = React.useCallback(async (data) => {
     setLoading(true);
-    const firstName = data.firstName || "";
-    const lastName = data.lastName || "";
-    const candidateName = data.candidateName || `${firstName} ${lastName}`.trim();
-    const allKnownCandidates = mergeCandidates(submittedData, readLocalCandidates());
     const candidateId =
       editingData?.candidateId ||
       String(data.candidateId || data.candidateCode || "").trim() ||
-      getNextCandidateId(allKnownCandidates);
+      getNextCandidateId(submittedData);
 
     const parseExperienceYearsAsInteger = (value) => {
       if (value === null || value === undefined || value === "") return undefined;
@@ -1427,73 +1435,66 @@ export default function Candidates() {
       primaryPhone: data.phoneNumber || data.primaryPhoneE164 || data.phone || "",
       currentLocation: data.currentLocation || data.currentCompanyName || "",
       totalExperience: parseExperienceYearsAsInteger(data.yearsExperience),
-    };
-
-    const localCandidate = {
-      ...data,
-      candidateId,
-      candidateName,
-      candidateEmail: data.primaryEmail || data.candidateEmail || "",
-      candidateDocuments: Array.isArray(data.candidateDocuments) ? data.candidateDocuments : [],
-      modifiedTime: data.modifiedTime || formatTimestamp(new Date()),
-      source: data.sourceName || data.sourceId || data.source || "",
-      rating: data.rating || "3/5",
-      stage: data.stage || "Added",
-      status: data.status || "In Progress",
+      // Additional fields for complete candidate data
+      gender: data.gender || "",
+      dateOfBirth: data.dateOfBirth || "",
+      yearsExperience: data.yearsExperience || "",
+      offersInHand: data.offersInHand || "",
+      currentCompanyName: data.currentCompanyName || "",
+      jobTitleRole: data.jobTitleRole || "",
+      employmentType: data.employmentType || "",
+      noticePeriod: data.noticePeriod || "",
+      currentCtc: data.currentCtc || "",
+      expectedCtc: data.expectedCtc || "",
+      primarySkill: data.primarySkill || "",
+      secondarySkill: data.secondarySkill || "",
+      skillExperienceLevel: data.skillExperienceLevel || "",
+      skillExperienceYears: data.skillExperienceYears || "",
+      skillRating: data.skillRating || "",
+      secondarySkillExperienceLevel: data.secondarySkillExperienceLevel || "",
+      secondarySkillExperienceYears: data.secondarySkillExperienceYears || "",
+      secondarySkillRating: data.secondarySkillRating || "",
+      recruiterId: data.recruiterId || "",
+      sourceName: data.sourceName || "",
+      sourcedDate: data.sourcedDate || "",
     };
 
     try {
       if (editingIndex !== null && editingData?.candidateId) {
         // For updates, the controller expects CandidateUpdateRequest at PUT /api/candidates/{id}
         await updateCandidate(editingData.candidateId, candidatePayload);
-        upsertLocalCandidate(localCandidate);
         setSortConfig({ key: 'candidateId', direction: 'asc' });
-        setSubmittedData((previousCandidates) =>
-          mergeCandidates(
-            previousCandidates.map((candidate, index) =>
-              index === editingIndex ? localCandidate : candidate
-            ),
-            [localCandidate]
-          )
-        );
         showTransientMessage('Candidate updated successfully');
       } else {
         await createCandidate(candidatePayload);
-        upsertLocalCandidate(localCandidate);
         setSortConfig({ key: 'candidateId', direction: 'asc' });
-        setSubmittedData((previousCandidates) => mergeCandidates(previousCandidates, [localCandidate]));
         showTransientMessage('Candidate added successfully');
       }
       await loadCandidates();
       closeCandidateForm();
     } catch (error) {
       console.error('Candidate save failed:', error);
-      const status = error?.response?.status;
-      const isApiUnavailable = !error?.response || status >= 500;
-
-      if (isApiUnavailable) {
-        upsertLocalCandidate(localCandidate);
-        setSubmittedData((previousCandidates) => {
-          if (editingIndex !== null) {
-            return previousCandidates.map((candidate, index) =>
-              index === editingIndex ? localCandidate : candidate
-            );
-          }
-          return [...previousCandidates, localCandidate];
-        });
-        showTransientMessage(
-          editingIndex !== null
-            ? 'Candidate updated locally'
-            : 'Candidate added successfully'
-        );
-        closeCandidateForm();
-      } else {
-        const apiMessage =
-          error?.response?.data?.message ||
-          error?.response?.data?.error ||
-          'Unable to save candidate right now. Please try again.';
-        alert(apiMessage);
+      
+      // Extract error message from various possible locations
+      let errorMsg = 'Unable to save candidate right now. Please try again.';
+      
+      if (error?.response?.data?.message) {
+        errorMsg = error.response.data.message;
+      } else if (error?.response?.data?.error) {
+        errorMsg = error.response.data.error;
+      } else if (error?.response?.data?.errors && Array.isArray(error.response.data.errors)) {
+        errorMsg = error.response.data.errors.map((e) => e.message || e).join(', ');
+      } else if (error?.message) {
+        errorMsg = error.message;
       }
+      
+      // Display error message to user
+      setErrorMessage(errorMsg);
+      
+      // Auto-dismiss error after 6 seconds
+      window.setTimeout(() => {
+        setErrorMessage("");
+      }, 6000);
     } finally {
       setLoading(false);
     }
@@ -1501,8 +1502,6 @@ export default function Candidates() {
     closeCandidateForm,
     editingData,
     editingIndex,
-    formatTimestamp,
-    generateNextCandidateId,
     loadCandidates,
     showTransientMessage,
     submittedData,
@@ -1555,7 +1554,20 @@ export default function Candidates() {
   }, [jobMapOptions, mapJobValue]);
 
   const activeSkillKey = activeSkillType === "primary" ? "primarySkills" : "secondarySkills";
-  const skillOptions = activeSkillType === "primary" ? PRIMARY_SKILL_OPTIONS : SECONDARY_SKILL_OPTIONS;
+  const skillOptions = React.useMemo(
+    () =>
+      candidatePrimarySkillOptions
+        .map((option) => String(option.label || option.value || "").trim())
+        .filter(Boolean),
+    [candidatePrimarySkillOptions]
+  );
+  const skillExperienceOptions = React.useMemo(
+    () =>
+      candidateExperienceYearsOptions
+        .map((option) => String(option.label || option.value || "").trim())
+        .filter(Boolean),
+    [candidateExperienceYearsOptions]
+  );
   const currentSkills = React.useMemo(
     () => selectedCandidate?.[activeSkillKey] || [],
     [selectedCandidate, activeSkillKey]
@@ -1798,7 +1810,8 @@ export default function Candidates() {
                         value={skillDraft.experience}
                         onChange={(event) => handleSkillDraftChange("experience", event.target.value)}
                       >
-                        {EXPERIENCE_OPTIONS.map((option) => (
+                        <option value="">Experience</option>
+                        {skillExperienceOptions.map((option) => (
                           <option key={option} value={option}>
                             {option}
                           </option>
@@ -2045,6 +2058,12 @@ export default function Candidates() {
         </div>
       )}
 
+      {errorMessage && (
+        <div className={styles.errorMessage}>
+          ✗ {errorMessage}
+        </div>
+      )}
+
       <div className={`${styles.card}${showCandidateForm ? ` ${styles.formCard}` : ""}`}>
         {!showCandidateForm && (
           <div className={styles.infoRow}>
@@ -2144,6 +2163,7 @@ export default function Candidates() {
               config={candidateFormWithDraft}
               onSubmit={handleCandidateSubmit}
               initialData={editingData}
+              isSubmitting={loading}
             />
           </div>
         )}
@@ -2185,7 +2205,21 @@ export default function Candidates() {
                   </tr>
                 </thead>
                 <tbody>
-                  {paginatedData.map(({ item: row, sourceIndex }) => (
+                  {loading ? (
+                    <tr>
+                      <td colSpan={9} className={styles.emptyCell}>Loading candidates...</td>
+                    </tr>
+                  ) : candidateLoadError ? (
+                    <tr>
+                      <td colSpan={9} className={styles.emptyCell}>{candidateLoadError}</td>
+                    </tr>
+                  ) : paginatedData.length === 0 ? (
+                    <tr>
+                      <td colSpan={9} className={styles.emptyCell}>
+                        {hasFilters ? "No candidates match the selected filters." : "No candidates found."}
+                      </td>
+                    </tr>
+                  ) : paginatedData.map(({ item: row, sourceIndex }) => (
                     <tr key={`${row.candidateId}-${sourceIndex}`}>
                       <td data-label="Candidate ID">{row.candidateId}</td>
                       <td data-label="Candidate Name">{row.candidateName}</td>

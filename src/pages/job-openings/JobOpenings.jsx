@@ -21,9 +21,14 @@ import {
   deleteJob as deleteJobApi,
   fetchClientRequirementMeta,
   fetchClients,
+  fetchEmploymentTypes,
   fetchJobInformationMeta,
   fetchJobs,
+  fetchLocations,
+  fetchPositionLevels,
   fetchSkills,
+  fetchSoftSkills,
+  fetchWorkTypes,
   normalizeJobRecord as normalizeApiJob,
   toSkillOption,
   updateJob as updateJobApi,
@@ -58,6 +63,37 @@ const isUuid = (value) =>
     String(value || "").trim(),
   );
 
+const firstUuid = (...values) =>
+  values.map((value) => String(value || "").trim()).find((value) => isUuid(value)) || "";
+
+const getClientDbId = (client = {}) =>
+  firstUuid(
+    client?.id,
+    client?.clientId,
+    client?.clientID,
+    client?.clientUuid,
+    client?.clientUUID,
+    client?.clientMasterId,
+    client?.clientMasterID,
+  );
+
+const getPersistedJobOpeningId = (job = {}) =>
+  firstUuid(
+    job?.jobId,
+    job?.id,
+    job?.jobOpeningId,
+    job?.jobOpeningUuid,
+    job?.jobOpeningUUID,
+    job?.openingJobDbId,
+    job?.openingJobUUID,
+    job?.openingJobId,
+  );
+
+const unwrapApiData = (response) => {
+  const payload = response?.data;
+  return payload && typeof payload === "object" && "data" in payload ? payload.data : payload;
+};
+
 const isSeededJobOpeningRow = (row) => {
   const jobId = String(row?.openingJobId || row?.jobPositionId || row?.jobId || "").trim();
   const postingTitle = String(row?.postingTitle || row?.positionName || row?.jobTitle || "").trim().toLowerCase();
@@ -69,9 +105,9 @@ const cleanSeededJobOpeningRows = (rows = []) =>
 
 const saveJobOpeningTableData = (rows) => {
   try {
-    localStorage.setItem(JOB_OPENING_TABLE_STORAGE_KEY, JSON.stringify(rows));
+    localStorage.removeItem(JOB_OPENING_TABLE_STORAGE_KEY);
   } catch (error) {
-    console.error("Failed to save job openings:", error);
+    console.error("Failed to clear cached job openings:", error);
   }
 };
 
@@ -102,6 +138,12 @@ const normalizeOptionKey = (value) =>
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "")
     .replace(/(options?|dropdown|values?|list)$/g, "");
+
+const normalizeLookupToken = (value) =>
+  String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ");
 
 const toOptionRecord = (item) => {
   if (item === null || item === undefined) return null;
@@ -153,6 +195,65 @@ const mergeOptionsByKey = (current = [], incoming = []) => {
     }
   });
   return merged;
+};
+
+const resolveClientSelection = (formData = {}, options = []) => {
+  const selectedClientId = String(formData.clientId || "").trim();
+  const selectedClientValue = String(formData.clientName || "").trim();
+  const selectedClientIdToken = normalizeLookupToken(selectedClientId);
+  const selectedClientValueToken = normalizeLookupToken(selectedClientValue);
+  const normalizedOptions = Array.isArray(options) ? options : [];
+
+  let matchedClient = normalizedOptions.find((option) => {
+    const optionValue = String(option?.value || "").trim();
+    const optionClientId = String(option?.clientId || option?.id || "").trim();
+    const optionLabel = String(option?.label || option?.clientName || "").trim();
+
+    const optionValueToken = normalizeLookupToken(optionValue);
+    const optionClientIdToken = normalizeLookupToken(optionClientId);
+    const optionLabelToken = normalizeLookupToken(optionLabel);
+
+    return (
+      (selectedClientIdToken && (
+        optionClientIdToken === selectedClientIdToken ||
+        optionValueToken === selectedClientIdToken
+      )) ||
+      (selectedClientValueToken && (
+        optionValueToken === selectedClientValueToken ||
+        optionClientIdToken === selectedClientValueToken ||
+        optionLabelToken === selectedClientValueToken
+      ))
+    );
+  });
+
+  if (!matchedClient && selectedClientValueToken) {
+    const partialMatches = normalizedOptions.filter((option) => {
+      const optionLabelToken = normalizeLookupToken(option?.label || option?.clientName || "");
+      return optionLabelToken && optionLabelToken.includes(selectedClientValueToken);
+    });
+
+    if (partialMatches.length === 1) {
+      [matchedClient] = partialMatches;
+    }
+  }
+
+  const clientId = String(
+    matchedClient?.clientId ||
+      matchedClient?.id ||
+      (isUuid(matchedClient?.value) ? matchedClient.value : "") ||
+      selectedClientId ||
+      (isUuid(selectedClientValue) ? selectedClientValue : "")
+  ).trim();
+
+  const clientName = String(
+    matchedClient?.clientName ||
+      matchedClient?.label ||
+      (!isUuid(selectedClientValue) ? selectedClientValue : "") ||
+      formData.clientName ||
+      ""
+  ).trim();
+
+  return { clientId, clientName };
 };
 
 const buildMetaOptionMap = (...metaPayloads) => {
@@ -436,20 +537,7 @@ export default function JobOpenings({ createMode = false }) {
   const [showJobOpeningForm, setShowJobOpeningForm] = React.useState(false);
   const [showDataTable, setShowDataTable] = React.useState(true);
   const [submittedData, setSubmittedData] = React.useState(() => {
-    try {
-      const savedData = localStorage.getItem(JOB_OPENING_TABLE_STORAGE_KEY);
-      const parsedData = savedData ? JSON.parse(savedData) : null;
-      if (Array.isArray(parsedData) && parsedData.length > 0) {
-        const cleanedRows = cleanSeededJobOpeningRows(parsedData);
-        if (cleanedRows.length !== parsedData.length) {
-          saveJobOpeningTableData(cleanedRows);
-        }
-        return cleanedRows;
-      }
-    } catch (error) {
-      console.error("Failed to load saved job openings:", error);
-    }
-
+    saveJobOpeningTableData();
     return [];
   });
   const [showSuccessMessage, setShowSuccessMessage] = React.useState(false);
@@ -478,6 +566,11 @@ export default function JobOpenings({ createMode = false }) {
   const [sortConfig, setSortConfig] = React.useState({ key: null, direction: 'asc' });
   const [clientOptions, setClientOptions] = React.useState(() => getClientOptions(loadClientRows()));
   const [technicalSkillOptions, setTechnicalSkillOptions] = React.useState([]);
+  const [softSkillOptions, setSoftSkillOptions] = React.useState([]);
+  const [positionLevelOptions, setPositionLevelOptions] = React.useState([]);
+  const [workTypeOptions, setWorkTypeOptions] = React.useState([]);
+  const [employmentTypeOptions, setEmploymentTypeOptions] = React.useState([]);
+  const [locationOptions, setLocationOptions] = React.useState([]);
   const [metaDropdownOptions, setMetaDropdownOptions] = React.useState({});
   const addJobOpeningMenuRef = React.useRef(null);
   const createModeInitializedRef = React.useRef(false);
@@ -500,8 +593,8 @@ export default function JobOpenings({ createMode = false }) {
   }, []);
 
   React.useEffect(() => {
-    saveJobOpeningTableData(submittedData);
-  }, [submittedData]);
+    saveJobOpeningTableData();
+  }, []);
 
   React.useEffect(() => {
     const refreshClientOptions = () => {
@@ -531,25 +624,42 @@ export default function JobOpenings({ createMode = false }) {
 
     const syncWithBackend = async () => {
       try {
-        const [jobs, clients, skills, jobInfoMeta, clientRequirementMeta] = await Promise.all([
+        const [
+          jobs,
+          clients,
+          skills,
+          softSkills,
+          positionLevels,
+          workTypes,
+          employmentTypes,
+          locations,
+          jobInfoMeta,
+          clientRequirementMeta,
+        ] = await Promise.all([
           fetchJobs(),
           fetchClients(),
           fetchSkills(),
+          fetchSoftSkills(),
+          fetchPositionLevels(),
+          fetchWorkTypes(),
+          fetchEmploymentTypes(),
+          fetchLocations(),
           fetchJobInformationMeta(),
           fetchClientRequirementMeta(),
         ]);
 
         if (!isMounted) return;
 
-        if (Array.isArray(jobs) && jobs.length > 0) {
-          const normalizedJobs = jobs.map((job, index) => normalizeApiJob(job, index));
-          setSubmittedData(normalizedJobs);
-          saveJobOpeningTableData(normalizedJobs);
-        }
+        const normalizedJobs = Array.isArray(jobs)
+          ? jobs.map((job, index) => normalizeApiJob(job, index))
+          : [];
+        setSubmittedData(normalizedJobs);
+        saveJobOpeningTableData();
 
         if (Array.isArray(clients) && clients.length > 0) {
           const clientRows = clients.map((client) => ({
-            clientId: client?.clientId || client?.id || "",
+            ...client,
+            clientId: getClientDbId(client) || client?.clientId || client?.id || "",
             clientName: client?.clientName || client?.name || "",
           }));
           setClientOptions(getClientOptions(clientRows));
@@ -566,12 +676,71 @@ export default function JobOpenings({ createMode = false }) {
           }
         }
 
+        if (Array.isArray(softSkills) && softSkills.length > 0) {
+          const mappedSoftSkills = softSkills
+            .map((item) => toOptionRecord(item))
+            .filter(Boolean)
+            .filter((option, index, list) => list.findIndex((item) => item.value === option.value) === index);
+
+          if (mappedSoftSkills.length > 0) {
+            setSoftSkillOptions(mappedSoftSkills);
+          }
+        }
+
+        if (Array.isArray(positionLevels) && positionLevels.length > 0) {
+          const mappedPositionLevels = positionLevels
+            .map((item) => toOptionRecord(item))
+            .filter(Boolean)
+            .filter((option, index, list) => list.findIndex((item) => item.value === option.value) === index);
+
+          if (mappedPositionLevels.length > 0) {
+            setPositionLevelOptions(mappedPositionLevels);
+          }
+        }
+
+        if (Array.isArray(workTypes) && workTypes.length > 0) {
+          const mappedWorkTypes = workTypes
+            .map((item) => toOptionRecord(item))
+            .filter(Boolean)
+            .filter((option, index, list) => list.findIndex((item) => item.value === option.value) === index);
+
+          if (mappedWorkTypes.length > 0) {
+            setWorkTypeOptions(mappedWorkTypes);
+          }
+        }
+
+        if (Array.isArray(employmentTypes) && employmentTypes.length > 0) {
+          const mappedEmploymentTypes = employmentTypes
+            .map((item) => toOptionRecord(item))
+            .filter(Boolean)
+            .filter((option, index, list) => list.findIndex((item) => item.value === option.value) === index);
+
+          if (mappedEmploymentTypes.length > 0) {
+            setEmploymentTypeOptions(mappedEmploymentTypes);
+          }
+        }
+
+        if (Array.isArray(locations) && locations.length > 0) {
+          const mappedLocations = locations
+            .map((item) => toOptionRecord(item))
+            .filter(Boolean)
+            .filter((option, index, list) => list.findIndex((item) => item.value === option.value) === index);
+
+          if (mappedLocations.length > 0) {
+            setLocationOptions(mappedLocations);
+          }
+        }
+
         const mappedMetaOptions = buildMetaOptionMap(jobInfoMeta, clientRequirementMeta);
         if (Object.keys(mappedMetaOptions).length > 0) {
           setMetaDropdownOptions(mappedMetaOptions);
         }
       } catch (error) {
-        console.warn("Job form metadata sync failed, using cached local data:", error);
+        console.warn("Job form metadata sync failed. Job openings table will not use cached local data:", error);
+        if (isMounted) {
+          setSubmittedData([]);
+        }
+        saveJobOpeningTableData();
       }
     };
 
@@ -1134,9 +1303,16 @@ export default function JobOpenings({ createMode = false }) {
         resolvedFromTeamMembers ||
         "-"
       );
+    const effectiveClientOptions =
+      Array.isArray(clientOptions) && clientOptions.length > 0
+        ? clientOptions
+        : getClientOptions(loadClientRows());
+    const resolvedClient = resolveClientSelection(safeData, effectiveClientOptions);
     let normalized = {
       ...safeData,
       jobId: safeData.jobId || null,
+      clientId: resolvedClient.clientId,
+      clientName: resolvedClient.clientName,
       jobPositionId,
       openingJobId: safeData.openingJobId || jobPositionId,
       postingTitle: safeData.postingTitle || safeData.positionName || "",
@@ -1159,12 +1335,29 @@ export default function JobOpenings({ createMode = false }) {
       const hasValidClientId = isUuid(normalized.clientId);
       const hasValidTitle = Boolean(String(normalized.postingTitle || "").trim());
 
+      if (!hasValidTitle) {
+        throw new Error("Position name is required to save the JD in DB.");
+      }
+
+      if (!hasValidClientId) {
+        throw new Error("Please select a valid client from the DB before creating the JD.");
+      }
+
       if (isEditMode && isUuid(existingJobId) && hasValidClientId && hasValidTitle) {
         const response = await updateJobApi(existingJobId, normalized);
-        normalized = { ...normalized, ...normalizeApiJob(response?.data || {}, editingIndex || 0) };
+        const savedJob = normalizeApiJob(unwrapApiData(response) || {}, editingIndex || 0);
+        const persistedJobOpeningId = getPersistedJobOpeningId(savedJob) || existingJobId;
+        normalized = { ...normalized, ...savedJob, jobId: persistedJobOpeningId };
       } else if (!isEditMode && hasValidClientId && hasValidTitle) {
         const response = await createJobApi(normalized);
-        normalized = { ...normalized, ...normalizeApiJob(response?.data || {}, submittedData.length) };
+        const savedJob = normalizeApiJob(unwrapApiData(response) || {}, submittedData.length);
+        const persistedJobOpeningId = getPersistedJobOpeningId(savedJob);
+        if (!persistedJobOpeningId) {
+          throw new Error("JD was created but backend did not return a valid job id for team assignment.");
+        }
+        normalized = { ...normalized, ...savedJob, jobId: persistedJobOpeningId };
+      } else {
+        throw new Error("Unable to save JD in DB. Please try again.");
       }
 
       if (Array.isArray(safeData.teamMembers) && safeData.teamMembers.length > 0) {
@@ -1196,7 +1389,12 @@ export default function JobOpenings({ createMode = false }) {
           .filter(Boolean);
 
         if (teamMembersPayload.length > 0) {
+          const persistedJobOpeningId = getPersistedJobOpeningId(normalized);
+          if (!persistedJobOpeningId) {
+            throw new Error("Team members cannot be assigned until the saved JD has a valid backend job id.");
+          }
           await saveTeamMembersApi({
+            jobOpeningId: persistedJobOpeningId,
             openingJobId: normalized.openingJobId || normalized.jobPositionId,
             teamMembers: teamMembersPayload,
             permissions: {
@@ -1207,7 +1405,8 @@ export default function JobOpenings({ createMode = false }) {
         }
       }
     } catch (error) {
-      console.warn("Job save API failed, applying local save:", error);
+      console.error("Job save API failed:", error);
+      throw error;
     }
 
     if (editingIndex !== null) {
@@ -1240,7 +1439,7 @@ export default function JobOpenings({ createMode = false }) {
     setIsAddJobOpeningMenuOpen(false);
     navigate("/job-openings");
     // Here you would typically send the data to your backend API
-  }, [activeDraftId, editingIndex, navigate, nextJobPositionId, persistJobOpeningDrafts, showTransientMessage, isJobIdUsed, submittedData]);
+  }, [activeDraftId, clientOptions, editingIndex, navigate, nextJobPositionId, persistJobOpeningDrafts, showTransientMessage, isJobIdUsed, submittedData]);
 
   const formatInrAmount = React.useCallback((value) => {
     const numericValue = Number(value);
@@ -1308,6 +1507,49 @@ export default function JobOpenings({ createMode = false }) {
             return field;
           }
 
+          const fieldName = String(field.name || "").trim();
+          if (fieldName === "positionLevel" && positionLevelOptions.length > 0) {
+            return {
+              ...field,
+              options: positionLevelOptions,
+            };
+          }
+
+          if (fieldName === "location" && locationOptions.length > 0) {
+            return {
+              ...field,
+              options: locationOptions,
+            };
+          }
+
+          if (fieldName === "jobType" && employmentTypeOptions.length > 0) {
+            return {
+              ...field,
+              options: employmentTypeOptions,
+            };
+          }
+
+          if (fieldName === "hiringType" && workTypeOptions.length > 0) {
+            return {
+              ...field,
+              options: workTypeOptions,
+            };
+          }
+
+          if (fieldName === "softSkills" && softSkillOptions.length > 0) {
+            return {
+              ...field,
+              options: softSkillOptions,
+            };
+          }
+
+          if (fieldName === "technicalSkills" && technicalSkillOptions.length > 0) {
+            return {
+              ...field,
+              options: technicalSkillOptions,
+            };
+          }
+
           const metaOptions = getMetaOptionsForField(metaDropdownOptions, field.name);
           if (metaOptions.length > 0) {
             return {
@@ -1316,31 +1558,35 @@ export default function JobOpenings({ createMode = false }) {
             };
           }
 
-          if (field.name === "clientName") {
+          if (fieldName === "clientName") {
             return {
               ...field,
               options: clientOptions,
             };
           }
 
-          if (field.name === "technicalSkills" && technicalSkillOptions.length > 0) {
-            return {
-              ...field,
-              options: technicalSkillOptions,
-            };
-          }
-
           return field;
         }),
       })),
-      localSubmitOnly: true,
       showDraftAction: editingIndex === null,
       showCancelAction: true,
       cancelLabel: "Cancel",
       onCancel: handleCancelJobOpeningForm,
       onSaveDraft: saveJobOpeningDraft,
     }),
-    [clientOptions, editingIndex, handleCancelJobOpeningForm, metaDropdownOptions, saveJobOpeningDraft, technicalSkillOptions]
+    [
+      clientOptions,
+      editingIndex,
+      employmentTypeOptions,
+      handleCancelJobOpeningForm,
+      locationOptions,
+      metaDropdownOptions,
+      positionLevelOptions,
+      saveJobOpeningDraft,
+      softSkillOptions,
+      technicalSkillOptions,
+      workTypeOptions,
+    ]
   );
 
   React.useEffect(() => {

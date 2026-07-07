@@ -453,6 +453,24 @@ const readUploadedFileText = async (file) => {
   return '';
 };
 
+const getSubmitErrorMessage = (error, itemLabel) => {
+  const responseData = error?.response?.data;
+  const serverMessage =
+    responseData?.message ||
+    responseData?.error ||
+    (Array.isArray(responseData?.errors) ? responseData.errors.filter(Boolean).join('\n') : '');
+
+  if (serverMessage) {
+    return serverMessage;
+  }
+
+  if (error?.message) {
+    return error.message;
+  }
+
+  return `Error submitting ${itemLabel}. Please try again.`;
+};
+
 const normalizeJdOptionValue = (value, field, aliases = {}) => {
   const raw = normalizeText(value);
   if (!raw) return '';
@@ -1581,7 +1599,7 @@ const FormStep = ({
 };
 
 // Main reusable form component
-const ReusableForm = ({ config, onSubmit, initialData, readOnly = false }) => {
+const ReusableForm = ({ config, onSubmit, initialData, readOnly = false, isSubmitting = false }) => {
   const [validationErrors, setValidationErrors] = useState({});
   const [showDraftRestoredMessage, setShowDraftRestoredMessage] = useState(false);
 
@@ -1880,12 +1898,11 @@ const ReusableForm = ({ config, onSubmit, initialData, readOnly = false }) => {
         return;
       }
 
-      // For development purposes, treat as success if it's a network error (no backend)
-      if (error.code === 'ERR_NETWORK' || error.response?.status === 404) {
+      if (config.allowOfflineSubmit && (error.code === 'ERR_NETWORK' || error.response?.status === 404)) {
         await onSubmit?.(formData);
         clearSavedDraft();
       } else {
-        alert(`Error submitting ${itemLabel}. Please try again.`);
+        alert(getSubmitErrorMessage(error, itemLabel));
         return;
       }
     }
@@ -1984,6 +2001,7 @@ const ReusableForm = ({ config, onSubmit, initialData, readOnly = false }) => {
         onCancel={config.onCancel}
         initialData={resolvedInitialData}
         readOnly={readOnly}
+        isSubmitting={isSubmitting}
       />
     </div>
   );

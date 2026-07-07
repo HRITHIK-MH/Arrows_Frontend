@@ -139,6 +139,30 @@
   margin: 0;
 }
 
+.errorBanner {
+  background: #fef2f2;
+  border: 1px solid #fca5a5;
+  border-radius: 6px;
+  color: #b91c1c;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.45;
+  margin-bottom: 16px;
+  padding: 10px 12px;
+}
+
+.successBanner {
+  background: #f0fdf4;
+  border: 1px solid #86efac;
+  border-radius: 6px;
+  color: #166534;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.45;
+  margin-bottom: 16px;
+  padding: 10px 12px;
+}
+
 .tabsHeader {
   display: flex;
   align-items: center;
@@ -838,6 +862,43 @@
   word-break: break-word;
 }
 
+.viewFormGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px 22px;
+  padding: 6px 0 0;
+}
+
+.viewField {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+
+  span {
+    color: #020817;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1.25;
+  }
+
+  output {
+    display: flex;
+    align-items: center;
+    min-height: 50px;
+    width: 100%;
+    border: 1px solid #dce5f2;
+    border-radius: 8px;
+    background: #eef4fb;
+    color: #020817;
+    font-size: 15px;
+    font-weight: 500;
+    line-height: 1.35;
+    padding: 11px 14px;
+    word-break: break-word;
+  }
+}
+
 .exitModalOverlay {
   position: fixed;
   inset: 0;
@@ -1091,6 +1152,22 @@
     padding: 14px 18px 24px;
   }
 
+  .viewFormGrid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .viewField {
+    span {
+      font-size: 14px;
+    }
+
+    output {
+      min-height: 46px;
+      font-size: 14px;
+    }
+  }
+
   .detailHero {
     align-items: center;
     flex-wrap: wrap;
@@ -1141,6 +1218,9 @@
   .detailsDrawer,
   .detailsBody,
   .detailBlock,
+  .detailPage,
+  .detailTopBar,
+  .viewField output,
   .exitModal,
   .formPanel,
   .formGrid input,
@@ -1154,6 +1234,8 @@
   .summaryText,
   .headcountTable td,
   .detailValue,
+  .detailTopBarText span,
+  .viewField span,
   .drawerSubtext,
   .formGroup label {
     color: #f8fafc;

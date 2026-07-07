@@ -10,46 +10,94 @@ const unwrapRecruiterItems = (payload) => {
   return [];
 };
 
+const normalizeRecruiterItem = (item, index) => {
+  if (!item || typeof item !== 'object') return null;
+
+  const recruiterId = String(item?.userId || item?.id || item?.recruiterId || '').trim();
+  const recruiterName = String(item?.name || item?.displayName || item?.fullName || '').trim();
+  if (!recruiterId || !recruiterName) return null;
+
+  return {
+    id: recruiterId,
+    name: recruiterName,
+    email:
+      String(item?.email || item?.contactEmail || item?.userEmail || '')
+        .trim() || `${recruiterName.toLowerCase().replace(/\s+/g, '.')}@email.com`,
+    role: String(item?.assignmentRole || item?.role || 'Recruiter')
+      .replace(/_/g, ' ')
+      .toLowerCase()
+      .replace(/\b\w/g, (ch) => ch.toUpperCase()),
+    sortIndex: Number.isFinite(Number(item?.sortIndex)) ? Number(item?.sortIndex) : index,
+  };
+};
+
+const normalizeTeamMemberPayload = (member) => {
+  const userId = String(member?.userId || member?.id || member?.recruiterId || '').trim();
+  if (!userId) return null;
+
+  return {
+    userId,
+    assignmentRole: String(member?.assignmentRole || member?.role || 'Recruiter').trim(),
+  };
+};
+
+const isUuid = (value) =>
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    String(value || '').trim(),
+  );
+
 export const fetchRecruiters = async ({ openingJobId } = {}) => {
-  const response = await clientJobApi.get('/users/recruiters', {
+  const response = await clientJobApi.get('/recruiters', {
     params: openingJobId ? { openingJobId } : undefined,
     skipAuthRedirect: true,
   });
   const items = unwrapRecruiterItems(response?.data);
 
   return items
-    .map((item, index) => {
-      const recruiterId = String(item?.userId || item?.id || '').trim();
-      const recruiterName = String(item?.name || '').trim();
-      if (!recruiterId || !recruiterName) return null;
-
-      return {
-        id: recruiterId,
-        name: recruiterName,
-        email: String(item?.email || '').trim() || `${recruiterName.toLowerCase().replace(/\s+/g, '.')}@email.com`,
-        role: String(item?.assignmentRole || 'Recruiter')
-          .replace(/_/g, ' ')
-          .toLowerCase()
-          .replace(/\b\w/g, (ch) => ch.toUpperCase()),
-        sortIndex: index,
-      };
-    })
+    .map((item, index) => normalizeRecruiterItem(item, index))
     .filter(Boolean);
 };
 
-export const saveTeamMembers = async ({ openingJobId, teamMembers = [], permissions = {} }) => {
-  if (!openingJobId || !Array.isArray(teamMembers) || teamMembers.length === 0) {
+export const fetchJobTeamMembers = async (openingJobId) => {
+  if (!openingJobId) return [];
+
+  const response = await clientJobApi.get(`/jobs/${encodeURIComponent(openingJobId)}/team-members`, {
+    skipAuthRedirect: true,
+  });
+  const items = unwrapRecruiterItems(response?.data);
+
+  return items
+    .map((item, index) => normalizeRecruiterItem(item, index))
+    .filter(Boolean);
+};
+
+export const saveTeamMembers = async ({ jobOpeningId, openingJobId, teamMembers = [], permissions = {} }) => {
+  const persistedJobOpeningId = String(jobOpeningId || '').trim();
+  const normalizedTeamMembers = Array.isArray(teamMembers)
+    ? teamMembers.map(normalizeTeamMemberPayload).filter(Boolean)
+    : [];
+
+  if (!isUuid(persistedJobOpeningId) || normalizedTeamMembers.length === 0) {
+    console.warn('[saveTeamMembers] Skipping team member assignment because required DB ids are missing.', {
+      jobOpeningId: persistedJobOpeningId,
+      openingJobId,
+      teamMembers,
+    });
     return null;
   }
 
-  return clientJobApi.post('/jobs/team-members', {
-    openingJobId,
-    teamMembers,
+  const payload = {
+    jobOpeningId: persistedJobOpeningId,
+    teamMembers: normalizedTeamMembers,
     permissions: {
       visibility: permissions.visibility || 'private',
       access: permissions.access || 'restricted',
     },
-  }, {
+  };
+
+  console.log('[saveTeamMembers] POST /job-openings/team-members payload:', payload);
+
+  return clientJobApi.post('/job-openings/team-members', payload, {
     skipAuthRedirect: true,
   });
 };

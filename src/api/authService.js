@@ -39,8 +39,9 @@ export const loginWithPassword = async ({ email, password }) => {
 
 // 🔑 Fetch SSO authorize URL
 export const fetchSsoAuthorizeUrl = async (loginHint) => {
-  const redirectUri = `${window.location.origin}/login/sso-callback`;
-  const response = await identityApi.get('/sso/authorize', {
+  const redirectUri = `${window.location.origin}/sso/callback`;
+  console.debug('Starting SSO login with redirect uri:', redirectUri);
+  const response = await identityApi.get('/sso/authorize-url', {
     params: {
       ...(loginHint ? { login_hint: String(loginHint).trim() } : {}),
       redirect_uri: redirectUri,
@@ -48,7 +49,7 @@ export const fetchSsoAuthorizeUrl = async (loginHint) => {
     skipAuth: true,
     skipAuthRedirect: true,
   });
-  // Extract from wrapped response format: response.data.data.authorizationUrl
+
   const wrappedData = normalizeAuthPayload(response?.data || response || {});
   if (typeof wrappedData === 'string') {
     return wrappedData.trim();
@@ -60,8 +61,10 @@ export const fetchSsoAuthorizeUrl = async (loginHint) => {
 };
 
 // 🔑 Exchange SSO callback for token
+// Note: the authorization code is consumed by the backend on this request.
+// The frontend only forwards code/state once and receives the auth payload.
 export const exchangeSsoCallback = async ({ code, state }) => {
-  const redirectUri = `${window.location.origin}/login/sso-callback`;
+  const redirectUri = `${window.location.origin}/sso/callback`;
 
   try {
     const response = await identityApi.get('/sso/callback', {

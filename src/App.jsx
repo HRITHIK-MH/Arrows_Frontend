@@ -6,33 +6,42 @@ import { useEffect, Suspense, lazy } from "react";
 import TopBar from "./pages/layout/TopBar.jsx";
 import Sidebar from "./pages/layout/Sidebar.jsx";
 import Login from "./pages/login/Login.jsx";
-import SsoCallbackPage from "./pages/login/SsoCallbackPage.jsx";
+import AuthCallback from "./pages/login/AuthCallback.jsx";
 import { isBusinessStakeholder } from "./pages/layout/routesConfig.js";
 import { hasAuthSession } from "./utils/authSession.js";
+import ChunkErrorBoundary from "./components/ChunkErrorBoundary.jsx";
 
-// Lazy load page components for code splitting
-const Dashboard = lazy(() => import("./pages/dashboard/Dashboard.jsx"));
-const Headcount = lazy(() => import("./pages/headcount/Headcount.jsx"));
-const HeadcountDetails = lazy(() => import("./pages/headcount/HeadcountDetails.jsx"));
-const JobOpenings = lazy(() => import("./pages/job-openings/JobOpenings.jsx"));
-const Candidates = lazy(() =>
-  import("./pages/job-openings/Candidates.jsx").catch(err => {
-    console.error("Failed to load Candidates:", err);
-    throw err;
-  })
-);
-const Applications = lazy(() => import("./pages/application/Applications.jsx"));
-const Clients = lazy(() => import("./pages/job-openings/Clients.jsx"));
-const Interviews = lazy(() => import("./pages/interviews/Interviews.jsx"));
-const JobDescription = lazy(() => import("./pages/job-openings/JobDescription.jsx"));
-const Reports = lazy(() => import("./pages/reports/Reports.jsx"));
-const Timesheet = lazy(() => import("./pages/timesheet/Timesheet.jsx"));
-const TimesheetEntry = lazy(() => import("./pages/timesheet/TimesheetEntry.jsx"));
-const UserRoles = lazy(() => import("./pages/user-roles/UserRoles.jsx"));
-const Calendar = lazy(() => import("./pages/calendar/Calendar.jsx"));
-const ApplicationForm = lazy(() => import("./pages/application/ApplicationForm.jsx"));
-const ProfilePage = lazy(() => import("./pages/profile/ProfilePage.jsx"));
-const SettingsPage = lazy(() => import("./pages/profile/SettingsPage.jsx"));
+// Helper function to handle chunk loading errors with retry logic
+function lazyWithRetry(importFunc, componentName = 'Component') {
+  return lazy(() =>
+    importFunc().catch(err => {
+      console.error(`Failed to load ${componentName}:`, err);
+      // Mark this as a chunk error so ChunkErrorBoundary can handle it
+      const error = new Error(`Failed to fetch dynamically imported module: ${componentName}`);
+      error.statusCode = 404;
+      throw error;
+    })
+  );
+}
+
+// Lazy load page components for code splitting with retry logic
+const Dashboard = lazyWithRetry(() => import("./pages/dashboard/Dashboard.jsx"), 'Dashboard');
+const Headcount = lazyWithRetry(() => import("./pages/headcount/Headcount.jsx"), 'Headcount');
+const HeadcountDetails = lazyWithRetry(() => import("./pages/headcount/HeadcountDetails.jsx"), 'HeadcountDetails');
+const JobOpenings = lazyWithRetry(() => import("./pages/job-openings/JobOpenings.jsx"), 'JobOpenings');
+const Candidates = lazyWithRetry(() => import("./pages/job-openings/Candidates.jsx"), 'Candidates');
+const Applications = lazyWithRetry(() => import("./pages/application/Applications.jsx"), 'Applications');
+const Clients = lazyWithRetry(() => import("./pages/job-openings/Clients.jsx"), 'Clients');
+const Interviews = lazyWithRetry(() => import("./pages/interviews/Interviews.jsx"), 'Interviews');
+const JobDescription = lazyWithRetry(() => import("./pages/job-openings/JobDescription.jsx"), 'JobDescription');
+const Reports = lazyWithRetry(() => import("./pages/reports/Reports.jsx"), 'Reports');
+const Timesheet = lazyWithRetry(() => import("./pages/timesheet/Timesheet.jsx"), 'Timesheet');
+const TimesheetEntry = lazyWithRetry(() => import("./pages/timesheet/TimesheetEntry.jsx"), 'TimesheetEntry');
+const UserRoles = lazyWithRetry(() => import("./pages/user-roles/UserRoles.jsx"), 'UserRoles');
+const Calendar = lazyWithRetry(() => import("./pages/calendar/Calendar.jsx"), 'Calendar');
+const ApplicationForm = lazyWithRetry(() => import("./pages/application/ApplicationForm.jsx"), 'ApplicationForm');
+const ProfilePage = lazyWithRetry(() => import("./pages/profile/ProfilePage.jsx"), 'ProfilePage');
+const SettingsPage = lazyWithRetry(() => import("./pages/profile/SettingsPage.jsx"), 'SettingsPage');
 
 // Loading fallback component
 const LoadingFallback = () => (
@@ -49,7 +58,23 @@ const isAuthenticated = () => hasAuthSession();
 
 function RequireAuth({ children }) {
   const location = useLocation();
-  return isAuthenticated() ? (
+  const [checkingAuth, setCheckingAuth] = React.useState(true);
+  const [authenticated, setAuthenticated] = React.useState(false);
+
+  React.useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      setAuthenticated(isAuthenticated());
+      setCheckingAuth(false);
+    }, 10);
+
+    return () => window.clearTimeout(timeout);
+  }, []);
+
+  if (checkingAuth) {
+    return <LoadingFallback />;
+  }
+
+  return authenticated ? (
     children
   ) : (
     <Navigate to="/login" replace state={{ from: location }} />
@@ -57,7 +82,23 @@ function RequireAuth({ children }) {
 }
 
 function RequireBusinessStakeholder({ children }) {
-  return isAuthenticated() && isBusinessStakeholder() ? (
+  const [checkingAuth, setCheckingAuth] = React.useState(true);
+  const [authenticated, setAuthenticated] = React.useState(false);
+
+  React.useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      setAuthenticated(isAuthenticated() && isBusinessStakeholder());
+      setCheckingAuth(false);
+    }, 10);
+
+    return () => window.clearTimeout(timeout);
+  }, []);
+
+  if (checkingAuth) {
+    return <LoadingFallback />;
+  }
+
+  return authenticated ? (
     children
   ) : (
     <Navigate to="/dashboard" replace />
@@ -85,7 +126,9 @@ export default function App() {
   // Close the sidebar on route changes for small screens
   React.useEffect(() => {
     if (window.innerWidth <= 768) {
-      setSidebarOpen(false);
+      window.requestAnimationFrame(() => {
+        setSidebarOpen(false);
+      });
     }
   }, [location.pathname]);
 
@@ -151,36 +194,39 @@ export default function App() {
       {location.pathname !== '/login' && <TopBar isSidebarOpen={isSidebarOpen} setSidebarOpen={setSidebarOpen} />}
 
       <main className="main">
-        <Suspense fallback={<LoadingFallback />}>
-          <Routes key={location.pathname}>
-            <Route path="/" element={<Navigate to="/login" replace />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/login/sso-callback" element={<SsoCallbackPage />} />
-            <Route path="/sso/callback" element={<Login />} />
-            <Route path="/dashboard" element={<RequireAuth><Dashboard /></RequireAuth>} />
-            <Route path="/headcount" element={<RequireBusinessStakeholder><Headcount /></RequireBusinessStakeholder>} />
-            <Route path="/headcount/:employeeId" element={<RequireBusinessStakeholder><HeadcountDetails /></RequireBusinessStakeholder>} />
-            <Route path="/job-openings" element={<RequireAuth><JobOpenings /></RequireAuth>} />
-            <Route path="/candidates" element={<RequireAuth><Candidates /></RequireAuth>} />
-            <Route path="/applications" element={<RequireAuth><Applications /></RequireAuth>} />
-            <Route path="/interviews" element={<RequireAuth><Interviews /></RequireAuth>} />
-            <Route path="/clients" element={<RequireAuth><Clients /></RequireAuth>} />
-            <Route path="/job-openings/edit" element={<RequireAuth><JobOpenings /></RequireAuth>} />
-            <Route path="/job-openings/create" element={<RequireAuth><JobOpenings createMode={true} /></RequireAuth>} />
-            <Route path="/job-openings/:jobId" element={<RequireAuth><JobDescription /></RequireAuth>} />
-            <Route path="/reports" element={<RequireAuth><Reports /></RequireAuth>} />
-            <Route path="/timesheet" element={<RequireAuth><Timesheet /></RequireAuth>} />
-            <Route path="/timesheet/new" element={<RequireAuth><TimesheetEntry /></RequireAuth>} />
-            <Route path="/calendar" element={<RequireAuth><Calendar /></RequireAuth>} />
-            <Route path="/users" element={<RequireAuth><UserRoles /></RequireAuth>} />
-            <Route path="/application" element={<RequireAuth><ApplicationForm /></RequireAuth>} />
-            <Route path="/profile" element={<RequireAuth><ProfilePage /></RequireAuth>} />
-            <Route path="/settings" element={<RequireAuth><SettingsPage /></RequireAuth>} />
+        <ChunkErrorBoundary>
+          <Suspense fallback={<LoadingFallback />}>
+            <Routes key={location.pathname}>
+              <Route path="/" element={<Navigate to="/login" replace />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/auth/callback" element={<AuthCallback />} />
+              <Route path="/login/sso-callback" element={<AuthCallback />} />
+              <Route path="/sso/callback" element={<AuthCallback />} />
+              <Route path="/dashboard" element={<RequireAuth><Dashboard /></RequireAuth>} />
+              <Route path="/headcount" element={<RequireBusinessStakeholder><Headcount /></RequireBusinessStakeholder>} />
+              <Route path="/headcount/:employeeId" element={<RequireBusinessStakeholder><HeadcountDetails /></RequireBusinessStakeholder>} />
+              <Route path="/job-openings" element={<RequireAuth><JobOpenings /></RequireAuth>} />
+              <Route path="/candidates" element={<RequireAuth><Candidates /></RequireAuth>} />
+              <Route path="/applications" element={<RequireAuth><Applications /></RequireAuth>} />
+              <Route path="/interviews" element={<RequireAuth><Interviews /></RequireAuth>} />
+              <Route path="/clients" element={<RequireAuth><Clients /></RequireAuth>} />
+              <Route path="/job-openings/edit" element={<RequireAuth><JobOpenings /></RequireAuth>} />
+              <Route path="/job-openings/create" element={<RequireAuth><JobOpenings createMode={true} /></RequireAuth>} />
+              <Route path="/job-openings/:jobId" element={<RequireAuth><JobDescription /></RequireAuth>} />
+              <Route path="/reports" element={<RequireAuth><Reports /></RequireAuth>} />
+              <Route path="/timesheet" element={<RequireAuth><Timesheet /></RequireAuth>} />
+              <Route path="/timesheet/new" element={<RequireAuth><TimesheetEntry /></RequireAuth>} />
+              <Route path="/calendar" element={<RequireAuth><Calendar /></RequireAuth>} />
+              <Route path="/users" element={<RequireAuth><UserRoles /></RequireAuth>} />
+              <Route path="/application" element={<RequireAuth><ApplicationForm /></RequireAuth>} />
+              <Route path="/profile" element={<RequireAuth><ProfilePage /></RequireAuth>} />
+              <Route path="/settings" element={<RequireAuth><SettingsPage /></RequireAuth>} />
 
-            {/* TODO: add /chat route */}
-            <Route path="*" element={isAuthenticated() ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />} />
-          </Routes>
-        </Suspense>
+              {/* TODO: add /chat route */}
+              <Route path="*" element={isAuthenticated() ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />} />
+            </Routes>
+          </Suspense>
+        </ChunkErrorBoundary>
       </main>
     </div>
   );

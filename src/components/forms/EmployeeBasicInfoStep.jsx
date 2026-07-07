@@ -59,14 +59,14 @@ const EmployeeBasicInfoStep = ({
   return (
     <div className="employee-step">
       <div className="employee-grid">
-        {renderField("consultantName")}
-        {renderField("joiningDate")}
+        {renderField("consultant_name")}
+        {renderField("joining_date")}
         {renderField("entity")}
-        {renderField("workLocation")}
+        {renderField("work_location")}
         {renderField("mode")}
         {renderField("cost")}
         {renderField("customer")}
-        {renderField("billingType")}
+        {renderField("billing_type")}
       </div>
     </div>
   );

@@ -6,6 +6,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import NotificationBell from "../notification/NotificationBell";
 import { LINKS } from "./routesConfig";
 import { clearAuthSession } from "../../utils/authSession";
+import { getDisplayName, getAvatarInitials } from "../../utils/userDisplay";
 
 
 /** Build segment -> label map from Sidebar LINKS */
@@ -122,7 +123,7 @@ export default function TopBar({ isSidebarOpen, setSidebarOpen }) {
   const profileDisplay = useMemo(() => {
     const storedName = String(window.localStorage.getItem("userName") || "").trim();
     const storedEmail = String(window.localStorage.getItem("userEmail") || "").trim();
-    const displayName = storedName || storedEmail.split("@")[0] || "";
+    const displayName = getDisplayName(storedName, storedEmail);
 
     if (currentUserPersona === "businessstakeholder") {
       return {
@@ -143,7 +144,10 @@ export default function TopBar({ isSidebarOpen, setSidebarOpen }) {
       role: "Recruiter",
     };
   }, [currentUserPersona, currentUserRole]);
-  const profileInitial = (profileDisplay.name || "U").charAt(0).toUpperCase();
+  const profileInitial = getAvatarInitials(
+    String(window.localStorage.getItem("userName") || "").trim(),
+    String(window.localStorage.getItem("userEmail") || "").trim(),
+  );
 
 
   /** Profile menu state */
@@ -254,7 +258,13 @@ export default function TopBar({ isSidebarOpen, setSidebarOpen }) {
 
            {menuOpen && (
             <ul className="profileMenu" role="menu" aria-label="Profile menu">
-              <li role="menuitem" className="profileMenuItem" onClick={() => { setMenuOpen(false); navigate("/profile"); }}>Profile</li>
+              <li
+                role="menuitem"
+                aria-disabled="true"
+                className="profileMenuItem profileMenuItemDisabled"
+              >
+                Profile
+              </li>
               <li
                 role="menuitem"
                 className="profileMenuItem profileMenuDanger"

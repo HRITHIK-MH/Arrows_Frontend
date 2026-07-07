@@ -17,7 +17,8 @@ const MultiStepForm = ({
   onCancel,
   hideStepper = false,
   initialData = null,
-  readOnly = false
+  readOnly = false,
+  isSubmitting = false,
 }) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState(() => initialData || {});
@@ -112,6 +113,15 @@ const MultiStepForm = ({
     return issues.missing.length === 0 && issues.invalid.length === 0;
   };
 
+  const scrollToFormTop = () => {
+    window.setTimeout(() => {
+      const formElement = document.querySelector('.multi-step-form');
+      const target = formElement || document.documentElement;
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 0);
+  };
+
   const handleNext = async () => {
     if (currentStep < steps.length - 1) {
       let isStepValid = true;
@@ -142,6 +152,7 @@ const MultiStepForm = ({
       // Check if current step is valid before proceeding
       if (isStepValid) {
         setCurrentStep(currentStep + 1);
+        scrollToFormTop();
       } else {
         if (!(stepIssues?.missingFields?.length || stepIssues?.invalidFields?.length)) {
           showStepWarning(stepIssues);
@@ -317,7 +328,7 @@ const MultiStepForm = ({
                 type="button"
                 className="form-btn primary"
                 onClick={handleNext}
-                disabled={readOnly}
+                disabled={readOnly || isSubmitting}
               >
                 Next
               </button>
@@ -326,9 +337,9 @@ const MultiStepForm = ({
                 type="button"
                 className="form-btn primary"
                 onClick={handleSubmit}
-                disabled={readOnly}
+                disabled={readOnly || isSubmitting}
               >
-                {submitLabel}
+                {isSubmitting ? 'Saving...' : submitLabel}
               </button>
             )}
           </div>

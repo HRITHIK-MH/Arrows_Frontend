@@ -9,7 +9,7 @@ import API from './axiosConfig';
  */
 export const fetchTimesheetDashboard = async (employeeId, month, year) => {
   try {
-    const response = await API.get('/timesheet/dashboard', {
+    const response = await API.get('/api/timesheet/dashboard', {
       params: {
         employee_id: employeeId,
         month,
@@ -30,7 +30,7 @@ export const fetchTimesheetDashboard = async (employeeId, month, year) => {
  */
 export const logDailyEntry = async (entryData) => {
   try {
-    const response = await API.post('/timesheet/daily', entryData);
+    const response = await API.post('/api/timesheet/daily', entryData);
     return response?.data || null;
   } catch (error) {
     console.error('Error logging daily timesheet entry:', error);
@@ -45,7 +45,7 @@ export const logDailyEntry = async (entryData) => {
  */
 export const logWeeklyEntries = async (entriesData) => {
   try {
-    const response = await API.post('/timesheet/weekly', entriesData);
+    const response = await API.post('/api/timesheet/weekly', entriesData);
     return response?.data || null;
   } catch (error) {
     console.error('Error logging weekly timesheet entries:', error);
@@ -60,7 +60,7 @@ export const logWeeklyEntries = async (entriesData) => {
  */
 export const logMonthlyEntries = async (entriesData) => {
   try {
-    const response = await API.post('/timesheet/monthly', entriesData);
+    const response = await API.post('/api/timesheet/monthly', entriesData);
     return response?.data || null;
   } catch (error) {
     console.error('Error logging monthly timesheet entries:', error);
@@ -76,7 +76,7 @@ export const logMonthlyEntries = async (entriesData) => {
  */
 export const submitTimesheetApproval = async (approvalData) => {
   try {
-    const response = await API.put('/timesheet/approval', approvalData);
+    const response = await API.put('/api/timesheet/approval', approvalData);
     return response?.data || null;
   } catch (error) {
     console.error('Error submitting timesheet approval:', error);
@@ -93,7 +93,7 @@ export const submitTimesheetApproval = async (approvalData) => {
  */
 export const fetchTimesheetReview = async (employeeId, month, year) => {
   try {
-    const response = await API.get('/timesheet/review', {
+    const response = await API.get('/api/timesheet/review', {
       params: {
         employee_id: employeeId,
         month,
@@ -116,7 +116,7 @@ export const fetchTimesheetReview = async (employeeId, month, year) => {
  */
 export const fetchTeamTimesheetSummary = async (managerId, month, year) => {
   try {
-    const response = await API.get('/timesheet/team', {
+    const response = await API.get('/api/timesheet/team', {
       params: {
         manager_id: managerId,
         month,
@@ -139,7 +139,7 @@ export const fetchTeamTimesheetSummary = async (managerId, month, year) => {
  */
 export const fetchProjectDistribution = async (employeeId, month, year) => {
   try {
-    const response = await API.get('/timesheet/projects', {
+    const response = await API.get('/api/timesheet/projects', {
       params: {
         employee_id: employeeId,
         month,

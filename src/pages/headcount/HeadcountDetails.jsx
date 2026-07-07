@@ -1,24 +1,15 @@
 import styles from "./Headcount.module.scss";
 import { FiChevronLeft, FiEdit2, FiX } from "react-icons/fi";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { exitEmployee } from "../../api/headcountService";
+import {
+  exitEmployee,
+  fetchEmployeeById,
+} from "../../api/headcountService";
 
-const HEADCOUNT_STORAGE_KEY = "headcount:employees:v1";
+const getEmployeeId = (employee) => employee?.employee_id || employee?.employeeId || employee?.id || employee?.serialNumber;
 
-const getEmployeeId = (employee) => employee?.employeeId || employee?.id || employee?.serialNumber;
-
-const loadEmployeeById = (employeeId) => {
-  try {
-    const rawEmployees = localStorage.getItem(HEADCOUNT_STORAGE_KEY);
-    const employees = rawEmployees ? JSON.parse(rawEmployees) : [];
-    if (!Array.isArray(employees)) return null;
-    return employees.find((employee) => String(getEmployeeId(employee)) === String(employeeId)) || null;
-  } catch (error) {
-    console.error("Failed to load headcount employee details:", error);
-    return null;
-  }
-};
+const getConsultantName = (employee) => employee?.consultant_name || employee?.consultantName || "";
 
 const isExitedEmployee = (employee) =>
   Boolean(employee?.isExited || employee?.status === "exited" || employee?.exitDetails);
@@ -46,15 +37,87 @@ const formatDayMonthYear = (value) => {
   return `${day} ${month} ${year}`;
 };
 
+const getDisplayValue = (value) => {
+  const text = String(value ?? "").trim();
+  return text || "-";
+};
+
+const toIsoDateString = (value) => {
+  const text = String(value || "").trim();
+  if (!text) return "";
+
+  const isoMatch = text.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (isoMatch) {
+    return text;
+  }
+
+  const dayFirstMatch = text.match(/^(\d{2})-(\d{2})-(\d{4})$/);
+  if (dayFirstMatch) {
+    return `${dayFirstMatch[3]}-${dayFirstMatch[2]}-${dayFirstMatch[1]}`;
+  }
+
+  const parsed = parseDateValue(text);
+  if (!parsed) return text;
+
+  const yyyy = parsed.getFullYear();
+  const mm = String(parsed.getMonth() + 1).padStart(2, "0");
+  const dd = String(parsed.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+};
+
 export default function HeadcountDetails() {
   const navigate = useNavigate();
   const { state } = useLocation();
   const { employeeId } = useParams();
-  const [employee, setEmployee] = useState(() => state?.employee || loadEmployeeById(employeeId));
+  const stateEmployee = state?.employee || null;
+  const [employee, setEmployee] = useState(() => stateEmployee);
+  const [isLoading, setIsLoading] = useState(!stateEmployee);
+  const [loadError, setLoadError] = useState("");
   const [isExitModalOpen, setIsExitModalOpen] = useState(false);
   const [exitForm, setExitForm] = useState({ exitDate: "", exitReason: "" });
   const [exitErrors, setExitErrors] = useState({});
+  const [isSavingExit, setIsSavingExit] = useState(false);
   const isExited = isExitedEmployee(employee);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadEmployee = async () => {
+      setIsLoading(!stateEmployee);
+      setLoadError("");
+
+      try {
+        const details = await fetchEmployeeById(employeeId);
+        if (!isMounted) return;
+        if (details) {
+          setEmployee((current) => ({ ...(current || stateEmployee || {}), ...details }));
+          return;
+        }
+
+        setEmployee(stateEmployee || null);
+        if (!stateEmployee) {
+          setLoadError("Employee details could not be loaded.");
+        }
+      } catch (error) {
+        if (!isMounted) return;
+        console.error("Failed to load headcount employee details:", error);
+        setEmployee(stateEmployee || null);
+        if (!stateEmployee) {
+          setLoadError("Employee details could not be loaded.");
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    loadEmployee();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [employeeId, stateEmployee]);
 
   const handleBack = () => {
     navigate("/headcount", { state: { headcountTab: isExited ? "exited" : "active" } });
@@ -76,6 +139,9 @@ export default function HeadcountDetails() {
   };
 
   const closeExitModal = () => {
+    if (isSavingExit) {
+      return;
+    }
     setIsExitModalOpen(false);
     setExitErrors({});
   };
@@ -94,6 +160,10 @@ export default function HeadcountDetails() {
   const saveExitDetails = async (event) => {
     event.preventDefault();
 
+    if (isSavingExit) {
+      return;
+    }
+
     const nextErrors = {};
     if (!exitForm.exitDate) {
       nextErrors.exitDate = "Exit Date is required.";
@@ -107,14 +177,18 @@ export default function HeadcountDetails() {
       return;
     }
 
+    const exitDate = toIsoDateString(exitForm.exitDate);
     const exitDetails = {
-      exitDate: exitForm.exitDate,
+      exitDate,
       exitReason: exitForm.exitReason.trim(),
       savedAt: new Date().toISOString(),
     };
 
+    setIsSavingExit(true);
+
     try {
-      await exitEmployee(getEmployeeId(employee), exitDetails);
+      setExitErrors({});
+      const exitResult = await exitEmployee(getEmployeeId(employee), exitDetails);
       
       const updatedEmployee = {
         ...employee,
@@ -126,10 +200,19 @@ export default function HeadcountDetails() {
       setEmployee(updatedEmployee);
       setIsExitModalOpen(false);
       setExitErrors({});
-      navigate("/headcount", { state: { headcountTab: "exited" } });
+      navigate("/headcount", {
+        state: {
+          headcountTab: "exited",
+          successMessage:
+            String(exitResult?.message || exitResult?.raw?.message || "").trim() ||
+            "Employee exited successfully.",
+        },
+      });
     } catch (error) {
       console.error("Failed to save employee exit details:", error);
-      setExitErrors({ form: "Exit details could not be saved. Please try again." });
+      setExitErrors({ form: String(error?.message || "Exit details could not be saved. Please try again.") });
+    } finally {
+      setIsSavingExit(false);
     }
   };
 
@@ -151,15 +234,19 @@ export default function HeadcountDetails() {
       </section>
 
       <section className={styles.detailPage}>
-        {employee ? (
+        {isLoading ? (
+          <div className={styles.detailMissing}>
+            <h2>Loading employee details</h2>
+          </div>
+        ) : employee ? (
           <>
             <div className={styles.detailHero}>
               <div className={styles.detailIdentity}>
                 <div className={styles.detailAvatar}>
-                  {(employee.consultantName || "E").charAt(0).toUpperCase()}
+                  {(getConsultantName(employee) || "E").charAt(0).toUpperCase()}
                 </div>
                 <div className={styles.detailNameRow}>
-                  <h2 className={styles.detailEmployeeName}>{employee.consultantName || "Employee"}</h2>
+                  <h2 className={styles.detailEmployeeName}>{getConsultantName(employee) || "Employee"}</h2>
                   <span
                     className={`${styles.employeeStatusTag} ${
                       isExited ? styles.employeeStatusExited : styles.employeeStatusActive
@@ -194,8 +281,9 @@ export default function HeadcountDetails() {
               ) : null}
             </div>
 
-            <div className={styles.detailsBody}>
+            <div className={styles.viewFormGrid}>
               {[
+                ["Consultant Name", getConsultantName(employee)],
                 ["Joining Date", formatDayMonthYear(employee.joiningDate)],
                 ["Entity", employee.entity],
                 ["Work Location", employee.workLocation],
@@ -206,19 +294,19 @@ export default function HeadcountDetails() {
                 ["Exit Date", formatDayMonthYear(employee.exitDetails?.exitDate)],
                 ["Exit Reason", employee.exitDetails?.exitReason],
               ]
-                .filter(([, value]) => value !== undefined && value !== "" && value !== null)
+                .filter(([label]) => isExited || !["Exit Date", "Exit Reason"].includes(label))
                 .map(([label, value]) => (
-                  <article key={label} className={styles.detailBlock}>
-                    <span className={styles.detailLabel}>{label}</span>
-                    <strong className={styles.detailValue}>{String(value)}</strong>
-                  </article>
+                  <label key={label} className={styles.viewField}>
+                    <span>{label}</span>
+                    <output>{getDisplayValue(value)}</output>
+                  </label>
                 ))}
             </div>
           </>
         ) : (
           <div className={styles.detailMissing}>
             <h2>Employee not found</h2>
-            <p>This employee is not available in the current headcount list.</p>
+            <p>{loadError || "This employee is not available in the current headcount list."}</p>
           </div>
         )}
 
@@ -237,7 +325,13 @@ export default function HeadcountDetails() {
           >
             <div className={styles.exitModalHeader}>
               <h2 id="exit-modal-title">Employee Exit</h2>
-              <button type="button" className={styles.exitModalClose} onClick={closeExitModal} aria-label="Close">
+              <button
+                type="button"
+                className={styles.exitModalClose}
+                onClick={closeExitModal}
+                aria-label="Close"
+                disabled={isSavingExit}
+              >
                 <FiX aria-hidden="true" />
               </button>
             </div>
@@ -283,11 +377,11 @@ export default function HeadcountDetails() {
             </div>
 
             <div className={styles.exitModalActions}>
-              <button type="button" className={styles.secondaryButton} onClick={closeExitModal}>
+              <button type="button" className={styles.secondaryButton} onClick={closeExitModal} disabled={isSavingExit}>
                 Cancel
               </button>
-              <button type="submit" className={styles.primaryButton}>
-                Save
+              <button type="submit" className={styles.primaryButton} disabled={isSavingExit}>
+                {isSavingExit ? "Saving..." : "Save"}
               </button>
             </div>
           </form>

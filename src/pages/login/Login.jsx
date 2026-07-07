@@ -7,7 +7,8 @@ import { FaFacebookF, FaLinkedinIn, FaInstagram, FaTwitter } from "react-icons/f
 import { MdOutlineEmail } from "react-icons/md";
 import { TbLockPassword } from "react-icons/tb";
 import { useNavigate } from 'react-router-dom';
-import { exchangeSsoCallback, fetchSsoAuthorizeUrl, loginWithPassword } from '../../api/authService';
+import { exchangeSsoCallback, loginWithPassword } from '../../api/authService';
+import { deriveNameFromEmail } from '../../utils/userDisplay';
 import arrowLogo from "../../assets/login/logo_login.png";
 import { startAuthSession } from '../../utils/authSession';
 import ForgotPasswordModal from './ForgotPasswordModal';
@@ -23,7 +24,9 @@ const LOGIN_CREDENTIALS_BY_ROLE = {
     { email: 'accmanager@method-hub.com', password: 'accmanager' }
   ],
   businessStakeholder: [
-    { email: 'demo-admin@method-hub.com', password: 'Arrows@2026' }
+    { email: 'demo-admin@method-hub.com', password: 'Arrows@2026' },
+    { email: 'Prabhu.D@method-hub.com', password: 'Pr@bHu!2026#D' },
+    { email: 'karthik@method-hub.com', password: 'K@rTh!k#2026' }
   ]
 };
 
@@ -115,7 +118,7 @@ const getAuthErrorMessage = (err, fallbackMessage) => {
   const status = Number(err?.response?.status || 0);
   const data = err?.response?.data;
 
-  const identityUrl = String(import.meta.env.VITE_BACKEND_URL || import.meta.env.VITE_IDENTITY_SERVICE_URL || 'http://localhost:8080').trim();
+  const identityUrl = String(import.meta.env.VITE_IDENTITY_SERVICE_URL || import.meta.env.VITE_BACKEND_URL || 'http://localhost:8080').trim();
 
   if (typeof data === 'string' && data.trim()) {
     return data.trim();
@@ -133,11 +136,11 @@ const getAuthErrorMessage = (err, fallbackMessage) => {
   }
 
   if (status >= 500) {
-    return `Login service is unavailable. Check identity service at ${identityUrl} and try again.`;
+    return `Login service is unavailable. Check service at ${identityUrl} and try again.`;
   }
 
   if (!err?.response) {
-    return `Cannot reach login service. Check identity service at ${identityUrl}.`;
+    return `Cannot reach login service. Check service at ${identityUrl}.`;
   }
 
   return err?.message || fallbackMessage;
@@ -148,7 +151,6 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [ssoLoading, setSsoLoading] = useState(false);
   const [error, setError] = useState('');
   const [emailError, setEmailError] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
@@ -172,8 +174,23 @@ const Login = () => {
     } else {
       localStorage.removeItem('userPersona');
     }
-    if (response?.name) {
-      localStorage.setItem('userName', String(response.name).trim());
+
+    const normalizedName = String(response?.name || '').trim();
+    const looksLikeEmailName = normalizedName.includes('@') && normalizedName.split('@').length === 2;
+    const lowerName = normalizedName.toLowerCase();
+    const isGenericRoleName = [
+      'business stakeholder',
+      'businessstakeholder',
+      'account manager',
+      'accountmanager',
+      'recruiter',
+    ].includes(lowerName);
+    const nameValue = normalizedName && !looksLikeEmailName && !isGenericRoleName
+      ? normalizedName
+      : deriveNameFromEmail(emailValue);
+
+    if (nameValue) {
+      localStorage.setItem('userName', nameValue);
     }
 
     const incomingToken = String(
@@ -259,28 +276,6 @@ const Login = () => {
     };
   }, [navigate, persistAuthSession]);
 
-  useEffect(() => {
-    if (window.location.pathname !== '/login/sso-callback') {
-      return;
-    }
-
-    const fetchSsoData = async () => {
-      try {
-        const res = await fetch('/api/sso/callback');
-        if (!res.ok) throw new Error(`Callback returned ${res.status}`);
-        const data = await res.json();
-
-        console.log('SSO callback data:', data);
-        localStorage.setItem('authToken', data.token);
-        localStorage.setItem('userEmail', data.email);
-        window.location.href = '/dashboard';
-      } catch (err) {
-        console.error('Error fetching SSO callback data:', err);
-      }
-    };
-
-    fetchSsoData();
-  }, []);
 
   const validateEmail = async () => {
     try {
@@ -377,27 +372,13 @@ const Login = () => {
     }
   };
 
-  const handleSsoLogin = async () => {
-  setError('');
-  setSsoLoading(true);
-  try {
-    const url = await fetchSsoAuthorizeUrl(email.trim() || undefined);
-    if (!url) throw new Error('SSO authorize URL is not available');
-    window.location.href = url; // go to Microsoft login
-  } catch (err) {
-    setError(getAuthErrorMessage(err, 'Unable to start SSO login'));
-    setSsoLoading(false);
-  }
-};
-
   return (
   <div className="login-container">
     <div className="login-right">
       <div className="hero-copy">
-        <h1>MethodHub Admin Dashboard</h1>
+        <h1>Access Your Hiring Workspace</h1>
         <p>
-          Manage sales, inventory, billing, and reports from one smart dashboard.
-          MethodHub helps you run your business faster, smarter.
+          Log in to track applicants, manage job openings, schedule interviews, and make smarter hiring decisions—all in one place.
         </p>
       </div>
       <div className="footer-copy">© 2026, Powered by MethodHub</div>
@@ -479,16 +460,6 @@ const Login = () => {
             {loading ? "Signing In..." : "Sign In"}
           </button>
 
-          <div className="login-divider">or</div>
-
-          <button
-            type="button"
-            className="login-btn"
-            disabled={loading || ssoLoading}
-            onClick={handleSsoLogin}
-          >
-            {ssoLoading ? "Opening SSO..." : "Sign in with SSO"}
-          </button>
         </form>
       </div>
     </div>
