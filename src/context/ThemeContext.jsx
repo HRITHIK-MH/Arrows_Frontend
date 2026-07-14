@@ -6,10 +6,6 @@ const THEME_STORAGE_KEY = "app-theme";
 const LIGHT_THEME = "light";
 
 export function ThemeProvider({ children }) {
-  const themePreference = LIGHT_THEME;
-  const setThemePreference = () => {
-    localStorage.setItem(THEME_STORAGE_KEY, LIGHT_THEME);
-  };
   const [notificationsEnabled, setNotificationsEnabled] = useState(
     () => localStorage.getItem("app-notifications") !== "false"
   );
@@ -30,8 +26,6 @@ export function ThemeProvider({ children }) {
       value={{
         notificationsEnabled,
         setNotificationsEnabled,
-        themePreference,
-        setThemePreference,
       }}
     >
       {children}

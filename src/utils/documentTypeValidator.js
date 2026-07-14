@@ -31,8 +31,8 @@ const RESUME_CONTACT_PATTERNS = [
 ];
 
 const RESUME_ROLE_PATTERNS = [
-  /\b(client|company|employer)\s*[:\-]/i,
-  /\b(role|designation|job\s+title)\s*[:\-]/i,
+  /\b(client|company|employer)\s*[:-]/i,
+  /\b(role|designation|job\s+title)\s*[:-]/i,
   /\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+\d{4}\s*(?:-|to|–)\s*(?:present|current|still|\d{4})\b/i,
   /\b\d+(?:\.\d+)?\+?\s+years?\b/i,
 ];
@@ -53,12 +53,12 @@ const JD_SECTION_PATTERNS = [
 ];
 
 const JD_FIELD_PATTERNS = [
-  /\b(job\s+title|job\s+name|position\s+name|role)\s*[:\-]/i,
-  /\bnumber\s+of\s+(positions|openings)\s*[:\-]/i,
-  /\b(openings|vacancies)\s*[:\-]/i,
-  /\b(location|work\s+location)\s*[:\-]/i,
-  /\bemployment\s+type\s*[:\-]/i,
-  /\bwork\s+(type|mode)\s*[:\-]/i,
+  /\b(job\s+title|job\s+name|position\s+name|role)\s*[:-]/i,
+  /\bnumber\s+of\s+(positions|openings)\s*[:-]/i,
+  /\b(openings|vacancies)\s*[:-]/i,
+  /\b(location|work\s+location)\s*[:-]/i,
+  /\bemployment\s+type\s*[:-]/i,
+  /\bwork\s+(type|mode)\s*[:-]/i,
   /\b(min(?:imum)?|max(?:imum)?)\s+experience\b/i,
   /\b(ctc|salary|compensation)\b/i,
 ];

@@ -3,116 +3,16 @@ import '@fontsource/poppins/500.css';
 import '@fontsource/poppins/700.css';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { FiEye, FiEyeOff } from "react-icons/fi";
-import { FaFacebookF, FaLinkedinIn, FaInstagram, FaTwitter } from "react-icons/fa";
 import { MdOutlineEmail } from "react-icons/md";
 import { TbLockPassword } from "react-icons/tb";
-import { useNavigate } from 'react-router-dom';
-import { exchangeSsoCallback, loginWithPassword } from '../../api/authService';
+import { FaMicrosoft } from "react-icons/fa";
+import { fetchSsoAuthorizeUrl, loginWithPassword } from '../../api/authService';
 import { deriveNameFromEmail } from '../../utils/userDisplay';
 import arrowLogo from "../../assets/login/logo_login.png";
 import { startAuthSession } from '../../utils/authSession';
 import ForgotPasswordModal from './ForgotPasswordModal';
+import { useNavigate } from 'react-router-dom';
 import './Login.css';
-
-const USE_LOGIN_API = false;
-const LOGIN_CREDENTIALS_BY_ROLE = {
-  recruiter: [
-    { email: 'recruiter@method-hub.com', password: 'recruiter' },
-    { email: 'recruiter@@method-hub.com', password: 'recruiter' }
-  ],
-  accountManager: [
-    { email: 'accmanager@method-hub.com', password: 'accmanager' }
-  ],
-  businessStakeholder: [
-    { email: 'demo-admin@method-hub.com', password: 'Arrows@2026' },
-    { email: 'Prabhu.D@method-hub.com', password: 'Pr@bHu!2026#D' },
-    { email: 'karthik@method-hub.com', password: 'K@rTh!k#2026' }
-  ]
-};
-
-const STORED_ROLE_BY_LOGIN_ROLE = {
-  recruiter: 'recruiter',
-  accountManager: 'accountmanager',
-  businessStakeholder: 'businessstakeholder',
-};
-
-const STORED_PERSONA_BY_LOGIN_ROLE = {
-  businessStakeholder: 'businessstakeholder',
-};
-
-const ROLE_ALIAS_MAP = {
-  recruiter: 'recruiter',
-  accountmanager: 'accountmanager',
-  account_manager: 'accountmanager',
-  'account manager': 'accountmanager',
-  businessstakeholder: 'businessstakeholder',
-  business_stakeholder: 'businessstakeholder',
-  'business stakeholder': 'businessstakeholder',
-  stakeholder: 'businessstakeholder',
-  manager: 'accountmanager',
-  management: 'accountmanager',
-};
-
-const normalizeRoleValue = (value) => {
-  const text = String(value || '').trim().toLowerCase();
-  if (!text) return '';
-  const compact = text.replace(/[\s_-]+/g, '');
-  return ROLE_ALIAS_MAP[text] || ROLE_ALIAS_MAP[compact] || compact;
-};
-
-const extractRoleValue = (response = {}) => {
-  if (response?.role) {
-    return normalizeRoleValue(response.role);
-  }
-
-  if (Array.isArray(response?.roles)) {
-    const firstRole = response.roles.find(Boolean);
-    if (typeof firstRole === 'string') {
-      return normalizeRoleValue(firstRole);
-    }
-    if (firstRole && typeof firstRole === 'object') {
-      return normalizeRoleValue(firstRole.role || firstRole.name || firstRole.authority || '');
-    }
-  }
-
-  if (Array.isArray(response?.authorities)) {
-    const firstAuthority = response.authorities.find(Boolean);
-    if (typeof firstAuthority === 'string') {
-      return normalizeRoleValue(firstAuthority);
-    }
-    if (firstAuthority && typeof firstAuthority === 'object') {
-      return normalizeRoleValue(firstAuthority.authority || firstAuthority.name || '');
-    }
-  }
-
-  return '';
-};
-
-const extractPersonaValue = (response = {}) => {
-  const readPersona = (value) => {
-    const text = String(value || '').trim().toLowerCase();
-    const compact = text.replace(/[\s_-]+/g, '');
-    return text === 'business stakeholder' || compact === 'businessstakeholder' || compact === 'stakeholder'
-      ? 'businessstakeholder'
-      : '';
-  };
-
-  const directPersona = readPersona(response?.persona || response?.role);
-  if (directPersona) return directPersona;
-
-  const roleCollections = [response?.roles, response?.authorities].filter(Array.isArray);
-  for (const collection of roleCollections) {
-    for (const role of collection) {
-      const roleValue = typeof role === 'string'
-        ? role
-        : role?.role || role?.name || role?.authority || '';
-      const persona = readPersona(roleValue);
-      if (persona) return persona;
-    }
-  }
-
-  return '';
-};
 
 const getAuthErrorMessage = (err, fallbackMessage) => {
   const status = Number(err?.response?.status || 0);
@@ -151,6 +51,7 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [ssoLoading, setSsoLoading] = useState(false);
   const [error, setError] = useState('');
   const [emailError, setEmailError] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
@@ -158,9 +59,10 @@ const Login = () => {
   const navigate = useNavigate();
   const hasInitialized = useRef(false);
 
-  const persistAuthSession = useCallback((response = {}, fallbackRole = '') => {
+  const persistAuthSession = useCallback((response = {}) => {
     const emailValue = String(response?.email || email || '').toLowerCase().trim();
-    const roleValue = extractRoleValue(response) || STORED_ROLE_BY_LOGIN_ROLE[fallbackRole] || normalizeRoleValue(fallbackRole);
+    const roleValue = String(response?.role || '').trim().toLowerCase().replace(/[\s_-]+/g, '');
+    const personaValue = String(response?.persona || '').trim().toLowerCase();
 
     if (emailValue) {
       localStorage.setItem('userEmail', emailValue);
@@ -168,9 +70,8 @@ const Login = () => {
     if (roleValue) {
       localStorage.setItem('userRole', roleValue);
     }
-    const personaValue = extractPersonaValue(response) || STORED_PERSONA_BY_LOGIN_ROLE[fallbackRole] || '';
-    if (personaValue) {
-      localStorage.setItem('userPersona', personaValue);
+    if (personaValue === 'businessstakeholder' || personaValue === 'business stakeholder') {
+      localStorage.setItem('userPersona', 'businessstakeholder');
     } else {
       localStorage.removeItem('userPersona');
     }
@@ -199,7 +100,6 @@ const Login = () => {
 
     if (incomingToken) {
       localStorage.setItem('token', incomingToken);
-      localStorage.setItem('authToken', incomingToken);
       startAuthSession();
     }
   }, [email]);
@@ -208,94 +108,31 @@ const Login = () => {
   useEffect(() => {
     if (hasInitialized.current) return;
     hasInitialized.current = true;
-    
+
     const savedEmail = localStorage.getItem('rememberedEmail');
     const savedPassword = localStorage.getItem('rememberedPassword');
-    
+
     if (savedEmail && savedPassword) {
-      Promise.resolve().then(() => {
-        setEmail(savedEmail);
-        setPassword(savedPassword);
-        setRememberMe(true);
-      });
+      setEmail(savedEmail);
+      setPassword(savedPassword);
+      setRememberMe(true);
     }
   }, []);
 
+  // Redirect if already authenticated
   useEffect(() => {
-    const hasStoredToken = Boolean(localStorage.getItem('authToken') || localStorage.getItem('token'));
+    const hasStoredToken = Boolean(localStorage.getItem('token'));
     if (hasStoredToken && window.location.pathname === '/login') {
       navigate('/dashboard', { replace: true });
     }
   }, [navigate]);
 
-  useEffect(() => {
-    const searchParams = new URLSearchParams(window.location.search);
-    const code = String(searchParams.get('code') || '').trim();
-    const state = String(searchParams.get('state') || '').trim();
-    const oauthError = String(searchParams.get('error') || '').trim();
-
-    if (oauthError) {
-      Promise.resolve().then(() => {
-        setError(searchParams.get('error_description') || oauthError);
-      });
-      return;
-    }
-
-    if (!code || !state) {
-      return;
-    }
-
-    let active = true;
-
-    const completeSso = async () => {
-      try {
-        setLoading(true);
-        setError('');
-        const response = await exchangeSsoCallback({ code, state });
-        if (!active) return;
-
-        persistAuthSession(response);
-
-        const cleanUrl = `${window.location.origin}/login`;
-        window.history.replaceState({}, document.title, cleanUrl);
-        navigate('/dashboard', { replace: true });
-      } catch (err) {
-        if (!active) return;
-        setError(err?.response?.data?.error || err?.message || 'SSO login failed');
-      } finally {
-        if (active) {
-          setLoading(false);
-        }
-      }
-    };
-
-    completeSso();
-
-    return () => {
-      active = false;
-    };
-  }, [navigate, persistAuthSession]);
-
-
-  const validateEmail = async () => {
-    try {
-      await new Promise((resolve, reject) => {
-        setTimeout(() => {
-          const allAllowedEmails = Object.values(LOGIN_CREDENTIALS_BY_ROLE)
-            .flat()
-            .map((item) => item.email.toLowerCase());
-          const currentEmail = email.toLowerCase().trim();
-          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-          if (allAllowedEmails.includes(currentEmail) || emailRegex.test(currentEmail)) {
-            resolve();
-          } else {
-            reject(new Error('Invalid email format'));
-          }
-        }, 500);
-      });
+  const validateEmail = () => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email.trim() || emailRegex.test(email.trim())) {
       setEmailError('');
-    } catch (err) {
-      setEmailError(err.message);
+    } else {
+      setEmailError('Invalid email format');
     }
   };
 
@@ -306,69 +143,42 @@ const Login = () => {
 
     try {
       const normalizedEmail = email.toLowerCase().trim();
-      const inferredRole = Object.keys(LOGIN_CREDENTIALS_BY_ROLE).find((r) =>
-        LOGIN_CREDENTIALS_BY_ROLE[r].some((item) => String(item.email || '').toLowerCase() === normalizedEmail),
-      );
-      const roleCredentials = inferredRole ? (LOGIN_CREDENTIALS_BY_ROLE[inferredRole] || []) : [];
 
-      if (!USE_LOGIN_API) {
-        const localMatch = roleCredentials.some(
-          (item) => item.email.toLowerCase() === normalizedEmail && item.password === password,
-        );
-
-        if (!localMatch) {
-          throw new Error('Invalid email or password.');
-        }
-
-        // Handle remember me
-        if (rememberMe) {
-          localStorage.setItem('rememberedEmail', normalizedEmail);
-          localStorage.setItem('rememberedPassword', password);
-        } else {
-          localStorage.removeItem('rememberedEmail');
-          localStorage.removeItem('rememberedPassword');
-        }
-
-        persistAuthSession(
-          {
-            email: normalizedEmail,
-            role: STORED_ROLE_BY_LOGIN_ROLE[inferredRole],
-            persona: STORED_PERSONA_BY_LOGIN_ROLE[inferredRole],
-            token: `local-${inferredRole}-token`,
-            name: inferredRole === 'businessStakeholder'
-              ? 'Business Stakeholder'
-              : STORED_ROLE_BY_LOGIN_ROLE[inferredRole] === 'accountmanager'
-                ? 'Account Manager'
-                : 'Recruiter',
-          },
-          inferredRole,
-        );
+      if (rememberMe) {
+        localStorage.setItem('rememberedEmail', normalizedEmail);
+        localStorage.setItem('rememberedPassword', password);
       } else {
-        // Handle remember me
-        if (rememberMe) {
-          localStorage.setItem('rememberedEmail', normalizedEmail);
-          localStorage.setItem('rememberedPassword', password);
-        } else {
-          localStorage.removeItem('rememberedEmail');
-          localStorage.removeItem('rememberedPassword');
-        }
-
-        const response = await loginWithPassword({
-          email: normalizedEmail,
-          password,
-        });
-        persistAuthSession(response, inferredRole);
+        localStorage.removeItem('rememberedEmail');
+        localStorage.removeItem('rememberedPassword');
       }
+
+      const response = await loginWithPassword({
+        email: normalizedEmail,
+        password,
+      });
+      persistAuthSession(response);
 
       navigate('/dashboard', { replace: true });
     } catch (err) {
-      if (USE_LOGIN_API) {
-        setError(getAuthErrorMessage(err, 'Login failed'));
-      } else {
-        setError(err?.message || 'Login failed');
-      }
+      setError(getAuthErrorMessage(err, 'Login failed'));
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSsoLogin = async () => {
+    setSsoLoading(true);
+    setError('');
+
+    try {
+      const authorizeUrl = await fetchSsoAuthorizeUrl();
+      if (!authorizeUrl) {
+        throw new Error('Failed to retrieve Microsoft login URL. Please try again.');
+      }
+      window.location.href = authorizeUrl;
+    } catch (err) {
+      setError(err?.message || 'SSO login failed. Please try again.');
+      setSsoLoading(false);
     }
   };
 
@@ -460,6 +270,20 @@ const Login = () => {
             {loading ? "Signing In..." : "Sign In"}
           </button>
 
+          <div className="login-divider">
+            <span>or</span>
+          </div>
+
+          <button
+            type="button"
+            className="sso-btn"
+            disabled={ssoLoading}
+            onClick={handleSsoLogin}
+          >
+            <FaMicrosoft size={18} />
+            {ssoLoading ? "Redirecting..." : "Sign in with Microsoft"}
+          </button>
+
         </form>
       </div>
     </div>
@@ -473,3 +297,4 @@ const Login = () => {
 };
 
 export default Login;
+

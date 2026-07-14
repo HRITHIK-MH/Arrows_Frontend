@@ -643,7 +643,7 @@ export default function Interviews() {
 
     showConfirmPopup(
       "Delete Group",
-      `Delete group \"${targetGroup.name}\"?`,
+      `Delete group "${targetGroup.name}"?`,
       async () => {
         try {
           await deleteInterviewGroup(groupId);
@@ -702,7 +702,7 @@ export default function Interviews() {
   const handleDeleteRound = (groupId, roundName) => {
     showConfirmPopup(
       "Delete Round",
-      `Delete round \"${roundName}\"?`,
+      `Delete round "${roundName}"?`,
       () => {
         setGroups((prev) =>
           prev.map((group) => {
@@ -796,6 +796,38 @@ export default function Interviews() {
     } finally {
       handleCloseModal();
     }
+  };
+
+  const handleDeleteMember = (groupId, memberIndex) => {
+    const targetGroup = groups.find((group) => group.id === groupId);
+    if (!targetGroup) return;
+
+    const memberToRemove = targetGroup.teamMembers[memberIndex];
+    if (!memberToRemove) return;
+
+    showConfirmPopup(
+      "Remove Member",
+      `Remove ${memberToRemove.name} from ${targetGroup.name}?`,
+      async () => {
+        try {
+          await deleteInterviewGroupTeamMember(groupId, memberToRemove);
+        } catch (error) {
+          console.error("Delete interview group member failed:", error);
+        }
+        setGroups((prev) =>
+          prev.map((group) => {
+            if (group.id !== groupId) return group;
+            const updatedTeamMembers = group.teamMembers.filter((_, idx) => idx !== memberIndex);
+            return {
+              ...group,
+              teamMembers: updatedTeamMembers,
+              members: updatedTeamMembers.length,
+            };
+          })
+        );
+      },
+      "Remove"
+    );
   };
 
   const handleCloseModal = () => {
@@ -901,14 +933,14 @@ export default function Interviews() {
               onClick={() => onChange?.(starValue)}
               aria-label={`Rate ${starValue} star${starValue > 1 ? "s" : ""}`}
             >
-              ?
+              ★
             </button>
           );
         }
 
         return (
           <span key={starValue} className={`${styles.starText}${isFilled ? ` ${styles.starFilled}` : ""}`}>
-            ?
+            ★
           </span>
         );
       })}
@@ -1570,7 +1602,7 @@ export default function Interviews() {
                                   : ""
                               }
                             >
-                              ?
+                              ▲
                             </span>
                             <span
                               className={
@@ -1579,7 +1611,7 @@ export default function Interviews() {
                                   : ""
                               }
                             >
-                              ?
+                              ▼
                             </span>
                           </span>
                         </th>
@@ -2140,222 +2172,6 @@ export default function Interviews() {
           </aside>
         </div>
       )}
-      {false && isViewDrawerOpen && selectedCandidate && (
-        <div className={styles.viewDrawerOverlay} onClick={closeViewDrawer}>
-        <aside className={styles.viewDrawer} onClick={(e)=>e.stopPropagation()}>
-
-        {/* HEADER */}
-
-        <div className={styles.drawerTop}>
-
-        <div className={styles.drawerProfile}>
-
-        <div className={styles.drawerAvatar}>
-        {selectedCandidate?.fullName?.charAt(0)}
-        </div>
-
-        <div className={styles.drawerIdentity}>
-
-        <h3>{selectedCandidate?.fullName}</h3>
-
-        <p>{selectedCandidate?.role}</p>
-
-        <div className={styles.drawerMeta}>
-        <span><FiMail size={12}/> {selectedCandidate?.email}</span>
-        <span><FiMapPin size={12}/> {selectedCandidate?.location}</span>
-        <span><FiPhone size={12}/> {selectedCandidate?.phoneNumber}</span>
-        </div>
-
-        </div>
-        </div>
-
-        <button
-        className={styles.drawerClose}
-        onClick={closeViewDrawer}
-        >
-        <FiX size={18}/>
-        </button>
-
-        </div>
-
-        {/* PIPELINE */}
-
-        <div className={styles.pipelineRow}>
-        {PIPELINE_STEPS.map((step)=>(
-        <button
-        key={step}
-        className={`${styles.pipelineStep} ${
-        activePipelineStep===step ? styles.pipelineStepActive : ""
-        }`}
-        onClick={()=>setActivePipelineStep(step)}
-        >
-        {step}
-        </button>
-        ))}
-        </div>
-
-        {/* TABS */}
-
-        <div className={styles.profileTabs}>
-        {PROFILE_TABS.map((tab)=>(
-        <button
-        key={tab}
-        className={`${styles.profileTab} ${
-        activeProfileTab===tab ? styles.profileTabActive : ""
-        }`}
-        onClick={()=>setActiveProfileTab(tab)}
-        >
-        {tab}
-        </button>
-        ))}
-        </div>
-
-        {/* TAB CONTENT */}
-
-        <div className={styles.profileContent}>
-
-        {activeProfileTab==="Basic Info" && (
-
-        <div className={styles.profileGrid}>
-
-        <div className={styles.profileItem}>
-        <span className={styles.profileLabel}>Name</span>
-        <span className={styles.profileValue}>{selectedCandidate.fullName}</span>
-        </div>
-
-        <div className={styles.profileItem}>
-        <span className={styles.profileLabel}>Email</span>
-        <span className={styles.profileValue}>{selectedCandidate.email}</span>
-        </div>
-
-        <div className={styles.profileItem}>
-        <span className={styles.profileLabel}>Phone</span>
-        <span className={styles.profileValue}>{selectedCandidate.phoneNumber}</span>
-        </div>
-
-        <div className={styles.profileItem}>
-        <span className={styles.profileLabel}>Location</span>
-        <span className={styles.profileValue}>{selectedCandidate.location}</span>
-        </div>
-
-        </div>
-
-        )}
-
-        {activeProfileTab==="Resume" && (
-        <div className={styles.resumeList}>
-
-        <div className={styles.resumeCard}>
-
-        <div className={styles.resumeMain}>
-        <span className={styles.resumeIcon}>
-        <FiFileText size={14}/>
-        </span>
-
-        <div className={styles.resumeText}>
-        <strong>Candidate Resume</strong>
-        <span>pdf | 2.2MB</span>
-        </div>
-        </div>
-
-        <div className={styles.resumeActions}>
-        <button className={styles.iconBtn}>
-        <FiDownload size={16}/>
-        </button>
-
-        <button className={styles.iconBtn}>
-        <FiEye size={16}/>
-        </button>
-
-        <button className={styles.iconBtn}>
-        <FiTrash2 size={16}/>
-        </button>
-        </div>
-
-        </div>
-
-        </div>
-        )}
-
-        {activeProfileTab==="Timeline" && (
-        <div className={styles.timelineList}>
-        {(selectedCandidate.timeline || []).length === 0 ? (
-        <div className={styles.emptyState}>No timeline found.</div>
-        ) : (
-        (selectedCandidate.timeline || []).map((item) => (
-        <div key={item.id} className={styles.timelineItem}>
-        <span className={`${styles.timelineMarker} ${styles[`timelineMarker${item.tone.charAt(0).toUpperCase()}${item.tone.slice(1)}`]}`}/>
-        <div className={styles.timelineItemBody}>
-        <div className={styles.timelineHead}>
-        <h4>{item.title}</h4>
-        <span>{item.date}</span>
-        </div>
-        <p className={styles.timelineSummary}>{item.summary}</p>
-        </div>
-        </div>
-        ))
-        )}
-        </div>
-        )}
-        {activeProfileTab==="Rating" && (
-
-        <div className={styles.ratingPanel}>
-
-        <h4>Overall Rating</h4>
-
-        {(selectedCandidate.ratingRounds || []).length === 0 ? (
-        <div className={styles.emptyState}>No rating found.</div>
-        ) : (
-        <div className={styles.starGroup}>{renderRatingStars(selectedCandidate.overallRating || 0)}</div>
-        )}
-
-        </div>
-
-        )}
-
-        {activeProfileTab==="Job Applications" && (
-
-        <div className={styles.jobApplicationTableWrap}>
-
-        <table className={styles.jobApplicationTable}>
-
-        <thead>
-        <tr>
-        <th>Opening Job Id</th>
-        <th>Posting Title</th>
-        <th>Client</th>
-        <th>Stage</th>
-        </tr>
-        </thead>
-
-        <tbody>
-        {(selectedCandidate.jobApplications || []).length === 0 ? (
-        <tr>
-        <td colSpan={4}>No job applications found.</td>
-        </tr>
-        ) : (
-        (selectedCandidate.jobApplications || []).map((job) => (
-        <tr key={job.openingJobId || job.id}>
-        <td>{job.openingJobId || "-"}</td>
-        <td>{job.postingTitle || "-"}</td>
-        <td>{job.company || job.clientId || "-"}</td>
-        <td>{job.jobOpeningStatus || job.stage || "-"}</td>
-        </tr>
-        ))
-        )}
-        </tbody>
-
-        </table>
-
-        </div>
-
-        )}
-
-        </div>
-
-        </aside>
-        </div>
-        )}
     </div>
   );
 }

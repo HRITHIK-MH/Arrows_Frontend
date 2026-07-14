@@ -1,6 +1,7 @@
 import { buildJdGenerationPrompt, buildJdMappingPrompt, JD_PARSE_PROMPT } from "./jdPrompts";
 import { JD_SCHEMA } from "./jdSchema";
 import { applyJdGuardrails } from "../utils/jdGuardrailValidator";
+import { requestChatCompletion } from "./aiProxyService";
 
 const cleanValue = (value) => {
   if (value === null || value === undefined) return "";
@@ -37,70 +38,17 @@ const parseJsonResponse = (value) => {
   }
 };
 
-const getAzureConfig = () => ({
-  endpoint: cleanValue(import.meta.env.VITE_AZURE_OPENAI_ENDPOINT).replace(/\/+$/, ""),
-  deployment: cleanValue(import.meta.env.VITE_AZURE_OPENAI_DEPLOYMENT),
-  apiVersion: cleanValue(import.meta.env.VITE_AZURE_OPENAI_API_VERSION) || "2025-01-01-preview",
-  apiKey: cleanValue(import.meta.env.VITE_AZURE_OPENAI_API_KEY),
-});
-
-const callAzure = async ({ messages, stage, jsonMode }) => {
-  const config = getAzureConfig();
-  if (!config.endpoint || !config.deployment || !config.apiKey) {
-    throw new Error("Azure OpenAI configuration is missing from .env.dev.");
-  }
-
-  const url = `${config.endpoint}/openai/deployments/${encodeURIComponent(config.deployment)}/chat/completions?api-version=${encodeURIComponent(config.apiVersion)}`;
-  const payload = {
+// Routes through the backend AI proxy (Azure key stays server-side).
+const callAzure = ({ messages, stage, jsonMode, signal }) =>
+  requestChatCompletion({
     messages,
     temperature: 0,
-    max_tokens: 3500,
-    ...(jsonMode ? { response_format: { type: "json_object" } } : {}),
-  };
-
-  console.debug(`[JDDebug] Azure request (${stage}):`, {
-    url,
-    deployment: config.deployment,
-    apiVersion: config.apiVersion,
-    messageLengths: messages.map((message) => ({
-      role: message.role,
-      length: cleanValue(message.content).length,
-    })),
+    maxTokens: 3500,
+    jsonMode,
+    signal,
+  }).catch((error) => {
+    throw new Error(`Azure OpenAI ${stage} failed: ${error.message}`);
   });
-
-  const send = (body) =>
-    fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "api-key": config.apiKey,
-      },
-      body: JSON.stringify(body),
-    });
-
-  let response = await send(payload);
-  let responseText = await response.text();
-
-  if (!response.ok && jsonMode && /response_format|json_object/i.test(responseText)) {
-    const fallbackPayload = { ...payload };
-    delete fallbackPayload.response_format;
-    response = await send(fallbackPayload);
-    responseText = await response.text();
-  }
-
-  console.debug(`[JDDebug] Azure response (${stage}):`, {
-    status: response.status,
-    statusText: response.statusText,
-    ok: response.ok,
-  });
-
-  if (!response.ok) {
-    throw new Error(`Azure OpenAI ${stage} failed: ${response.status} ${responseText}`);
-  }
-
-  const responseJson = parseJsonResponse(responseText) || {};
-  return responseJson?.choices?.[0]?.message?.content || responseJson?.choices?.[0]?.text || "";
-};
 
 export const normalizeJdJson = (value = {}) => {
   const job = value.job_information || {};

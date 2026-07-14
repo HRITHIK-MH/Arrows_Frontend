@@ -1,6 +1,5 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { exchangeSsoCallback } from '../../api/authService';
 import { startAuthSession } from '../../utils/authSession';
 import { deriveNameFromEmail } from '../../utils/userDisplay';
 
@@ -38,7 +37,7 @@ const extractRoleValue = (response = {}) => {
   return '';
 };
 
-const extractPersonaValue = (response = {}) => {
+const extractPersonaValue = (response = {}) => {  
   const toPersona = (value) => {
     const text = String(value || '').trim().toLowerCase();
     const compact = text.replace(/[\s_-]+/g, '');
@@ -62,10 +61,9 @@ const extractPersonaValue = (response = {}) => {
   }
 
   return '';
-};
+};  
 
 const storeCallbackSession = ({ token, email, name, userId, tokenType, role, persona }) => {
-  window.localStorage.setItem('authToken', token);
   window.localStorage.setItem('token', token);
   startAuthSession();
 
@@ -92,68 +90,42 @@ export default function AuthCallback() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    let active = true;
-
-    const completeSignIn = async () => {
+    if(!localStorage.getItem('token')) {
     const params = new URLSearchParams(window.location.search);
-    const token = params.get('token');
-    const email = params.get('email');
-    const name = params.get('name');
-    const userId = params.get('userId') || params.get('user_id');
-    const tokenType = params.get('tokenType') || params.get('token_type');
-      const code = params.get('code');
-      const state = params.get('state');
-      const oauthError = params.get('error');
 
-      if (oauthError) {
-        const description = params.get('error_description') || oauthError;
-        console.error('SSO callback failed:', description);
-        navigate('/login', { replace: true });
-        return;
-      }
+    const token = String(
+      params.get('token') || params.get('access_token') || params.get('accessToken') || params.get('jwt') || ''
+    ).trim();
 
-      try {
-        if (token) {
-          storeCallbackSession({ token, email, name, userId, tokenType });
-        } else if (code && state) {
-          const response = await exchangeSsoCallback({ code, state });
-          const exchangedToken = String(
-            response?.token || response?.access_token || response?.accessToken || response?.jwt || ''
-          ).trim();
+    const oauthError = params.get('error');
 
-          if (!exchangedToken) {
-            throw new Error('Missing SSO token in callback response.');
-          }
+    if (oauthError) {
+      const description = params.get('error_description') || oauthError;
+      console.error('SSO callback failed:', description);
+      navigate('/login', { replace: true });
+      return;
+    }
 
-          storeCallbackSession({
-            token: exchangedToken,
-            email: response?.email,
-            name: response?.name,
-            userId: response?.userId || response?.user_id,
-            tokenType: response?.tokenType || response?.token_type,
-            role: response?.role || response?.roles,
-            persona: response?.persona,
-          });
-        } else {
-          throw new Error('Missing SSO token or authorization code in callback.');
-        }
+    if (!token) {
+      console.error('Missing token in SSO callback URL params.');
+      navigate('/login', { replace: true });
+      return;
+    }
 
-        if (!active) return;
-        window.history.replaceState({}, document.title, '/dashboard');
-        navigate('/dashboard', { replace: true });
-      } catch (err) {
-        if (!active) return;
-        console.error('SSO sign-in failed:', err);
-        navigate('/login', { replace: true });
-      }
-    };
+    storeCallbackSession({
+      token,
+      email: params.get('email'),
+      name: params.get('name'),
+      userId: params.get('userId') || params.get('user_id'),
+      tokenType: params.get('tokenType') || params.get('token_type'),
+      role: params.get('role') || params.get('roles'),
+      persona: params.get('persona'),
+    });
 
-    completeSignIn();
-
-    return () => {
-      active = false;
-    };
-  }, [navigate]);
+    window.history.replaceState({}, document.title, '/dashboard');
+    navigate('/dashboard', { replace: true });
+  }
+  }, []);
 
   return (
     <div style={{ padding: 40 }}>
@@ -161,5 +133,3 @@ export default function AuthCallback() {
     </div>
   );
 }
- 
- 

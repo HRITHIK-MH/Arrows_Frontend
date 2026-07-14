@@ -173,6 +173,15 @@ const Calendar = () => {
 
   const isMicrosoftConfigured = React.useMemo(() => isMicrosoftCalendarConfigured(), []);
 
+  // Guards against setState after unmount when async calendar calls resolve late.
+  const isMountedRef = React.useRef(true);
+  React.useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
   React.useEffect(() => {
     const unsubscribe = subscribeMeetings(setMeetings);
     return unsubscribe;
@@ -265,12 +274,14 @@ const Calendar = () => {
         startDate: start,
         endDate: end,
       });
+      if (!isMountedRef.current) return;
       setMicrosoftEvents(remoteEvents);
       setLastSyncAt(new Date());
     } catch (error) {
+      if (!isMountedRef.current) return;
       setMicrosoftError(error.message || "Failed to fetch Microsoft Calendar events.");
     } finally {
-      setIsMicrosoftLoading(false);
+      if (isMountedRef.current) setIsMicrosoftLoading(false);
     }
   }, [currentDate, isMicrosoftConfigured, isMicrosoftConnected, view]);
 

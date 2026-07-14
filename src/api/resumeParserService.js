@@ -2,6 +2,7 @@ import { PROMPT_ARROWS_PARSE } from './resumePrompts';
 import { mapParsedSkills } from './skillMapper';
 import { applyResumeGuardrails } from '../utils/resumeGuardrailValidator';
 import { mapResumeToCandidateForm } from '../utils/resumeFieldMapper';
+import { requestChatCompletion } from './aiProxyService';
 
 const normalizeValue = (value) => {
   if (value === null || value === undefined) return '';
@@ -157,92 +158,27 @@ const extractJson = (value) => {
   }
 };
 
-const getAzureOpenAiConfig = () => {
-  const endpoint = normalizeValue(import.meta.env.VITE_AZURE_OPENAI_ENDPOINT).replace(/\/+$/, '');
-  const deployment = normalizeValue(import.meta.env.VITE_AZURE_OPENAI_DEPLOYMENT);
-  const apiVersion = normalizeValue(import.meta.env.VITE_AZURE_OPENAI_API_VERSION) || '2025-01-01-preview';
-  const apiKey = normalizeValue(import.meta.env.VITE_AZURE_OPENAI_API_KEY);
-
-  return { endpoint, deployment, apiVersion, apiKey };
-};
-
-const callAzureOpenAi = async (messages, stageName) => {
+// Routes through the backend AI proxy (Azure key stays server-side).
+const callAzureOpenAi = async (messages, stageName, signal) => {
   const startedAt = getNow();
-  const { endpoint, deployment, apiVersion, apiKey } = getAzureOpenAiConfig();
 
-  if (!endpoint || !deployment || !apiKey) {
-    throw new Error(
-      'Azure OpenAI frontend configuration is missing. Set VITE_AZURE_OPENAI_ENDPOINT, VITE_AZURE_OPENAI_DEPLOYMENT, VITE_AZURE_OPENAI_API_VERSION, and VITE_AZURE_OPENAI_API_KEY in .env.dev.'
-    );
-  }
-
-  const url = `${endpoint}/openai/deployments/${encodeURIComponent(deployment)}/chat/completions?api-version=${encodeURIComponent(apiVersion)}`;
-  const payload = {
+  const content = await requestChatCompletion({
     messages,
     temperature: 0,
-    max_tokens: 3000,
-    response_format: { type: 'json_object' },
-  };
-
-  console.debug(`[ResumeDebug] Azure GPT request payload (${stageName}):`, {
-    url,
-    deployment,
-    apiVersion,
-    messages: messages.map((message) => ({
-      role: message.role,
-      contentLength: String(message.content || '').length,
-      contentPreview: String(message.content || '').slice(0, 500),
-    })),
+    maxTokens: 3000,
+    jsonMode: true,
+    signal,
+  }).catch((error) => {
+    throw new Error(`Azure OpenAI ${stageName} failed: ${error.message}`);
   });
-
-  const sendRequest = (bodyPayload) => fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'api-key': apiKey,
-    },
-    body: JSON.stringify(bodyPayload),
-  });
-
-  let response = await sendRequest(payload);
-  let responseText = await response.text();
-  let retriedWithoutJsonMode = false;
-
-  if (!response.ok && /response_format|json_object/i.test(responseText)) {
-    const fallbackPayload = { ...payload };
-    delete fallbackPayload.response_format;
-    retriedWithoutJsonMode = true;
-    console.warn(`[ResumeDebug] Azure rejected JSON mode for ${stageName}; retrying without response_format.`);
-    response = await sendRequest(fallbackPayload);
-    responseText = await response.text();
-  }
-
-  console.debug(`[ResumeDebug] Azure API response status (${stageName}):`, {
-    status: response.status,
-    statusText: response.statusText,
-    ok: response.ok,
-  });
-
-  if (!response.ok) {
-    throw new Error(`Azure OpenAI ${stageName} failed: ${response.status} ${responseText}`);
-  }
 
   azureResumeParseDebugContext = {
-    messageContentExists: false,
-    responseKeys: [],
+    messageContentExists: Boolean(content),
+    responseKeys: content ? ['choices'] : [],
   };
-  const responseJson = extractJson(responseText) || {};
-  azureResumeParseDebugContext = {
-    messageContentExists: !!responseJson?.choices?.[0]?.message?.content,
-    responseKeys: Object.keys(responseJson),
-  };
-  console.debug(`[ResumeDebug] Azure raw response (${stageName}):`, responseJson);
-  logTiming(`Azure Call (${stageName})`, startedAt, {
-    status: response.status,
-    retriedWithoutJsonMode,
-  });
+  logTiming(`Azure Call (${stageName})`, startedAt);
 
-  return responseJson?.choices?.[0]?.message?.content || responseJson?.choices?.[0]?.text || '';
+  return content;
 };
 
 /**
@@ -265,16 +201,11 @@ export const parseResume = async (file) => {
     size: file?.size,
     lastModified: file?.lastModified,
   });
-  const azureConfig = getAzureOpenAiConfig();
   console.debug('[ResumeDebug] API configuration:', {
-    parseMode: 'frontend-direct-azure-openai',
+    parseMode: 'backend-proxy-azure-openai',
     mode: import.meta.env.MODE,
     viteApiUrl: import.meta.env.VITE_API_URL || '',
     viteBackendUrl: import.meta.env.VITE_BACKEND_URL || '',
-    azureEndpoint: azureConfig.endpoint,
-    azureDeployment: azureConfig.deployment,
-    azureApiVersion: azureConfig.apiVersion,
-    azureApiKeyConfigured: Boolean(azureConfig.apiKey),
   });
 
   try {

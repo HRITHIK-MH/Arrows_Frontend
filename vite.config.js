@@ -321,6 +321,12 @@ export default defineConfig(({ mode }) => {
       }
     },
     plugins: [react(), supersetGuestTokenPlugin(env)],
+    // Strip noisy debug logging from production bundles; keep warn/error for
+    // observability. Dev builds are untouched.
+    esbuild: {
+      pure: mode === 'prod' ? ['console.log', 'console.debug', 'console.info'] : [],
+      drop: mode === 'prod' ? ['debugger'] : [],
+    },
     css: {
       modules: {
         // Keep class names human-readable in DOM: JobOpenings__page
@@ -394,9 +400,7 @@ export default defineConfig(({ mode }) => {
       rollupOptions: {
         output: {
           manualChunks: {
-            'mui-vendor': ['@mui/material', '@mui/icons-material', '@emotion/react', '@emotion/styled'],
             'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-            'chart-vendor': ['recharts'],
             'utils': ['axios'],
           }
         }

@@ -109,11 +109,6 @@ export default function App() {
   const [isSidebarOpen, setSidebarOpen] = React.useState(false);
   const location = useLocation();
 
-  // Debug logging for route changes
-  useEffect(() => {
-    console.log('Route changed to:', location.pathname);
-  }, [location.pathname]);
-
   useEffect(() => {
     const shouldLockScroll = location.pathname !== "/login" && isSidebarOpen && window.innerWidth <= 768;
     document.body.style.overflow = shouldLockScroll ? "hidden" : "";
@@ -199,10 +194,8 @@ export default function App() {
             <Routes key={location.pathname}>
               <Route path="/" element={<Navigate to="/login" replace />} />
               <Route path="/login" element={<Login />} />
-              <Route path="/auth/callback" element={<AuthCallback />} />
-              <Route path="/login/sso-callback" element={<AuthCallback />} />
               <Route path="/sso/callback" element={<AuthCallback />} />
-              <Route path="/dashboard" element={<RequireAuth><Dashboard /></RequireAuth>} />
+              <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/headcount" element={<RequireBusinessStakeholder><Headcount /></RequireBusinessStakeholder>} />
               <Route path="/headcount/:employeeId" element={<RequireBusinessStakeholder><HeadcountDetails /></RequireBusinessStakeholder>} />
               <Route path="/job-openings" element={<RequireAuth><JobOpenings /></RequireAuth>} />

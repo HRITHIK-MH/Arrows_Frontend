@@ -295,19 +295,16 @@
   background: #ea580c;
 }
 
-.login-btn-secondary {
-  background: #0d6efd;
-}
-
-.login-btn-secondary:hover {
-  background: #0b5ed7;
+.login-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
 }
 
 .login-divider {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 1rem 0;
+  margin: 1.25rem 0;
   color: #6c757d;
   font-size: 0.88rem;
 }
@@ -319,6 +316,33 @@
   height: 1px;
   background: #dee2e6;
   margin: 0 0.75rem;
+}
+
+.sso-btn {
+  width: 100%;
+  padding: 0.72rem;
+  background: #ffffff;
+  color: #333333;
+  border: 1px solid #d1d5db;
+  border-radius: 14px;
+  cursor: pointer;
+  font-size: 0.88rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.sso-btn:hover {
+  background: #f3f4f6;
+  border-color: #9ca3af;
+}
+
+.sso-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
 }
 
 .error-message {

@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(sort -t: -k2 -rn)",
+      "Bash(npm uninstall *)",
+      "Read(//Users/praburamu/.local/share/claude/versions/**)",
+      "Read(//Users/praburamu/.claude/local/**)",
+      "Read(//Users/praburamu/**)",
+      "Bash(npm run *)",
+      "Bash(npx eslint *)",
+      "Bash(echo \"EXIT: $?\")",
+      "Bash(node -e ' *)",
+      "Bash(npm test *)",
+      "Bash(git init *)",
+      "Bash(git add *)",
+      "Bash(git --version)",
+      "Bash(echo \"---exit: $?\")",
+      "Bash(brew install *)",
+      "Bash(npm audit *)",
+      "Bash(npm outdated *)",
+      "Bash(node -e \"try{require\\('./package.json'\\).dependencies['react-redux']?console.log\\('IN package.json'\\):console.log\\('NOT in package.json'\\)}catch\\(e\\){console.log\\(e.message\\)}\")",
+      "Bash(node -e \"let d='';process.stdin.on\\('data',c=>d+=c\\).on\\('end',\\(\\)=>{const files=JSON.parse\\(d\\);let e=0,w=0;for\\(const f of files\\)for\\(const m of f.messages\\)m.severity===2?e++:w++;console.log\\('errors:',e,'warnings:',w\\);}\\);\")",
+      "Bash(node -e \"const p=require\\('./package.json'\\); console.log\\('deps \\('+Object.keys\\(p.dependencies\\).length+'\\):', Object.keys\\(p.dependencies\\).join\\(', '\\)\\); console.log\\(\\); console.log\\('devDeps \\('+Object.keys\\(p.devDependencies\\).length+'\\):', Object.keys\\(p.devDependencies\\).join\\(', '\\)\\)\")"
+    ]
+  }
+}

@@ -100,9 +100,6 @@ const isSeededJobOpeningRow = (row) => {
   return SEEDED_JOB_OPENING_IDS.has(jobId) || SEEDED_JOB_OPENING_TITLES.has(postingTitle);
 };
 
-const cleanSeededJobOpeningRows = (rows = []) =>
-  rows.filter((row) => !isSeededJobOpeningRow(row));
-
 const saveJobOpeningTableData = (rows) => {
   try {
     localStorage.removeItem(JOB_OPENING_TABLE_STORAGE_KEY);
@@ -1987,23 +1984,6 @@ export default function JobOpenings({ createMode = false }) {
                     disabled={currentPage === totalPages}
                   >
                     {">"}
-                  </button>
-                </div>
-                <div className={styles.pagination} style={{ display: "none" }}>
-                  <button type="button" className={styles.pageBtn} aria-label="Previous page">
-                    ‹
-                  </button>
-                  <button type="button" className={`${styles.pageBtn} ${styles.pageBtnActive}`}>
-                    1
-                  </button>
-                  <button type="button" className={styles.pageBtn}>
-                    2
-                  </button>
-                  <button type="button" className={styles.pageBtn}>
-                    3
-                  </button>
-                  <button type="button" className={styles.pageBtn} aria-label="Next page">
-                    ›
                   </button>
                 </div>
               </>

@@ -13,6 +13,7 @@ export const measurePageLoad = () => {
 
   window.addEventListener('load', () => {
     const navTiming = window.performance.getEntriesByType('navigation')[0];
+    if (!navTiming) return;
 
     // Calculate key metrics
     const pageLoadTime = navTiming.loadEventEnd - navTiming.fetchStart;
@@ -42,7 +43,7 @@ export const measurePageLoad = () => {
         console.debug('PerformanceObserver not fully supported');
       }
     }
-  });
+  }, { once: true });
 };
 
 /**
@@ -87,6 +88,6 @@ export const initPerformanceMonitoring = () => {
       markPerformance('app-init-end');
       measurePerformance('app-init', 'app-init-start', 'app-init-end');
       measurePageLoad();
-    });
+    }, { once: true });
   }
 };

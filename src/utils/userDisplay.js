@@ -14,12 +14,12 @@ const isGenericName = (name) => {
 export const deriveNameFromEmail = (email) => {
   const rawEmail = String(email || "").trim();
   const localPart = rawEmail.split("@")[0] || "";
-  const firstSegment = localPart.split(/[_\.+-]+/).filter(Boolean)[0] || localPart;
+  const firstSegment = localPart.split(/[_.+-]+/).filter(Boolean)[0] || localPart;
   return capitalize(firstSegment);
 };
 
 export const getInitials = (name) => {
-  const normalized = normalizeName(name).replace(/[_\.+-]+/g, " ");
+  const normalized = normalizeName(name).replace(/[_.+-]+/g, " ");
   if (!normalized) {
     return "U";
   }
@@ -70,7 +70,7 @@ export const getAvatarInitials = (name, email) => {
     return "U";
   }
 
-  const parts = localPart.split(/[_\.+-]+/).filter(Boolean);
+  const parts = localPart.split(/[_.+-]+/).filter(Boolean);
   if (parts.length >= 2) {
     return `${parts[0].charAt(0)}${parts[1].charAt(0)}`.toUpperCase();
   }

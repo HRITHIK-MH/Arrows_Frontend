@@ -148,7 +148,7 @@ const looksLikeResponsibilitySentence = (value) => {
 export const isValidCurrentDesignation = (value) => {
   const designation = cleanDesignationValue(value);
   if (!designation) return false;
-  if (/^(client|company|employer|organization|organisation|location)\s*[:\-]/i.test(designation)) return false;
+  if (/^(client|company|employer|organization|organisation|location)\s*[:-]/i.test(designation)) return false;
   if (designation.length > 100) return false;
   if (designation.split(/\s+/).length > 10) return false;
   if (looksLikeResponsibilitySentence(designation)) return false;
