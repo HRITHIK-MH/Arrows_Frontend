@@ -1,6 +1,7 @@
 import * as React from "react";
 import {
   FiChevronDown,
+  FiChevronLeft,
   FiChevronRight,
   FiDownload,
   FiEdit2,
@@ -74,6 +75,7 @@ const toInterviewerDisplay = (item) => {
     const name = String(item).trim();
     if (!name) return null;
     return {
+      userId: "",
       name,
       email: "",
       mobile: "",
@@ -97,11 +99,121 @@ const toInterviewerDisplay = (item) => {
       : String(item.availability).trim() || "Yes";
 
   return {
+    userId: String(item.userId || item.id || item.interviewerId || item.memberId || item.uuid || "").trim(),
     name,
     email: String(item.email || item.mail || "").trim(),
     mobile: String(item.mobile || item.phone || item.phoneNumber || "").trim(),
     designation: role || "Panel",
     availability,
+  };
+};
+
+const toText = (value) => String(value || "").trim();
+
+const firstText = (...values) => values.map(toText).find(Boolean) || "";
+
+const normalizeRoundName = (round) => {
+  if (round === null || round === undefined) return "";
+  if (typeof round === "string" || typeof round === "number") return toText(round);
+  if (typeof round !== "object") return "";
+  return toText(round.name || round.roundName || round.interviewRoundName || round.label || round.title);
+};
+
+const normalizeGroupMember = (member) => {
+  if (!member || typeof member !== "object") return null;
+
+  const name = toText(member.name || member.displayName || member.fullName || member.userName || member.label);
+  if (!name) return null;
+
+  return {
+    ...member,
+    name,
+    email: toText(member.email || member.mail || member.userEmail),
+    mobile: toText(member.mobile || member.phone || member.phoneNumber),
+    round: toText(member.round || member.roundName || member.interviewRoundName),
+    designation: toText(member.designation || member.assignmentRole || member.role) || "Panel",
+    availability:
+      member.availability === undefined
+        ? "Yes"
+        : toText(member.availability) || "Yes",
+  };
+};
+
+const normalizeInterviewGroup = (group, fallback = {}) => {
+  if (!group || typeof group !== "object") return null;
+
+  const backendGroupId = firstText(
+    group.groupId,
+    group.interviewGroupId,
+    group._id,
+    group.uuid,
+    group.id,
+    fallback.backendGroupId
+  );
+  const displayGroupCode = firstText(
+    group.interviewGroupCode,
+    group.groupCode,
+    group.code,
+    fallback.displayGroupCode,
+    fallback.interviewGroupCode,
+    fallback.groupCode
+  );
+  const id = firstText(
+    backendGroupId,
+    displayGroupCode,
+    fallback.id
+  );
+  const name = toText(
+    group.name ||
+      group.groupName ||
+      group.interviewGroupName ||
+      group.skillName ||
+      fallback.name
+  );
+
+  if (!id || !name) return null;
+
+  const rawRounds = Array.isArray(group.rounds)
+    ? group.rounds
+    : Array.isArray(group.interviewRounds)
+      ? group.interviewRounds
+      : Array.isArray(group.roundNames)
+        ? group.roundNames
+        : Array.isArray(fallback.rounds)
+          ? fallback.rounds
+          : [];
+  const scalarRound = normalizeRoundName(group.round || group.roundName || group.interviewRoundName);
+  const rounds = [...rawRounds.map(normalizeRoundName), scalarRound]
+    .filter(Boolean)
+    .filter((round, index, allRounds) => allRounds.findIndex((item) => item.toLowerCase() === round.toLowerCase()) === index);
+
+  const rawTeamMembers = Array.isArray(group.teamMembers)
+    ? group.teamMembers
+    : Array.isArray(group.members)
+      ? group.members
+      : Array.isArray(group.interviewers)
+        ? group.interviewers
+        : Array.isArray(fallback.teamMembers)
+          ? fallback.teamMembers
+          : [];
+  const teamMembers = rawTeamMembers.map(normalizeGroupMember).filter(Boolean);
+  const memberCount = Number.isFinite(Number(group.members))
+    ? Number(group.members)
+    : Number.isFinite(Number(group.memberCount))
+      ? Number(group.memberCount)
+      : Number.isFinite(Number(group.teamMemberCount))
+        ? Number(group.teamMemberCount)
+        : teamMembers.length;
+
+  return {
+    ...group,
+    id,
+    backendGroupId,
+    displayGroupCode,
+    name,
+    rounds,
+    teamMembers,
+    members: memberCount,
   };
 };
 
@@ -128,8 +240,8 @@ export default function Interviews() {
   const [interviewMetaOptions, setInterviewMetaOptions] = React.useState({ types: [], statuses: [] });
   const [interviewerDirectory, setInterviewerDirectory] = React.useState(INTERVIEWER_DIRECTORY);
   const [interviewerOptions, setInterviewerOptions] = React.useState(INTERVIEWER_OPTIONS);
-  const [expandedGroups, setExpandedGroups] = React.useState(["Java"]);
-  const [selectedGroup, setSelectedGroup] = React.useState("Java");
+  const [expandedGroups, setExpandedGroups] = React.useState([]);
+  const [selectedGroup, setSelectedGroup] = React.useState("");
   const [showAddMemberModal, setShowAddMemberModal] = React.useState(false);
   const [newMemberRound, setNewMemberRound] = React.useState("");
   const [newMemberInterviewer, setNewMemberInterviewer] = React.useState("");
@@ -192,11 +304,16 @@ export default function Interviews() {
     const loadInterviewGroups = async () => {
       try {
         const response = await fetchInterviewGroups({ page: 1, limit: 100 });
-        if (Array.isArray(response?.items) && response.items.length > 0) {
-          setGroups(response.items);
-          if (!response.items.some((group) => group.id === selectedGroup)) {
-            setSelectedGroup(response.items[0]?.id || "");
-          }
+        const normalizedGroups = Array.isArray(response?.items)
+          ? response.items.map((group) => normalizeInterviewGroup(group)).filter(Boolean)
+          : [];
+        if (normalizedGroups.length > 0) {
+          setGroups(normalizedGroups);
+          setSelectedGroup((currentSelected) =>
+            normalizedGroups.some((group) => group.id === currentSelected)
+              ? currentSelected
+              : normalizedGroups[0]?.id || ""
+          );
         }
       } catch (error) {
         console.warn("Failed to load interview groups:", error);
@@ -276,6 +393,7 @@ export default function Interviews() {
 
           dynamicInterviewerRows.forEach((interviewer) => {
             mergedDirectory[interviewer.name] = {
+              userId: interviewer.userId || mergedDirectory[interviewer.name]?.userId || "",
               email: interviewer.email || mergedDirectory[interviewer.name]?.email || "",
               mobile: interviewer.mobile || mergedDirectory[interviewer.name]?.mobile || "",
               designation: interviewer.designation || mergedDirectory[interviewer.name]?.designation || "Panel",
@@ -579,10 +697,10 @@ export default function Interviews() {
 
     try {
       const createdGroup = await createInterviewGroup(payload);
-      const group = createdGroup || fallbackGroup;
+      const group = normalizeInterviewGroup(createdGroup, fallbackGroup) || fallbackGroup;
       setGroups((prev) => [...prev, group]);
-      setSelectedGroup(group.id || fallbackGroupId);
-      setExpandedGroups((prev) => (prev.includes(group.id || fallbackGroupId) ? prev : [...prev, group.id || fallbackGroupId]));
+      setSelectedGroup(group.id);
+      setExpandedGroups((prev) => (prev.includes(group.id) ? prev : [...prev, group.id]));
     } catch (error) {
       console.error("Create interview group failed:", error);
       showInfoPopup("Unable to create group at this time.", "Error");
@@ -643,7 +761,7 @@ export default function Interviews() {
 
     showConfirmPopup(
       "Delete Group",
-      `Delete group \"${targetGroup.name}\"?`,
+      `Delete group "${targetGroup.name}"?`,
       async () => {
         try {
           await deleteInterviewGroup(groupId);
@@ -702,7 +820,7 @@ export default function Interviews() {
   const handleDeleteRound = (groupId, roundName) => {
     showConfirmPopup(
       "Delete Round",
-      `Delete round \"${roundName}\"?`,
+      `Delete round "${roundName}"?`,
       () => {
         setGroups((prev) =>
           prev.map((group) => {
@@ -732,13 +850,22 @@ export default function Interviews() {
       return;
     }
 
-    const memberPayload = {
+    const memberToAppend = normalizeGroupMember({
+      userId: interviewerMeta.userId,
       name: newMemberInterviewer,
       email: interviewerMeta.email,
       mobile: interviewerMeta.mobile,
       round: newMemberRound,
       designation: interviewerMeta.designation,
       availability: interviewerMeta.availability,
+    });
+    const memberPayload = {
+      members: [
+        {
+          userId: interviewerMeta.userId,
+          role: "Panel Member",
+        },
+      ],
     };
 
     const currentGroup = groups.find((group) => group.id === selectedGroup);
@@ -756,13 +883,15 @@ export default function Interviews() {
       return;
     }
 
-    const fallbackMember = {
-      ...memberPayload,
-    };
-
     try {
-      const createdMember = await addInterviewGroupTeamMember(selectedGroup, memberPayload);
-      const memberToAppend = createdMember && typeof createdMember === "object" ? createdMember : fallbackMember;
+      if (!currentGroup.backendGroupId) {
+        throw new Error("Missing backend group ID for selected interview group.");
+      }
+      if (!interviewerMeta.userId) {
+        throw new Error("Missing backend user ID for selected interviewer.");
+      }
+
+      await addInterviewGroupTeamMember(currentGroup.backendGroupId, memberPayload);
 
       setGroups((prev) =>
         prev.map((group) => {
@@ -780,22 +909,52 @@ export default function Interviews() {
     } catch (error) {
       console.error("Add interview group member failed:", error);
       showInfoPopup("Unable to add member at this time.", "Error");
-      setGroups((prev) =>
-        prev.map((group) => {
-          if (group.id !== selectedGroup) return group;
-
-          const updatedTeamMembers = [...group.teamMembers, fallbackMember];
-
-          return {
-            ...group,
-            teamMembers: updatedTeamMembers,
-            members: updatedTeamMembers.length,
-          };
-        })
-      );
     } finally {
       handleCloseModal();
     }
+  };
+
+  const handleDeleteMember = (groupId, memberIndex) => {
+    const targetGroup = groups.find((group) => group.id === groupId);
+    const targetMember = targetGroup?.teamMembers?.[memberIndex];
+    if (!targetGroup || !targetMember) return;
+
+    showConfirmPopup(
+      "Delete Member",
+      `Delete member "${targetMember.name}"?`,
+      async () => {
+        const memberId = toText(
+          targetMember.userId ||
+            targetMember.id ||
+            targetMember.memberId ||
+            targetMember.interviewerId
+        );
+
+        try {
+          if (memberId) {
+            await deleteInterviewGroupTeamMember(groupId, memberId);
+          }
+
+          setGroups((prev) =>
+            prev.map((group) => {
+              if (group.id !== groupId) return group;
+
+              const updatedTeamMembers = group.teamMembers.filter((_, index) => index !== memberIndex);
+
+              return {
+                ...group,
+                teamMembers: updatedTeamMembers,
+                members: updatedTeamMembers.length,
+              };
+            })
+          );
+        } catch (error) {
+          console.error("Delete interview group member failed:", error);
+          showInfoPopup("Unable to delete member at this time.", "Error");
+        }
+      },
+      "Delete"
+    );
   };
 
   const handleCloseModal = () => {
@@ -1370,11 +1529,6 @@ export default function Interviews() {
     return filteredInterviews.slice(startIndex, startIndex + entriesPerPage);
   }, [filteredInterviews, currentPage, entriesPerPage]);
 
-  const pageNumbers = React.useMemo(
-    () => Array.from({ length: totalPages }, (_, index) => index + 1),
-    [totalPages]
-  );
-
   const startEntry = totalRecords === 0 ? 0 : (currentPage - 1) * entriesPerPage + 1;
   const endEntry = Math.min(currentPage * entriesPerPage, totalRecords);
 
@@ -1396,10 +1550,6 @@ export default function Interviews() {
   const handleEntriesPerPageChange = React.useCallback((event) => {
     setEntriesPerPage(Number(event.target.value));
     setCurrentPage(1);
-  }, []);
-
-  const handlePageChange = React.useCallback((page) => {
-    setCurrentPage(page);
   }, []);
 
   const handlePreviousPage = React.useCallback(() => {
@@ -1636,53 +1786,53 @@ export default function Interviews() {
                 </table>
               </div>
               <div className={styles.tableFooter}>
-                <div className={styles.footerLeft}>
-                  <span>Show</span>
+                <div className={styles.footerSummary}>
+                  <span>Showing</span>
+                  <strong>{startEntry}-{endEntry}</strong>
+                  <span>of</span>
+                  <strong>{totalRecords}</strong>
+                  <span>entries</span>
+                </div>
+
+                <div className={styles.footerControls}>
+                  <label className={styles.rowsControl}>
+                    <span>Rows per page</span>
                   <select
-                    className={styles.entriesSelect}
+                      className={styles.rowsSelect}
                     value={entriesPerPage}
                     onChange={handleEntriesPerPageChange}
+                      aria-label="Rows per page"
                   >
                     <option value="10">10</option>
                     <option value="25">25</option>
                     <option value="50">50</option>
                   </select>
-                  <span>entries</span>
-                  <span>
-                    ({startEntry}-{endEntry} of {totalRecords})
-                  </span>
-                </div>
-                <div className={styles.pagination}>
+                  </label>
+
+                  <div className={styles.pageIndicator} aria-live="polite">
+                    Page {currentPage} of {totalPages}
+                  </div>
+
+                  <div className={styles.paginationControls}>
                   <button
                     type="button"
-                    className={styles.pageBtn}
+                      className={styles.pageButton}
                     aria-label="Previous page"
                     onClick={handlePreviousPage}
                     disabled={currentPage === 1}
                   >
-                    {"<"}
+                      <FiChevronLeft aria-hidden="true" />
                   </button>
-                  {pageNumbers.map((pageNumber) => (
-                    <button
-                      key={pageNumber}
-                      type="button"
-                      className={`${styles.pageBtn}${currentPage === pageNumber ? ` ${styles.pageBtnActive}` : ""}`}
-                      onClick={() => handlePageChange(pageNumber)}
-                      aria-label={`Page ${pageNumber}`}
-                      aria-current={currentPage === pageNumber ? "page" : undefined}
-                    >
-                      {pageNumber}
-                    </button>
-                  ))}
                   <button
                     type="button"
-                    className={styles.pageBtn}
+                      className={styles.pageButton}
                     aria-label="Next page"
                     onClick={handleNextPage}
                     disabled={currentPage === totalPages}
                   >
-                    {">"}
+                      <FiChevronRight aria-hidden="true" />
                   </button>
+                  </div>
                 </div>
               </div>
             </>

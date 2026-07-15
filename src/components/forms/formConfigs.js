@@ -1375,7 +1375,7 @@ export const clientConfig = {
           type: "text",
           required: true,
           validationRule: "requiredField",
-          placeholder: "Enter Last Name"
+          placeholder: "Enter Client Name"
         },
         {
           name: "contactEmail",
@@ -1400,7 +1400,7 @@ export const clientConfig = {
           type: "text",
           required: true,
           validationRule: "contactPersonName",
-          placeholder: "Person Name"
+          placeholder: "Enter Primary Contact"
         },
         {
           name: "secondaryContactPerson",
@@ -1408,7 +1408,7 @@ export const clientConfig = {
           type: "text",
           required: true,
           validationRule: "contactPersonName",
-          placeholder: "Person Name"
+          placeholder: "Enter Secondary Contact"
         },
         {
           name: "accountManager",
