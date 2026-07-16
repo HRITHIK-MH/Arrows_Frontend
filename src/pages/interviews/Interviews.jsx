@@ -916,44 +916,34 @@ export default function Interviews() {
 
   const handleDeleteMember = (groupId, memberIndex) => {
     const targetGroup = groups.find((group) => group.id === groupId);
-    const targetMember = targetGroup?.teamMembers?.[memberIndex];
-    if (!targetGroup || !targetMember) return;
+    if (!targetGroup) return;
+
+    const memberToRemove = targetGroup.teamMembers[memberIndex];
+    if (!memberToRemove) return;
 
     showConfirmPopup(
-      "Delete Member",
-      `Delete member "${targetMember.name}"?`,
+      "Remove Member",
+      `Remove ${memberToRemove.name} from ${targetGroup.name}?`,
       async () => {
-        const memberId = toText(
-          targetMember.userId ||
-            targetMember.id ||
-            targetMember.memberId ||
-            targetMember.interviewerId
-        );
-
         try {
-          if (memberId) {
-            await deleteInterviewGroupTeamMember(groupId, memberId);
-          }
-
-          setGroups((prev) =>
-            prev.map((group) => {
-              if (group.id !== groupId) return group;
-
-              const updatedTeamMembers = group.teamMembers.filter((_, index) => index !== memberIndex);
-
-              return {
-                ...group,
-                teamMembers: updatedTeamMembers,
-                members: updatedTeamMembers.length,
-              };
-            })
-          );
+          await deleteInterviewGroupTeamMember(groupId, memberToRemove);
         } catch (error) {
           console.error("Delete interview group member failed:", error);
-          showInfoPopup("Unable to delete member at this time.", "Error");
         }
+        setGroups((prev) =>
+          prev.map((group) => {
+            if (group.id !== groupId) return group;
+            const updatedTeamMembers = group.teamMembers.filter((_, idx) => idx !== memberIndex);
+            return {
+              ...group,
+              teamMembers: updatedTeamMembers,
+              members: updatedTeamMembers.length,
+            };
+          })
+        );
       },
-      "Delete"
+      "Remove"
+
     );
   };
 

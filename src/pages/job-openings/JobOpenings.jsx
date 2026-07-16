@@ -1974,7 +1974,9 @@ export default function JobOpenings({ createMode = false }) {
                     <FiChevronRight aria-hidden="true" />
                   </button>
                 </div>
+
               </div>
+
             </div>
           </div>
         )}
