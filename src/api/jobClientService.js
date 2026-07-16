@@ -454,25 +454,16 @@ export const toClientRequest = (row = {}) => {
 };
 
 export const createClient = (payload) =>
-  clientJobApi.post(CLIENTS_ENDPOINT, toClientRequest(payload), {
-    skipAuth: true,
-    skipAuthRedirect: true,
-  });
+  clientJobApi.post(CLIENTS_ENDPOINT, toClientRequest(payload));
 
 export const updateClient = (clientId, payload) => {
   const endpoint = CLIENT_ENDPOINT.replace('{clientId}', encodeURIComponent(clientId));
-  return clientJobApi.put(endpoint, toClientRequest(payload), {
-    skipAuth: true,
-    skipAuthRedirect: true,
-  });
+  return clientJobApi.put(endpoint, toClientRequest(payload));
 };
 
 export const deleteClient = (clientId) => {
   const endpoint = CLIENT_ENDPOINT.replace('{clientId}', encodeURIComponent(clientId));
-  return clientJobApi.delete(endpoint, {
-    skipAuth: true,
-    skipAuthRedirect: true,
-  });
+  return clientJobApi.delete(endpoint);
 };
 
 export const normalizeClientRecord = (row, index = 0) => {
