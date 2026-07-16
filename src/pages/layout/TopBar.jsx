@@ -115,11 +115,11 @@ export default function TopBar({ isSidebarOpen, setSidebarOpen }) {
   const currentUserRole = useMemo(() => {
     if (typeof window === "undefined") return "";
     return String(window.localStorage.getItem("userRole") || "").toLowerCase();
-  }, []);
+  }, [location.pathname]);
   const currentUserPersona = useMemo(() => {
     if (typeof window === "undefined") return "";
     return String(window.localStorage.getItem("userPersona") || "").toLowerCase();
-  }, []);
+  }, [location.pathname]);
   const profileDisplay = useMemo(() => {
     const storedName = String(window.localStorage.getItem("userName") || "").trim();
     const storedEmail = String(window.localStorage.getItem("userEmail") || "").trim();
