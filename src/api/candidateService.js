@@ -50,7 +50,6 @@ export const fetchCandidates = async ({
       const response = await candidateApi.get('/candidates', {
         params,
         timeout: 90000,
-        skipAuth: true,
         skipAuthRedirect: true,
       });
 
@@ -83,7 +82,6 @@ export const fetchCandidates = async ({
 export const fetchCandidateGenders = async () =>
   unwrapList(
     await candidateApi.get('/candidates/genders', {
-      skipAuth: true,
       skipAuthRedirect: true,
     })
   );
@@ -91,7 +89,6 @@ export const fetchCandidateGenders = async () =>
 export const fetchCandidateExperienceYears = async () =>
   unwrapList(
     await candidateApi.get('/candidates/experience-years', {
-      skipAuth: true,
       skipAuthRedirect: true,
     })
   );
@@ -99,7 +96,6 @@ export const fetchCandidateExperienceYears = async () =>
 export const fetchCandidateOffersInHand = async () =>
   unwrapList(
     await candidateApi.get('/candidates/offers-in-hand', {
-      skipAuth: true,
       skipAuthRedirect: true,
     })
   );
@@ -107,7 +103,6 @@ export const fetchCandidateOffersInHand = async () =>
 export const fetchPrimarySkills = async () =>
   unwrapList(
     await candidateApi.get('/skills/primary', {
-      skipAuth: true,
       skipAuthRedirect: true,
     })
   );
@@ -115,7 +110,6 @@ export const fetchPrimarySkills = async () =>
 export const fetchExperienceLevels = async () =>
   unwrapList(
     await candidateApi.get('/experience-levels', {
-      skipAuth: true,
       skipAuthRedirect: true,
     })
   );
@@ -123,7 +117,6 @@ export const fetchExperienceLevels = async () =>
 export const fetchSources = async () =>
   unwrapList(
     await candidateApi.get('/sources', {
-      skipAuth: true,
       skipAuthRedirect: true,
     })
   );
@@ -131,7 +124,6 @@ export const fetchSources = async () =>
 export const fetchEmploymentTypes = async () =>
   unwrapList(
     await candidateApi.get('/employment-types', {
-      skipAuth: true,
       skipAuthRedirect: true,
     })
   );
@@ -165,7 +157,6 @@ export const fetchCandidateDetail = async (candidateId) => {
 
 export const createCandidate = async (candidate) => {
   const response = await candidateApi.post(CANDIDATE_INFORMATION_ENDPOINT, candidate, {
-    skipAuth: true,
     skipAuthRedirect: true,
   });
   return response?.data?.data || null;

@@ -100,7 +100,6 @@ async function fetchViaArrowsBack(dashboardUuid = '') {
   const params = dashboardUuid ? { embedId: dashboardUuid } : undefined;
   const proxyResponse = await API.get(SUPERSET_TOKEN_PATH, {
     params,
-    skipAuth: true,
     skipAuthRedirect: true,
   });
   if (!proxyResponse?.data) {
