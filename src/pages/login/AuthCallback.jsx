@@ -63,6 +63,11 @@ const extractPersonaValue = (response = {}) => {
   return '';
 };  
 
+const getPostLoginRoute = () => {
+  // Dashboard chooses the correct embedded Superset dashboard from the stored role/persona.
+  return '/dashboard';
+};
+
 const storeCallbackSession = ({ token, email, name, userId, tokenType, role, persona }) => {
   window.localStorage.setItem('token', token);
   startAuthSession();
@@ -90,7 +95,6 @@ export default function AuthCallback() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if(!localStorage.getItem('token')) {
     const params = new URLSearchParams(window.location.search);
 
     const token = String(
@@ -112,20 +116,23 @@ export default function AuthCallback() {
       return;
     }
 
+    const role = params.get('role') || params.get('roles');
+    const persona = params.get('persona');
+
     storeCallbackSession({
       token,
       email: params.get('email'),
       name: params.get('name'),
       userId: params.get('userId') || params.get('user_id'),
       tokenType: params.get('tokenType') || params.get('token_type'),
-      role: params.get('role') || params.get('roles'),
-      persona: params.get('persona'),
+      role,
+      persona,
     });
 
-    window.history.replaceState({}, document.title, '/dashboard');
-    navigate('/dashboard', { replace: true });
-  }
-  }, []);
+    const postLoginRoute = getPostLoginRoute();
+    window.history.replaceState({}, document.title, postLoginRoute);
+    navigate(postLoginRoute, { replace: true });
+  }, [navigate]);
 
   return (
     <div style={{ padding: 40 }}>
