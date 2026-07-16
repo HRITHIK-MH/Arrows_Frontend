@@ -151,12 +151,7 @@ const normalizeText = (value, fallback = '-') => {
 };
 
 export const fetchJobs = async () =>
-  unwrapList(
-    await clientJobApi.get('/job-openings', {
-      skipAuth: true,
-      skipAuthRedirect: true,
-    })
-  );
+  unwrapList(await clientJobApi.get('/job-openings'));
 
 const isUuid = (value) =>
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
@@ -259,22 +254,13 @@ export const toJobRequest = (row = {}) => {
 };
 
 export const createJob = async (row) =>
-  assertJobCreatePersisted(await clientJobApi.post('/job-openings/job-information', toJobRequest(row), {
-    skipAuth: true,
-    skipAuthRedirect: true,
-  }));
+  assertJobCreatePersisted(await clientJobApi.post('/job-openings/job-information', toJobRequest(row)));
 
 export const updateJob = async (jobId, row) =>
-  assertJobUpdatePersisted(await clientJobApi.patch(`/job-openings/${encodeURIComponent(jobId)}/status`, toJobRequest(row), {
-    skipAuth: true,
-    skipAuthRedirect: true,
-  }));
+  assertJobUpdatePersisted(await clientJobApi.patch(`/job-openings/${encodeURIComponent(jobId)}/status`, toJobRequest(row)));
 
 export const deleteJob = async (jobId) =>
-  clientJobApi.delete(`/job-openings/${encodeURIComponent(jobId)}`, {
-    skipAuth: true,
-    skipAuthRedirect: true,
-  });
+  clientJobApi.delete(`/job-openings/${encodeURIComponent(jobId)}`);
 
 const CLIENTS_ENDPOINT = '/clients';
 const CLIENTS_CREATE_META_ENDPOINT = '/clients/create/meta';
@@ -286,43 +272,25 @@ const attachPagination = (items, pagination) => Object.assign(items, {
 });
 
 export const fetchClients = async ({ page = 1, limit = 10 } = {}) => {
-  const requestConfig = {
-    // Client list endpoint currently fails when local login token is attached.
-    // Skip auth header so dropdown options can still load.
-    skipAuth: true,
-    skipAuthRedirect: true,
-  };
-  const response = await clientJobApi.get(CLIENTS_ENDPOINT, {
-    ...requestConfig,
-    params: { page, limit },
-  });
+  const response = await clientJobApi.get(CLIENTS_ENDPOINT, { params: { page, limit } });
   const pageData = unwrapPage(response);
   return attachPagination(pageData.items, pageData.pagination);
 };
 
 export const fetchClientFiltersMeta = async () => {
-  const response = await clientJobApi.get(CLIENTS_META_FILTERS_ENDPOINT, {
-    skipAuth: true,
-    skipAuthRedirect: true,
-  });
+  const response = await clientJobApi.get(CLIENTS_META_FILTERS_ENDPOINT);
   return response?.data?.data || response?.data || null;
 };
 
 export const fetchClientCreateMeta = async () => {
-  const response = await clientJobApi.get(CLIENTS_CREATE_META_ENDPOINT, {
-    skipAuth: true,
-    skipAuthRedirect: true,
-  });
+  const response = await clientJobApi.get(CLIENTS_CREATE_META_ENDPOINT);
   return response?.data?.data || response?.data || null;
 };
 
 export const fetchClientById = async (clientId) => {
   if (!clientId) return null;
   const endpoint = CLIENT_ENDPOINT.replace('{clientId}', encodeURIComponent(clientId));
-  const response = await clientJobApi.get(endpoint, {
-    skipAuth: true,
-    skipAuthRedirect: true,
-  });
+  const response = await clientJobApi.get(endpoint);
   return response?.data?.data || response?.data || null;
 };
 
@@ -334,66 +302,30 @@ const toSlug = (value) =>
     .replace(/^-+|-+$/g, '');
 
 export const fetchSkills = async () =>
-  unwrapList(
-    await clientJobApi.get('/skills/technical', {
-      skipAuth: true,
-      skipAuthRedirect: true,
-    })
-  );
+  unwrapList(await clientJobApi.get('/skills/technical'));
 
 export const fetchSoftSkills = async () =>
-  unwrapList(
-    await clientJobApi.get('/skills/soft', {
-      skipAuth: true,
-      skipAuthRedirect: true,
-    })
-  );
+  unwrapList(await clientJobApi.get('/skills/soft'));
 
 export const fetchPositionLevels = async () =>
-  unwrapList(
-    await clientJobApi.get('/positions/levels', {
-      skipAuth: true,
-      skipAuthRedirect: true,
-    })
-  );
+  unwrapList(await clientJobApi.get('/positions/levels'));
 
 export const fetchWorkTypes = async () =>
-  unwrapList(
-    await clientJobApi.get('/work-types', {
-      skipAuth: true,
-      skipAuthRedirect: true,
-    })
-  );
+  unwrapList(await clientJobApi.get('/work-types'));
 
 export const fetchEmploymentTypes = async () =>
-  unwrapList(
-    await clientJobApi.get('/employment-types', {
-      skipAuth: true,
-      skipAuthRedirect: true,
-    })
-  );
+  unwrapList(await clientJobApi.get('/employment-types'));
 
 export const fetchLocations = async () =>
-  unwrapList(
-    await clientJobApi.get('/locations', {
-      skipAuth: true,
-      skipAuthRedirect: true,
-    })
-  );
+  unwrapList(await clientJobApi.get('/locations'));
 
 export const fetchJobInformationMeta = async () => {
-  const response = await clientJobApi.get('/job-openings/job-information/meta', {
-    skipAuth: true,
-    skipAuthRedirect: true,
-  });
+  const response = await clientJobApi.get('/job-openings/job-information/meta');
   return response?.data ?? null;
 };
 
 export const fetchClientRequirementMeta = async () => {
-  const response = await clientJobApi.get('/job-openings/client-requirement/meta', {
-    skipAuth: true,
-    skipAuthRedirect: true,
-  });
+  const response = await clientJobApi.get('/job-openings/client-requirement/meta');
   return response?.data ?? null;
 };
 

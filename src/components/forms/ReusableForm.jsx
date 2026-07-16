@@ -1602,6 +1602,7 @@ const FormStep = ({
 const ReusableForm = ({ config, onSubmit, initialData, readOnly = false, isSubmitting = false }) => {
   const [validationErrors, setValidationErrors] = useState({});
   const [showDraftRestoredMessage, setShowDraftRestoredMessage] = useState(false);
+  const [submitError, setSubmitError] = useState('');
 
   const draftStorageKey = useMemo(() => getDraftStorageKey(config), [config]);
 
@@ -1635,6 +1636,13 @@ const ReusableForm = ({ config, onSubmit, initialData, readOnly = false, isSubmi
 
     return () => window.clearTimeout(timer);
   }, [draftLoadResult.restoredFromDraft]);
+
+  React.useEffect(() => {
+    if (!submitError) return undefined;
+
+    const timer = window.setTimeout(() => setSubmitError(''), 5000);
+    return () => window.clearTimeout(timer);
+  }, [submitError]);
 
   const clearSavedDraft = useCallback(() => {
     if (typeof window === 'undefined') return;
@@ -1850,6 +1858,7 @@ const ReusableForm = ({ config, onSubmit, initialData, readOnly = false, isSubmi
   const handleSubmit = async (formData) => {
     const itemLabel = String(config.itemName || 'Form').toLowerCase();
     let didRunSubmitCallback = false;
+    setSubmitError('');
 
     try {
       // Validate all mandatory fields before submission
@@ -1902,7 +1911,7 @@ const ReusableForm = ({ config, onSubmit, initialData, readOnly = false, isSubmi
         await onSubmit?.(formData);
         clearSavedDraft();
       } else {
-        alert(getSubmitErrorMessage(error, itemLabel));
+        setSubmitError(getSubmitErrorMessage(error, itemLabel));
         return;
       }
     }
@@ -1983,6 +1992,11 @@ const ReusableForm = ({ config, onSubmit, initialData, readOnly = false, isSubmi
       {showDraftRestoredMessage && (
         <div className="draft-restored-alert">
           Draft restored successfully.
+        </div>
+      )}
+      {submitError && (
+        <div className="submit-error-alert" role="alert">
+          {submitError}
         </div>
       )}
       <MultiStepForm
