@@ -623,9 +623,23 @@ export default function JobOpenings({ createMode = false }) {
 
     const syncWithBackend = async () => {
       try {
+        // Keep the client selector available even if an unrelated job metadata
+        // endpoint is unavailable. The dropdown needs the complete client list.
+        const clients = await fetchClients({ page: 1, limit: 100 });
+
+        if (!isMounted) return;
+
+        if (Array.isArray(clients) && clients.length > 0) {
+          const clientRows = clients.map((client) => ({
+            ...client,
+            clientId: getClientDbId(client) || client?.clientId || client?.id || "",
+            clientName: client?.clientName || client?.name || "",
+          }));
+          setClientOptions(getClientOptions(clientRows));
+        }
+
         const [
           jobs,
-          clients,
           skills,
           softSkills,
           positionLevels,
@@ -636,7 +650,6 @@ export default function JobOpenings({ createMode = false }) {
           clientRequirementMeta,
         ] = await Promise.all([
           fetchJobs(),
-          fetchClients(),
           fetchSkills(),
           fetchSoftSkills(),
           fetchPositionLevels(),
@@ -654,15 +667,6 @@ export default function JobOpenings({ createMode = false }) {
           : [];
         setSubmittedData(normalizedJobs);
         saveJobOpeningTableData();
-
-        if (Array.isArray(clients) && clients.length > 0) {
-          const clientRows = clients.map((client) => ({
-            ...client,
-            clientId: getClientDbId(client) || client?.clientId || client?.id || "",
-            clientName: client?.clientName || client?.name || "",
-          }));
-          setClientOptions(getClientOptions(clientRows));
-        }
 
         if (Array.isArray(skills) && skills.length > 0) {
           const mappedSkills = skills
