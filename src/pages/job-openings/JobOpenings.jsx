@@ -1322,7 +1322,8 @@ export default function JobOpenings({ createMode = false }) {
       const existingJobId = String(
         submittedData?.[editingIndex]?.jobId || normalized.jobId || ""
       ).trim();
-      const hasValidClientId = isUuid(normalized.clientId);
+      // The backend accepts both a database UUID and a client code (for example, C1292938).
+      const hasValidClientId = Boolean(String(normalized.clientId || "").trim());
       const hasValidTitle = Boolean(String(normalized.postingTitle || "").trim());
 
       if (!hasValidTitle) {
@@ -1330,7 +1331,7 @@ export default function JobOpenings({ createMode = false }) {
       }
 
       if (!hasValidClientId) {
-        throw new Error("Please select a valid client from the DB before creating the JD.");
+        throw new Error("Please select a client before creating the JD.");
       }
 
       if (isEditMode && isUuid(existingJobId) && hasValidClientId && hasValidTitle) {

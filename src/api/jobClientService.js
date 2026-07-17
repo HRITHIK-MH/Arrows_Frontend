@@ -223,7 +223,8 @@ export const toJobRequest = (row = {}) => {
   const clientId = String(row.clientId || '').trim();
 
   return {
-    clientId: isUuid(clientId) ? clientId : null,
+    // The API resolves either the database UUID or the client code selected in the UI.
+    clientId: clientId || null,
     openingJobId: String(row.openingJobId || row.jobPositionId || '').trim() || null,
     externalJobRef: String(row.openingJobId || row.jobPositionId || '').trim() || null,
     jobTitle: String(row.postingTitle || row.positionName || row.jobTitle || '').trim(),
