@@ -951,11 +951,11 @@ export default function Clients() {
               </div>
               <div className={styles.drawerItem}>
                 <span className={styles.drawerLabel}>Secondary Contact</span>
-                <span className={styles.drawerValue}>{selectedClient.secondaryContactPerson || "-"}</span>
+                <span className={styles.drawerValue}>{selectedClient.clientType || selectedClient.secondaryContactPerson || "-"}</span>
               </div>
               <div className={styles.drawerItem}>
                 <span className={styles.drawerLabel}>Assigned Person</span>
-                <span className={styles.drawerValue}>{selectedClient.accountManager || "-"}</span>
+                <span className={styles.drawerValue}>{selectedClient.industry || selectedClient.accountManager || "-"}</span>
               </div>
               <div className={styles.drawerItem}>
                 <span className={styles.drawerLabel}>Status</span>
@@ -969,7 +969,7 @@ export default function Clients() {
               <span className={styles.drawerLabel}>
                 <FiUser size={12} /> Comments / Remarks
               </span>
-              <p>{selectedClient.comments || "No remarks available."}</p>
+              <p>{selectedClient.address || selectedClient.comments || "No remarks available."}</p>
             </div>
           </aside>
         </div>
