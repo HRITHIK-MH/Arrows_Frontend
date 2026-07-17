@@ -347,8 +347,8 @@ export const toSkillOption = (row) => {
 export const toClientRequest = (row = {}) => {
   const clientId = String(row.clientId || row.displayClientId || '').trim() || null;
   const clientName = String(row.clientName || row.name || '').trim();
-  const clientType = String(row.clientType || '').trim() || null;
-  const industry = String(row.industryCode || row.industry || '').trim() || null;
+  const clientType = String(row.secondaryContactPerson || '').trim() || null;
+  const industry = String(row.accountManager  || '').trim() || null;
   const status = String(row.clientStatus || row.status || 'Active').trim();
   const contactPersonName = String(
     row.primaryContactPerson ||
@@ -368,8 +368,8 @@ export const toClientRequest = (row = {}) => {
     row.phone ||
     ''
   ).trim() || null;
-  const city = String(row.clientLocation || row.city || '').trim() || null;
-  const address = String(row.address || '').trim() || null;
+  const city = String(row.activeFrom ||  '').trim() || null;
+  const address = String(row.comments || '').trim() || null;
 
   return {
     clientId,
