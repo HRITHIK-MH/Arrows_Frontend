@@ -301,7 +301,8 @@ export const toJobRequest = (row = {}) => {
   };
   const jobType = normalizeEmploymentType(row.jobType || row.employmentType);
   const positionLevel = normalizePositionLevel(row.positionLevel);
-  const jdDescription = String(row.jdDescription || row.jobDescription || '').trim();
+  // Prefer `jobDescription` as the authoritative JD text, fall back to `jdDescription`.
+  const jdDescription = String(row.jobDescription || row.jdDescription || '').trim();
   const jdAttachmentMode = String(row.jdAttachmentMode || row.jdAttachment || '').trim().toLowerCase();
   const hasJdTemplate =
     jdAttachmentMode === 'yes' ? true :
@@ -309,7 +310,7 @@ export const toJobRequest = (row = {}) => {
     row.hasJdTemplate !== undefined ? Boolean(row.hasJdTemplate) :
     row.haveJdTemplate !== undefined ? Boolean(row.haveJdTemplate) :
     undefined;
-  const shouldGenerateJd = Boolean(jdDescription) || Boolean(row.generateJd);
+  // `jdAttachmentMode` is mapped to `generateJd` when building the payload below.
 
   const payload = {
     clientId: clientId || null,
@@ -336,7 +337,10 @@ export const toJobRequest = (row = {}) => {
     payload.additionalSkill = normalizeSkillArray(additionalSkillValues);
   }
   if (jdDescription) payload.jdDescription = jdDescription;
-  if (shouldGenerateJd) payload.generateJd = true;
+  // Explicitly honor attachment mode mapping first, otherwise use provided flags/text.
+  if (jdAttachmentMode === 'yes') payload.generateJd = true;
+  else if (jdAttachmentMode === 'no') payload.generateJd = false;
+  else if (jdDescription || row.generateJd !== undefined) payload.generateJd = Boolean(jdDescription || row.generateJd);
   if (hasJdTemplate !== undefined) payload.hasJdTemplate = hasJdTemplate;
 
   return payload;
