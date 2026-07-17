@@ -309,6 +309,7 @@ export const toJobRequest = (row = {}) => {
     row.hasJdTemplate !== undefined ? Boolean(row.hasJdTemplate) :
     row.haveJdTemplate !== undefined ? Boolean(row.haveJdTemplate) :
     undefined;
+  const shouldGenerateJd = Boolean(jdDescription) || Boolean(row.generateJd);
 
   const payload = {
     clientId: clientId || null,
@@ -335,7 +336,7 @@ export const toJobRequest = (row = {}) => {
     payload.additionalSkill = normalizeSkillArray(additionalSkillValues);
   }
   if (jdDescription) payload.jdDescription = jdDescription;
-  if (row.generateJd !== undefined) payload.generateJd = Boolean(row.generateJd);
+  if (shouldGenerateJd) payload.generateJd = true;
   if (hasJdTemplate !== undefined) payload.hasJdTemplate = hasJdTemplate;
 
   return payload;
