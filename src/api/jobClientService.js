@@ -302,7 +302,9 @@ export const toJobRequest = (row = {}) => {
   const jobType = normalizeEmploymentType(row.jobType || row.employmentType);
   const positionLevel = normalizePositionLevel(row.positionLevel);
   // Prefer `jobDescription` as the authoritative JD text, fall back to `jdDescription`.
-  const jdDescription = String(row.jobDescription || row.jdDescription || '').trim();
+  const rawJd = String(row.jobDescription || row.jdDescription || '').trim();
+  // Collapse multiple whitespace/newlines into single spaces and truncate to 5000 chars.
+  const jdDescription = rawJd ? rawJd.replace(/\s+/g, ' ').trim().slice(0, 5000) : '';
   const jdAttachmentMode = String(row.jdAttachmentMode || row.jdAttachment || '').trim().toLowerCase();
   const hasJdTemplate =
     jdAttachmentMode === 'yes' ? true :
