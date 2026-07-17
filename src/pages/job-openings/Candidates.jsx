@@ -23,6 +23,7 @@ import { candidateConfig } from "../../components/forms/formConfigs";
 import {
   createCandidate,
   deleteCandidate,
+  fetchCandidateDetail,
   fetchCandidates,
   fetchCandidateFiltersMeta,
   fetchCandidateGenders,
@@ -1324,30 +1325,50 @@ export default function Candidates() {
     [activePipelineStep]
   );
 
-  const handleViewCandidate = React.useCallback((row) => {
-    console.log('View candidate:', row);
-    const profile = buildCandidateProfile(row);
-    setSelectedCandidate(profile);
-    setActiveProfileTab("Basic Info");
-    setActiveSkillType("primary");
-    setIsAddingSkill(false);
-    setSkillDraft(createSkillDraft());
-    setMapJobValue("");
-    setMapQuery("");
-    setIsMapDropdownOpen(false);
-    setIsViewDrawerOpen(true);
+  const handleViewCandidate = React.useCallback(async (row) => {
+    try {
+      setLoading(true);
+      const candidateDetail = await fetchCandidateDetail(row.candidateId);
+      const candidate = {
+        ...row,
+        ...candidateDetail,
+        primaryEmail: candidateDetail?.candidateEmail || row.primaryEmail || row.candidateEmail || "",
+      };
+      const profile = buildCandidateProfile(candidate);
+      setSelectedCandidate(profile);
+      setActiveProfileTab("Basic Info");
+      setActiveSkillType("primary");
+      setIsAddingSkill(false);
+      setSkillDraft(createSkillDraft());
+      setMapJobValue("");
+      setMapQuery("");
+      setIsMapDropdownOpen(false);
+      setIsViewDrawerOpen(true);
+    } catch (error) {
+      console.error("Failed to load candidate details:", error);
+      alert("Unable to load candidate details right now. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   }, [buildCandidateProfile]);
 
-  const handleEditCandidate = React.useCallback((row, index) => {
-    console.log('Edit candidate:', row);
-    const [firstName = "", lastName = ""] = String(row.candidateName || "").split(" ");
-    setEditingIndex(index);
-    setEditingData({
-      candidateId: row.candidateId || "",
-      namePrefix: row.namePrefix || "none",
-      firstName: row.firstName || firstName,
-      lastName: row.lastName || lastName,
-      primaryEmail: row.primaryEmail || row.candidateEmail || "",
+  const handleEditCandidate = React.useCallback(async (row, index) => {
+    try {
+      setLoading(true);
+      const candidateDetail = await fetchCandidateDetail(row.candidateId);
+      const candidate = {
+        ...row,
+        ...candidateDetail,
+        primaryEmail: candidateDetail?.candidateEmail || row.primaryEmail || row.candidateEmail || "",
+      };
+      const [firstName = "", lastName = ""] = String(candidate.candidateName || "").split(" ");
+      setEditingIndex(index);
+      setEditingData({
+      candidateId: candidate.candidateId || "",
+      namePrefix: candidate.namePrefix || "none",
+      firstName: candidate.firstName || firstName,
+      lastName: candidate.lastName || lastName,
+      primaryEmail: candidate.primaryEmail || candidate.candidateEmail || "",
       secondaryEmail: row.secondaryEmail || "",
       phoneNumber: row.phoneNumber || row.primaryPhone || "",
       gender: row.gender || "",
@@ -1371,14 +1392,20 @@ export default function Candidates() {
       skills: Array.isArray(row.skills) ? row.skills : [],
       sourceId: row.sourceId || "",
       recruiterId: row.recruiterId || "",
-      sourceName: row.sourceName || row.source || "",
-      sourcedDate: row.sourcedDate || "",
-    });
-    setShowCandidateForm(true);
-    setShowDataTable(false);
-    setIsAddCandidateMenuOpen(false);
-    setActiveDraftId(null);
-    setCandidateFormKey((prev) => prev + 1);
+      sourceName: candidate.sourceName || candidate.source || "",
+      sourcedDate: candidate.sourcedDate || "",
+      });
+      setShowCandidateForm(true);
+      setShowDataTable(false);
+      setIsAddCandidateMenuOpen(false);
+      setActiveDraftId(null);
+      setCandidateFormKey((prev) => prev + 1);
+    } catch (error) {
+      console.error("Failed to load candidate details for editing:", error);
+      alert("Unable to load candidate details right now. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   const handleDeleteCandidate = React.useCallback(async (row, index) => {
@@ -1468,8 +1495,15 @@ export default function Candidates() {
 
     try {
       if (editingIndex !== null && editingData?.candidateId) {
-        // For updates, the controller expects CandidateUpdateRequest at PUT /api/candidates/{id}
-        await updateCandidate(editingData.candidateId, candidatePayload);
+        // PUT /api/candidates/{candidateId} accepts CandidateUpdateRequest.
+        await updateCandidate(editingData.candidateId, {
+          candidateName: `${data.firstName || ""} ${data.lastName || ""}`.trim(),
+          candidateEmail: data.primaryEmail || data.candidateEmail || "",
+          source: data.sourceName || data.source || "",
+          rating: data.rating || editingData.rating || null,
+          stage: data.stage || editingData.stage || "",
+          status: data.status || editingData.status || "",
+        });
         setSortConfig({ key: 'candidateId', direction: 'asc' });
         showTransientMessage('Candidate updated successfully');
       } else {
