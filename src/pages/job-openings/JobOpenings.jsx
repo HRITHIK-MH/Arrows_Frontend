@@ -1320,6 +1320,7 @@ export default function JobOpenings({ createMode = false }) {
       clientName: resolvedClient.clientName,
       jobPositionId,
       openingJobId: safeData.openingJobId || jobPositionId,
+      positionName: safeData.positionName || safeData.postingTitle || "",
       postingTitle: safeData.postingTitle || safeData.positionName || "",
       jdAttachment: effectiveJdAttachment,
       extraTechnicalSkills: safeData.extraTechnicalSkills ?? safeData.addTechnicalSkills ?? [],

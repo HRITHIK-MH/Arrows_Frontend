@@ -190,13 +190,6 @@ const getClientDisplayId = (row = {}) =>
     row?.clientId,
   );
 
-const toIsoInstant = (value) => {
-  if (!value) return null;
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return null;
-  return parsed.toISOString();
-};
-
 const toIsoLocalDate = (value) => {
   if (!value) return null;
   const parsed = new Date(value);
@@ -219,39 +212,61 @@ const toNumberOrNull = (value) => {
   return Number.isFinite(parsed) ? parsed : null;
 };
 
+const normalizeEmploymentType = (value) => {
+  const normalized = String(value ?? '').trim().toLowerCase();
+  if (['full-time', 'full time', 'fulltime', 'full_time'].includes(normalized)) return 'Full Time';
+  if (['part-time', 'part time', 'parttime', 'part_time'].includes(normalized)) return 'Part Time';
+  if (['contract'].includes(normalized)) return 'Contract';
+  return normalized ? normalized.charAt(0).toUpperCase() + normalized.slice(1) : null;
+};
+
 export const toJobRequest = (row = {}) => {
   const clientId = String(row.clientId || '').trim();
-
-  return {
-    // The API resolves either the database UUID or the client code selected in the UI.
-    clientId: clientId || null,
-    openingJobId: String(row.openingJobId || row.jobPositionId || '').trim() || null,
-    externalJobRef: String(row.openingJobId || row.jobPositionId || '').trim() || null,
-    jobTitle: String(row.postingTitle || row.positionName || row.jobTitle || '').trim(),
-    jobDescription: String(row.jobDescription || row.additionalSkills || '').trim() || null,
-    employmentType: String(row.jobType || row.employmentType || '').trim() || null,
-    positionLevel: String(row.positionLevel || '').trim() || null,
-    noOfPositions: toIntOrNull(row.noOfPositions),
-    workMode: String(row.workType || row.hiringType || row.workMode || '').trim() || null,
-    experienceMin: toIntOrNull(row.minExperience),
-    experienceMax: toIntOrNull(row.maxExperience),
-    ctcMin: toNumberOrNull(row.minSalary),
-    ctcMax: toNumberOrNull(row.maxSalary),
-    currencyCode: 'INR',
-    ctcUnit: 'LPA',
-    jobStatus: String(row.jobOpeningStatus || row.jobStatus || 'Active').trim(),
-    priority: String(row.priority || 'Medium').trim(),
-    createdByUserId: null,
-    jobReceivedDate: toIsoInstant(row.jobReceivedDate),
-    validityUpto: toIsoLocalDate(row.validityUpto),
-    targetDate: toIsoLocalDate(row.targetDate),
-    locationCity: String(row.city || row.location || '').trim() || null,
-    locationState: null,
-    locationCountry: null,
-    headcountFilled: toIntOrNull(row.headcountFilled),
-    jobFunction: String(row.jobFunction || '').trim() || null,
-    seniorityLevel: String(row.seniorityLevel || '').trim() || null,
+  const jobPositionId = String(row.jobPositionId || row.openingJobId || '').trim();
+  const positionName = String(row.positionName || row.postingTitle || row.jobTitle || '').trim();
+  const locationValues = Array.isArray(row.location)
+    ? row.location.map((value) => String(value || '').trim()).filter(Boolean)
+    : String(row.location || row.city || '').split(',').map((value) => String(value || '').trim()).filter(Boolean);
+  const primaryLocation = locationValues[0] || null;
+  const experience = {
+    min: toIntOrNull(row.minExperience),
+    max: toIntOrNull(row.maxExperience),
   };
+  const salaryInCTC = {
+    min: toNumberOrNull(row.minSalary),
+    max: toNumberOrNull(row.maxSalary),
+  };
+  const jobType = normalizeEmploymentType(row.jobType || row.employmentType);
+  const jdDescription = String(row.jdDescription || row.jobDescription || '').trim();
+  const haveJdTemplate = String(row.haveJdTemplate || row.hasJdTemplate || '').trim();
+
+  const payload = {
+    clientId: clientId || null,
+  };
+
+  if (jobPositionId) payload.jobPositionId = jobPositionId;
+  if (positionName) payload.positionName = positionName;
+  if (experience.min !== null || experience.max !== null) payload.experience = experience;
+  if (primaryLocation) payload.location = primaryLocation;
+  if (locationValues.length) payload.locations = locationValues;
+  if (toIntOrNull(row.noOfPositions) !== null) payload.noOfPositions = toIntOrNull(row.noOfPositions);
+  if (toIsoLocalDate(row.jobReceivedDate || row.jobReceived || row.jobDate)) payload.jobReceivedDate = toIsoLocalDate(row.jobReceivedDate || row.jobReceived || row.jobDate);
+  if (salaryInCTC.min !== null || salaryInCTC.max !== null) payload.salaryInCTC = salaryInCTC;
+  if (jobType) payload.jobType = jobType;
+  if (Array.isArray(row.softSkills)) payload.softSkills = row.softSkills;
+  if (Array.isArray(row.technicalSkills)) payload.technicalSkills = row.technicalSkills;
+  if (Array.isArray(row.addTechnicalSkills)) payload.addTechnicalSkills = row.addTechnicalSkills;
+  if (Array.isArray(row.additionalSkills)) payload.additionalSkills = row.additionalSkills;
+  if (row.additionalSkill) {
+    payload.additionalSkill = Array.isArray(row.additionalSkill)
+      ? row.additionalSkill.filter(Boolean)
+      : [String(row.additionalSkill).trim()].filter(Boolean);
+  }
+  if (jdDescription) payload.jdDescription = jdDescription;
+  if (row.generateJd !== undefined) payload.generateJd = Boolean(row.generateJd);
+  if (haveJdTemplate) payload.haveJdTemplate = haveJdTemplate;
+
+  return payload;
 };
 
 export const createJob = async (row) =>
