@@ -5,6 +5,11 @@ server {
     root /usr/share/nginx/html;
     index index.html;
 
+    # DNS resolver — required when proxy_pass target is a public/external hostname.
+    # Uses Azure DNS (168.63.129.16) with Google (8.8.8.8) as fallback.
+    # valid=30s re-resolves the backend hostname every 30 seconds.
+    resolver 168.63.129.16 8.8.8.8 valid=30s ipv6=off;
+
     # --- Compression: shrinks JS/CSS transfer ~3x on the wire ---
     gzip on;
     gzip_vary on;
@@ -26,10 +31,17 @@ server {
     location /api/ {
         proxy_pass ${BACKEND_UPSTREAM}/api/;
         proxy_http_version 1.1;
-        proxy_set_header Host $http_host;
+        # Send the backend's own hostname as Host — not the frontend host ($http_host).
+        # Sending the frontend host causes the backend to reject the request with 400.
+        proxy_set_header Host $proxy_host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_ssl_server_name on;
+        proxy_ssl_verify      off;
+        proxy_connect_timeout 10s;
+        proxy_read_timeout    60s;
+        proxy_send_timeout    60s;
     }
 
     location /internal/superset/guest-token {
