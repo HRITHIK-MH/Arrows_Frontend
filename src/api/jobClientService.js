@@ -151,7 +151,7 @@ const normalizeText = (value, fallback = '-') => {
 };
 
 export const fetchJobs = async () =>
-  unwrapList(await clientJobApi.get('/job-openings'));
+  unwrapList(await clientJobApi.get('/jobs'));
 
 const isUuid = (value) =>
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
@@ -254,13 +254,13 @@ export const toJobRequest = (row = {}) => {
 };
 
 export const createJob = async (row) =>
-  assertJobCreatePersisted(await clientJobApi.post('/job-openings/job-information', toJobRequest(row)));
+  assertJobCreatePersisted(await clientJobApi.post('/jobs/job-information', toJobRequest(row)));
 
 export const updateJob = async (jobId, row) =>
-  assertJobUpdatePersisted(await clientJobApi.patch(`/job-openings/${encodeURIComponent(jobId)}/status`, toJobRequest(row)));
+  assertJobUpdatePersisted(await clientJobApi.patch(`/jobs/${encodeURIComponent(jobId)}/status`, toJobRequest(row)));
 
 export const deleteJob = async (jobId) =>
-  clientJobApi.delete(`/job-openings/${encodeURIComponent(jobId)}`);
+  clientJobApi.delete(`/jobs/${encodeURIComponent(jobId)}`);
 
 const CLIENTS_ENDPOINT = '/clients';
 const CLIENTS_CREATE_META_ENDPOINT = '/clients/create/meta';
@@ -320,12 +320,12 @@ export const fetchLocations = async () =>
   unwrapList(await clientJobApi.get('/locations'));
 
 export const fetchJobInformationMeta = async () => {
-  const response = await clientJobApi.get('/job-openings/job-information/meta');
+  const response = await clientJobApi.get('/jobs/job-information/meta');
   return response?.data ?? null;
 };
 
 export const fetchClientRequirementMeta = async () => {
-  const response = await clientJobApi.get('/job-openings/client-requirement/meta');
+  const response = await clientJobApi.get('/jobs/client-requirement/meta');
   return response?.data ?? null;
 };
 

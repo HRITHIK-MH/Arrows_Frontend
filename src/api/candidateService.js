@@ -50,6 +50,7 @@ export const fetchCandidates = async ({
       const response = await candidateApi.get('/candidates', {
         params,
         timeout: 90000,
+        skipAuthRedirect: true,
       });
 
       const payload = response?.data;
@@ -81,78 +82,89 @@ export const fetchCandidates = async ({
 export const fetchCandidateGenders = async () =>
   unwrapList(
     await candidateApi.get('/candidates/genders', {
+      skipAuthRedirect: true,
     })
   );
 
 export const fetchCandidateExperienceYears = async () =>
   unwrapList(
     await candidateApi.get('/candidates/experience-years', {
+      skipAuthRedirect: true,
     })
   );
 
 export const fetchCandidateOffersInHand = async () =>
   unwrapList(
     await candidateApi.get('/candidates/offers-in-hand', {
+      skipAuthRedirect: true,
     })
   );
 
 export const fetchPrimarySkills = async () =>
   unwrapList(
     await candidateApi.get('/skills/primary', {
+      skipAuthRedirect: true,
     })
   );
 
 export const fetchExperienceLevels = async () =>
   unwrapList(
     await candidateApi.get('/experience-levels', {
+      skipAuthRedirect: true,
     })
   );
 
 export const fetchSources = async () =>
   unwrapList(
     await candidateApi.get('/sources', {
+      skipAuthRedirect: true,
     })
   );
 
 export const fetchEmploymentTypes = async () =>
   unwrapList(
     await candidateApi.get('/employment-types', {
+      skipAuthRedirect: true,
     })
   );
 
 export const fetchCandidateFiltersMeta = async () => {
+  // Retry once on transient timeouts/network blips. Increase per-request timeout.
   const maxAttempts = 2;
   let attempt = 0;
   while (attempt < maxAttempts) {
     try {
       const response = await candidateApi.get(CANDIDATE_INFORMATION_META_ENDPOINT, {
-        timeout: 60000, // longer timeout for meta fetch
+        skipAuthRedirect: true,
       });
       return response?.data?.data || response?.data || null;
     } catch (err) {
       attempt += 1;
       if (attempt >= maxAttempts) throw err;
+      // small backoff before retrying
       await new Promise((res) => setTimeout(res, 500));
     }
   }
   return null;
 };
 
-
 export const fetchCandidateDetail = async (candidateId) => {
   const response = await candidateApi.get(`/candidates/${encodeURIComponent(candidateId)}`, {
+    skipAuthRedirect: true,
   });
   return response?.data?.data || null;
 };
 
 export const createCandidate = async (candidate) => {
   const response = await candidateApi.post(CANDIDATE_INFORMATION_ENDPOINT, candidate, {
+    skipAuthRedirect: true,
   });
   return response?.data?.data || null;
 };
 
 export const updateCandidate = async (candidateId, candidate) => {
   const response = await candidateApi.put(`/candidates/${encodeURIComponent(candidateId)}`, candidate, {
+    skipAuthRedirect: true,
   });
   return response?.data?.data || null;
 };
@@ -160,6 +172,7 @@ export const updateCandidate = async (candidateId, candidate) => {
 export const deleteCandidate = async (candidateId, options = { softDelete: true }) => {
   const response = await candidateApi.delete(`/candidates/${encodeURIComponent(candidateId)}`, {
     data: options,
+    skipAuthRedirect: true,
   });
   return response?.data?.data || null;
 };
