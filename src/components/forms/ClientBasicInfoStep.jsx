@@ -68,7 +68,6 @@ const ClientBasicInfoStep = ({
         {renderField("primaryContactPerson")}
         {renderField("secondaryContactPerson")}
         {renderField("accountManager")}
-        {renderField("activeFrom")}
         <div className="client-spacer" aria-hidden="true" />
         {renderField("comments")}
       </div>

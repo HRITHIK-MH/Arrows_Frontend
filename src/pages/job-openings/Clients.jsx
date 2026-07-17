@@ -88,15 +88,11 @@ export default function Clients() {
   const [isAddClientMenuOpen, setIsAddClientMenuOpen] = React.useState(false);
   const [clientFormKey, setClientFormKey] = React.useState(0);
   const [searchTerm, setSearchTerm] = React.useState("");
-  const [filterActiveFromStart, setFilterActiveFromStart] = React.useState("");
-  const [filterActiveFromEnd, setFilterActiveFromEnd] = React.useState("");
   const [filterAssignedPerson, setFilterAssignedPerson] = React.useState("");
   const [filterStatus, setFilterStatus] = React.useState("");
-  const [isDateRangeOpen, setIsDateRangeOpen] = React.useState(false);
   const deferredSearchTerm = React.useDeferredValue(searchTerm);
   const saveInFlightRef = React.useRef(false);
   const addClientMenuRef = React.useRef(null);
-  const dateRangeRef = React.useRef(null);
 
   React.useEffect(() => {
     window.dispatchEvent(new CustomEvent("topbar-page-label-change", {
@@ -154,7 +150,6 @@ export default function Clients() {
       primaryContactPerson: data.primaryContactPerson || "",
       secondaryContactPerson: data.secondaryContactPerson || "",
       accountManager: data.accountManager || "",
-      activeFrom: data.activeFrom || "",
       comments: data.comments || "",
       clientStatus: data.clientStatus || "Active",
       clientLocation: data.clientLocation || "-",
@@ -170,7 +165,6 @@ export default function Clients() {
     primaryContactPerson: row.primaryContactPerson || "",
     secondaryContactPerson: row.secondaryContactPerson || "",
     accountManager: row.accountManager || "",
-    activeFrom: row.activeFrom || "",
     comments: row.comments || "",
   }), []);
 
@@ -296,17 +290,6 @@ export default function Clients() {
     return () => document.removeEventListener("keydown", onEsc);
   }, [isViewDrawerOpen]);
 
-  React.useEffect(() => {
-    if (!isDateRangeOpen) return undefined;
-    const handleOutsideClick = (event) => {
-      if (dateRangeRef.current && !dateRangeRef.current.contains(event.target)) {
-        setIsDateRangeOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleOutsideClick);
-    return () => document.removeEventListener("mousedown", handleOutsideClick);
-  }, [isDateRangeOpen]);
-
   const getStatusClass = React.useCallback((status) => {
     const normalized = String(status || "").toLowerCase();
     if (normalized === "active") return styles.statusActive;
@@ -326,11 +309,6 @@ export default function Clients() {
       },
       { key: "contactEmail", label: "Contact Email Address" },
       { key: "primaryContactPerson", label: "Contact Person" },
-      {
-        key: "activeFrom",
-        label: "Active From",
-        render: (value) => formatDate(value),
-      },
       { key: "accountManager", label: "Assigned Person" },
       {
         key: "clientStatus",
@@ -340,7 +318,7 @@ export default function Clients() {
         ),
       },
     ],
-    [formatDate, formatPhoneNumber, getStatusClass]
+    [formatPhoneNumber, getStatusClass]
   );
 
   const uniqueAssignedPeople = React.useMemo(() => {
@@ -359,15 +337,12 @@ export default function Clients() {
           String(val || "").toLowerCase().includes(deferredSearchTerm.toLowerCase())
         );
 
-      const matchesActiveFrom =
-        (!filterActiveFromStart || item.activeFrom >= filterActiveFromStart) &&
-        (!filterActiveFromEnd || item.activeFrom <= filterActiveFromEnd);
       const matchesAssignedPerson = !filterAssignedPerson || item.accountManager === filterAssignedPerson;
       const matchesStatus = !filterStatus || item.clientStatus === filterStatus;
 
-      return matchesSearch && matchesActiveFrom && matchesAssignedPerson && matchesStatus;
+      return matchesSearch && matchesAssignedPerson && matchesStatus;
     });
-  }, [submittedData, deferredSearchTerm, filterActiveFromStart, filterActiveFromEnd, filterAssignedPerson, filterStatus]);
+  }, [submittedData, deferredSearchTerm, filterAssignedPerson, filterStatus]);
 
   const totalRecords = clientsPagination.totalRecords;
   const totalPages = Math.max(1, clientsPagination.totalPages);
@@ -416,8 +391,6 @@ export default function Clients() {
 
   const clearFilters = React.useCallback(() => {
     setSearchTerm("");
-    setFilterActiveFromStart("");
-    setFilterActiveFromEnd("");
     setFilterAssignedPerson("");
     setFilterStatus("");
     setCurrentPage(1);
@@ -827,46 +800,6 @@ export default function Clients() {
                   />
                 </div>
 
-                <div ref={dateRangeRef} className={styles.dateRangeAnchor}>
-                  <button
-                    type="button"
-                    className={`${styles.selectField} ${styles.dateRangeToggle}${isDateRangeOpen ? ` ${styles.dateRangeToggleActive}` : ""}`}
-                    onClick={() => setIsDateRangeOpen((prev) => !prev)}
-                  >
-                    Active From
-                    <FiChevronDown size={14} className={styles.dropdownIcon} />
-                  </button>
-
-                  {isDateRangeOpen && (
-                    <div className={styles.dateRangeMenu}>
-                      <div className={styles.dateRangeItem}>
-                        <label className={styles.dateRangeLabel}>From Date</label>
-                        <input
-                          type="date"
-                          value={filterActiveFromStart}
-                          onChange={(e) => {
-                            setFilterActiveFromStart(e.target.value);
-                            setCurrentPage(1);
-                          }}
-                          className={styles.dateField}
-                        />
-                      </div>
-                      <div className={styles.dateRangeItem}>
-                        <label className={styles.dateRangeLabel}>To Date</label>
-                        <input
-                          type="date"
-                          value={filterActiveFromEnd}
-                          onChange={(e) => {
-                            setFilterActiveFromEnd(e.target.value);
-                            setCurrentPage(1);
-                          }}
-                          className={styles.dateField}
-                        />
-                      </div>
-                    </div>
-                  )}
-                </div>
-
                 <select
                   value={filterAssignedPerson}
                   onChange={(e) => {
@@ -906,8 +839,6 @@ export default function Clients() {
                   onClick={clearFilters}
                   disabled={
                     !searchTerm &&
-                    !filterActiveFromStart &&
-                    !filterActiveFromEnd &&
                     !filterAssignedPerson &&
                     !filterStatus
                   }
@@ -1025,10 +956,6 @@ export default function Clients() {
               <div className={styles.drawerItem}>
                 <span className={styles.drawerLabel}>Assigned Person</span>
                 <span className={styles.drawerValue}>{selectedClient.accountManager || "-"}</span>
-              </div>
-              <div className={styles.drawerItem}>
-                <span className={styles.drawerLabel}>Active From</span>
-                <span className={styles.drawerValue}>{formatDate(selectedClient.activeFrom)}</span>
               </div>
               <div className={styles.drawerItem}>
                 <span className={styles.drawerLabel}>Status</span>

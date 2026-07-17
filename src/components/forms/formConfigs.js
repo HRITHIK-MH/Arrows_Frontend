@@ -1419,13 +1419,6 @@ export const clientConfig = {
           placeholder: "Account Manager"
         },
         {
-          name: "activeFrom",
-          label: "Active From *",
-          type: "date",
-          required: true,
-          validationRule: "requiredField"
-        },
-        {
           name: "comments",
           label: "Comments / Remarks",
           type: "textarea",
@@ -1445,8 +1438,7 @@ export const clientConfig = {
           contactNumber: 'Contact Number',
           primaryContactPerson: 'Primary Contact Person',
           secondaryContactPerson: 'Secondary Contact Person',
-          accountManager: 'Account Manager',
-          activeFrom: 'Active From'
+          accountManager: 'Account Manager'
         };
         const fieldLabel = fieldLabels[fieldName] || fieldName;
         return { isValid: false, message: `${fieldLabel} is required` };
@@ -1515,8 +1507,7 @@ export const clientConfig = {
     { key: 'contactEmail', label: 'Email' },
     { key: 'contactNumber', label: 'Phone' },
     { key: 'primaryContactPerson', label: 'Primary Contact Person' },
-    { key: 'accountManager', label: 'Account Manager' },
-    { key: 'activeFrom', label: 'Active From' }
+    { key: 'accountManager', label: 'Account Manager' }
   ]
 };
 
