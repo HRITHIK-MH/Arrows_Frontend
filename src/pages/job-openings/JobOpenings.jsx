@@ -58,6 +58,13 @@ const resolveUserName = () => {
 const JOB_OPENING_DRAFT_STORAGE_KEY = "job-openings:add-draft:v1";
 const JOB_OPENING_TABLE_STORAGE_KEY = "job-openings:table:v1";
 const createJobOpeningDraftId = () => `draft-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+const getTodayIsoDate = () => {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, "0");
+  const day = String(today.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
 const SEEDED_JOB_OPENING_IDS = new Set(["ZR_1_JOB", "ZR_2_JOB", "ZR_3_JOB", "ZR_4_JOB"]);
 const SEEDED_JOB_OPENING_TITLES = new Set(["senior react developer", "product manager", "ui/ux designer"]);
 const isUuid = (value) =>
@@ -1097,6 +1104,7 @@ export default function JobOpenings({ createMode = false }) {
         if (!prev || (prev.jobPositionId !== nextJobPositionId && !prev.jobId)) {
           return {
             jobPositionId: nextJobPositionId,
+            jobActivationDate: getTodayIsoDate(),
           };
         }
         return prev;
@@ -1145,6 +1153,9 @@ export default function JobOpenings({ createMode = false }) {
     setEditingData({
       ...(draftData ? { ...draftData } : {}),
       jobPositionId: jobId,
+      jobActivationDate: String(draftData?.jobActivationDate || "") < getTodayIsoDate()
+        ? getTodayIsoDate()
+        : draftData?.jobActivationDate || getTodayIsoDate(),
       accountManager: draftData?.accountManager || resolveUserName(),
     });
     setEditLocked(false);

@@ -21,6 +21,14 @@ const FOCUS_LOCATION_VALUE_OPTIONS = [
 
 const FOCUS_LOCATION_VALUES = new Set(FOCUS_LOCATION_VALUE_OPTIONS.map((option) => option.value));
 
+const getTodayIsoDate = () => {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, "0");
+  const day = String(today.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
 const AVAILABILITY_OPTIONS = [
   { value: "immediate", label: "Immediate" },
   { value: "1week", label: "1 week" },
@@ -46,6 +54,7 @@ const getInterviewStageLabel = (value) => {
 };
 
 const PermissionStep = ({ formData, onChange, onSetStepFields, fields = [], validationErrors = {}, disabled = false }) => {
+  const todayIsoDate = getTodayIsoDate();
   const [isInterviewPopupOpen, setInterviewPopupOpen] = React.useState(false);
   const [stagePopupMode, setStagePopupMode] = React.useState("interview");
   const [interviewCountInput, setInterviewCountInput] = React.useState(
@@ -96,6 +105,13 @@ const PermissionStep = ({ formData, onChange, onSetStepFields, fields = [], vali
     options: []
   };
   const hiringTypeConfig = fieldMap.hiringType;
+
+  React.useEffect(() => {
+    const selectedValidityDate = String(formData.jobActivationDate || "");
+    if (!selectedValidityDate || selectedValidityDate < todayIsoDate) {
+      onChange("jobActivationDate", todayIsoDate);
+    }
+  }, [formData.jobActivationDate, onChange, todayIsoDate]);
 
   const focusLocationType = formData.focusLocationType || "base";
   const selectedJobLocations = (Array.isArray(formData.location)
@@ -480,7 +496,14 @@ const PermissionStep = ({ formData, onChange, onSetStepFields, fields = [], vali
                 type="date"
                 className="permission-input"
                 value={formData.jobActivationDate || ""}
-                onChange={(event) => onChange("jobActivationDate", event.target.value)}
+                onChange={(event) => {
+                  const selectedDate = event.target.value;
+                  onChange(
+                    "jobActivationDate",
+                    selectedDate && selectedDate < todayIsoDate ? todayIsoDate : selectedDate
+                  );
+                }}
+                min={todayIsoDate}
                 required
                 disabled={disabled}
               />
