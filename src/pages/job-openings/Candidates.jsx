@@ -572,6 +572,33 @@ export default function Candidates() {
     let isMounted = true;
 
     const loadDropdownMetadata = async () => {
+      const fallbackOptions = {
+        genders: [
+          { value: "Male", label: "Male" },
+          { value: "Female", label: "Female" },
+          { value: "Other", label: "Other" },
+          { value: "Prefer not to say", label: "Prefer not to say" },
+        ],
+        experienceYears: [
+          { value: "0-1", label: "0-1 years" }, { value: "1-3", label: "1-3 years" },
+          { value: "3-5", label: "3-5 years" }, { value: "5-7", label: "5-7 years" },
+          { value: "7-10", label: "7-10 years" }, { value: "10+", label: "10+ years" },
+        ],
+        offersInHand: [
+          { value: "Yes", label: "Yes" }, { value: "No", label: "No" }, { value: "In Process", label: "In Process" },
+        ],
+        employmentTypes: [
+          { value: "Full-time", label: "Full-time" }, { value: "Part-time", label: "Part-time" },
+          { value: "Contract", label: "Contract" }, { value: "Temporary", label: "Temporary" }, { value: "Freelance", label: "Freelance" },
+        ],
+        primarySkills: [
+          "JavaScript", "Python", "Java", "React", "Node.js", "SQL", "AWS", "Azure", "Docker", "Kubernetes",
+        ].map((value) => ({ value, label: value })),
+        experienceLevels: ["Beginner", "Intermediate", "Expert"].map((value) => ({ value, label: value })),
+        sources: ["LinkedIn", "Indeed", "Referral", "Job Board", "Direct Application", "Recruiter"]
+          .map((value) => ({ value, label: value })),
+      };
+
       try {
         const [
           candidateMeta,
@@ -611,39 +638,33 @@ export default function Candidates() {
             : [];
 
         const genderOptions = normalizeOptions(genders);
-        if (genderOptions.length > 0) {
-          setCandidateGenderOptions(genderOptions);
-        }
+        setCandidateGenderOptions(genderOptions.length > 0 ? genderOptions : fallbackOptions.genders);
 
         const experienceYearOptions = normalizeOptions(experienceYears);
-        if (experienceYearOptions.length > 0) {
-          setCandidateExperienceYearsOptions(experienceYearOptions);
-        }
+        setCandidateExperienceYearsOptions(
+          experienceYearOptions.length > 0 ? experienceYearOptions : fallbackOptions.experienceYears,
+        );
 
         const offersOptions = normalizeOptions(offersInHand);
-        if (offersOptions.length > 0) {
-          setCandidateOffersInHandOptions(offersOptions);
-        }
+        setCandidateOffersInHandOptions(offersOptions.length > 0 ? offersOptions : fallbackOptions.offersInHand);
 
         const employmentTypeOptions = normalizeOptions(employmentTypes);
-        if (employmentTypeOptions.length > 0) {
-          setCandidateEmploymentTypeOptions(employmentTypeOptions);
-        }
+        setCandidateEmploymentTypeOptions(
+          employmentTypeOptions.length > 0 ? employmentTypeOptions : fallbackOptions.employmentTypes,
+        );
 
         const primarySkillOptions = normalizeOptions(primarySkills);
-        if (primarySkillOptions.length > 0) {
-          setCandidatePrimarySkillOptions(primarySkillOptions);
-        }
+        setCandidatePrimarySkillOptions(
+          primarySkillOptions.length > 0 ? primarySkillOptions : fallbackOptions.primarySkills,
+        );
 
         const experienceLevelOptions = normalizeOptions(experienceLevels);
-        if (experienceLevelOptions.length > 0) {
-          setCandidateExperienceLevelOptions(experienceLevelOptions);
-        }
+        setCandidateExperienceLevelOptions(
+          experienceLevelOptions.length > 0 ? experienceLevelOptions : fallbackOptions.experienceLevels,
+        );
 
         const sourceOptions = normalizeOptions(sources);
-        if (sourceOptions.length > 0) {
-          setCandidateSourceOptions(sourceOptions);
-        }
+        setCandidateSourceOptions(sourceOptions.length > 0 ? sourceOptions : fallbackOptions.sources);
 
         if (Array.isArray(recruiters) && recruiters.length > 0) {
           const recruiterOptions = recruiters
