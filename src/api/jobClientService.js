@@ -220,6 +220,69 @@ const normalizeEmploymentType = (value) => {
   return normalized ? normalized.charAt(0).toUpperCase() + normalized.slice(1) : null;
 };
 
+const normalizePositionLevel = (value) => {
+  const normalized = String(value ?? '').trim().toLowerCase();
+  if (!normalized) return null;
+  const mapping = {
+    entry: 'Entry Level',
+    junior: 'Junior',
+    mid: 'Mid',
+    senior: 'Senior',
+    lead: 'Lead',
+    manager: 'Manager',
+    director: 'Director',
+    executive: 'Executive',
+  };
+  return mapping[normalized] || normalized.charAt(0).toUpperCase() + normalized.slice(1);
+};
+
+const normalizeSkillValue = (value) => {
+  const raw = String(value ?? '').trim().toLowerCase();
+  if (!raw) return null;
+  const mapping = {
+    javascript: 'JavaScript',
+    react: 'React',
+    'node.js': 'Node.js',
+    node: 'Node.js',
+    python: 'Python',
+    java: 'Java',
+    csharp: 'C#',
+    'c#': 'C#',
+    php: 'PHP',
+    ruby: 'Ruby',
+    sql: 'SQL',
+    html: 'HTML',
+    css: 'CSS',
+    mongodb: 'MongoDB',
+    aws: 'AWS',
+    docker: 'Docker',
+    kubernetes: 'Kubernetes',
+    git: 'Git',
+    typescript: 'TypeScript',
+    vue: 'Vue.js',
+    angular: 'Angular',
+    dotnet: '.NET',
+    'machine-learning': 'Machine Learning',
+    'machine learning': 'Machine Learning',
+    'teamwork': 'Teamwork',
+    'communication': 'Communication',
+    'leadership': 'Leadership',
+    'problem-solving': 'Problem Solving',
+    'problem solving': 'Problem Solving',
+  };
+  return mapping[raw] || raw.split(/[-_\s]+/).map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join(' ');
+};
+
+const normalizeSkillArray = (values) =>
+  Array.isArray(values)
+    ? values.map(normalizeSkillValue).filter(Boolean)
+    : [];
+
+const toAbsoluteSalary = (value) => {
+  const number = toNumberOrNull(value);
+  return number === null ? null : Math.round(number * 100000);
+};
+
 export const toJobRequest = (row = {}) => {
   const clientId = String(row.clientId || '').trim();
   const jobPositionId = String(row.jobPositionId || row.openingJobId || '').trim();
@@ -227,18 +290,25 @@ export const toJobRequest = (row = {}) => {
   const locationValues = Array.isArray(row.location)
     ? row.location.map((value) => String(value || '').trim()).filter(Boolean)
     : String(row.location || row.city || '').split(',').map((value) => String(value || '').trim()).filter(Boolean);
-  const primaryLocation = locationValues[0] || null;
+  const locations = locationValues.map((value) => String(value || '').trim().toUpperCase()).filter(Boolean);
   const experience = {
     min: toIntOrNull(row.minExperience),
     max: toIntOrNull(row.maxExperience),
   };
   const salaryInCTC = {
-    min: toNumberOrNull(row.minSalary),
-    max: toNumberOrNull(row.maxSalary),
+    min: toAbsoluteSalary(row.minSalary),
+    max: toAbsoluteSalary(row.maxSalary),
   };
   const jobType = normalizeEmploymentType(row.jobType || row.employmentType);
+  const positionLevel = normalizePositionLevel(row.positionLevel);
   const jdDescription = String(row.jdDescription || row.jobDescription || '').trim();
-  const haveJdTemplate = String(row.haveJdTemplate || row.hasJdTemplate || '').trim();
+  const jdAttachmentMode = String(row.jdAttachmentMode || row.jdAttachment || '').trim().toLowerCase();
+  const hasJdTemplate =
+    jdAttachmentMode === 'yes' ? true :
+    jdAttachmentMode === 'no' ? false :
+    row.hasJdTemplate !== undefined ? Boolean(row.hasJdTemplate) :
+    row.haveJdTemplate !== undefined ? Boolean(row.haveJdTemplate) :
+    undefined;
 
   const payload = {
     clientId: clientId || null,
@@ -246,25 +316,27 @@ export const toJobRequest = (row = {}) => {
 
   if (jobPositionId) payload.jobPositionId = jobPositionId;
   if (positionName) payload.positionName = positionName;
+  if (positionLevel) payload.positionLevel = positionLevel;
   if (experience.min !== null || experience.max !== null) payload.experience = experience;
-  if (primaryLocation) payload.location = primaryLocation;
-  if (locationValues.length) payload.locations = locationValues;
+  if (locations.length === 1) payload.location = locations[0];
+  if (locations.length > 1) payload.locations = locations;
   if (toIntOrNull(row.noOfPositions) !== null) payload.noOfPositions = toIntOrNull(row.noOfPositions);
   if (toIsoLocalDate(row.jobReceivedDate || row.jobReceived || row.jobDate)) payload.jobReceivedDate = toIsoLocalDate(row.jobReceivedDate || row.jobReceived || row.jobDate);
   if (salaryInCTC.min !== null || salaryInCTC.max !== null) payload.salaryInCTC = salaryInCTC;
   if (jobType) payload.jobType = jobType;
-  if (Array.isArray(row.softSkills)) payload.softSkills = row.softSkills;
-  if (Array.isArray(row.technicalSkills)) payload.technicalSkills = row.technicalSkills;
-  if (Array.isArray(row.addTechnicalSkills)) payload.addTechnicalSkills = row.addTechnicalSkills;
-  if (Array.isArray(row.additionalSkills)) payload.additionalSkills = row.additionalSkills;
+  if (Array.isArray(row.softSkills)) payload.softSkills = normalizeSkillArray(row.softSkills);
+  if (Array.isArray(row.technicalSkills)) payload.technicalSkills = normalizeSkillArray(row.technicalSkills);
+  if (Array.isArray(row.addTechnicalSkills)) payload.addTechnicalSkills = normalizeSkillArray(row.addTechnicalSkills);
+  if (Array.isArray(row.additionalSkills)) payload.additionalSkills = normalizeSkillArray(row.additionalSkills);
   if (row.additionalSkill) {
-    payload.additionalSkill = Array.isArray(row.additionalSkill)
-      ? row.additionalSkill.filter(Boolean)
-      : [String(row.additionalSkill).trim()].filter(Boolean);
+    const additionalSkillValues = Array.isArray(row.additionalSkill)
+      ? row.additionalSkill
+      : [String(row.additionalSkill).trim()];
+    payload.additionalSkill = normalizeSkillArray(additionalSkillValues);
   }
   if (jdDescription) payload.jdDescription = jdDescription;
   if (row.generateJd !== undefined) payload.generateJd = Boolean(row.generateJd);
-  if (haveJdTemplate) payload.haveJdTemplate = haveJdTemplate;
+  if (hasJdTemplate !== undefined) payload.hasJdTemplate = hasJdTemplate;
 
   return payload;
 };

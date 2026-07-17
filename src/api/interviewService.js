@@ -35,7 +35,7 @@ export const fetchInterviews = async ({ page = 1, limit = 100, search, candidate
     sortOrder,
   };
   const response = await interviewApi.get(INTERVIEWS_ENDPOINT, { params, skipAuthRedirect: true });
-  return response?.data?.data || { items: [], pagination: { page, limit, totalRecords: 0, totalPages: 0 } };
+  return unwrapPaginatedResponse(response?.data?.data || response?.data, page, limit);
 };
 
 export const createInterview = async (payload) => {
@@ -55,7 +55,7 @@ export const fetchInterviewFiltersMeta = async () => {
 export const fetchInterviewGroups = async ({ page = 1, limit = 100, search, status } = {}) => {
   const params = { page, limit, search, status };
   const response = await interviewApi.get(INTERVIEW_GROUPS_ENDPOINT, { params, skipAuthRedirect: true });
-  return response?.data?.data || { items: [], pagination: { page, limit, totalRecords: 0, totalPages: 0 } };
+  return unwrapPaginatedResponse(response?.data?.data || response?.data, page, limit);
 };
 
 export const fetchInterviewGroupCreateMeta = async () => {
@@ -138,6 +138,37 @@ const unwrapArray = (payload) => {
   if (Array.isArray(payload?.data?.items)) return payload.data.items;
   if (Array.isArray(payload?.data)) return payload.data;
   return [];
+};
+
+const unwrapPaginatedResponse = (payload, page, limit) => {
+  if (Array.isArray(payload)) {
+    return {
+      items: payload,
+      pagination: {
+        page,
+        limit,
+        totalRecords: payload.length,
+        totalPages: Math.max(1, Math.ceil(payload.length / limit)),
+      },
+    };
+  }
+
+  const items = Array.isArray(payload?.items)
+    ? payload.items
+    : Array.isArray(payload?.data?.items)
+      ? payload.data.items
+      : Array.isArray(payload?.data)
+        ? payload.data
+        : [];
+
+  const pagination = payload?.pagination || payload?.data?.pagination || {
+    page,
+    limit,
+    totalRecords: items.length,
+    totalPages: Math.max(1, Math.ceil(items.length / limit)),
+  };
+
+  return { items, pagination };
 };
 
 export const fetchAvailableInterviewers = async (groupId) => {

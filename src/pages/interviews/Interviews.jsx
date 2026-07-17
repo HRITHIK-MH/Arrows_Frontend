@@ -921,12 +921,20 @@ export default function Interviews() {
     const memberToRemove = targetGroup.teamMembers[memberIndex];
     if (!memberToRemove) return;
 
+    const userId =
+      String(memberToRemove.userId || memberToRemove.id || memberToRemove.memberId || memberToRemove.uuid || "").trim();
+    if (!userId) {
+      console.warn("Unable to remove interview group member: missing userId", memberToRemove);
+    }
+
     showConfirmPopup(
       "Remove Member",
       `Remove ${memberToRemove.name} from ${targetGroup.name}?`,
       async () => {
         try {
-          await deleteInterviewGroupTeamMember(groupId, memberToRemove);
+          if (userId) {
+            await deleteInterviewGroupTeamMember(groupId, userId);
+          }
         } catch (error) {
           console.error("Delete interview group member failed:", error);
         }
@@ -1926,69 +1934,72 @@ export default function Interviews() {
 
             {/* Right Content - Group Members Table */}
             <div className={styles.groupContent}>
-              {selectedGroup && (
-                <>
-                  <div className={styles.groupContentHeader}>
-                    <h2 className={styles.groupTitle}>
-                      {groups.find(g => g.id === selectedGroup)?.name}{" "}
-                      <span className={styles.memberCount}>
-                        (Member {groups.find(g => g.id === selectedGroup)?.members})
-                      </span>
-                    </h2>
-                    <button 
-                      className={styles.addTeamMemberBtn}
-                      onClick={() => handleAddMember(selectedGroup)}
-                    >
-                      <FiPlus size={16} />
-                      Add Team Member
-                    </button>
-                  </div>
+              {selectedGroup && (() => {
+                const currentGroup = groups.find((g) => g.id === selectedGroup) || { teamMembers: [], rounds: [], name: "", members: 0 };
+                return (
+                  <>
+                    <div className={styles.groupContentHeader}>
+                      <h2 className={styles.groupTitle}>
+                        {currentGroup.name}{" "}
+                        <span className={styles.memberCount}>
+                          (Member {currentGroup.members})
+                        </span>
+                      </h2>
+                      <button 
+                        className={styles.addTeamMemberBtn}
+                        onClick={() => handleAddMember(selectedGroup)}
+                      >
+                        <FiPlus size={16} />
+                        Add Team Member
+                      </button>
+                    </div>
 
-                  <div className={styles.membersTable}>
-                    <table>
-                      <thead>
-                        <tr>
-                          <th>Name</th>
-                          <th>Email</th>
-                          <th>Mobile</th>
-                          <th>Round</th>
-                          <th>Designation</th>
-                          <th>Availability</th>
-                          <th>Action</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {groups.find(g => g.id === selectedGroup)?.teamMembers.map((member, idx) => (
-                          <tr key={idx}>
-                            <td data-label="Name">{member.name}</td>
-                            <td data-label="Email">{member.email}</td>
-                            <td data-label="Mobile">{member.mobile}</td>
-                            <td data-label="Round">
-                              <span className={styles.roundBadge}>{member.round}</span>
-                            </td>
-                            <td data-label="Designation">{member.designation}</td>
-                            <td data-label="Availability">{member.availability}</td>
-                            <td data-label="Action">
-                              <button 
-                                className={styles.deleteBtn}
-                                onClick={() => handleDeleteMember(selectedGroup, idx)}
-                                aria-label="Delete member"
-                              >
-                                <FiTrash2 size={16} />
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                        {(!groups.find(g => g.id === selectedGroup)?.teamMembers.length) && (
+                    <div className={styles.membersTable}>
+                      <table>
+                        <thead>
                           <tr>
-                            <td colSpan="7" className={styles.noData}>No members in this group</td>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Mobile</th>
+                            <th>Round</th>
+                            <th>Designation</th>
+                            <th>Availability</th>
+                            <th>Action</th>
                           </tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </>
-              )}
+                        </thead>
+                        <tbody>
+                          {currentGroup.teamMembers.map((member, idx) => (
+                            <tr key={idx}>
+                              <td data-label="Name">{member.name}</td>
+                              <td data-label="Email">{member.email}</td>
+                              <td data-label="Mobile">{member.mobile}</td>
+                              <td data-label="Round">
+                                <span className={styles.roundBadge}>{member.round}</span>
+                              </td>
+                              <td data-label="Designation">{member.designation}</td>
+                              <td data-label="Availability">{member.availability}</td>
+                              <td data-label="Action">
+                                <button 
+                                  className={styles.deleteBtn}
+                                  onClick={() => handleDeleteMember(selectedGroup, idx)}
+                                  aria-label="Delete member"
+                                >
+                                  <FiTrash2 size={16} />
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                          {currentGroup.teamMembers.length === 0 && (
+                            <tr>
+                              <td colSpan="7" className={styles.noData}>No members in this group</td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>
+                );
+              })()}
             </div>
           </div>
         )}
@@ -2015,7 +2026,7 @@ export default function Interviews() {
                   onChange={(e) => setNewMemberRound(e.target.value)}
                 >
                   <option value="">Select Round</option>
-                  {groups.find(g => g.id === selectedGroup)?.rounds.map((round) => (
+                  {(groups.find((g) => g.id === selectedGroup)?.rounds || []).map((round) => (
                     <option key={round} value={round}>{round}</option>
                   ))}
                 </select>
