@@ -87,6 +87,7 @@ const createFormConfig = (config) => {
     steps: config.steps.map(step => ({
       title: step.title,
       skipValidation: Boolean(step.skipValidation),
+      fields: step.fields || [],
       component: step.component
         ? step.component
         : (props) => (
@@ -96,7 +97,12 @@ const createFormConfig = (config) => {
             allFields={allFields}
             title={step.title}
           />
-        )
+        ),
+      componentProps: {
+        fields: step.fields || [],
+        allFields,
+        ...(step.componentProps || {}),
+      },
     })),
     validationRules: config.validationRules || {},
     columns: config.columns || []

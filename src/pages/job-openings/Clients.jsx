@@ -124,16 +124,6 @@ export default function Clients() {
     return `+${raw}`;
   }, []);
 
-  const formatDate = React.useCallback((value) => {
-    if (!value) return "-";
-    const parsed = new Date(value);
-    if (Number.isNaN(parsed.getTime())) return String(value);
-    return parsed.toLocaleDateString("en-GB", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
-  }, []);
 
   const normalizeClientRecord = React.useCallback((data) => {
     const contactEmail = data.contactEmail || "";

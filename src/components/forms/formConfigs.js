@@ -1142,7 +1142,7 @@ export const candidateConfig = {
       if (fieldName === 'candidateId') {
         const trimmedValue = String(value).trim();
         // Alphanumeric with specific length (e.g. 4-20 chars) and must start with a letter
-        if (!/^[A-Za-z][A-Za-z0-9\-]{3,19}$/.test(trimmedValue)) {
+        if (!/^[A-Za-z][A-Za-z0-9-]{3,19}$/.test(trimmedValue)) {
           return {
             isValid: false,
             message: 'Candidate ID must be 4-20 characters, start with a letter and contain only letters, numbers, or hyphens'
@@ -1153,7 +1153,7 @@ export const candidateConfig = {
       // Name validation: Letters, spaces, hyphens, and dots only
       if (fieldName === 'firstName' || fieldName === 'lastName') {
         const trimmedValue = String(value).trim();
-        if (!/^[A-Za-z\s.\-]+$/.test(trimmedValue)) {
+        if (!/^[A-Za-z\s. -]+$/.test(trimmedValue)) {
           const fieldLabel = fieldName === 'firstName' ? 'First Name' : 'Last Name';
           return {
             isValid: false,
@@ -1251,7 +1251,7 @@ export const candidateConfig = {
     },
     alphabeticOnly: async (value) => {
       if (isEmptyValue(value)) return { isValid: true };
-      if (!/^[A-Za-z\s.\-]+$/.test(String(value).trim())) {
+      if (!/^[A-Za-z\s. -]+$/.test(String(value).trim())) {
         return { isValid: false, message: "Source Name should only contain alphabetic characters" };
       }
       return { isValid: true };
