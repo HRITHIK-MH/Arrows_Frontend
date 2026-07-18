@@ -1676,11 +1676,6 @@ export default function Interviews() {
             <div className={styles.loadingState}>
               <p>Loading interviews...</p>
             </div>
-          ) : filteredInterviews.length === 0 ? (
-            <div className={styles.emptyState}>
-              <h2>No Interviews Found</h2>
-              <p>Try changing the selected filters.</p>
-            </div>
           ) : (
             <>
               <div className={styles.tableWrap}>
@@ -1730,48 +1725,59 @@ export default function Interviews() {
                     </tr>
                   </thead>
                   <tbody>
-                    {paginatedInterviews.map((row, index) => (
-                      <tr key={`${row.candidateId}-${index}`}>
-                        <td data-label="Candidate ID">{row.candidateId}</td>
-                        <td data-label="Candidate Name">{row.candidateName}</td>
-                        <td data-label="Role / Job Title">{row.roleJobTitle}</td>
-                        <td data-label="Date & Time">{row.dateTime}</td>
-                        <td data-label="Client">{row.company}</td>
-                        <td data-label="Interview Type">{row.interviewType}</td>
-                        <td data-label="Mode">{row.mode}</td>
-                        <td data-label="Stage">
-                          <span
-                            className={`${styles.statusPill} ${
-                              row.status === "Rescheduled"
-                                ? styles.statusRescheduled
-                                : styles.statusUpcoming
-                            }`}
-                          >
-                            {row.status}
-                          </span>
-                        </td>
-                        <td data-label="Actions" className={styles.actionsCol}>
-                          <div className={styles.actionIcons}>
-                            <button
-                              type="button"
-                              className={styles.actionBtn}
-                              onClick={() => handleView(row)}
-                              aria-label="View"
-                            >
-                              <FiEye size={16} />
-                            </button>
-                            <button
-                              type="button"
-                              className={styles.actionBtn}
-                              onClick={() => handleDelete(row)}
-                              aria-label="Delete"
-                            >
-                              <FiTrash2 size={16} />
-                            </button>
+                    {paginatedInterviews.length === 0 ? (
+                      <tr>
+                        <td colSpan={columns.length + 1}>
+                          <div className={styles.emptyState}>
+                            <h2>No Interviews Found</h2>
+                            <p>Try changing the selected filters.</p>
                           </div>
                         </td>
                       </tr>
-                    ))}
+                    ) : (
+                      paginatedInterviews.map((row, index) => (
+                        <tr key={`${row.candidateId}-${index}`}>
+                          <td data-label="Candidate ID">{row.candidateId}</td>
+                          <td data-label="Candidate Name">{row.candidateName}</td>
+                          <td data-label="Role / Job Title">{row.roleJobTitle}</td>
+                          <td data-label="Date & Time">{row.dateTime}</td>
+                          <td data-label="Client">{row.company}</td>
+                          <td data-label="Interview Type">{row.interviewType}</td>
+                          <td data-label="Mode">{row.mode}</td>
+                          <td data-label="Stage">
+                            <span
+                              className={`${styles.statusPill} ${
+                                row.status === "Rescheduled"
+                                  ? styles.statusRescheduled
+                                  : styles.statusUpcoming
+                              }`}
+                            >
+                              {row.status}
+                            </span>
+                          </td>
+                          <td data-label="Actions" className={styles.actionsCol}>
+                            <div className={styles.actionIcons}>
+                              <button
+                                type="button"
+                                className={styles.actionBtn}
+                                onClick={() => handleView(row)}
+                                aria-label="View"
+                              >
+                                <FiEye size={16} />
+                              </button>
+                              <button
+                                type="button"
+                                className={styles.actionBtn}
+                                onClick={() => handleDelete(row)}
+                                aria-label="Delete"
+                              >
+                                <FiTrash2 size={16} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
