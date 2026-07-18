@@ -88,7 +88,7 @@ export default function Clients() {
   const [isAddClientMenuOpen, setIsAddClientMenuOpen] = React.useState(false);
   const [clientFormKey, setClientFormKey] = React.useState(0);
   const [searchTerm, setSearchTerm] = React.useState("");
-  const [filterAssignedPerson, setFilterAssignedPerson] = React.useState("");
+  const [filterIndustry, setFilterIndustry] = React.useState("");
   const [filterStatus, setFilterStatus] = React.useState("");
   const deferredSearchTerm = React.useDeferredValue(searchTerm);
   const saveInFlightRef = React.useRef(false);
@@ -148,8 +148,9 @@ export default function Clients() {
       contactEmail,
       contactNumber,
       primaryContactPerson: data.primaryContactPerson || "",
-      secondaryContactPerson: data.secondaryContactPerson || "",
-      accountManager: data.accountManager || "",
+      clientType: data.clientType || data.secondaryContactPerson || "",
+      industry: data.industry || data.accountManager || "",
+      address: data.address || data.comments || "",
       comments: data.comments || "",
       clientStatus: data.clientStatus || "Active",
       clientLocation: data.clientLocation || "-",
@@ -163,8 +164,9 @@ export default function Clients() {
     contactEmail: row.contactEmail || "",
     contactNumber: String(row.contactNumber || "").replace(/^\+91\s?/, "").trim(),
     primaryContactPerson: row.primaryContactPerson || "",
-    secondaryContactPerson: row.secondaryContactPerson || "",
-    accountManager: row.accountManager || "",
+    clientType: row.clientType || row.secondaryContactPerson || "",
+    industry: row.industry || row.accountManager || "",
+    address: row.address || row.comments || "",
     comments: row.comments || "",
   }), []);
 
@@ -309,7 +311,7 @@ export default function Clients() {
       },
       { key: "contactEmail", label: "Contact Email Address" },
       { key: "primaryContactPerson", label: "Contact Person" },
-      { key: "accountManager", label: "Assigned Person" },
+      { key: "industry", label: "Industry" },
       {
         key: "clientStatus",
         label: "Status",
@@ -321,8 +323,8 @@ export default function Clients() {
     [formatPhoneNumber, getStatusClass]
   );
 
-  const uniqueAssignedPeople = React.useMemo(() => {
-    return [...new Set(submittedData.map((item) => item.accountManager).filter(Boolean))];
+  const uniqueIndustries = React.useMemo(() => {
+    return [...new Set(submittedData.map((item) => item.industry || item.accountManager).filter(Boolean))];
   }, [submittedData]);
 
   const uniqueStatuses = React.useMemo(() => {
@@ -337,12 +339,12 @@ export default function Clients() {
           String(val || "").toLowerCase().includes(deferredSearchTerm.toLowerCase())
         );
 
-      const matchesAssignedPerson = !filterAssignedPerson || item.accountManager === filterAssignedPerson;
+      const matchesIndustry = !filterIndustry || item.industry === filterIndustry || item.accountManager === filterIndustry;
       const matchesStatus = !filterStatus || item.clientStatus === filterStatus;
 
-      return matchesSearch && matchesAssignedPerson && matchesStatus;
+      return matchesSearch && matchesIndustry && matchesStatus;
     });
-  }, [submittedData, deferredSearchTerm, filterAssignedPerson, filterStatus]);
+  }, [submittedData, deferredSearchTerm, filterIndustry, filterStatus]);
 
   const totalRecords = clientsPagination.totalRecords;
   const totalPages = Math.max(1, clientsPagination.totalPages);
@@ -391,7 +393,7 @@ export default function Clients() {
 
   const clearFilters = React.useCallback(() => {
     setSearchTerm("");
-    setFilterAssignedPerson("");
+    setFilterIndustry("");
     setFilterStatus("");
     setCurrentPage(1);
   }, []);
@@ -801,17 +803,17 @@ export default function Clients() {
                 </div>
 
                 <select
-                  value={filterAssignedPerson}
+                  value={filterIndustry}
                   onChange={(e) => {
-                    setFilterAssignedPerson(e.target.value);
+                    setFilterIndustry(e.target.value);
                     setCurrentPage(1);
                   }}
                   className={styles.selectField}
                 >
-                  <option value="">Assigned Person</option>
-                  {uniqueAssignedPeople.map((person) => (
-                    <option key={person} value={person}>
-                      {person}
+                  <option value="">Industry</option>
+                  {uniqueIndustries.map((industry) => (
+                    <option key={industry} value={industry}>
+                      {industry}
                     </option>
                   ))}
                 </select>
@@ -839,7 +841,7 @@ export default function Clients() {
                   onClick={clearFilters}
                   disabled={
                     !searchTerm &&
-                    !filterAssignedPerson &&
+                    !filterIndustry &&
                     !filterStatus
                   }
                 >
@@ -950,12 +952,12 @@ export default function Clients() {
                 <span className={styles.drawerValue}>{selectedClient.primaryContactPerson || "-"}</span>
               </div>
               <div className={styles.drawerItem}>
-                <span className={styles.drawerLabel}>Secondary Contact</span>
-                <span className={styles.drawerValue}>{selectedClient.clientType || selectedClient.secondaryContactPerson || "-"}</span>
+                <span className={styles.drawerLabel}>Client Type</span>
+                <span className={styles.drawerValue}>{selectedClient.clientType || "-"}</span>
               </div>
               <div className={styles.drawerItem}>
-                <span className={styles.drawerLabel}>Assigned Person</span>
-                <span className={styles.drawerValue}>{selectedClient.industry || selectedClient.accountManager || "-"}</span>
+                <span className={styles.drawerLabel}>Industry</span>
+                <span className={styles.drawerValue}>{selectedClient.industry || "-"}</span>
               </div>
               <div className={styles.drawerItem}>
                 <span className={styles.drawerLabel}>Status</span>
@@ -967,7 +969,7 @@ export default function Clients() {
 
             <div className={styles.drawerNote}>
               <span className={styles.drawerLabel}>
-                <FiUser size={12} /> Comments / Remarks
+                <FiUser size={12} /> Address
               </span>
               <p>{selectedClient.address || selectedClient.comments || "No remarks available."}</p>
             </div>

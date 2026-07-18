@@ -1403,27 +1403,27 @@ export const clientConfig = {
           placeholder: "Enter Primary Contact"
         },
         {
-          name: "secondaryContactPerson",
-          label: "Secondary Contact Person *",
+          name: "clientType",
+          label: "Client Type *",
           type: "text",
           required: true,
           validationRule: "contactPersonName",
-          placeholder: "Enter Secondary Contact"
+          placeholder: "Enter Client Type"
         },
         {
-          name: "accountManager",
-          label: "Account Manager *",
+          name: "industry",
+          label: "Industry *",
           type: "text",
           required: true,
           validationRule: "requiredField",
-          placeholder: "Account Manager"
+          placeholder: "Enter Industry"
         },
         {
-          name: "comments",
-          label: "Comments / Remarks",
+          name: "address",
+          label: "Address",
           type: "textarea",
           required: false,
-          placeholder: "Comments / Remarks"
+          placeholder: "Enter Address"
         }
       ]
     }
@@ -1437,8 +1437,9 @@ export const clientConfig = {
           contactEmail: 'Contact Email Address',
           contactNumber: 'Contact Number',
           primaryContactPerson: 'Primary Contact Person',
-          secondaryContactPerson: 'Secondary Contact Person',
-          accountManager: 'Account Manager'
+          clientType: 'Client Type',
+          industry: 'Industry',
+          address: 'Address'
         };
         const fieldLabel = fieldLabels[fieldName] || fieldName;
         return { isValid: false, message: `${fieldLabel} is required` };
@@ -1476,7 +1477,7 @@ export const clientConfig = {
     contactPersonName: async (value, fieldName) => {
       const fieldLabels = {
         primaryContactPerson: "Primary Contact Person",
-        secondaryContactPerson: "Secondary Contact Person",
+        secondaryContactPerson: "Client Type",
       };
       const fieldLabel = fieldLabels[fieldName] || "Contact Person";
 
@@ -1507,7 +1508,7 @@ export const clientConfig = {
     { key: 'contactEmail', label: 'Email' },
     { key: 'contactNumber', label: 'Phone' },
     { key: 'primaryContactPerson', label: 'Primary Contact Person' },
-    { key: 'accountManager', label: 'Account Manager' }
+    { key: 'clientType', label: 'Client Type' }
   ]
 };
 
