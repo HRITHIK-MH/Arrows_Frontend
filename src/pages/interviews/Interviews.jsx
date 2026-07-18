@@ -329,8 +329,11 @@ export default function Interviews() {
         const response = await fetchInterviews({
           page: 1,
           limit: 100,
-          sortBy: 'interviewDateTime',
-          sortOrder: 'asc',
+          search: searchTerm || undefined,
+          interviewType: filterInterviewType || undefined,
+          interviewStatus: filterStatus || undefined,
+          sortBy: sortConfig.key || 'interviewDateTime',
+          sortOrder: sortConfig.direction || 'asc',
         });
 
         const mappedInterviews = Array.isArray(response.items)
@@ -357,7 +360,7 @@ export default function Interviews() {
     };
 
     loadInterviews();
-  }, []);
+  }, [searchTerm, filterInterviewType, filterStatus, sortConfig]);
 
   React.useEffect(() => {
     let isMounted = true;

@@ -23,14 +23,28 @@ const normalizeInterviewGroupApiId = (groupId) => {
   ).trim();
 };
 
-export const fetchInterviews = async ({ page = 1, limit = 100, search, candidateId, status, interviewType, sortBy = 'interviewDateTime', sortOrder = 'asc' } = {}) => {
+export const fetchInterviews = async ({
+  page = 1,
+  limit = 100,
+  search,
+  candidateId,
+  status,
+  interviewStatus,
+  interviewer,
+  interviewType,
+  interviewDate,
+  sortBy = 'interviewDateTime',
+  sortOrder = 'asc',
+} = {}) => {
   const params = {
     page,
     limit,
     search,
     candidateId,
-    status,
+    interviewStatus: interviewStatus || status,
+    interviewer,
     interviewType,
+    interviewDate,
     sortBy,
     sortOrder,
   };
