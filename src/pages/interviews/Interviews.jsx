@@ -687,27 +687,21 @@ export default function Interviews() {
       teamMembers: initialMembers,
     };
 
-    const fallbackGroupId = `${groupName}-${Date.now()}`;
-    const fallbackGroup = {
-      id: fallbackGroupId,
-      name: groupName,
-      rounds: [roundName],
-      teamMembers: initialMembers,
-      members: initialMembers.length,
-    };
-
     try {
       const createdGroup = await createInterviewGroup(payload);
-      const group = normalizeInterviewGroup(createdGroup, fallbackGroup) || fallbackGroup;
+      if (!createdGroup) {
+        throw new Error("Create interview group returned no data");
+      }
+      const group = normalizeInterviewGroup(createdGroup);
+      if (!group) {
+        throw new Error("Create interview group returned invalid data");
+      }
       setGroups((prev) => [...prev, group]);
       setSelectedGroup(group.id);
       setExpandedGroups((prev) => (prev.includes(group.id) ? prev : [...prev, group.id]));
     } catch (error) {
       console.error("Create interview group failed:", error);
       showInfoPopup("Unable to create group at this time.", "Error");
-      setGroups((prev) => [...prev, fallbackGroup]);
-      setSelectedGroup(fallbackGroupId);
-      setExpandedGroups((prev) => (prev.includes(fallbackGroupId) ? prev : [...prev, fallbackGroupId]));
     } finally {
       handleCloseCreateGroupModal();
     }
