@@ -668,23 +668,20 @@ export default function Interviews() {
     }
 
     const interviewerMeta = getInterviewerMeta(newGroupInterviewer);
-    const initialMembers = interviewerMeta
+    const members = interviewerMeta
       ? [
           {
-            name: newGroupInterviewer,
-            email: interviewerMeta.email,
-            mobile: interviewerMeta.mobile,
-            round: roundName,
-            designation: interviewerMeta.designation,
-            availability: interviewerMeta.availability,
+            userId: interviewerMeta.userId || newGroupInterviewer,
+            role: interviewerMeta.designation || "Panel Member",
           },
         ]
       : [];
 
     const payload = {
-      name: groupName,
-      rounds: [roundName],
-      teamMembers: initialMembers,
+      groupName: groupName,
+      interviewType: "Technical",
+      groupStatus: "Active",
+      members,
     };
 
     try {
