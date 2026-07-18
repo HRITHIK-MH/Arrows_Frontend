@@ -33,67 +33,73 @@ const PROFILE_TABS = [
   "Basic Info",
   "Skills",
   "Resume",
-  "Timeline",
-  "Rating",
-  "Attachment",
-  "Job Applications",
-];
-
-const PIPELINE_STEPS = ["New", "In Review", "Engaged", "Offered", "Hired", "Rejected"];
-
-const JOB_OPENING_OPTIONS = [];
-const CANDIDATE_INTERVIEW_SOURCE = [];
-
-const PRIMARY_SKILL_OPTIONS = [
-  "Core Java",
-  "Spring Boot",
-  "Microservices",
-  "REST API",
-  "SQL",
-  "Kubernetes",
-];
-
-const SECONDARY_SKILL_OPTIONS = [
-  "Communication Skills",
-  "Time Management",
-  "Problem-Solving",
-  "Team Collaboration",
-  "Adaptability & Learning",
-];
-
-const EXPERIENCE_OPTIONS = ["1 Year", "2 Years", "3 Years", "4 Years", "5 Years"];
-const LAST_USED_OPTIONS = ["2025", "2024", "2023", "2022", "2021"];
-
-const INTERVIEWER_DIRECTORY = {};
-
-const INTERVIEWER_OPTIONS = Object.keys(INTERVIEWER_DIRECTORY);
-
-const toInterviewerDisplay = (item) => {
-  if (item === null || item === undefined) return null;
-
-  if (typeof item === "string") {
-    const name = String(item).trim();
-    if (!name) return null;
-    return {
-      userId: "",
-      name,
-      email: "",
-      mobile: "",
-      designation: "Panel",
-      availability: "Yes",
-    };
-  }
-
-  if (typeof item !== "object") return null;
-
-  const name = String(item.name || item.displayName || item.fullName || item.label || item.userName || "").trim();
-  if (!name) return null;
-
-  const role = String(item.designation || item.assignmentRole || item.role || "Panel")
-    .replace(/_/g, " ")
-    .trim();
-
-  const availability =
+        {activeTab === "list" ? (
+          loading ? (
+            <div className={styles.loadingState}>
+              <p>Loading interviews...</p>
+            </div>
+          ) : (
+            <>
+              <div className={styles.tableWrap}>
+                <table className={styles.interviewsTable}>
+                  <thead>
+                    <tr>
+                      {columns.map((column) => (
+                        <th
+                          key={column.key}
+                          onClick={() => requestSort(column.key)}
+                          role="button"
+                          tabIndex={0}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              requestSort(column.key);
+                            }
+                          }}
+                          aria-label={`Sort by ${column.label}`}>
+                          {column.label}
+                          {sortConfig.key === column.key && (
+                            <span className={styles.sortIndicator}>{sortConfig.direction === 'asc' ? ' ▲' : ' ▼'}</span>
+                          )}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {paginatedInterviews.length === 0 ? (
+                      <tr>
+                        <td colSpan={columns.length}>
+                          <div className={styles.emptyState}>
+                            <h2>No Interviews Found</h2>
+                            <p>Try changing the selected filters.</p>
+                          </div>
+                        </td>
+                      </tr>
+                    ) : (
+                      paginatedInterviews.map((row, index) => (
+                        <tr key={`${row.interviewId || index}-${index}`}>
+                          {columns.map((col) => (
+                            <td key={col.key} data-label={col.label}>{row[col.key]}</td>
+                          ))}
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+              <div className={styles.paginationBar}>
+                <div className={styles.entriesInfo}>
+                  Showing {startEntry} to {endEntry} of {totalRecords} entries
+                </div>
+                <div className={styles.paginationControls}>
+                  <button onClick={handlePreviousPage} disabled={currentPage === 1}>&lt; Prev</button>
+                  <span>{currentPage} / {totalPages}</span>
+                  <button onClick={handleNextPage} disabled={currentPage === totalPages}>Next &gt;</button>
+                </div>
+              </div>
+            </>
+          )
+        ) : (
     item.availability === undefined
       ? "Yes"
       : String(item.availability).trim() || "Yes";
