@@ -61,14 +61,7 @@ const ClientBasicInfoStep = ({
   return (
     <div className="client-step">
       <div className="client-grid">
-        {renderField("clientId")}
-        {renderField("clientName")}
-        {renderField("contactEmail")}
-        {renderField("contactNumber")}
-        {renderField("primaryContactPerson")}
-        {renderField("secondaryContactPerson")}
-        {renderField("accountManager")}
-        {renderField("comments")}
+        {fields.map((field) => renderField(field.name, field.extraClass || ""))}
       </div>
     </div>
   );
