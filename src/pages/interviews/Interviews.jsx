@@ -33,79 +33,71 @@ const PROFILE_TABS = [
   "Basic Info",
   "Skills",
   "Resume",
-        {activeTab === "list" ? (
-          loading ? (
-            <div className={styles.loadingState}>
-              <p>Loading interviews...</p>
-            </div>
-          ) : (
-            <>
-              <div className={styles.tableWrap}>
-                <table className={styles.interviewsTable}>
-                  <thead>
-                    <tr>
-                      {columns.map((column) => (
-                        <th
-                          key={column.key}
-                          onClick={() => requestSort(column.key)}
-                          role="button"
-                          tabIndex={0}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter" || e.key === " ") {
-                              e.preventDefault();
-                              requestSort(column.key);
-                            }
-                          }}
-                          aria-label={`Sort by ${column.label}`}>
-                          {column.label}
-                          {sortConfig.key === column.key && (
-                            <span className={styles.sortIndicator}>{sortConfig.direction === 'asc' ? ' ▲' : ' ▼'}</span>
-                          )}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {paginatedInterviews.length === 0 ? (
-                      <tr>
-                        <td colSpan={columns.length}>
-                          <div className={styles.emptyState}>
-                            <h2>No Interviews Found</h2>
-                            <p>Try changing the selected filters.</p>
-                          </div>
-                        </td>
-                      </tr>
-                    ) : (
-                      paginatedInterviews.map((row, index) => (
-                        <tr key={`${row.interviewId || index}-${index}`}>
-                          {columns.map((col) => (
-                            <td key={col.key} data-label={col.label}>{row[col.key]}</td>
-                          ))}
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-              <div className={styles.paginationBar}>
-                <div className={styles.entriesInfo}>
-                  Showing {startEntry} to {endEntry} of {totalRecords} entries
-                </div>
-                <div className={styles.paginationControls}>
-                  <button onClick={handlePreviousPage} disabled={currentPage === 1}>&lt; Prev</button>
-                  <span>{currentPage} / {totalPages}</span>
-                  <button onClick={handleNextPage} disabled={currentPage === totalPages}>Next &gt;</button>
-                </div>
-              </div>
-            </>
-          )
-        ) : (
+  "Attachment",
+  "Timeline",
+  "Rating",
+];
+
+const PIPELINE_STEPS = ["New", "In Review", "Engaged", "Offered", "Hired", "Rejected"];
+
+const JOB_OPENING_OPTIONS = [];
+
+const PRIMARY_SKILL_OPTIONS = [
+  "Core Java",
+  "Spring Boot",
+  "Microservices",
+  "REST API",
+  "SQL",
+  "Kubernetes",
+];
+
+const SECONDARY_SKILL_OPTIONS = [
+  "Communication Skills",
+  "Time Management",
+  "Problem-Solving",
+  "Team Collaboration",
+  "Adaptability & Learning",
+];
+
+const EXPERIENCE_OPTIONS = ["1 Year", "2 Years", "3 Years", "4 Years", "5 Years"];
+const LAST_USED_OPTIONS = ["2025", "2024", "2023", "2022", "2021"];
+
+const INTERVIEWER_DIRECTORY = {
+  "Interviewer 1": { email: "interviewer1@email.com", mobile: "+910000000001", designation: "Panel", availability: "Yes" },
+  "Interviewer 2": { email: "interviewer2@email.com", mobile: "+910000000002", designation: "Panel", availability: "Yes" },
+  "Interviewer 3": { email: "interviewer3@email.com", mobile: "+910000000003", designation: "Panel", availability: "Yes" },
+};
+
+const INTERVIEWER_OPTIONS = Object.keys(INTERVIEWER_DIRECTORY);
+
+const toInterviewerDisplay = (item) => {
+  if (item === null || item === undefined) return null;
+
+  if (typeof item === "string") {
+    const name = String(item).trim();
+    if (!name) return null;
+    return {
+      name,
+      email: "",
+      mobile: "",
+      designation: "Panel",
+      availability: "Yes",
+    };
+  }
+
+  if (typeof item !== "object") return null;
+
+  const name = String(item.name || item.displayName || item.fullName || item.label || item.userName || "").trim();
+  if (!name) return null;
+
+  const role = String(item.designation || item.assignmentRole || item.role || "Panel").replace(/_/g, " ").trim();
+
+  const availability =
     item.availability === undefined
       ? "Yes"
       : String(item.availability).trim() || "Yes";
 
   return {
-    userId: String(item.userId || item.id || item.interviewerId || item.memberId || item.uuid || "").trim(),
     name,
     email: String(item.email || item.mail || "").trim(),
     mobile: String(item.mobile || item.phone || item.phoneNumber || "").trim(),
@@ -1520,21 +1512,15 @@ export default function Interviews() {
   const totalRecords = filteredInterviews.length;
   const totalPages = Math.max(1, Math.ceil(totalRecords / entriesPerPage));
 
-  React.useEffect(() => {
-    setCurrentPage((prevPage) => Math.min(prevPage, totalPages));
-  }, [totalPages]);
-
-  React.useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm, filterRole, filterInterviewType, filterStatus, filterDateRange]);
+  const effectivePage = Math.max(1, Math.min(currentPage, totalPages));
 
   const paginatedInterviews = React.useMemo(() => {
-    const startIndex = (currentPage - 1) * entriesPerPage;
+    const startIndex = (effectivePage - 1) * entriesPerPage;
     return filteredInterviews.slice(startIndex, startIndex + entriesPerPage);
-  }, [filteredInterviews, currentPage, entriesPerPage]);
+  }, [filteredInterviews, effectivePage, entriesPerPage]);
 
-  const startEntry = totalRecords === 0 ? 0 : (currentPage - 1) * entriesPerPage + 1;
-  const endEntry = Math.min(currentPage * entriesPerPage, totalRecords);
+  const startEntry = totalRecords === 0 ? 0 : (effectivePage - 1) * entriesPerPage + 1;
+  const endEntry = Math.min(effectivePage * entriesPerPage, totalRecords);
 
   const hasFilters =
     Boolean(searchTerm) ||
@@ -1814,7 +1800,7 @@ export default function Interviews() {
                   </label>
 
                   <div className={styles.pageIndicator} aria-live="polite">
-                    Page {currentPage} of {totalPages}
+                    Page {effectivePage} of {totalPages}
                   </div>
 
                   <div className={styles.paginationControls}>
@@ -1823,7 +1809,7 @@ export default function Interviews() {
                       className={styles.pageButton}
                     aria-label="Previous page"
                     onClick={handlePreviousPage}
-                    disabled={currentPage === 1}
+                    disabled={effectivePage === 1}
                   >
                       <FiChevronLeft aria-hidden="true" />
                   </button>
@@ -1832,7 +1818,7 @@ export default function Interviews() {
                       className={styles.pageButton}
                     aria-label="Next page"
                     onClick={handleNextPage}
-                    disabled={currentPage === totalPages}
+                    disabled={effectivePage === totalPages}
                   >
                       <FiChevronRight aria-hidden="true" />
                   </button>
