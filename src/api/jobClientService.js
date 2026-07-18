@@ -153,11 +153,6 @@ const normalizeText = (value, fallback = '-') => {
 export const fetchJobs = async () =>
   unwrapList(await clientJobApi.get('/jobs'));
 
-const isUuid = (value) =>
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
-    String(value || '').trim(),
-  );
-
 const firstNonEmpty = (...values) =>
   values.map((value) => String(value ?? '').trim()).find(Boolean) || '';
 
@@ -443,8 +438,8 @@ export const toSkillOption = (row) => {
 export const toClientRequest = (row = {}) => {
   const clientId = String(row.clientId || row.displayClientId || '').trim() || null;
   const clientName = String(row.clientName || row.name || '').trim();
-  const clientType = String(row.secondaryContactPerson || '').trim() || null;
-  const industry = String(row.accountManager  || '').trim() || null;
+  const clientType = String(row.clientType || row.secondaryContactPerson || '').trim() || null;
+  const industry = String(row.industry || row.accountManager || '').trim() || null;
   const status = String(row.clientStatus || row.status || 'Active').trim();
   const contactPersonName = String(
     row.primaryContactPerson ||
@@ -465,7 +460,7 @@ export const toClientRequest = (row = {}) => {
     ''
   ).trim() || null;
   const city = String(row.activeFrom ||  '').trim() || null;
-  const address = String(row.comments || '').trim() || null;
+  const address = String(row.address || row.comments || '').trim() || null;
 
   return {
     clientId,
