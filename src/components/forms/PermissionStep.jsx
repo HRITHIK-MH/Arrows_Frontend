@@ -222,30 +222,44 @@ const PermissionStep = ({ formData, onChange, onSetStepFields, fields = [], vali
     onChange("focusLocationValue", []);
   };
 
-  const getClientIdForName = React.useCallback((clientName) => {
+  const getClientDisplayIdForValue = React.useCallback((clientValue) => {
     const matchedClient = (clientNameConfig.options || []).find(
-      (option) => String(option.value) === String(clientName)
+      (option) => String(option.value) === String(clientValue)
     );
-    return matchedClient?.clientId || matchedClient?.id || "";
+    return matchedClient?.displayClientId || matchedClient?.clientId || matchedClient?.id || "";
+  }, [clientNameConfig.options]);
+
+  const getClientUuidForValue = React.useCallback((clientValue) => {
+    const matchedClient = (clientNameConfig.options || []).find(
+      (option) => String(option.value) === String(clientValue)
+    );
+    return matchedClient?.clientId || matchedClient?.clientUuid || matchedClient?.id || "";
   }, [clientNameConfig.options]);
 
   const handleClientNameChange = (fieldName, value) => {
     onChange(fieldName, value);
-    onChange(clientIdConfig.name, getClientIdForName(value));
+    onChange(clientIdConfig.name, getClientDisplayIdForValue(value));
+    onChange("clientUuid", getClientUuidForValue(value));
   };
 
   useEffect(() => {
     if (!formData[clientNameConfig.name]) return;
 
-    const mappedClientId = getClientIdForName(formData[clientNameConfig.name]);
+    const mappedClientId = getClientDisplayIdForValue(formData[clientNameConfig.name]);
+    const mappedClientUuid = getClientUuidForValue(formData[clientNameConfig.name]);
+
     if (mappedClientId && mappedClientId !== formData[clientIdConfig.name]) {
       onChange(clientIdConfig.name, mappedClientId);
+    }
+    if (mappedClientUuid && mappedClientUuid !== formData.clientUuid) {
+      onChange("clientUuid", mappedClientUuid);
     }
   }, [
     clientIdConfig.name,
     clientNameConfig.name,
     formData,
-    getClientIdForName,
+    getClientDisplayIdForValue,
+    getClientUuidForValue,
     onChange,
   ]);
 

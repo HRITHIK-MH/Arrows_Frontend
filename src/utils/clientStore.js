@@ -82,19 +82,32 @@ export const getClientOptions = (rows = []) => {
   const seen = new Set();
 
   return rows.reduce((options, client) => {
-    const clientName = String(client?.clientName || "").trim();
-    const clientId = String(getClientDbId(client) || client?.clientId || client?.clientID || "").trim();
-    if (!clientName || !clientId) return options;
+    const clientName = String(client?.clientName || client?.name || "").trim();
+    const clientUuid = String(getClientDbId(client) || client?.clientUuid || client?.clientUUID || client?.uuid || client?.id || "").trim();
+    const displayClientId = String(
+      client?.displayClientId ||
+      client?.displayClientID ||
+      client?.clientId ||
+      client?.clientID ||
+      client?.externalClientId ||
+      client?.externalClientID ||
+      client?.id ||
+      ""
+    ).trim();
 
-    const optionKey = `${clientId.toLowerCase()}::${clientName.toLowerCase()}`;
+    if (!clientName || !clientUuid) return options;
+
+    const optionKey = `${clientUuid.toLowerCase()}::${clientName.toLowerCase()}`;
     if (seen.has(optionKey)) return options;
     seen.add(optionKey);
 
     options.push({
-      value: clientId,
+      value: clientUuid,
       label: clientName,
-      clientId,
-      id: clientId,
+      clientUuid,
+      clientId: clientUuid,
+      displayClientId: displayClientId || clientUuid,
+      id: clientUuid,
       clientName,
     });
 

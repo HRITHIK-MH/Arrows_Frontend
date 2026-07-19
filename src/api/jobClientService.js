@@ -315,13 +315,21 @@ const toAbsoluteSalary = (value) => {
 };
 
 export const toJobRequest = (row = {}) => {
-  const clientId = String(row.clientId || '').trim();
+  const clientId = String(row.clientUuid || row.clientId || '').trim();
   const jobPositionId = String(row.jobPositionId || row.openingJobId || '').trim();
   const positionName = String(row.positionName || row.postingTitle || row.jobTitle || '').trim();
+  const normalizeLocationValue = (value) => {
+    const raw = String(value || '').trim();
+    if (!raw) return '';
+    return raw
+      .split(/\s+/)
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+      .join(' ');
+  };
   const locationValues = Array.isArray(row.location)
     ? row.location.map((value) => String(value || '').trim()).filter(Boolean)
     : String(row.location || row.city || '').split(',').map((value) => String(value || '').trim()).filter(Boolean);
-  const locations = locationValues.map((value) => String(value || '').trim().toUpperCase()).filter(Boolean);
+  const locations = locationValues.map(normalizeLocationValue).filter(Boolean);
   const experience = {
     min: toIntOrNull(row.minExperience),
     max: toIntOrNull(row.maxExperience),
@@ -338,12 +346,18 @@ export const toJobRequest = (row = {}) => {
   // Collapse multiple whitespace/newlines into single spaces and truncate to 5000 chars.
   const jdDescription = rawJd ? rawJd.replace(/\s+/g, ' ').trim().slice(0, 5000) : '';
   const jdAttachmentMode = String(row.jdAttachmentMode || row.jdAttachment || '').trim().toLowerCase();
+  const parseHaveJdTemplateValue = (value) => {
+    if (value === undefined || value === null) return undefined;
+    if (typeof value === 'boolean') return value;
+    const normalized = String(value).trim().toLowerCase();
+    if (['yes', 'true', 'y'].includes(normalized)) return true;
+    if (['no', 'false', 'n'].includes(normalized)) return false;
+    return undefined;
+  };
   const hasJdTemplate =
     jdAttachmentMode === 'yes' ? true :
     jdAttachmentMode === 'no' ? false :
-    row.hasJdTemplate !== undefined ? Boolean(row.hasJdTemplate) :
-    row.haveJdTemplate !== undefined ? Boolean(row.haveJdTemplate) :
-    undefined;
+    parseHaveJdTemplateValue(row.hasJdTemplate ?? row['hasJdTemplate '] ?? row.haveJdTemplate ?? row['haveJdTemplate ']);
   // `jdAttachmentMode` is mapped to `generateJd` when building the payload below.
 
   const payload = {
