@@ -95,9 +95,9 @@ export const saveTeamMembers = async ({ jobOpeningId, openingJobId, teamMembers 
     },
   };
 
-  console.log('[saveTeamMembers] POST /jobs/team-members payload:', payload);
+  console.log('[saveTeamMembers] POST /job-openings/team-members payload:', payload);
 
-  return clientJobApi.post('/jobs/team-members', payload, {
+  return clientJobApi.post('/job-openings/team-members', payload, {
     skipAuthRedirect: true,
   });
 };

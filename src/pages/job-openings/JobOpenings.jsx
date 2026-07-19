@@ -32,6 +32,7 @@ import {
   fetchSoftSkills,
   fetchWorkTypes,
   normalizeJobRecord as normalizeApiJob,
+  saveClientRequirement as saveClientRequirementApi,
   toSkillOption,
   updateJob as updateJobApi,
 } from "../../api/jobClientService";
@@ -260,6 +261,50 @@ const resolveClientSelection = (formData = {}, options = []) => {
   ).trim();
 
   return { clientId, clientName };
+};
+
+const buildClientRequirementRequest = (safeData = {}, normalized = {}) => {
+  const openingJobId = String(normalized.openingJobId || normalized.jobPositionId || "").trim();
+  const contactPersonName = String(safeData.contactPersonName || "").trim();
+  const contactPersonEmail = String(safeData.contactPersonEmail || "").trim();
+  const hiringManager = String(safeData.accountManager || safeData.hiringManager || "").trim();
+  const interviewStages = Array.isArray(safeData.interviewStages) ? safeData.interviewStages : [];
+  const clientInterviewStages = Array.isArray(safeData.clientInterviewStages) ? safeData.clientInterviewStages : [];
+  const combinedInterviewStages = [...interviewStages, ...clientInterviewStages].filter(Boolean);
+  const finalStages = Array.isArray(safeData.finalStages) ? safeData.finalStages : [];
+  const interviewCount = Number.isFinite(Number(safeData.interviewCount))
+    ? Number(safeData.interviewCount)
+    : combinedInterviewStages.length;
+  const availability = Array.isArray(safeData.availabilityOptions)
+    ? safeData.availabilityOptions.filter(Boolean)
+    : String(safeData.availabilityOptions || "").trim()
+      ? [String(safeData.availabilityOptions).trim()]
+      : [];
+
+  const payload = {
+    openingJobId,
+    clientId: String(normalized.clientId || "").trim(),
+    clientName: String(normalized.clientName || "").trim(),
+    contactPerson: {
+      name: contactPersonName,
+      email: contactPersonEmail,
+    },
+    targetDate: String(safeData.targetDate || "").trim(),
+    jobOpeningStatus: String(normalized.jobOpeningStatus || safeData.jobOpeningStatus || safeData.jobStatus || "Active").trim(),
+    hiringManager: hiringManager || undefined,
+    interviewProcess: {
+      interviewStages: combinedInterviewStages,
+      finalStages,
+      includeHrInterview: Boolean(safeData.includeHrInterview),
+      interviewCount: interviewCount || undefined,
+    },
+  };
+
+  if (availability.length > 0) {
+    payload.availability = availability;
+  }
+
+  return payload;
 };
 
 const buildMetaOptionMap = (...metaPayloads) => {
@@ -1409,6 +1454,11 @@ export default function JobOpenings({ createMode = false }) {
         normalized = { ...normalized, ...savedJob, jobId: persistedJobOpeningId };
       } else {
         throw new Error("Unable to save JD in DB. Please try again.");
+      }
+
+      if (!isEditMode && hasValidClientId && hasValidTitle) {
+        const clientRequirementPayload = buildClientRequirementRequest(safeData, normalized);
+        await saveClientRequirementApi(clientRequirementPayload);
       }
 
       if (Array.isArray(safeData.teamMembers) && safeData.teamMembers.length > 0) {

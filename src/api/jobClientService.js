@@ -389,19 +389,22 @@ export const toJobRequest = (row = {}) => {
   if (jdAttachmentMode === 'yes') payload.generateJd = true;
   else if (jdAttachmentMode === 'no') payload.generateJd = false;
   else if (jdDescription || row.generateJd !== undefined) payload.generateJd = Boolean(jdDescription || row.generateJd);
-  if (hasJdTemplate !== undefined) payload.hasJdTemplate = hasJdTemplate;
+  if (hasJdTemplate !== undefined) {
+    payload.haveJdTemplate = hasJdTemplate ? "Yes" : "No";
+    payload.hasJdTemplate = hasJdTemplate;
+  }
 
   return payload;
 };
 
 export const createJob = async (row) =>
-  assertJobCreatePersisted(await clientJobApi.post('/jobs/job-information', toJobRequest(row)));
+  assertJobCreatePersisted(await clientJobApi.post('/job-openings/job-information', toJobRequest(row)));
 
 export const updateJob = async (jobId, row) =>
-  assertJobUpdatePersisted(await clientJobApi.patch(`/jobs/${encodeURIComponent(jobId)}/status`, toJobRequest(row)));
+  assertJobUpdatePersisted(await clientJobApi.patch(`/job-openings/${encodeURIComponent(jobId)}/status`, toJobRequest(row)));
 
 export const deleteJob = async (jobId) =>
-  clientJobApi.delete(`/jobs/${encodeURIComponent(jobId)}`);
+  clientJobApi.delete(`/job-openings/${encodeURIComponent(jobId)}`);
 
 const CLIENTS_ENDPOINT = '/clients';
 const CLIENTS_CREATE_META_ENDPOINT = '/clients/create/meta';
@@ -461,14 +464,17 @@ export const fetchLocations = async () =>
   unwrapList(await clientJobApi.get('/locations'));
 
 export const fetchJobInformationMeta = async () => {
-  const response = await clientJobApi.get('/jobs/job-information/meta');
+  const response = await clientJobApi.get('/job-openings/job-information/meta');
   return response?.data ?? null;
 };
 
 export const fetchClientRequirementMeta = async () => {
-  const response = await clientJobApi.get('/jobs/client-requirement/meta');
+  const response = await clientJobApi.get('/job-openings/client-requirement/meta');
   return response?.data ?? null;
 };
+
+export const saveClientRequirement = async (request) =>
+  clientJobApi.post('/job-openings/client-requirement', request);
 
 export const toSkillOption = (row) => {
   const skillName = String(row?.skillName || row?.name || '').trim();
