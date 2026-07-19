@@ -417,6 +417,17 @@ const FilterBar = React.memo(({
         setIsDateRangeOpen(false);
       }
     };
+
+    // Map location option values (possibly UUIDs) to display labels
+    if (normalized.location && Array.isArray(locationOptions) && locationOptions.length > 0) {
+      const labelByValue = new Map(locationOptions.map((opt) => [String(opt.value), opt.label || opt.value]));
+      if (Array.isArray(normalized.location)) {
+        normalized.location = normalized.location.map((v) => labelByValue.get(String(v)) || String(v)).filter(Boolean);
+      } else {
+        const mapped = labelByValue.get(String(normalized.location));
+        normalized.location = mapped || String(normalized.location || '').trim();
+      }
+    }
     document.addEventListener("mousedown", handleOutsideClick);
     return () => document.removeEventListener("mousedown", handleOutsideClick);
   }, [isDateRangeOpen]);

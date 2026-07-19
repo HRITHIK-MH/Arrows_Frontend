@@ -233,7 +233,7 @@ const PermissionStep = ({ formData, onChange, onSetStepFields, fields = [], vali
     const matchedClient = (clientNameConfig.options || []).find(
       (option) => String(option.value) === String(clientValue)
     );
-    return matchedClient?.clientId || matchedClient?.clientUuid || matchedClient?.id || "";
+    return matchedClient?.clientUuid || matchedClient?.clientId || matchedClient?.id || "";
   }, [clientNameConfig.options]);
 
   const handleClientNameChange = (fieldName, value) => {
