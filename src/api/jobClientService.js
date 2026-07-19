@@ -398,7 +398,7 @@ export const toJobRequest = (row = {}) => {
 };
 
 export const createJob = async (row) =>
-  assertJobCreatePersisted(await clientJobApi.post('/job-openings/job-information', toJobRequest(row)));
+  assertJobCreatePersisted(await clientJobApi.post('/jobs/job-information', toJobRequest(row)));
 
 export const updateJob = async (jobId, row) =>
   assertJobUpdatePersisted(await clientJobApi.patch(`/job-openings/${encodeURIComponent(jobId)}/status`, toJobRequest(row)));
@@ -464,17 +464,17 @@ export const fetchLocations = async () =>
   unwrapList(await clientJobApi.get('/locations'));
 
 export const fetchJobInformationMeta = async () => {
-  const response = await clientJobApi.get('/job-openings/job-information/meta');
+  const response = await clientJobApi.get('/jobs/job-information/meta');
   return response?.data ?? null;
 };
 
 export const fetchClientRequirementMeta = async () => {
-  const response = await clientJobApi.get('/job-openings/client-requirement/meta');
+  const response = await clientJobApi.get('/jobs/client-requirement/meta');
   return response?.data ?? null;
 };
 
 export const saveClientRequirement = async (request) =>
-  clientJobApi.post('/job-openings/client-requirement', request);
+  clientJobApi.post('/jobs/client-requirement', request);
 
 export const toSkillOption = (row) => {
   const skillName = String(row?.skillName || row?.name || '').trim();
