@@ -209,9 +209,11 @@ const toNumberOrNull = (value) => {
 
 const normalizeEmploymentType = (value) => {
   const normalized = String(value ?? '').trim().toLowerCase();
-  if (['full-time', 'full time', 'fulltime', 'full_time'].includes(normalized)) return 'Full Time';
-  if (['part-time', 'part time', 'parttime', 'part_time'].includes(normalized)) return 'Part Time';
-  if (['contract'].includes(normalized)) return 'Contract';
+  if (['1', 'full-time', 'full time', 'fulltime', 'full_time'].includes(normalized)) return 'Full Time';
+  if (['2', 'part-time', 'part time', 'parttime', 'part_time'].includes(normalized)) return 'Part Time';
+  if (['3', 'contract', 'contract-to-hire', 'contract_to_hire', 'freelance', 'freelancer'].includes(normalized)) return 'Contract';
+  if (['4', 'intern', 'internship'].includes(normalized)) return 'Internship';
+  if (['temporary'].includes(normalized)) return 'Temporary';
   return normalized ? normalized.charAt(0).toUpperCase() + normalized.slice(1) : null;
 };
 
