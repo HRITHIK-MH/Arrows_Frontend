@@ -1180,16 +1180,22 @@ export default function Candidates() {
       role: row.role || row.currentDesignation || row.designation || "",
       email: row.primaryEmail || row.candidateEmail || "",
       secondaryEmail: row.secondaryEmail || "",
-      phoneNumber: row.phoneNumber || "",
-      location: row.location || "",
+      phoneNumber: row.phoneNumber || row.primaryPhone || "",
+      location: row.location || row.currentLocation || "",
+      preferredLocation: row.preferredLocation || "",
       dateOfBirth: row.dateOfBirth || "",
       gender: row.gender || "",
-      currentCompany: row.currentCompanyName || (row.candidateType === "fresher" ? "Not applicable" : ""),
-      experience: row.experience || row.yearsExperience || "",
-      yearsExperience: row.yearsExperience || row.experience || "",
+      currentCompany: row.currentCompanyName || row.currentCompany || (row.candidateType === "fresher" ? "Not applicable" : ""),
+      experience: row.experience || row.yearsExperience || row.totalExperience || "",
+      yearsExperience: row.yearsExperience || row.experience || row.totalExperience || "",
+      relevantExperience: row.relevantExperience || "",
       offersInHand: row.offersInHand || "",
       currentCtc: row.currentCtc || "",
       expectedCtc: row.expectedCtc || "",
+      noticePeriod: row.noticePeriod || "",
+      qualification: row.highestQualification || row.qualification || "",
+      linkedInUrl: row.linkedInUrl || "",
+      notes: row.notes || "",
       primarySkills: row.primarySkills || mappedPrimarySkills,
       secondarySkills: row.secondarySkills || mappedSecondarySkills,
       resumeFiles: Array.isArray(row.resumeFiles) ? row.resumeFiles : normalizedCandidateDocuments,
@@ -1197,7 +1203,7 @@ export default function Candidates() {
       timeline: row.timeline || [],
       rating: row.rating || "",
       ratingRounds: row.ratingRounds || [],
-      overallRating: row.overallRating || 0,
+      overallRating: row.overallRating || row.rating || 0,
       source: row.source || "",
       stage: row.stage || "",
       status: row.status || "",
@@ -1359,7 +1365,7 @@ export default function Candidates() {
       const candidate = {
         ...row,
         ...candidateDetail,
-        primaryEmail: candidateDetail?.candidateEmail || row.primaryEmail || row.candidateEmail || "",
+        primaryEmail: candidateDetail?.primaryEmail || candidateDetail?.candidateEmail || row.primaryEmail || row.candidateEmail || "",
       };
       const [firstName = "", lastName = ""] = String(candidate.candidateName || "").split(" ");
       setEditingIndex(index);
@@ -1369,29 +1375,34 @@ export default function Candidates() {
       firstName: candidate.firstName || firstName,
       lastName: candidate.lastName || lastName,
       primaryEmail: candidate.primaryEmail || candidate.candidateEmail || "",
-      secondaryEmail: row.secondaryEmail || "",
-      phoneNumber: row.phoneNumber || row.primaryPhone || "",
-      gender: row.gender || "",
-      dateOfBirth: row.dateOfBirth || "",
-      yearsExperience: row.yearsExperience || row.totalExperience || "",
-      offersInHand: row.offersInHand || "",
-      currentCompanyName: row.currentCompanyName || row.currentLocation || "",
-      jobTitleRole: row.jobTitleRole || "",
-      employmentType: row.employmentType || "",
-      noticePeriod: row.noticePeriod || "",
-      currentCtc: row.currentCtc || "",
-      expectedCtc: row.expectedCtc || "",
-      primarySkill: row.primarySkill || "",
-      secondarySkill: row.secondarySkill || "",
-      skillExperienceLevel: row.skillExperienceLevel || "",
-      skillExperienceYears: row.skillExperienceYears || "",
-      skillRating: row.skillRating || "",
-      secondarySkillExperienceLevel: row.secondarySkillExperienceLevel || "",
-      secondarySkillExperienceYears: row.secondarySkillExperienceYears || "",
-      secondarySkillRating: row.secondarySkillRating || "",
-      skills: Array.isArray(row.skills) ? row.skills : [],
-      sourceId: row.sourceId || "",
-      recruiterId: row.recruiterId || "",
+      secondaryEmail: candidate.secondaryEmail || "",
+      phoneNumber: candidate.phoneNumber || candidate.primaryPhone || "",
+      gender: candidate.gender || "",
+      dateOfBirth: candidate.dateOfBirth || "",
+      yearsExperience: candidate.yearsExperience || candidate.totalExperience || "",
+      relevantExperience: candidate.relevantExperience || "",
+      offersInHand: candidate.offersInHand || "",
+      currentCompanyName: candidate.currentCompanyName || candidate.currentCompany || candidate.currentLocation || "",
+      jobTitleRole: candidate.jobTitleRole || candidate.currentDesignation || "",
+      employmentType: candidate.employmentType || "",
+      noticePeriod: candidate.noticePeriod || "",
+      currentCtc: candidate.currentCtc || "",
+      expectedCtc: candidate.expectedCtc || "",
+      preferredLocation: candidate.preferredLocation || "",
+      qualification: candidate.highestQualification || candidate.qualification || "",
+      linkedInUrl: candidate.linkedInUrl || "",
+      notes: candidate.notes || "",
+      primarySkill: candidate.primarySkill || "",
+      secondarySkill: candidate.secondarySkill || "",
+      skillExperienceLevel: candidate.skillExperienceLevel || "",
+      skillExperienceYears: candidate.skillExperienceYears || "",
+      skillRating: candidate.skillRating || "",
+      secondarySkillExperienceLevel: candidate.secondarySkillExperienceLevel || "",
+      secondarySkillExperienceYears: candidate.secondarySkillExperienceYears || "",
+      secondarySkillRating: candidate.secondarySkillRating || "",
+      skills: Array.isArray(candidate.skills) ? candidate.skills : [],
+      sourceId: candidate.sourceId || "",
+      recruiterId: candidate.recruiterId || "",
       sourceName: candidate.sourceName || candidate.source || "",
       sourcedDate: candidate.sourcedDate || "",
       });
@@ -1748,6 +1759,10 @@ export default function Candidates() {
             <span className={styles.profileLink}>{selectedCandidate.email}</span>
           </div>
           <div className={styles.profileItem}>
+            <span className={styles.profileLabel}>Secondary Email</span>
+            <span className={styles.profileValue}>{selectedCandidate.secondaryEmail || "-"}</span>
+          </div>
+          <div className={styles.profileItem}>
             <span className={styles.profileLabel}>Phone Number</span>
             <span className={styles.profileValue}>{selectedCandidate.phoneNumber}</span>
           </div>
@@ -1760,16 +1775,36 @@ export default function Candidates() {
             <span className={styles.profileValue}>{selectedCandidate.gender}</span>
           </div>
           <div className={styles.profileItem}>
+            <span className={styles.profileLabel}>Current Location</span>
+            <span className={styles.profileValue}>{selectedCandidate.location}</span>
+          </div>
+          <div className={styles.profileItem}>
+            <span className={styles.profileLabel}>Preferred Location</span>
+            <span className={styles.profileValue}>{selectedCandidate.preferredLocation || "-"}</span>
+          </div>
+          <div className={styles.profileItem}>
             <span className={styles.profileLabel}>Current Company</span>
             <span className={styles.profileValue}>{selectedCandidate.currentCompany}</span>
           </div>
           <div className={styles.profileItem}>
-            <span className={styles.profileLabel}>Experience</span>
+            <span className={styles.profileLabel}>Current Designation</span>
+            <span className={styles.profileValue}>{selectedCandidate.role}</span>
+          </div>
+          <div className={styles.profileItem}>
+            <span className={styles.profileLabel}>Total Experience</span>
             <span className={styles.profileValue}>{selectedCandidate.experience}</span>
           </div>
           <div className={styles.profileItem}>
             <span className={styles.profileLabel}>Years of Experience</span>
             <span className={styles.profileValue}>{selectedCandidate.yearsExperience}</span>
+          </div>
+          <div className={styles.profileItem}>
+            <span className={styles.profileLabel}>Relevant Experience</span>
+            <span className={styles.profileValue}>{selectedCandidate.relevantExperience || "-"}</span>
+          </div>
+          <div className={styles.profileItem}>
+            <span className={styles.profileLabel}>Qualification</span>
+            <span className={styles.profileValue}>{selectedCandidate.qualification || "-"}</span>
           </div>
           <div className={styles.profileItem}>
             <span className={styles.profileLabel}>Offers in Hand</span>
@@ -1782,6 +1817,24 @@ export default function Candidates() {
           <div className={styles.profileItem}>
               <span className={styles.profileLabel}>Expected CTC (LPA)</span>
               <span className={styles.profileValue}>{selectedCandidate.expectedCtc} LPA</span>
+          </div>
+          <div className={styles.profileItem}>
+            <span className={styles.profileLabel}>Notice Period</span>
+            <span className={styles.profileValue}>{selectedCandidate.noticePeriod || "-"}</span>
+          </div>
+          <div className={styles.profileItem}>
+            <span className={styles.profileLabel}>LinkedIn URL</span>
+            {selectedCandidate.linkedInUrl ? (
+              <a href={selectedCandidate.linkedInUrl} target="_blank" rel="noopener noreferrer" className={styles.profileLink}>
+                {selectedCandidate.linkedInUrl}
+              </a>
+            ) : (
+              <span className={styles.profileValue}>-</span>
+            )}
+          </div>
+          <div className={styles.profileItem}>
+            <span className={styles.profileLabel}>Notes</span>
+            <span className={styles.profileValue}>{selectedCandidate.notes || "-"}</span>
           </div>
         </div>
       );
