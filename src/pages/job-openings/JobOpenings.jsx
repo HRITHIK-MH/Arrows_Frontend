@@ -1327,7 +1327,8 @@ export default function JobOpenings({ createMode = false }) {
     let normalized = {
       ...safeData,
       jobId: safeData.jobId || null,
-      clientId: resolvedClient.clientId,
+      // Prefer explicit UUID captured from the client selector when available
+      clientId: String(safeData.clientUuid || resolvedClient.clientId || '').trim(),
       clientName: resolvedClient.clientName,
       jobPositionId,
       openingJobId: safeData.openingJobId || jobPositionId,
@@ -1345,6 +1346,38 @@ export default function JobOpenings({ createMode = false }) {
     };
 
     try {
+      // Ensure location options exist so we can map UUID option values to labels
+      if ((!Array.isArray(locationOptions) || locationOptions.length === 0) && typeof fetchLocations === 'function') {
+        try {
+          const fetched = await fetchLocations();
+          if (Array.isArray(fetched) && fetched.length > 0) {
+            const mappedLocations = fetched
+              .map((item) => toOptionRecord(item))
+              .filter(Boolean)
+              .filter((option, index, list) => list.findIndex((it) => it.value === option.value) === index);
+            if (mappedLocations.length > 0) setLocationOptions(mappedLocations);
+          }
+        } catch (err) {
+          // ignore; mapping will be best-effort
+        }
+      }
+
+      // Map location UUIDs to human-readable labels before submit
+      if (normalized.location && Array.isArray(locationOptions) && locationOptions.length > 0) {
+        const labelByValue = new Map(locationOptions.map((opt) => [String(opt.value), opt.label || opt.value]));
+        if (Array.isArray(normalized.location)) {
+          normalized.location = normalized.location.map((v) => labelByValue.get(String(v)) || String(v)).filter(Boolean);
+        } else {
+          const mapped = labelByValue.get(String(normalized.location));
+          normalized.location = mapped || String(normalized.location || '').trim();
+        }
+      }
+
+      // Also handle plural `locations` field if present
+      if (normalized.locations && Array.isArray(normalized.locations) && Array.isArray(locationOptions) && locationOptions.length > 0) {
+        const labelByValue2 = new Map(locationOptions.map((opt) => [String(opt.value), opt.label || opt.value]));
+        normalized.locations = normalized.locations.map((v) => labelByValue2.get(String(v)) || String(v)).filter(Boolean);
+      }
       const isEditMode = editingIndex !== null;
       const existingJobId = String(
         submittedData?.[editingIndex]?.jobId || normalized.jobId || ""
