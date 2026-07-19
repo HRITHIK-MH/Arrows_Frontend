@@ -297,14 +297,19 @@ export default function Interviews() {
   );
 
   const [groups, setGroups] = React.useState([]);
+  const [interviewsLoaded, setInterviewsLoaded] = React.useState(false);
 
   React.useEffect(() => {
+    if (!interviewsLoaded) return;
+
+    let cancelled = false;
     const loadInterviewGroups = async () => {
       try {
         const response = await fetchInterviewGroups({ page: 1, limit: 100 });
         const normalizedGroups = Array.isArray(response?.items)
           ? response.items.map((group) => normalizeInterviewGroup(group)).filter(Boolean)
           : [];
+        if (cancelled) return;
         if (normalizedGroups.length > 0) {
           setGroups(normalizedGroups);
           setSelectedGroup((currentSelected) =>
@@ -319,7 +324,11 @@ export default function Interviews() {
     };
 
     loadInterviewGroups();
-  }, []);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [interviewsLoaded]);
 
   // Fetch interviews data
   React.useEffect(() => {
@@ -352,6 +361,7 @@ export default function Interviews() {
           : [];
 
         setInterviews(mappedInterviews);
+        setInterviewsLoaded(true);
       } catch (error) {
         console.error("Error fetching interviews:", error);
       } finally {
