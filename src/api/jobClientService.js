@@ -221,13 +221,47 @@ const normalizePositionLevel = (value) => {
   const normalized = String(value ?? '').trim().toLowerCase();
   if (!normalized) return null;
   const mapping = {
+    '1': 'Entry Level',
     entry: 'Entry Level',
+    'entry level': 'Entry Level',
+    fresher: 'Entry Level',
+    graduate: 'Entry Level',
+    trainee: 'Entry Level',
+
+    '2': 'Junior',
     junior: 'Junior',
+    associate: 'Junior',
+    'junior developer': 'Junior',
+    'junior engineer': 'Junior',
+    jr: 'Junior',
+
+    '3': 'Mid',
     mid: 'Mid',
+    'mid level': 'Mid',
+    'mid-level': 'Mid',
+    intermediate: 'Mid',
+
+    '4': 'Senior',
     senior: 'Senior',
+    sr: 'Senior',
+    'senior developer': 'Senior',
+    'senior engineer': 'Senior',
+
+    '5': 'Lead',
     lead: 'Lead',
+    principal: 'Lead',
+    'team lead': 'Lead',
+    'technical lead': 'Lead',
+    'tech lead': 'Lead',
+
+    '6': 'Manager',
     manager: 'Manager',
+    'project manager': 'Manager',
+
+    '7': 'Director',
     director: 'Director',
+
+    '8': 'Executive',
     executive: 'Executive',
   };
   return mapping[normalized] || normalized.charAt(0).toUpperCase() + normalized.slice(1);
