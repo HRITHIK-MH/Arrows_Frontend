@@ -89,6 +89,7 @@ const createEmployeeId = () => `emp-${Date.now()}-${Math.random().toString(36).s
 const withHeadcountFieldAliases = (employee = {}) => ({
   ...employee,
   consultant_name: employee.consultant_name ?? employee.consultantName ?? "",
+  email: employee.email ?? employee.emailAddress ?? employee.email_address ?? employee.contactEmail ?? employee.contact_email ?? "",
   entity: employee.entity ?? "",
   joining_date: employee.joining_date ?? employee.joiningDate ?? "",
   joiningDate: employee.joiningDate ?? employee.joining_date ?? "",
@@ -178,6 +179,7 @@ const toHeadcountFormData = (employee = {}, dropdownOptions = {}) => {
 
   return {
     ...aliasedEmployee,
+    email: aliasedEmployee.email ?? "",
     entity: resolveDropdownOptionValue(aliasedEmployee.entity, dropdownOptions.entity || []),
     work_location: normalizedWorkLocation,
     workLocation: normalizedWorkLocation,
@@ -883,6 +885,7 @@ export default function Headcount() {
                 <tr>
                   <th>S.No</th>
                   <th>Consultant Name</th>
+                  <th>Email</th>
                   <th>Joining Date</th>
                   <th>Bill Type</th>
                   <th>Entity</th>
@@ -899,7 +902,7 @@ export default function Headcount() {
               <tbody>
                 {isLoading && employees.length === 0 ? (
                   <tr>
-                    <td className={styles.emptyState} colSpan={activeTab === "exited" ? 9 : 7}>
+                    <td className={styles.emptyState} colSpan={activeTab === "exited" ? 10 : 8}>
                       Loading Headcount Data...
                     </td>
                   </tr>
@@ -908,6 +911,7 @@ export default function Headcount() {
                     <tr key={getEmployeeRowKey(employee, index)}>
                       <td>{startEntry + index}</td>
                       <td>{getConsultantName(employee)}</td>
+                      <td>{employee.email || "-"}</td>
                       <td>{formatMonthYear(employee.joiningDate)}</td>
                       <td>{employee.billingType}</td>
                       <td>{employee.entity}</td>
@@ -935,7 +939,7 @@ export default function Headcount() {
                   ))
                 ) : (
                   <tr>
-                    <td className={styles.emptyState} colSpan={activeTab === "exited" ? 9 : 7}>
+                    <td className={styles.emptyState} colSpan={activeTab === "exited" ? 10 : 8}>
                       {activeTab === "active" && hasActiveFilters
                         ? "No active employees match the selected filters."
                         : activeTab === "exited" && hasExitedFilters

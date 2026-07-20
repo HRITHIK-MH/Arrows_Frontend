@@ -1535,6 +1535,12 @@ export const employeeConfig = {
           placeholder: "Enter consultant name"
         },
         {
+          name: "email",
+          label: "Email",
+          type: "email",
+          placeholder: "Enter email address"
+        },
+        {
           name: "joining_date",
           label: "Joining Date *",
           type: "date",
@@ -1620,6 +1626,7 @@ export const employeeConfig = {
   columns: [
     { key: "joining_date", label: "Joining Date" },
     { key: "consultant_name", label: "Consultant Name" },
+    { key: "email", label: "Email" },
     { key: "entity", label: "Entity" },
     { key: "work_location", label: "Work Location" },
     { key: "mode", label: "Mode" },

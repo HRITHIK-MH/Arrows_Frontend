@@ -284,6 +284,7 @@ export default function HeadcountDetails() {
             <div className={styles.viewFormGrid}>
               {[
                 ["Consultant Name", getConsultantName(employee)],
+                ["Email", employee.email || employee.emailAddress || employee.email_address || "-"],
                 ["Joining Date", formatDayMonthYear(employee.joiningDate)],
                 ["Entity", employee.entity],
                 ["Work Location", employee.workLocation],

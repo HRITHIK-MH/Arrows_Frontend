@@ -119,7 +119,13 @@ export const normalizeHeadcountEmployee = (employee = {}) => {
     employeeId: firstValue(employee.employeeId, employee.employee_id, employee.id),
     consultant_name: firstValue(employee.consultant_name, employee.consultantName, employee.first_name),
     lastName: firstValue(employee.lastName, employee.last_name),
-    email: firstValue(employee.email),
+    email: firstValue(
+      employee.email,
+      employee.emailAddress,
+      employee.email_address,
+      employee.contactEmail,
+      employee.contact_email
+    ),
     joining_date: firstValue(employee.joining_date, employee.joiningDate),
     joiningDate: firstValue(employee.joiningDate, employee.joining_date),
     entity: firstValue(employee.entity),
@@ -178,6 +184,7 @@ const omitEmptyValues = (payload) =>
 const toAddHeadcountRequest = (employeeData = {}) =>
   omitEmptyValues({
     consultant_name: firstValue(employeeData.consultant_name, employeeData.consultantName),
+    email: firstValue(employeeData.email),
     joining_date: firstValue(employeeData.joiningDate, employeeData.joining_date),
     entity: firstValue(employeeData.entity),
     work_location: firstValue(employeeData.workLocation, employeeData.work_location),
@@ -191,6 +198,7 @@ const toAddHeadcountRequest = (employeeData = {}) =>
 const toUpdateHeadcountRequest = (employeeData = {}) =>
   omitEmptyValues({
     consultant_name: firstValue(employeeData.consultant_name, employeeData.consultantName),
+    email: firstValue(employeeData.email),
     joining_date: firstValue(employeeData.joiningDate, employeeData.joining_date),
     entity: firstValue(employeeData.entity),
     work_location: firstValue(employeeData.workLocation, employeeData.work_location),
