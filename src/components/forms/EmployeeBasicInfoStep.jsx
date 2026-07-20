@@ -60,6 +60,7 @@ const EmployeeBasicInfoStep = ({
     <div className="employee-step">
       <div className="employee-grid">
         {renderField("consultant_name")}
+        {renderField("email")}
         {renderField("joining_date")}
         {renderField("entity")}
         {renderField("work_location")}
