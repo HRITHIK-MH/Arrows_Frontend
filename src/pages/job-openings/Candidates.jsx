@@ -1584,26 +1584,48 @@ export default function Candidates() {
     );
   }, [jobMapOptions, mapQuery]);
 
-  const handleMapJob = React.useCallback(() => {
-    if (!mapJobValue) return;
+  const handleMapJob = React.useCallback(async () => {
+    if (!mapJobValue || !selectedCandidate) return;
     const selectedOption = jobMapOptions.find((option) => option.id === mapJobValue);
     if (!selectedOption) return;
-    setSelectedCandidate((prev) => {
-      if (!prev) return prev;
-      const alreadyMapped = (prev.jobApplications || []).some(
-        (job) => job.openingJobId === selectedOption.openingJobId
+
+    const existingApplications = Array.isArray(selectedCandidate.jobApplications)
+      ? selectedCandidate.jobApplications
+      : [];
+
+    const alreadyMapped = existingApplications.some(
+      (job) => job.openingJobId === selectedOption.openingJobId
+    );
+    if (alreadyMapped) return;
+
+    const nextJobApplications = [...existingApplications, selectedOption];
+
+    setLoading(true);
+    try {
+      await updateCandidate(selectedCandidate.candidateId, {
+        jobApplications: nextJobApplications,
+      });
+
+      setSelectedCandidate((prev) =>
+        prev
+          ? {
+              ...prev,
+              jobApplications: nextJobApplications,
+            }
+          : prev
       );
-      if (alreadyMapped) return prev;
-      return {
-        ...prev,
-        jobApplications: [...(prev.jobApplications || []), selectedOption],
-      };
-    });
-    setMapJobValue("");
-    setMapQuery("");
-    setIsMapDropdownOpen(false);
-    setActiveProfileTab("Job Applications");
-  }, [jobMapOptions, mapJobValue]);
+      showTransientMessage("Job mapped to candidate successfully");
+    } catch (error) {
+      console.error("Failed to map job to candidate:", error);
+      alert("Unable to save mapped job. Please try again.");
+    } finally {
+      setLoading(false);
+      setMapJobValue("");
+      setMapQuery("");
+      setIsMapDropdownOpen(false);
+      setActiveProfileTab("Job Applications");
+    }
+  }, [jobMapOptions, mapJobValue, selectedCandidate, showTransientMessage]);
 
   const activeSkillKey = activeSkillType === "primary" ? "primarySkills" : "secondarySkills";
   const skillOptions = React.useMemo(

@@ -1,6 +1,7 @@
 import * as React from "react";
 import { FiArrowLeft, FiCheck, FiEye, FiFileText, FiTrash2, FiX } from "react-icons/fi";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { createCandidate } from "../../api/candidateService";
 import { parseResume } from "../../api/resumeParserService";
 import { calculateAtsScore } from "../../utils/atsScoreCalculator";
 import styles from "./JobDescription.module.scss";
@@ -204,6 +205,58 @@ const deriveCandidateFromFile = (
   };
 };
 
+const parseInteger = (value) => {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? Math.round(numeric) : undefined;
+};
+
+const normalizeSkillList = (skills) => {
+  if (!skills) return undefined;
+  if (Array.isArray(skills)) return skills.filter(Boolean).map((skill) => String(skill).trim()).filter(Boolean);
+  return String(skills)
+    .split(/[,;\n]+/)
+    .map((skill) => String(skill).trim())
+    .filter(Boolean);
+};
+
+const buildCandidateInformationPayload = (row, jobOpeningId) => {
+  const parsed = row.parsedResume || {};
+  const nameParts = String(parsed.firstName || row.candidateName || "")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+  const [firstName = "", ...restName] = nameParts;
+  const lastName = parsed.lastName || restName.join(" ");
+
+  const ratingValue = Number(
+    String(row.rating || "")
+      .replace(/\/5$/, "")
+      .replace(/[^0-9.]/g, "")
+  );
+
+  const skills = normalizeSkillList(parsed.skills || parsed.skillList || parsed.skillsInformation || parsed.skillComments);
+
+  return {
+    firstName: firstName || "",
+    lastName: lastName || "",
+    primaryEmail: parsed.email || row.candidateEmail || "",
+    primaryPhone: parsed.phone || undefined,
+    currentLocation: parsed.location || parsed.currentLocation || undefined,
+    currentDesignation: parsed.currentDesignation || parsed.currentTitle || undefined,
+    currentCompany: parsed.currentCompany || undefined,
+    totalExperience: parseInteger(parsed.totalExperience || parsed.totalExperienceYears || parsed.yearsExperience),
+    highestQualification: parsed.highestQualification || undefined,
+    skills,
+    source: row.source || "Uploaded Document",
+    rating: Number.isFinite(ratingValue) ? ratingValue : undefined,
+    stage: "Sourced",
+    status: "In Progress",
+    notes: row.parsedResume ? "Uploaded from resume and parsed automatically." : undefined,
+    jobId: jobOpeningId || undefined,
+    openingJobId: jobOpeningId || undefined,
+  };
+};
+
 const JobDescription = () => {
   const navigate = useNavigate();
   const { state } = useLocation();
@@ -258,6 +311,7 @@ const JobDescription = () => {
   const [candidatePreview, setCandidatePreview] = React.useState(null);
   const [preScreeningModal, setPreScreeningModal] = React.useState(null);
   const [stageMoveToast, setStageMoveToast] = React.useState("");
+  const [isApprovingCandidates, setIsApprovingCandidates] = React.useState(false);
 
   React.useEffect(() => {
     if (!stageTabs.includes(activeStage)) {
@@ -412,20 +466,72 @@ const JobDescription = () => {
     });
   }, [displayedRows]);
 
-  const handleApproveMappedCandidates = React.useCallback(() => {
+  const handleApproveMappedCandidates = React.useCallback(async () => {
     if (selectedRowIds.length === 0) return;
 
-    setCandidateRows((prev) =>
-      prev.map((row) =>
-        selectedRowIds.includes(row.rowId)
-          ? { ...row, stage: normalizeStage("Sourced"), status: "In Progress" }
-          : row
-      )
+    const jobOpeningId = String(job.openingJobId || jobId || "").trim();
+    const rowsToApprove = candidateRows.filter((row) => selectedRowIds.includes(row.rowId));
+
+    if (rowsToApprove.length === 0) {
+      setSelectedRowIds([]);
+      return;
+    }
+
+    setIsApprovingCandidates(true);
+
+    const results = await Promise.allSettled(
+      rowsToApprove.map(async (row) => {
+        const payload = buildCandidateInformationPayload(row, jobOpeningId);
+        const response = await createCandidate(payload);
+        return {
+          rowId: row.rowId,
+          response,
+        };
+      })
     );
-    setActiveStage("Sourced");
-    setSearchTerm("");
-    setSelectedRowIds([]);
-  }, [selectedRowIds]);
+
+    const succeededRows = results
+      .filter((result) => result.status === "fulfilled")
+      .map((result) => result.value);
+
+    const succeededRowIds = succeededRows.map((item) => item.rowId);
+
+    const failedRowIds = results
+      .map((result, index) => ({ result, rowId: rowsToApprove[index].rowId }))
+      .filter(({ result }) => result.status === "rejected")
+      .map(({ rowId }) => rowId);
+
+    setCandidateRows((prev) =>
+      prev.map((row) => {
+        const success = succeededRows.find((item) => item.rowId === row.rowId);
+        if (!success) return row;
+        return {
+          ...row,
+          candidateId: success.response?.candidateId || row.candidateId,
+          candidateName: success.response?.candidateName || row.candidateName,
+          stage: normalizeStage("Sourced"),
+          status: "In Progress",
+        };
+      })
+    );
+
+    if (succeededRowIds.length > 0) {
+      setActiveStage("Sourced");
+      setSearchTerm("");
+      setStageMoveToast(
+        `${succeededRowIds.length} candidate${succeededRowIds.length > 1 ? "s" : ""} approved and saved`
+      );
+    }
+
+    if (failedRowIds.length > 0) {
+      setSelectedRowIds(failedRowIds);
+      console.error("Some candidate approvals failed for rows:", failedRowIds);
+    } else {
+      setSelectedRowIds([]);
+    }
+
+    setIsApprovingCandidates(false);
+  }, [candidateRows, job, jobId, normalizeStage, selectedRowIds]);
 
   React.useEffect(() => {
     if (!stageMoveToast) return undefined;
@@ -747,9 +853,9 @@ const JobDescription = () => {
                 type="button"
                 className={styles.approveBtn}
                 onClick={handleApproveMappedCandidates}
-                disabled={selectedRowIds.length === 0}
+                disabled={selectedRowIds.length === 0 || isApprovingCandidates}
               >
-                Approve
+                {isApprovingCandidates ? "Approving..." : "Approve"}
               </button>
             </div>
           ) : null}
