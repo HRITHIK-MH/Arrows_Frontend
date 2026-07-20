@@ -165,7 +165,6 @@ const omitEmptyValues = (payload) =>
 
 const toAddHeadcountRequest = (employeeData = {}) =>
   omitEmptyValues({
-    employee_id: firstValue(employeeData.employee_id, employeeData.employeeId, employeeData.id),
     consultant_name: firstValue(employeeData.consultant_name, employeeData.consultantName),
     joining_date: firstValue(employeeData.joiningDate, employeeData.joining_date),
     entity: firstValue(employeeData.entity),
