@@ -654,10 +654,16 @@ export default function Interviews() {
     setShowCreateGroupModal(true);
   };
 
-  const nextUsrIndexRef = React.useRef(() => {
-    const stored = Number(localStorage.getItem('nextUsrIndex') || 101);
-    return Number.isFinite(stored) && stored >= 100 ? stored : 101;
-  }());
+  const initialNextUsrIndex = (() => {
+    try {
+      const stored = Number(localStorage.getItem('nextUsrIndex') || 101);
+      return Number.isFinite(stored) && stored >= 100 ? stored : 101;
+    } catch (e) {
+      return 101;
+    }
+  })();
+
+  const nextUsrIndexRef = React.useRef(initialNextUsrIndex);
 
   const generateNextUserCode = () => {
     const idx = nextUsrIndexRef.current;
