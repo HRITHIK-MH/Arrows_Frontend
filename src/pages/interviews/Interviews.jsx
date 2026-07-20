@@ -330,6 +330,35 @@ export default function Interviews() {
     };
   }, [interviewsLoaded]);
 
+  // Load interview groups when the 'Interview Members Panel' tab is opened
+  React.useEffect(() => {
+    if (activeTab !== "group") return;
+
+    let cancelled = false;
+    const loadGroupsForPanel = async () => {
+      try {
+        const response = await fetchInterviewGroups({ page: 1, limit: 100 });
+        const normalizedGroups = Array.isArray(response?.items)
+          ? response.items.map((group) => normalizeInterviewGroup(group)).filter(Boolean)
+          : [];
+        if (cancelled) return;
+        setGroups(normalizedGroups);
+        setSelectedGroup((currentSelected) =>
+          normalizedGroups.some((g) => g.id === currentSelected)
+            ? currentSelected
+            : normalizedGroups[0]?.id || ""
+        );
+      } catch (error) {
+        console.warn("Failed to load interview groups for panel:", error);
+      }
+    };
+
+    loadGroupsForPanel();
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTab]);
+
   // Fetch interviews data
   React.useEffect(() => {
     const loadInterviews = async () => {
@@ -658,7 +687,7 @@ export default function Interviews() {
     try {
       const stored = Number(localStorage.getItem('nextUsrIndex') || 101);
       return Number.isFinite(stored) && stored >= 100 ? stored : 101;
-    } catch (e) {
+    } catch (_) {
       return 101;
     }
   })();
@@ -696,14 +725,23 @@ export default function Interviews() {
     }
 
     const interviewerMeta = getInterviewerMeta(newGroupInterviewer);
-    const members = interviewerMeta
-      ? [
-          {
-            userId: interviewerMeta.userId || newGroupInterviewer,
-            role: interviewerMeta.designation || "Panel Member",
-          },
-        ]
-      : [];
+    const inferRole = (designation) => {
+      const d = String(designation || "").toLowerCase();
+      if (d.includes("lead")) return "Panel Lead";
+      if (d.includes("observer")) return "Observer";
+      return "Panel Member";
+    };
+
+    const members = [];
+    if (interviewerMeta) {
+      const resolvedUserId = interviewerMeta.userId && String(interviewerMeta.userId).trim()
+        ? String(interviewerMeta.userId).trim()
+        : generateNextUserCode();
+      members.push({ userId: resolvedUserId, role: inferRole(interviewerMeta.designation) });
+    } else if (newGroupInterviewer && String(newGroupInterviewer).trim()) {
+      // No metadata found; generate a user code so backend can resolve/create
+      members.push({ userId: generateNextUserCode(), role: "Panel Member" });
+    }
 
     const payload = {
       groupName: groupName,
