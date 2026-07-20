@@ -654,6 +654,18 @@ export default function Interviews() {
     setShowCreateGroupModal(true);
   };
 
+  const nextUsrIndexRef = React.useRef(() => {
+    const stored = Number(localStorage.getItem('nextUsrIndex') || 101);
+    return Number.isFinite(stored) && stored >= 100 ? stored : 101;
+  }());
+
+  const generateNextUserCode = () => {
+    const idx = nextUsrIndexRef.current;
+    nextUsrIndexRef.current = idx + 1;
+    localStorage.setItem('nextUsrIndex', String(nextUsrIndexRef.current));
+    return `USR-${String(idx).padStart(3, '0')}`;
+  };
+
   const handleCloseCreateGroupModal = () => {
     setShowCreateGroupModal(false);
     setNewGroupName("");

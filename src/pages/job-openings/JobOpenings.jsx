@@ -25,6 +25,7 @@ import {
   fetchClients,
   fetchEmploymentTypes,
   fetchJobInformationMeta,
+  fetchJobById,
   fetchJobs,
   fetchLocations,
   fetchPositionLevels,
@@ -37,7 +38,7 @@ import {
   toSkillOption,
   updateJob as updateJobApi,
 } from "../../api/jobClientService";
-import { saveTeamMembers as saveTeamMembersApi } from "../../api/teamService";
+import { saveTeamMembers as saveTeamMembersApi, fetchJobTeamMembers } from "../../api/teamService";
 import { getClientOptions, loadClientRows } from "../../utils/clientStore";
 import styles from "./JobOpenings.module.scss";
 
@@ -1264,15 +1265,53 @@ export default function JobOpenings({ createMode = false }) {
     navigate("/job-openings");
   }, [navigate]);
 
-  const handleViewJobOpening = React.useCallback((row, index) => {
+  const handleViewJobOpening = React.useCallback(async (row, index) => {
     console.log('View job opening:', row);
-    setSelectedJobOpening({
-      ...row,
-      openingJobId: row.openingJobId || row.jobPositionId || String(index),
-    });
-    setIsCandidateDrawerOpen(false);
-    setDrawerTab("Job Information");
-    setIsViewDrawerOpen(true);
+    const id = row.openingJobId || row.jobPositionId || String(index);
+    try {
+      const jobDetail = await fetchJobById(id).catch(() => null);
+      const teamMembers = await fetchJobTeamMembers(id).catch(() => []);
+
+      const normalized = {
+        ...(jobDetail || row),
+        openingJobId: jobDetail?.openingJobId || jobDetail?.jobPositionId || id,
+        postingTitle: jobDetail?.postingTitle || row.postingTitle || row.positionName || "-",
+        clientName: jobDetail?.clientName || row.clientName || "-",
+        clientId: jobDetail?.clientId || row.clientId || "-",
+        assignedRecruiters:
+          jobDetail?.assignedRecruiters || row.assignedRecruiters || (teamMembers.length ? teamMembers.map(m => m.name || m.displayName || m.id).join(', ') : "-"),
+        contactPersonName: jobDetail?.contactPersonName || row.contactPersonName || jobDetail?.accountManager || row.accountManager || "-",
+        contactPersonEmail: jobDetail?.contactPersonEmail || row.contactPersonEmail || "-",
+        contactPersonPhone: jobDetail?.contactPersonPhone || row.contactPersonPhone || "-",
+        city: jobDetail?.city || row.city || jobDetail?.location || row.location || "-",
+        workType: jobDetail?.workType || row.workType || "-",
+        minExperience: jobDetail?.minExperience ?? row.minExperience ?? 0,
+        maxExperience: jobDetail?.maxExperience ?? row.maxExperience ?? 0,
+        noOfPositions: jobDetail?.noOfPositions || row.noOfPositions || row.positions || "-",
+        jobReceivedDate: jobDetail?.jobReceivedDate || row.jobReceivedDate || row.targetDate || "",
+        priority: jobDetail?.priority || row.priority || "Medium",
+        technicalSkills: jobDetail?.technicalSkills || row.technicalSkills || "",
+        softSkills: jobDetail?.softSkills || row.softSkills || "",
+        additionalSkills: jobDetail?.additionalSkills || row.additionalSkills || "",
+        targetDate: jobDetail?.targetDate || row.targetDate || "",
+        jobType: jobDetail?.jobType || row.jobType || "",
+        candidates: jobDetail?.candidates || row.candidates || [],
+      };
+
+      setSelectedJobOpening(normalized);
+      setIsCandidateDrawerOpen(false);
+      setDrawerTab("Job Information");
+      setIsViewDrawerOpen(true);
+    } catch (err) {
+      console.error('Failed to load job details or team members', err);
+      setSelectedJobOpening({
+        ...row,
+        openingJobId: row.openingJobId || row.jobPositionId || String(index),
+      });
+      setIsCandidateDrawerOpen(false);
+      setDrawerTab("Job Information");
+      setIsViewDrawerOpen(true);
+    }
   }, []);
 
   const handleViewCandidate = React.useCallback((candidate, row, index) => {

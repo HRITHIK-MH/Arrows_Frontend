@@ -153,6 +153,13 @@ const normalizeText = (value, fallback = '-') => {
 export const fetchJobs = async () =>
   unwrapList(await clientJobApi.get('/jobs'));
 
+export const fetchJobById = async (id) => {
+  if (!id) throw new Error('Missing job id');
+  const response = await clientJobApi.get(`/jobs/${encodeURIComponent(id)}`);
+  const envelope = assertApiSucceeded(response, 'Failed to load job details.');
+  return envelope.data || response?.data || null;
+};
+
 const firstNonEmpty = (...values) =>
   values.map((value) => String(value ?? '').trim()).find(Boolean) || '';
 
