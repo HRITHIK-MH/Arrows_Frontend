@@ -198,7 +198,6 @@ const toAddHeadcountRequest = (employeeData = {}) =>
 const toUpdateHeadcountRequest = (employeeData = {}) =>
   omitEmptyValues({
     consultant_name: firstValue(employeeData.consultant_name, employeeData.consultantName),
-    email: firstValue(employeeData.email),
     joining_date: firstValue(employeeData.joiningDate, employeeData.joining_date),
     entity: firstValue(employeeData.entity),
     work_location: firstValue(employeeData.workLocation, employeeData.work_location),
