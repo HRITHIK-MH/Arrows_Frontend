@@ -151,6 +151,17 @@ const toTitleCase = (value) =>
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
 
+const getParsedResumeEmail = (parsedResume = {}) => {
+  return (
+    parsedResume?.primaryEmail ||
+    parsedResume?.primaryEmailAddress ||
+    parsedResume?.primary_email_address ||
+    parsedResume?.email ||
+    parsedResume?.primary_email ||
+    ""
+  );
+};
+
 const deriveCandidateFromFile = (
   file,
   existingRows,
@@ -160,7 +171,7 @@ const deriveCandidateFromFile = (
 ) => {
   const baseName = String(file?.name || "")
     .replace(/\.[^/.]+$/, "")
-    .replace(/[_\-]+/g, " ")
+    .replace(/[_-]+/g, " ")
     .trim();
 
   const tokens = baseName.split(/\s+/).filter(Boolean);
@@ -169,11 +180,6 @@ const deriveCandidateFromFile = (
     .join(" ")
     .trim();
   const fullName = parsedFullName || toTitleCase(tokens.slice(0, 2).join(" ")) || "Uploaded Candidate";
-  const emailToken = fullName
-    .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, "")
-    .trim()
-    .replace(/\s+/g, ".");
 
   const numericIds = existingRows
     .map((row) => {
@@ -193,7 +199,7 @@ const deriveCandidateFromFile = (
     rowId: `${candidateId}-${Date.now()}`,
     candidateId,
     candidateName: fullName,
-    candidateEmail: parsedResume?.email || "",
+    candidateEmail: getParsedResumeEmail(parsedResume),
     recruiterName: recruiterName || "",
     source: "Uploaded Document",
     rating: "0/5",
@@ -239,7 +245,7 @@ const buildCandidateInformationPayload = (row, jobOpeningId) => {
   return {
     firstName: firstName || "",
     lastName: lastName || "",
-    primaryEmail: parsed.email || row.candidateEmail || "",
+    primaryEmail: getParsedResumeEmail(parsed) || row.candidateEmail || "",
     primaryPhone: parsed.phone || undefined,
     currentLocation: parsed.location || parsed.currentLocation || undefined,
     currentDesignation: parsed.currentDesignation || parsed.currentTitle || undefined,
@@ -300,7 +306,9 @@ const JobDescription = () => {
     return normalizedRows;
   }, [job.candidates, job.hiringManager, normalizeStage]);
 
-  const [activeStage, setActiveStage] = React.useState("Map Candidates");
+  const [activeStage, setActiveStage] = React.useState(
+    stageTabs.includes("Map Candidates") ? "Map Candidates" : stageTabs[0] || "Map Candidates"
+  );
   const [searchTerm, setSearchTerm] = React.useState("");
   const [candidateRows, setCandidateRows] = React.useState(preparedRows);
   const [selectedRowIds, setSelectedRowIds] = React.useState([]);
@@ -311,13 +319,8 @@ const JobDescription = () => {
   const [candidatePreview, setCandidatePreview] = React.useState(null);
   const [preScreeningModal, setPreScreeningModal] = React.useState(null);
   const [stageMoveToast, setStageMoveToast] = React.useState("");
+  const [candidateErrorMessage, setCandidateErrorMessage] = React.useState("");
   const [isApprovingCandidates, setIsApprovingCandidates] = React.useState(false);
-
-  React.useEffect(() => {
-    if (!stageTabs.includes(activeStage)) {
-      setActiveStage("Map Candidates");
-    }
-  }, [activeStage, stageTabs]);
 
   const displayedRows = React.useMemo(() => {
     const normalizedSearch = searchTerm.trim().toLowerCase();
@@ -477,12 +480,30 @@ const JobDescription = () => {
       return;
     }
 
+    const rowsMissingEmail = rowsToApprove.filter(
+      (row) => !getParsedResumeEmail(row.parsedResume) && !row.candidateEmail
+    );
+
+    if (rowsMissingEmail.length > 0) {
+      const names = rowsMissingEmail
+        .map((row) => row.candidateName || row.candidateId)
+        .join(", ");
+      setCandidateErrorMessage(
+        `Cannot save candidate(s) without email from uploaded resume: ${names}. Please verify the document or enter the email before approving.`
+      );
+      return;
+    }
+
+    setCandidateErrorMessage("");
     setIsApprovingCandidates(true);
 
     const results = await Promise.allSettled(
       rowsToApprove.map(async (row) => {
         const payload = buildCandidateInformationPayload(row, jobOpeningId);
         const response = await createCandidate(payload);
+        if (!response || !response.candidateId) {
+          throw new Error("Candidate save did not return a persisted record.");
+        }
         return {
           rowId: row.rowId,
           response,
@@ -496,10 +517,14 @@ const JobDescription = () => {
 
     const succeededRowIds = succeededRows.map((item) => item.rowId);
 
-    const failedRowIds = results
-      .map((result, index) => ({ result, rowId: rowsToApprove[index].rowId }))
-      .filter(({ result }) => result.status === "rejected")
-      .map(({ rowId }) => rowId);
+    const failedRows = results
+      .map((result, index) => ({ result, row: rowsToApprove[index] }))
+      .filter(({ result }) => result.status === "rejected");
+
+    const failedRowIds = failedRows.map(({ row }) => row.rowId);
+    const failedNames = failedRows
+      .map(({ row }) => row.candidateName || row.candidateId)
+      .join(", ");
 
     setCandidateRows((prev) =>
       prev.map((row) => {
@@ -525,7 +550,10 @@ const JobDescription = () => {
 
     if (failedRowIds.length > 0) {
       setSelectedRowIds(failedRowIds);
-      console.error("Some candidate approvals failed for rows:", failedRowIds);
+      setCandidateErrorMessage(
+        `Failed to save candidate(s): ${failedNames}. Please try again or check the resume email.`
+      );
+      console.error("Candidate save failures:", failedRows);
     } else {
       setSelectedRowIds([]);
     }
@@ -628,6 +656,7 @@ const JobDescription = () => {
     }
     setIsUploadModalOpen(false);
     setIsCandidateParsing(false);
+    setCandidateErrorMessage("");
   };
 
   const getScoreCircleStyle = (score) => {
@@ -655,6 +684,11 @@ const JobDescription = () => {
 
   return (
     <div className={styles.page}>
+      {candidateErrorMessage ? (
+        <div className={styles.errorToast}>
+          <span className={styles.toastText}>{candidateErrorMessage}</span>
+        </div>
+      ) : null}
       {stageMoveToast ? (
         <div className={styles.stageMoveToast}>
           <span className={styles.toastIcon}>
