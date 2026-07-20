@@ -32,6 +32,18 @@ const normalizeBillTypeFilter = (value = '') => {
   return text;
 };
 
+const formatBillingTypeForPost = (value = '') => {
+  const normalized = String(value || '').trim().toLowerCase();
+  if (!normalized) return '';
+  if (normalized === 'billable') return 'Billable';
+  if (normalized === 'non billable' || normalized === 'nonbillable' || normalized === 'non-billable') return 'Non-Billable';
+  // Fallback: Title case each word and preserve hyphens
+  return normalized
+    .split(/[-_\s]+/)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(' ');
+};
+
 const extractBackendErrorMessage = (payload, fallback) =>
   firstValue(
     payload?.message,
@@ -172,7 +184,7 @@ const toAddHeadcountRequest = (employeeData = {}) =>
     mode: firstValue(employeeData.mode),
     cost: firstValue(employeeData.cost),
     customer: firstValue(employeeData.customer),
-    billing_type: normalizeBillTypeFilter(firstValue(employeeData.billingType, employeeData.billing_type)),
+    billing_type: formatBillingTypeForPost(normalizeBillTypeFilter(firstValue(employeeData.billingType, employeeData.billing_type))),
     created_by: firstValue(employeeData.createdBy, employeeData.created_by, 'Demo Admin'),
   });
 
