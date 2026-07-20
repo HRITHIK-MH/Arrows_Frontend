@@ -1134,6 +1134,23 @@ export default function JobOpenings({ createMode = false }) {
     return getNextJobOpeningId(submittedData);
   }, [submittedData]);
 
+  // If the create form is open and we're creating a new job (editingIndex === null),
+  // ensure the `jobPositionId` is updated when `nextJobPositionId` changes due to
+  // submittedData being loaded after the form was initialized.
+  React.useEffect(() => {
+    if (!showJobOpeningForm) return;
+    if (editingIndex !== null) return; // don't touch when editing existing job
+    setEditingData((prev) => {
+      if (!prev) return { jobPositionId: nextJobPositionId };
+      const currentId = String(prev.jobPositionId || "").trim();
+      // Only auto-update if the field is empty or still has the placeholder/default
+      if (!currentId || currentId === "JOP-001") {
+        return { ...prev, jobPositionId: nextJobPositionId };
+      }
+      return prev;
+    });
+  }, [nextJobPositionId, showJobOpeningForm, editingIndex]);
+
   React.useEffect(() => {
     if (isRecruiter && createMode) {
       setShowJobOpeningForm(false);

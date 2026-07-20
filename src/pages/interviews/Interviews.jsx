@@ -361,6 +361,8 @@ export default function Interviews() {
 
   // Fetch interviews data
   React.useEffect(() => {
+    if (activeTab !== "list") return;
+
     const loadInterviews = async () => {
       setLoading(true);
       try {
@@ -399,7 +401,7 @@ export default function Interviews() {
     };
 
     loadInterviews();
-  }, [searchTerm, filterInterviewType, filterStatus, sortConfig]);
+  }, [activeTab, searchTerm, filterInterviewType, filterStatus, sortConfig]);
 
   React.useEffect(() => {
     let isMounted = true;
