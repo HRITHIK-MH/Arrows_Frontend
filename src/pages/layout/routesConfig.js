@@ -11,7 +11,7 @@ import {
   FiUserPlus,
   FiUsers
 } from "react-icons/fi";
-
+import { isBusinessStakeholderValue } from "../../utils/userRoleUtils";
 
 export const LINKS = [
   { to: "/dashboard", label: "Dashboard", icon: FiHome },
@@ -29,7 +29,10 @@ export const LINKS = [
 
 export const isBusinessStakeholder = () => {
   if (typeof window === "undefined") return false;
-  return String(window.localStorage.getItem("userPersona") || "").toLowerCase() === "businessstakeholder";
+
+  const personaValue = window.localStorage.getItem("userPersona") || "";
+  const roleValue = window.localStorage.getItem("userRole") || "";
+  return isBusinessStakeholderValue(personaValue) || isBusinessStakeholderValue(roleValue);
 };
 
 export const getVisibleLinks = () => LINKS.filter((link) => !link.stakeholderOnly || isBusinessStakeholder());

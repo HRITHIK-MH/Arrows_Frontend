@@ -476,6 +476,17 @@ export const fetchClientRequirementMeta = async () => {
 export const saveClientRequirement = async (request) =>
   clientJobApi.post('/jobs/client-requirement', request);
 
+export const submitJobOpening = async (request = {}) => {
+  const openingJobId = String(request?.openingJobId || '').trim();
+  const payload = {
+    ...request,
+    openingJobId: openingJobId || null,
+    submit: request?.submit !== undefined ? Boolean(request.submit) : true,
+  };
+
+  return clientJobApi.post('/jobs', payload);
+};
+
 export const toSkillOption = (row) => {
   const skillName = String(row?.skillName || row?.name || '').trim();
   const skillCode = String(row?.skillCode || '').trim();

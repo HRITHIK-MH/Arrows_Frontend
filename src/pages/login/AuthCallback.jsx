@@ -2,12 +2,7 @@ import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { startAuthSession } from '../../utils/authSession';
 import { deriveNameFromEmail } from '../../utils/userDisplay';
-
-const normalizeRoleValue = (value) => {
-  const text = String(value || '').trim().toLowerCase();
-  if (!text) return '';
-  return text.replace(/[\s_-]+/g, '');
-};
+import { normalizePersonaValue, normalizeRoleValue } from '../../utils/userRoleUtils';
 
 const extractRoleValue = (response = {}) => {
   if (response?.role) {
@@ -37,14 +32,8 @@ const extractRoleValue = (response = {}) => {
   return '';
 };
 
-const extractPersonaValue = (response = {}) => {  
-  const toPersona = (value) => {
-    const text = String(value || '').trim().toLowerCase();
-    const compact = text.replace(/[\s_-]+/g, '');
-    return text === 'business stakeholder' || compact === 'businessstakeholder' || compact === 'stakeholder'
-      ? 'businessstakeholder'
-      : '';
-  };
+const extractPersonaValue = (response = {}) => {
+  const toPersona = (value) => normalizePersonaValue(value);
 
   const directPersona = toPersona(response?.persona || response?.role);
   if (directPersona) return directPersona;

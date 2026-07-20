@@ -33,6 +33,7 @@ import {
   fetchWorkTypes,
   normalizeJobRecord as normalizeApiJob,
   saveClientRequirement as saveClientRequirementApi,
+  submitJobOpening as submitJobOpeningApi,
   toSkillOption,
   updateJob as updateJobApi,
 } from "../../api/jobClientService";
@@ -1504,6 +1505,17 @@ export default function JobOpenings({ createMode = false }) {
             },
           });
         }
+      }
+
+      if (!isEditMode && hasValidClientId && hasValidTitle) {
+        const persistedJobOpeningId = getPersistedJobOpeningId(normalized);
+        if (!persistedJobOpeningId) {
+          throw new Error("The job opening could not be submitted because the backend did not return a valid opening id.");
+        }
+        await submitJobOpeningApi({
+          openingJobId: persistedJobOpeningId,
+          submit: true,
+        });
       }
     } catch (error) {
       console.error("Job save API failed:", error);

@@ -10,6 +10,7 @@ import { fetchSsoAuthorizeUrl, loginWithPassword } from '../../api/authService';
 import { deriveNameFromEmail } from '../../utils/userDisplay';
 import arrowLogo from "../../assets/login/logo_login.png";
 import { startAuthSession } from '../../utils/authSession';
+import { normalizePersonaValue } from '../../utils/userRoleUtils';
 import ForgotPasswordModal from './ForgotPasswordModal';
 import { useNavigate } from 'react-router-dom';
 import './Login.css';
@@ -70,7 +71,7 @@ const Login = () => {
     if (roleValue) {
       localStorage.setItem('userRole', roleValue);
     }
-    if (personaValue === 'businessstakeholder' || personaValue === 'business stakeholder') {
+    if (normalizePersonaValue(personaValue) === 'businessstakeholder') {
       localStorage.setItem('userPersona', 'businessstakeholder');
     } else {
       localStorage.removeItem('userPersona');
