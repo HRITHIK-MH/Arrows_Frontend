@@ -9,7 +9,6 @@ import {
   FiFileText,
   FiFilter,
   FiMail,
-  FiMapPin,
   FiPhone,
   FiPlus,
   FiSearch,
@@ -26,7 +25,6 @@ import {
   fetchCandidateDetail,
   fetchCandidates,
   fetchCandidateFiltersMeta,
-  fetchCandidateGenders,
   fetchCandidateExperienceYears,
   fetchCandidateOffersInHand,
   fetchExperienceLevels,
@@ -356,6 +354,7 @@ export default function Candidates() {
   const [showDataTable, setShowDataTable] = React.useState(true);
   const [submittedData, setSubmittedData] = React.useState([]);
   const [loading, setLoading] = React.useState(false);
+  const [candidateActionLoading, setCandidateActionLoading] = React.useState(false);
   const [candidateLoadError, setCandidateLoadError] = React.useState("");
   const [pagination, setPagination] = React.useState({ page: 1, limit: 100, totalRecords: 0, totalPages: 1 });
   const [editingIndex, setEditingIndex] = React.useState(null);
@@ -384,7 +383,6 @@ export default function Candidates() {
   const [activeDraftId, setActiveDraftId] = React.useState(null);
   const [candidateFormKey, setCandidateFormKey] = React.useState(0);
   const [candidateMetaOptions, setCandidateMetaOptions] = React.useState({});
-  const [candidateGenderOptions, setCandidateGenderOptions] = React.useState([]);
   const [candidateExperienceYearsOptions, setCandidateExperienceYearsOptions] = React.useState([]);
   const [candidateOffersInHandOptions, setCandidateOffersInHandOptions] = React.useState([]);
   const [candidateEmploymentTypeOptions, setCandidateEmploymentTypeOptions] = React.useState([]);
@@ -574,12 +572,6 @@ export default function Candidates() {
 
     const loadDropdownMetadata = async () => {
       const fallbackOptions = {
-        genders: [
-          { value: "Male", label: "Male" },
-          { value: "Female", label: "Female" },
-          { value: "Other", label: "Other" },
-          { value: "Prefer not to say", label: "Prefer not to say" },
-        ],
         experienceYears: [
           { value: "0-1", label: "0-1 years" }, { value: "1-3", label: "1-3 years" },
           { value: "3-5", label: "3-5 years" }, { value: "5-7", label: "5-7 years" },
@@ -603,7 +595,6 @@ export default function Candidates() {
       try {
         const [
           candidateMeta,
-          genders,
           experienceYears,
           offersInHand,
           employmentTypes,
@@ -613,7 +604,6 @@ export default function Candidates() {
           recruiters,
         ] = await Promise.all([
           fetchCandidateFiltersMeta(),
-          fetchCandidateGenders(),
           fetchCandidateExperienceYears(),
           fetchCandidateOffersInHand(),
           fetchEmploymentTypes(),
@@ -637,9 +627,6 @@ export default function Candidates() {
                 .filter(Boolean)
                 .filter((option, index, list) => list.findIndex((entry) => entry.value === option.value) === index)
             : [];
-
-        const genderOptions = normalizeOptions(genders);
-        setCandidateGenderOptions(genderOptions.length > 0 ? genderOptions : fallbackOptions.genders);
 
         const experienceYearOptions = normalizeOptions(experienceYears);
         setCandidateExperienceYearsOptions(
@@ -687,14 +674,6 @@ export default function Candidates() {
         // Hardcoded fallback options when API fails
         if (!isMounted) return;
         
-        // Fallback gender options
-        setCandidateGenderOptions([
-          { value: "Male", label: "Male" },
-          { value: "Female", label: "Female" },
-          { value: "Other", label: "Other" },
-          { value: "Prefer not to say", label: "Prefer not to say" },
-        ]);
-
         // Fallback experience years options
         setCandidateExperienceYearsOptions([
           { value: "0-1", label: "0-1 years" },
@@ -829,7 +808,6 @@ export default function Candidates() {
 
         const optionOverrides = {
           recruiterId: candidateRecruiterOptions,
-          gender: candidateGenderOptions,
           yearsExperience: candidateExperienceYearsOptions,
           offersInHand: candidateOffersInHandOptions,
           employmentType: candidateEmploymentTypeOptions,
@@ -874,7 +852,6 @@ export default function Candidates() {
     candidateEmploymentTypeOptions,
     candidateExperienceLevelOptions,
     candidateExperienceYearsOptions,
-    candidateGenderOptions,
     candidateMetaOptions,
     candidateOffersInHandOptions,
     candidatePrimarySkillOptions,
@@ -1179,23 +1156,14 @@ export default function Candidates() {
       fullName: `${normalizedFirstName} ${normalizedLastName}`.trim() || row.candidateName || "",
       role: row.role || row.currentDesignation || row.designation || "",
       email: row.primaryEmail || row.candidateEmail || "",
-      secondaryEmail: row.secondaryEmail || "",
       phoneNumber: row.phoneNumber || row.primaryPhone || "",
-      location: row.location || row.currentLocation || "",
-      preferredLocation: row.preferredLocation || "",
-      dateOfBirth: row.dateOfBirth || "",
-      gender: row.gender || "",
       currentCompany: row.currentCompanyName || row.currentCompany || (row.candidateType === "fresher" ? "Not applicable" : ""),
       experience: row.experience || row.yearsExperience || row.totalExperience || "",
       yearsExperience: row.yearsExperience || row.experience || row.totalExperience || "",
-      relevantExperience: row.relevantExperience || "",
       offersInHand: row.offersInHand || "",
       currentCtc: row.currentCtc || "",
       expectedCtc: row.expectedCtc || "",
       noticePeriod: row.noticePeriod || "",
-      qualification: row.highestQualification || row.qualification || "",
-      linkedInUrl: row.linkedInUrl || "",
-      notes: row.notes || "",
       primarySkills: row.primarySkills || mappedPrimarySkills,
       secondarySkills: row.secondarySkills || mappedSecondarySkills,
       resumeFiles: Array.isArray(row.resumeFiles) ? row.resumeFiles : normalizedCandidateDocuments,
@@ -1333,7 +1301,7 @@ export default function Candidates() {
 
   const handleViewCandidate = React.useCallback(async (row) => {
     try {
-      setLoading(true);
+      setCandidateActionLoading(true);
       const candidateDetail = await fetchCandidateDetail(row.candidateId);
       const candidate = {
         ...row,
@@ -1354,13 +1322,13 @@ export default function Candidates() {
       console.error("Failed to load candidate details:", error);
       alert("Unable to load candidate details right now. Please try again.");
     } finally {
-      setLoading(false);
+      setCandidateActionLoading(false);
     }
   }, [buildCandidateProfile]);
 
   const handleEditCandidate = React.useCallback(async (row, index) => {
     try {
-      setLoading(true);
+      setCandidateActionLoading(true);
       const candidateDetail = await fetchCandidateDetail(row.candidateId);
       const candidate = {
         ...row,
@@ -1370,41 +1338,31 @@ export default function Candidates() {
       const [firstName = "", lastName = ""] = String(candidate.candidateName || "").split(" ");
       setEditingIndex(index);
       setEditingData({
-      candidateId: candidate.candidateId || "",
-      namePrefix: candidate.namePrefix || "none",
-      firstName: candidate.firstName || firstName,
-      lastName: candidate.lastName || lastName,
-      primaryEmail: candidate.primaryEmail || candidate.candidateEmail || "",
-      secondaryEmail: candidate.secondaryEmail || "",
-      phoneNumber: candidate.phoneNumber || candidate.primaryPhone || "",
-      gender: candidate.gender || "",
-      dateOfBirth: candidate.dateOfBirth || "",
-      yearsExperience: candidate.yearsExperience || candidate.totalExperience || "",
-      relevantExperience: candidate.relevantExperience || "",
-      offersInHand: candidate.offersInHand || "",
-      currentCompanyName: candidate.currentCompanyName || candidate.currentCompany || candidate.currentLocation || "",
-      jobTitleRole: candidate.jobTitleRole || candidate.currentDesignation || "",
-      employmentType: candidate.employmentType || "",
-      noticePeriod: candidate.noticePeriod || "",
-      currentCtc: candidate.currentCtc || "",
-      expectedCtc: candidate.expectedCtc || "",
-      preferredLocation: candidate.preferredLocation || "",
-      qualification: candidate.highestQualification || candidate.qualification || "",
-      linkedInUrl: candidate.linkedInUrl || "",
-      notes: candidate.notes || "",
-      primarySkill: candidate.primarySkill || "",
-      secondarySkill: candidate.secondarySkill || "",
-      skillExperienceLevel: candidate.skillExperienceLevel || "",
-      skillExperienceYears: candidate.skillExperienceYears || "",
-      skillRating: candidate.skillRating || "",
-      secondarySkillExperienceLevel: candidate.secondarySkillExperienceLevel || "",
-      secondarySkillExperienceYears: candidate.secondarySkillExperienceYears || "",
-      secondarySkillRating: candidate.secondarySkillRating || "",
-      skills: Array.isArray(candidate.skills) ? candidate.skills : [],
-      sourceId: candidate.sourceId || "",
-      recruiterId: candidate.recruiterId || "",
-      sourceName: candidate.sourceName || candidate.source || "",
-      sourcedDate: candidate.sourcedDate || "",
+        candidateId: candidate.candidateId || "",
+        firstName: candidate.firstName || firstName,
+        lastName: candidate.lastName || lastName,
+        primaryEmail: candidate.primaryEmail || candidate.candidateEmail || "",
+        phoneNumber: candidate.phoneNumber || candidate.primaryPhone || "",
+        yearsExperience: candidate.yearsExperience || candidate.totalExperience || "",
+        offersInHand: candidate.offersInHand || "",
+        currentCompanyName: candidate.currentCompanyName || candidate.currentCompany || candidate.currentLocation || "",
+        jobTitleRole: candidate.jobTitleRole || candidate.currentDesignation || "",
+        employmentType: candidate.employmentType || "",
+        noticePeriod: candidate.noticePeriod || "",
+        currentCtc: candidate.currentCtc || "",
+        expectedCtc: candidate.expectedCtc || "",
+        primarySkill: candidate.primarySkill || "",
+        secondarySkill: candidate.secondarySkill || "",
+        skillExperienceLevel: candidate.skillExperienceLevel || "",
+        skillExperienceYears: candidate.skillExperienceYears || "",
+        skillRating: candidate.skillRating || "",
+        secondarySkillExperienceLevel: candidate.secondarySkillExperienceLevel || "",
+        secondarySkillExperienceYears: candidate.secondarySkillExperienceYears || "",
+        secondarySkillRating: candidate.secondarySkillRating || "",
+        skills: Array.isArray(candidate.skills) ? candidate.skills : [],
+        recruiterId: candidate.recruiterId || "",
+        sourceName: candidate.sourceName || candidate.source || "",
+        sourcedDate: candidate.sourcedDate || "",
       });
       setShowCandidateForm(true);
       setShowDataTable(false);
@@ -1415,7 +1373,7 @@ export default function Candidates() {
       console.error("Failed to load candidate details for editing:", error);
       alert("Unable to load candidate details right now. Please try again.");
     } finally {
-      setLoading(false);
+      setCandidateActionLoading(false);
     }
   }, []);
 
@@ -1481,8 +1439,6 @@ export default function Candidates() {
       currentLocation: data.currentLocation || data.currentCompanyName || "",
       totalExperience: parseExperienceYearsAsInteger(data.yearsExperience),
       // Additional fields for complete candidate data
-      gender: data.gender || "",
-      dateOfBirth: data.dateOfBirth || "",
       yearsExperience: data.yearsExperience || "",
       offersInHand: data.offersInHand || "",
       currentCompanyName: data.currentCompanyName || "",
@@ -1781,28 +1737,8 @@ export default function Candidates() {
             <span className={styles.profileLink}>{selectedCandidate.email}</span>
           </div>
           <div className={styles.profileItem}>
-            <span className={styles.profileLabel}>Secondary Email</span>
-            <span className={styles.profileValue}>{selectedCandidate.secondaryEmail || "-"}</span>
-          </div>
-          <div className={styles.profileItem}>
             <span className={styles.profileLabel}>Phone Number</span>
             <span className={styles.profileValue}>{selectedCandidate.phoneNumber}</span>
-          </div>
-          <div className={styles.profileItem}>
-            <span className={styles.profileLabel}>Date Of Birth</span>
-            <span className={styles.profileValue}>{selectedCandidate.dateOfBirth}</span>
-          </div>
-          <div className={styles.profileItem}>
-            <span className={styles.profileLabel}>Gender</span>
-            <span className={styles.profileValue}>{selectedCandidate.gender}</span>
-          </div>
-          <div className={styles.profileItem}>
-            <span className={styles.profileLabel}>Current Location</span>
-            <span className={styles.profileValue}>{selectedCandidate.location}</span>
-          </div>
-          <div className={styles.profileItem}>
-            <span className={styles.profileLabel}>Preferred Location</span>
-            <span className={styles.profileValue}>{selectedCandidate.preferredLocation || "-"}</span>
           </div>
           <div className={styles.profileItem}>
             <span className={styles.profileLabel}>Current Company</span>
@@ -1813,20 +1749,8 @@ export default function Candidates() {
             <span className={styles.profileValue}>{selectedCandidate.role}</span>
           </div>
           <div className={styles.profileItem}>
-            <span className={styles.profileLabel}>Total Experience</span>
-            <span className={styles.profileValue}>{selectedCandidate.experience}</span>
-          </div>
-          <div className={styles.profileItem}>
             <span className={styles.profileLabel}>Years of Experience</span>
             <span className={styles.profileValue}>{selectedCandidate.yearsExperience}</span>
-          </div>
-          <div className={styles.profileItem}>
-            <span className={styles.profileLabel}>Relevant Experience</span>
-            <span className={styles.profileValue}>{selectedCandidate.relevantExperience || "-"}</span>
-          </div>
-          <div className={styles.profileItem}>
-            <span className={styles.profileLabel}>Qualification</span>
-            <span className={styles.profileValue}>{selectedCandidate.qualification || "-"}</span>
           </div>
           <div className={styles.profileItem}>
             <span className={styles.profileLabel}>Offers in Hand</span>
@@ -1843,20 +1767,6 @@ export default function Candidates() {
           <div className={styles.profileItem}>
             <span className={styles.profileLabel}>Notice Period</span>
             <span className={styles.profileValue}>{selectedCandidate.noticePeriod || "-"}</span>
-          </div>
-          <div className={styles.profileItem}>
-            <span className={styles.profileLabel}>LinkedIn URL</span>
-            {selectedCandidate.linkedInUrl ? (
-              <a href={selectedCandidate.linkedInUrl} target="_blank" rel="noopener noreferrer" className={styles.profileLink}>
-                {selectedCandidate.linkedInUrl}
-              </a>
-            ) : (
-              <span className={styles.profileValue}>-</span>
-            )}
-          </div>
-          <div className={styles.profileItem}>
-            <span className={styles.profileLabel}>Notes</span>
-            <span className={styles.profileValue}>{selectedCandidate.notes || "-"}</span>
           </div>
         </div>
       );
@@ -2365,6 +2275,7 @@ export default function Candidates() {
                             type="button"
                             className={styles.actionBtn}
                             onClick={() => handleViewCandidate(row)}
+                            disabled={candidateActionLoading}
                             aria-label="View"
                           >
                             <FiEye size={16} />
@@ -2373,6 +2284,7 @@ export default function Candidates() {
                             type="button"
                             className={styles.actionBtn}
                             onClick={() => handleEditCandidate(row, sourceIndex)}
+                            disabled={candidateActionLoading}
                             aria-label="Edit"
                           >
                             <FiEdit2 size={16} />
@@ -2459,23 +2371,7 @@ export default function Candidates() {
                     <p>{selectedCandidate.role || "-"}</p>
                     <div className={styles.drawerMeta}>
                       <span><FiMail size={12} /> {selectedCandidate.email}</span>
-                      <span><FiMapPin size={12} /> {selectedCandidate.location}</span>
                       <span><FiPhone size={12} /> {selectedCandidate.phoneNumber}</span>
-                      <div className={styles.pipelineMetaItem}>
-                        <div className={styles.pipelineRow}>
-                          {PIPELINE_STEPS.map((step, index) => (
-                            <button
-                              key={step}
-                              type="button"
-                              className={`${styles.pipelineStep}${activePipelineStep === step ? ` ${styles.pipelineStepActive}` : ""}${index <= activePipelineStepIndex && activePipelineStepIndex >= 0 ? ` ${styles.pipelineStepDone}` : ""}`}
-                              aria-current={activePipelineStep === step ? "step" : undefined}
-                              tabIndex={-1}
-                            >
-                              <span className={styles.pipelineStepLabel}>{step}</span>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
                     </div>
                   </div>
                 </div>
