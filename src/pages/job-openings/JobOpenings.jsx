@@ -1190,24 +1190,65 @@ export default function JobOpenings({ createMode = false }) {
 
   React.useEffect(() => {
     if (location.pathname !== "/job-openings/edit") return;
-
     const routeJob = location.state?.job;
-    if (!routeJob) return;
-
     const routeEditingIndex = Number.isInteger(location.state?.editingIndex)
       ? location.state.editingIndex
-      : submittedData.findIndex((item) =>
-        (item.openingJobId || item.jobPositionId) === (routeJob.openingJobId || routeJob.jobPositionId)
-      );
+      : routeJob
+        ? submittedData.findIndex((item) =>
+            (item.openingJobId || item.jobPositionId) === (routeJob.openingJobId || routeJob.jobPositionId)
+          )
+        : -1;
 
-    setEditingIndex(routeEditingIndex >= 0 ? routeEditingIndex : null);
-    setEditingData({
-      ...routeJob,
-    });
-    setShowJobOpeningForm(true);
-    setShowDataTable(false);
-    setEditLocked(false);
-    setActiveDraftId(null);
+    const loadEditJob = async () => {
+      if (routeJob) {
+        setEditingIndex(routeEditingIndex >= 0 ? routeEditingIndex : null);
+        setEditingData({ ...routeJob });
+        setShowJobOpeningForm(true);
+        setShowDataTable(false);
+        setEditLocked(false);
+        setActiveDraftId(null);
+        return;
+      }
+
+      // Defensive fallback: try to fetch job by id if state.job is missing
+      const candidateIdFromState =
+        location.state?.openingJobId || location.state?.jobPositionId || location.state?.jobId || location.state?.id || null;
+
+      let fetchId = candidateIdFromState;
+      if (!fetchId && routeEditingIndex >= 0) {
+        const row = submittedData[routeEditingIndex];
+        fetchId = (row && (row.openingJobId || row.jobPositionId || row.jobId)) || null;
+      }
+
+      if (!fetchId) {
+        // nothing to fetch; navigate back
+        showTransientMessage("Unable to determine job to edit");
+        navigate("/job-openings");
+        return;
+      }
+
+      try {
+        const jobDetail = await fetchJobById(fetchId).catch(() => null);
+        if (!jobDetail) {
+          showTransientMessage("Unable to load job for editing");
+          navigate("/job-openings");
+          return;
+        }
+
+        setEditingIndex(routeEditingIndex >= 0 ? routeEditingIndex : null);
+        setEditingData({ ...jobDetail });
+        setShowJobOpeningForm(true);
+        setShowDataTable(false);
+        setEditLocked(false);
+        setActiveDraftId(null);
+      } catch (error) {
+        console.error("Failed to fetch job for edit:", error);
+        showTransientMessage("Unable to load job for editing");
+        navigate("/job-openings");
+      }
+    };
+
+    loadEditJob();
   }, [location.pathname, location.state, submittedData]);
 
   // Helper to check if a jobPositionId is already used

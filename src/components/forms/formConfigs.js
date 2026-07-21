@@ -1405,18 +1405,28 @@ export const clientConfig = {
         {
           name: "clientType",
           label: "Client Type *",
-          type: "text",
+          type: "select",
           required: true,
-          validationRule: "contactPersonName",
-          placeholder: "Enter Client Type"
+          validationRule: "requiredField",
+          placeholder: "Select Client Type",
+          options: [
+            { value: "Direct", label: "Direct" },
+            { value: "Partner", label: "Partner" }
+          ]
         },
         {
           name: "industry",
           label: "Industry *",
-          type: "text",
+          type: "select",
           required: true,
           validationRule: "requiredField",
-          placeholder: "Enter Industry"
+          placeholder: "Select Industry",
+          options: [
+            { value: "IT Services", label: "IT Services" },
+            { value: "Product", label: "Product" },
+            { value: "Healthcare", label: "Healthcare" },
+            { value: "Finance", label: "Finance" }
+          ]
         },
         {
           name: "address",
