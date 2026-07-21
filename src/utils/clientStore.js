@@ -28,21 +28,22 @@ const isSeededClientRow = (row) => {
   return SEEDED_CLIENT_IDS.has(clientId) || SEEDED_CLIENT_NAMES.has(clientName);
 };
 
-const isUuid = (value) =>
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{12}$/i.test(
-    String(value || "").trim(),
-  );
-
-const firstUuid = (...values) =>
-  values.map((value) => String(value || "").trim()).find((value) => isUuid(value)) || "";
+const firstNonEmpty = (...values) =>
+  values.map((value) => String(value ?? "").trim()).find(Boolean) || "";
 
 const getClientDbId = (client = {}) =>
-  firstUuid(
-    client?.id,
-    client?.clientId,
-    client?.clientID,
+  firstNonEmpty(
+    client?.backendClientId,
+    client?.clientDbId,
+    client?.clientDBId,
+    client?.clientDatabaseId,
     client?.clientUuid,
     client?.clientUUID,
+    client?.uuid,
+    client?.id,
+    client?._id,
+    client?.clientId,
+    client?.clientID,
     client?.clientMasterId,
     client?.clientMasterID,
   );

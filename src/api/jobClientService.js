@@ -32,6 +32,45 @@ const unwrapList = (response) => {
   return [];
 };
 
+const unwrapPage = (response) => {
+  const payload = response?.data;
+  const data = payload?.data && typeof payload.data === 'object' ? payload.data : payload;
+  const hasPaginationFields = (value) =>
+    value && (
+      value.page !== undefined ||
+      value.limit !== undefined ||
+      value.totalRecords !== undefined ||
+      value.totalPages !== undefined
+    );
+  const paginationSource = data?.pagination || (hasPaginationFields(data) ? data : payload);
+  const pagination = hasPaginationFields(paginationSource)
+    ? {
+        page: paginationSource.page,
+        limit: paginationSource.limit,
+        totalRecords: paginationSource.totalRecords,
+        totalPages: paginationSource.totalPages,
+      }
+    : null;
+
+  if (Array.isArray(data)) {
+    return { items: data, pagination: null };
+  }
+
+  if (Array.isArray(data?.items)) {
+    return { items: data.items, pagination };
+  }
+
+  if (Array.isArray(data?.records)) {
+    return { items: data.records, pagination };
+  }
+
+  if (Array.isArray(data?.content)) {
+    return { items: data.content, pagination };
+  }
+
+  return { items: unwrapList(response), pagination };
+};
+
 const extractApiEnvelope = (response) => {
   const payload = response?.data;
   if (!payload || typeof payload !== 'object') {
@@ -124,18 +163,36 @@ const isUuid = (value) =>
     String(value || '').trim(),
   );
 
-const firstUuid = (...values) =>
-  values.map((value) => String(value || '').trim()).find((value) => isUuid(value)) || '';
+const firstNonEmpty = (...values) =>
+  values.map((value) => String(value ?? '').trim()).find(Boolean) || '';
 
 const getClientDbId = (row = {}) =>
-  firstUuid(
-    row?.id,
+  firstNonEmpty(
     row?.clientId,
     row?.clientID,
-    row?.clientUuid,
+    row?.backendClientId,
+    row?.clientDbId,
+    row?.clientDBId,
+    row?.clientDatabaseId,
     row?.clientUUID,
+    row?.clientUuid,
+    row?.uuid,
+    row?.id,
+    row?._id,
     row?.clientMasterId,
     row?.clientMasterID,
+  );
+
+const getClientDisplayId = (row = {}) =>
+  firstNonEmpty(
+    row?.clientCode,
+    row?.clientNumber,
+    row?.externalClientId,
+    row?.externalClientID,
+    row?.clientID,
+    row?.displayClientID,
+    row?.displayClientId,
+    row?.clientId,
   );
 
 const toIsoInstant = (value) => {
@@ -224,15 +281,23 @@ const CLIENTS_CREATE_META_ENDPOINT = '/clients/create/meta';
 const CLIENTS_META_FILTERS_ENDPOINT = '/clients/meta/filters';
 const CLIENT_ENDPOINT = '/clients/{clientId}';
 
-export const fetchClients = async () => {
-  return unwrapList(
-    await clientJobApi.get(CLIENTS_ENDPOINT, {
-      // Client list endpoint currently fails when local login token is attached.
-      // Skip auth header so dropdown options can still load.
-      skipAuth: true,
-      skipAuthRedirect: true,
-    })
-  );
+const attachPagination = (items, pagination) => Object.assign(items, {
+  pagination: pagination || null,
+});
+
+export const fetchClients = async ({ page = 1, limit = 10 } = {}) => {
+  const requestConfig = {
+    // Client list endpoint currently fails when local login token is attached.
+    // Skip auth header so dropdown options can still load.
+    skipAuth: true,
+    skipAuthRedirect: true,
+  };
+  const response = await clientJobApi.get(CLIENTS_ENDPOINT, {
+    ...requestConfig,
+    params: { page, limit },
+  });
+  const pageData = unwrapPage(response);
+  return attachPagination(pageData.items, pageData.pagination);
 };
 
 export const fetchClientFiltersMeta = async () => {
@@ -347,17 +412,46 @@ export const toSkillOption = (row) => {
   };
 };
 
-export const toClientRequest = (row = {}) => ({
-  clientName: String(row.clientName || row.name || '').trim(),
-  clientType: String(row.clientType || row.clientType || '').trim() || null,
-  industry: String(row.industryCode || row.industry || '').trim() || null,
-  status: String(row.clientStatus || row.status || 'Active').trim(),
-  contactPersonName: String(row.primaryContactPerson || row.contactPersonName || '').trim() || null,
-  contactPersonEmail: String(row.contactEmail || row.email || '').trim() || null,
-  contactPersonPhone: String(row.contactNumber || row.phone || '').trim() || null,
-  city: String(row.clientLocation || row.city || '').trim() || null,
-  address: String(row.address || row.comments || '').trim() || null,
-});
+export const toClientRequest = (row = {}) => {
+  const clientId = String(row.clientId || row.displayClientId || '').trim() || null;
+  const clientName = String(row.clientName || row.name || '').trim();
+  const clientType = String(row.clientType || '').trim() || null;
+  const industry = String(row.industryCode || row.industry || '').trim() || null;
+  const status = String(row.clientStatus || row.status || 'Active').trim();
+  const contactPersonName = String(
+    row.primaryContactPerson ||
+    row.contactPersonName ||
+    row.contactPerson ||
+    ''
+  ).trim() || null;
+  const contactPersonEmail = String(
+    row.contactEmail ||
+    row.contactPersonEmail ||
+    row.email ||
+    ''
+  ).trim() || null;
+  const contactPersonPhone = String(
+    row.contactNumber ||
+    row.contactPersonPhone ||
+    row.phone ||
+    ''
+  ).trim() || null;
+  const city = String(row.clientLocation || row.city || '').trim() || null;
+  const address = String(row.address || '').trim() || null;
+
+  return {
+    clientId,
+    clientName,
+    clientType,
+    industry,
+    status,
+    contactPersonName,
+    contactPersonEmail,
+    contactPersonPhone,
+    city,
+    address,
+  };
+};
 
 export const createClient = (payload) =>
   clientJobApi.post(CLIENTS_ENDPOINT, toClientRequest(payload), {
@@ -381,19 +475,58 @@ export const deleteClient = (clientId) => {
   });
 };
 
-export const normalizeClientRecord = (row, index = 0) => ({
-  clientId: getClientDbId(row) || row?.clientId || row?.id || `CL-${index + 1}`,
-  clientName: normalizeText(row?.clientName || row?.name),
-  contactEmail: normalizeText(row?.contactEmail || row?.email),
-  contactNumber: normalizeText(row?.contactNumber || row?.phone),
-  primaryContactPerson: normalizeText(row?.primaryContactPerson || row?.contactPersonName),
-  secondaryContactPerson: normalizeText(row?.secondaryContactPerson),
-  accountManager: normalizeText(row?.accountManager || row?.assignedPerson),
-  activeFrom: row?.activeFrom || row?.createdAt || '',
-  comments: row?.comments || row?.note || '',
-  clientStatus: normalizeText(row?.clientStatus || row?.status, 'Active'),
-  clientLocation: normalizeText(row?.clientLocation || row?.location),
-});
+export const normalizeClientRecord = (row, index = 0) => {
+  const backendClientId = getClientDbId(row);
+  const displayClientId = getClientDisplayId(row) || `CL-${index + 1}`;
+
+  return {
+    ...row,
+    backendClientId,
+    clientId: displayClientId,
+    displayClientId,
+    clientName: normalizeText(row?.clientName || row?.name || row?.companyName),
+
+    contactEmail: normalizeText(
+      row?.contactPersonEmail ||
+      row?.contactEmail ||
+      row?.primaryContactEmail ||
+      row?.email
+    ),
+
+    contactNumber: normalizeText(
+      row?.contactPersonPhone ||
+      row?.contactNumber ||
+      row?.contactPhone ||
+      row?.primaryContactPhone ||
+      row?.phone
+    ),
+
+    primaryContactPerson: normalizeText(
+      row?.contactPersonName ||
+      row?.primaryContactPerson ||
+      row?.contactPerson ||
+      row?.primaryContactName
+    ),
+
+    secondaryContactPerson: normalizeText(
+      row?.secondaryContactPerson ||
+      row?.secondaryContactName ||
+      row?.secondaryContactPersonName
+    ),
+
+    accountManager: normalizeText(
+      row?.assignedPerson ||
+      row?.assignedPersonName ||
+      row?.accountManager ||
+      row?.accountManagerName
+    ),
+
+    activeFrom: row?.activeFrom || row?.activeFromDate || row?.activeDate || '',
+    comments: row?.comments || row?.note || row?.address || '',
+    clientStatus: normalizeText(row?.status || row?.clientStatus, 'Active'),
+    clientLocation: normalizeText(row?.city || row?.clientLocation || row?.location),
+  };
+};
 
 export const toClientOption = (row) => {
   const clientId = String(getClientDbId(row) || row?.clientId || row?.clientID || row?.id || '').trim();

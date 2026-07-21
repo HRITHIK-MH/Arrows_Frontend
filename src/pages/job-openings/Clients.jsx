@@ -1,5 +1,5 @@
 import * as React from "react";
-import { FiChevronDown, FiFilter, FiMail, FiMapPin, FiPhone, FiSearch, FiTrash2, FiUser, FiX } from "react-icons/fi";
+import { FiChevronDown, FiChevronLeft, FiChevronRight, FiFilter, FiMail, FiMapPin, FiPhone, FiSearch, FiTrash2, FiUser, FiX } from "react-icons/fi";
 import DataTable from "../../components/forms/DataTable";
 import { clientConfig } from "../../components/forms/formConfigs";
 import ReusableForm from "../../components/forms/ReusableForm";
@@ -33,10 +33,19 @@ const readClientDrafts = () => {
   }
 };
 
-const isUuid = (value) =>
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
-    String(value || "").trim(),
-  );
+const getBackendClientId = (row = {}) => String(row?.clientId || row?.clientID || row?.backendClientId || row?.clientDbId || row?.clientDatabaseId || row?.clientUuid || row?.clientUUID || row?.uuid || row?.id || row?._id || "").trim();
+
+const getReturnedClientDisplayId = (row = {}) => String(
+  row?.clientCode ||
+  row?.clientNumber ||
+  row?.externalClientId ||
+  row?.externalClientID ||
+  row?.clientID ||
+  row?.displayClientID ||
+  row?.displayClientId ||
+  row?.clientId ||
+  ""
+).trim();
 
 export default function Clients() {
   const currentUserRole = React.useMemo(() => {
@@ -61,6 +70,12 @@ export default function Clients() {
   const [submittedData, setSubmittedData] = React.useState(() => loadClientRows());
   const [entriesPerPage, setEntriesPerPage] = React.useState(10);
   const [currentPage, setCurrentPage] = React.useState(1);
+  const [clientsPagination, setClientsPagination] = React.useState({
+    page: 1,
+    limit: 10,
+    totalRecords: 0,
+    totalPages: 1,
+  });
   const [editingIndex, setEditingIndex] = React.useState(null);
   const [editingData, setEditingData] = React.useState(null);
   const [isSavingClient, setIsSavingClient] = React.useState(false);
@@ -130,7 +145,9 @@ export default function Clients() {
 
     return {
       ...data,
+      backendClientId: getBackendClientId(data),
       clientId: data.clientId || "",
+      displayClientId: data.displayClientId || data.clientId || "",
       clientName: data.clientName || "",
       contactEmail,
       contactNumber,
@@ -145,6 +162,7 @@ export default function Clients() {
   }, []);
 
   const mapClientToFormData = React.useCallback((row) => ({
+    backendClientId: getBackendClientId(row),
     clientId: row.clientId || "",
     clientName: row.clientName || "",
     contactEmail: row.contactEmail || "",
@@ -156,6 +174,40 @@ export default function Clients() {
     comments: row.comments || "",
   }), []);
 
+  const normalizeSavedClient = React.useCallback((payload, fallback) => {
+    const returnedClientId = getReturnedClientDisplayId(payload);
+
+    return normalizeApiClient({
+      ...fallback,
+      ...payload,
+      ...(returnedClientId
+        ? {
+            clientId: returnedClientId,
+            displayClientId: returnedClientId,
+          }
+        : {}),
+    });
+  }, []);
+
+  const refreshClientListFromApi = React.useCallback(async (page = currentPage, limit = entriesPerPage) => {
+    const clients = await fetchClients({ page, limit });
+    const normalized = Array.isArray(clients)
+      ? clients.map((row, index) => normalizeApiClient(row, index))
+      : [];
+    const responsePagination = clients?.pagination || {};
+    const totalRecords = Number(responsePagination.totalRecords ?? normalized.length);
+    const totalPages = Number(responsePagination.totalPages ?? Math.ceil(totalRecords / limit)) || 1;
+    setSubmittedData(normalized);
+    setClientsPagination({
+      page: Number(responsePagination.page ?? page),
+      limit: Number(responsePagination.limit ?? limit),
+      totalRecords: Number.isFinite(totalRecords) ? totalRecords : normalized.length,
+      totalPages: Number.isFinite(totalPages) && totalPages > 0 ? totalPages : 1,
+    });
+    saveClientRows(normalized);
+    return normalized;
+  }, [currentPage, entriesPerPage]);
+
   React.useEffect(() => {
     saveClientRows(submittedData);
   }, [submittedData]);
@@ -165,13 +217,20 @@ export default function Clients() {
 
     const loadClientsFromApi = async () => {
       try {
-        const clients = await fetchClients();
+        const clients = await fetchClients({ page: currentPage, limit: entriesPerPage });
         if (!isMounted || !Array.isArray(clients)) return;
         const normalized = clients.map((row, index) => normalizeApiClient(row, index));
-        if (normalized.length > 0) {
-          setSubmittedData(normalized);
-          saveClientRows(normalized);
-        }
+        const responsePagination = clients?.pagination || {};
+        const totalRecords = Number(responsePagination.totalRecords ?? normalized.length);
+        const totalPages = Number(responsePagination.totalPages ?? Math.ceil(totalRecords / entriesPerPage)) || 1;
+        setSubmittedData(normalized);
+        setClientsPagination({
+          page: Number(responsePagination.page ?? currentPage),
+          limit: Number(responsePagination.limit ?? entriesPerPage),
+          totalRecords: Number.isFinite(totalRecords) ? totalRecords : normalized.length,
+          totalPages: Number.isFinite(totalPages) && totalPages > 0 ? totalPages : 1,
+        });
+        saveClientRows(normalized);
       } catch (error) {
         console.warn("Client API sync failed, using local client rows:", error);
       }
@@ -182,7 +241,7 @@ export default function Clients() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [currentPage, entriesPerPage]);
 
   React.useEffect(() => {
     if (!isViewDrawerOpen) return undefined;
@@ -310,8 +369,8 @@ export default function Clients() {
     });
   }, [submittedData, deferredSearchTerm, filterActiveFromStart, filterActiveFromEnd, filterAssignedPerson, filterStatus]);
 
-  const totalRecords = filteredData.length;
-  const totalPages = Math.max(1, Math.ceil(totalRecords / entriesPerPage));
+  const totalRecords = clientsPagination.totalRecords;
+  const totalPages = Math.max(1, clientsPagination.totalPages);
   const safeCurrentPage = Math.min(currentPage, totalPages);
 
   const generateNextClientId = React.useCallback(() => {
@@ -328,28 +387,19 @@ export default function Clients() {
 
   const paginatedData = React.useMemo(() => {
     const startIndex = (safeCurrentPage - 1) * entriesPerPage;
-    return filteredData.slice(startIndex, startIndex + entriesPerPage).map((item, offset) => ({
+    return filteredData.map((item, offset) => ({
       ...item,
       _sourceIndex: startIndex + offset,
     }));
   }, [entriesPerPage, filteredData, safeCurrentPage]);
 
-  const pageNumbers = React.useMemo(
-    () => Array.from({ length: totalPages }, (_, index) => index + 1),
-    [totalPages]
-  );
-
-  const startEntry = totalRecords === 0 ? 0 : (safeCurrentPage - 1) * entriesPerPage + 1;
-  const endEntry = Math.min(safeCurrentPage * entriesPerPage, totalRecords);
+  const startEntry = totalRecords === 0 || paginatedData.length === 0 ? 0 : (safeCurrentPage - 1) * entriesPerPage + 1;
+  const endEntry = startEntry === 0 ? 0 : Math.min(startEntry + paginatedData.length - 1, totalRecords);
 
   const handleEntriesPerPageChange = React.useCallback((event) => {
     setEntriesPerPage(Number(event.target.value));
     setCurrentPage(1);
   }, []);
-
-  const handlePageChange = React.useCallback((page) => {
-    setCurrentPage(Math.min(Math.max(page, 1), totalPages));
-  }, [totalPages]);
 
   const handlePreviousPage = React.useCallback(() => {
     setCurrentPage(Math.max(safeCurrentPage - 1, 1));
@@ -389,6 +439,7 @@ export default function Clients() {
     setEditingIndex(null);
     setEditingData({
       ...(draftData ? { ...draftData } : {}),
+      backendClientId: getBackendClientId(draftData),
       clientId: String(draftData?.clientId || "").trim() || generateNextClientId(),
     });
     setActiveDraftId(draftId);
@@ -495,8 +546,8 @@ export default function Clients() {
       setSelectedClient(fallbackClient);
       setIsViewDrawerOpen(true);
 
-      const candidateId = String(row?.clientId || "").trim();
-      if (!isUuid(candidateId)) {
+      const candidateId = getBackendClientId(row);
+      if (!candidateId) {
         return;
       }
 
@@ -508,7 +559,7 @@ export default function Clients() {
 
         const normalizedFetchedClient = normalizeClientRecord(normalizeApiClient(fetchedClient));
         setSelectedClient((current) => {
-          const currentId = String(current?.clientId || "").trim();
+          const currentId = getBackendClientId(current);
           if (currentId && currentId !== candidateId) {
             return current;
           }
@@ -530,8 +581,8 @@ export default function Clients() {
       setShowClientForm(true);
       setShowDataTable(false);
 
-      const candidateId = String(row?.clientId || "").trim();
-      if (!isUuid(candidateId)) {
+      const candidateId = getBackendClientId(row);
+      if (!candidateId) {
         return;
       }
 
@@ -543,7 +594,7 @@ export default function Clients() {
 
         const normalizedFetchedClient = normalizeClientRecord(normalizeApiClient(fetchedClient));
         setEditingData((current) => {
-          const currentId = String(current?.clientId || "").trim();
+          const currentId = getBackendClientId(current);
           if (currentId && currentId !== candidateId) {
             return current;
           }
@@ -559,17 +610,22 @@ export default function Clients() {
   const handleDeleteClient = React.useCallback(async (row, index) => {
     const resolvedIndex = Number.isInteger(row?._sourceIndex) ? row._sourceIndex : index;
     if (window.confirm("Are you sure you want to delete this client?")) {
-      const candidateId = String(row?.clientId || "").trim();
-      if (isUuid(candidateId)) {
+      const candidateId = getBackendClientId(row);
+      if (candidateId) {
         try {
           await deleteClientApi(candidateId);
+          await refreshClientListFromApi();
+          return;
         } catch (error) {
           console.warn("Client delete API failed, applying local delete:", error);
         }
       }
-      setSubmittedData((prev) => prev.filter((item, itemIndex) => itemIndex !== resolvedIndex));
+      setSubmittedData((prev) => prev.filter((item, itemIndex) => {
+        const itemClientId = getBackendClientId(item);
+        return candidateId ? itemClientId !== candidateId : itemIndex !== resolvedIndex;
+      }));
     }
-  }, []);
+  }, [refreshClientListFromApi]);
 
   const handleClientSubmit = React.useCallback(
     async (data) => {
@@ -583,22 +639,49 @@ export default function Clients() {
       try {
         const normalized = normalizeClientRecord({
           ...data,
+          backendClientId: getBackendClientId(data) || getBackendClientId(editingData),
           clientId: String(data?.clientId || "").trim() || generateNextClientId(),
         });
         const isEditMode = editingIndex !== null;
+        const localUpdate = (savedRow) => {
+          setSubmittedData((prev) => {
+            const savedClientId = getBackendClientId(savedRow) || getBackendClientId(normalized);
+            if (isEditMode) {
+              return prev.map((item, idx) => {
+                const itemClientId = getBackendClientId(item);
+                const isSameClient = savedClientId && itemClientId === savedClientId;
+                return isSameClient || idx === editingIndex ? { ...item, ...savedRow } : item;
+              });
+            }
 
-        if (isEditMode && isUuid(normalized.clientId)) {
-          const response = await updateClientApi(normalized.clientId, normalized);
+            return [...prev, savedRow];
+          });
+        };
+
+        if (isEditMode) {
+          const updateClientId = getBackendClientId(normalized);
+          if (!updateClientId) {
+            throw new Error("Backend client ID is required to update this client.");
+          }
+          const response = await updateClientApi(updateClientId, normalized);
           const payload = response?.data?.data || response?.data || normalized;
-          const savedRow = normalizeApiClient(payload);
-          setSubmittedData((prev) => prev.map((item, idx) => (idx === editingIndex ? { ...item, ...savedRow } : item)));
+          const savedRow = normalizeSavedClient(payload, normalized);
+          try {
+            await refreshClientListFromApi(currentPage, entriesPerPage);
+          } catch (syncError) {
+            console.warn("Client list refresh failed after update, using update response:", syncError);
+            localUpdate(savedRow);
+          }
         } else {
           const response = await createClientApi(normalized);
           const payload = response?.data?.data || response?.data || normalized;
-          const savedRow = normalizeApiClient(payload);
-          setSubmittedData((prev) => (isEditMode
-            ? prev.map((item, idx) => (idx === editingIndex ? { ...item, ...savedRow } : item))
-            : [...prev, savedRow]));
+          const savedRow = normalizeSavedClient(payload, normalized);
+          try {
+            await refreshClientListFromApi(currentPage, entriesPerPage);
+          } catch (syncError) {
+            console.warn("Client list refresh failed after create, using create response:", syncError);
+            localUpdate(savedRow);
+          }
         }
 
         setShowClientForm(false);
@@ -628,7 +711,7 @@ export default function Clients() {
         setIsSavingClient(false);
       }
     },
-    [editingIndex, generateNextClientId, normalizeClientRecord, showTransientMessage]
+    [currentPage, editingData, editingIndex, entriesPerPage, generateNextClientId, normalizeClientRecord, normalizeSavedClient, refreshClientListFromApi, showTransientMessage]
   );
 
   const closeViewDrawer = React.useCallback(() => {
@@ -844,53 +927,53 @@ export default function Clients() {
               />
             </div>
             <div className={styles.tableFooter}>
-              <div className={styles.footerLeft}>
-                <span>Show</span>
+              <div className={styles.footerSummary}>
+                <span>Showing</span>
+                <strong>{startEntry}-{endEntry}</strong>
+                <span>of</span>
+                <strong>{totalRecords}</strong>
+                <span>entries</span>
+              </div>
+
+              <div className={styles.footerControls}>
+                <label className={styles.rowsControl}>
+                  <span>Rows per page</span>
                 <select
-                  className={styles.entriesSelect}
+                    className={styles.rowsSelect}
                   value={entriesPerPage}
                   onChange={handleEntriesPerPageChange}
+                    aria-label="Rows per page"
                 >
                   <option value="10">10</option>
                   <option value="25">25</option>
                   <option value="50">50</option>
                 </select>
-                <span>entries</span>
-                <span>
-                  ({startEntry}-{endEntry} of {totalRecords})
-                </span>
-              </div>
-              <div className={styles.pagination}>
+                </label>
+
+                <div className={styles.pageIndicator} aria-live="polite">
+                  Page {safeCurrentPage} of {totalPages}
+                </div>
+
+                <div className={styles.paginationControls}>
                 <button
                   type="button"
-                  className={styles.pageBtn}
+                    className={styles.pageButton}
                   aria-label="Previous page"
                   onClick={handlePreviousPage}
                   disabled={safeCurrentPage === 1}
                 >
-                  {"<"}
+                    <FiChevronLeft aria-hidden="true" />
                 </button>
-                {pageNumbers.map((pageNumber) => (
-                  <button
-                    key={pageNumber}
-                    type="button"
-                    className={`${styles.pageBtn}${safeCurrentPage === pageNumber ? ` ${styles.pageBtnActive}` : ""}`}
-                    onClick={() => handlePageChange(pageNumber)}
-                    aria-label={`Page ${pageNumber}`}
-                    aria-current={safeCurrentPage === pageNumber ? "page" : undefined}
-                  >
-                    {pageNumber}
-                  </button>
-                ))}
                 <button
                   type="button"
-                  className={styles.pageBtn}
+                    className={styles.pageButton}
                   aria-label="Next page"
                   onClick={handleNextPage}
                   disabled={safeCurrentPage === totalPages}
                 >
-                  {">"}
+                    <FiChevronRight aria-hidden="true" />
                 </button>
+                </div>
               </div>
             </div>
           </div>

@@ -1,6 +1,8 @@
 import * as React from "react";
 import {
   FiChevronDown,
+  FiChevronLeft,
+  FiChevronRight,
   FiDownload,
   FiEdit2,
   FiEye,
@@ -1020,18 +1022,6 @@ export default function Candidates() {
     return filteredData.slice(startIndex, startIndex + entriesPerPage);
   }, [filteredData, currentPage, entriesPerPage]);
 
-  const pageNumbers = React.useMemo(
-    () => Array.from({ length: totalPages }, (_, index) => index + 1),
-    [totalPages]
-  );
-
-  const visiblePageNumbers = React.useMemo(() => {
-    if (totalPages <= 5) return pageNumbers;
-
-    const startPage = Math.max(1, Math.min(currentPage - 2, totalPages - 4));
-    return Array.from({ length: 5 }, (_, index) => startPage + index);
-  }, [currentPage, pageNumbers, totalPages]);
-
   const startEntry = totalRecords === 0 ? 0 : (currentPage - 1) * entriesPerPage + 1;
   const endEntry = Math.min(currentPage * entriesPerPage, totalRecords);
 
@@ -1055,10 +1045,6 @@ export default function Candidates() {
   const handleEntriesPerPageChange = React.useCallback((event) => {
     setEntriesPerPage(Number(event.target.value));
     setCurrentPage(1);
-  }, []);
-
-  const handlePageChange = React.useCallback((page) => {
-    setCurrentPage(page);
   }, []);
 
   const handlePreviousPage = React.useCallback(() => {
@@ -2278,53 +2264,53 @@ export default function Candidates() {
             </div>
 
             <div className={styles.tableFooter}>
-              <div className={styles.footerLeft}>
-                <span>Show</span>
+              <div className={styles.footerSummary}>
+                <span>Showing</span>
+                <strong>{startEntry}-{endEntry}</strong>
+                <span>of</span>
+                <strong>{totalRecords}</strong>
+                <span>entries</span>
+              </div>
+
+              <div className={styles.footerControls}>
+                <label className={styles.rowsControl}>
+                  <span>Rows per page</span>
                 <select
-                  className={styles.entriesSelect}
+                    className={styles.rowsSelect}
                   value={entriesPerPage}
                   onChange={handleEntriesPerPageChange}
+                    aria-label="Rows per page"
                 >
                   <option value="10">10</option>
                   <option value="25">25</option>
                   <option value="50">50</option>
                 </select>
-                <span>entries</span>
-                <span className={styles.entrySummary}>
-                  Showing {startEntry} to {endEntry} of {totalRecords} entries
-                </span>
-              </div>
-              <div className={styles.pagination}>
+                </label>
+
+                <div className={styles.pageIndicator} aria-live="polite">
+                  Page {currentPage} of {totalPages}
+                </div>
+
+                <div className={styles.paginationControls}>
                 <button
                   type="button"
-                  className={styles.pageBtn}
+                    className={styles.pageButton}
                   aria-label="Previous page"
                   onClick={handlePreviousPage}
                   disabled={currentPage === 1}
                 >
-                  {"<"}
+                    <FiChevronLeft aria-hidden="true" />
                 </button>
-                {visiblePageNumbers.map((pageNumber) => (
-                  <button
-                    key={pageNumber}
-                    type="button"
-                    className={`${styles.pageBtn}${currentPage === pageNumber ? ` ${styles.pageBtnActive}` : ""}`}
-                    onClick={() => handlePageChange(pageNumber)}
-                    aria-label={`Page ${pageNumber}`}
-                    aria-current={currentPage === pageNumber ? "page" : undefined}
-                  >
-                    {pageNumber}
-                  </button>
-                ))}
                 <button
                   type="button"
-                  className={styles.pageBtn}
+                    className={styles.pageButton}
                   aria-label="Next page"
                   onClick={handleNextPage}
                   disabled={currentPage === totalPages}
                 >
-                  {">"}
+                    <FiChevronRight aria-hidden="true" />
                 </button>
+                </div>
               </div>
             </div>
           </div>

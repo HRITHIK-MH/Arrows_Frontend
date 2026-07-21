@@ -10,6 +10,19 @@ const INTERVIEW_GROUP_TEAM_MEMBERS_META_ENDPOINT = '/interview-groups/team-membe
 const INTERVIEW_GROUP_TEAM_MEMBERS_ENDPOINT = '/interview-groups/{groupId}/team-members';
 const INTERVIEW_GROUP_ENDPOINT = '/interview-groups/{groupId}';
 
+const normalizeInterviewGroupApiId = (groupId) => {
+  if (!groupId || typeof groupId !== 'object') return String(groupId || '').trim();
+  return String(
+    groupId.backendGroupId ||
+      groupId.groupId ||
+      groupId.interviewGroupId ||
+      groupId._id ||
+      groupId.uuid ||
+      groupId.id ||
+      ''
+  ).trim();
+};
+
 export const fetchInterviews = async ({ page = 1, limit = 100, search, candidateId, status, interviewType, sortBy = 'interviewDateTime', sortOrder = 'asc' } = {}) => {
   const params = {
     page,
@@ -92,8 +105,9 @@ export const fetchInterviewGroupTeamMembersMeta = async () => {
 };
 
 export const addInterviewGroupTeamMember = async (groupId, payload) => {
-  if (!groupId) return null;
-  const endpoint = INTERVIEW_GROUP_TEAM_MEMBERS_ENDPOINT.replace('{groupId}', encodeURIComponent(groupId));
+  const apiGroupId = normalizeInterviewGroupApiId(groupId);
+  if (!apiGroupId) return null;
+  const endpoint = INTERVIEW_GROUP_TEAM_MEMBERS_ENDPOINT.replace('{groupId}', encodeURIComponent(apiGroupId));
   const response = await interviewApi.post(endpoint, payload, {
     skipAuthRedirect: true,
   });
