@@ -71,6 +71,18 @@ const FormField = ({
       self.findIndex((item) => String(item.value) === String(option.value)) === index
   );
 
+  const sameValue = (a, b) => {
+    if (a === b) return true;
+    if (a === null || a === undefined || b === null || b === undefined) return false;
+    try {
+      const sa = String(a).trim();
+      const sb = String(b).trim();
+      return sa.toLowerCase() === sb.toLowerCase();
+    } catch (e) {
+      return String(a) === String(b);
+    }
+  };
+
   useEffect(() => {
     if (error) {
       setLocalError(error);
@@ -393,7 +405,7 @@ const FormField = ({
           >
             {Array.isArray(value) && value.length > 0 ? (
               value.map((selectedValue) => {
-                const option = mergedOptions.find((opt) => opt.value === selectedValue);
+                const option = mergedOptions.find((opt) => sameValue(opt.value, selectedValue));
                 return (
                   <span key={selectedValue} className="selected-item">
                     {option?.label || selectedValue}
@@ -479,7 +491,7 @@ const FormField = ({
             value={
               isDropdownOpen
                 ? searchTerm
-                : normalizedMergedSelectOptions.find((opt) => String(opt.value) === String(value))?.label || ''
+                : normalizedMergedSelectOptions.find((opt) => sameValue(opt.value, value))?.label || ''
             }
             onChange={(event) => {
               setSearchTerm(event.target.value);
@@ -517,7 +529,7 @@ const FormField = ({
                   <button
                     key={option.value}
                     type="button"
-                    className={`select-option${String(option.value) === String(value) ? ' selected' : ''}`}
+                    className={`select-option${sameValue(option.value, value) ? ' selected' : ''}`}
                     onClick={() => {
                       onChange(name, option.value);
                       triggerFieldValidation(option.value);
@@ -525,7 +537,7 @@ const FormField = ({
                       setIsDropdownOpen(false);
                     }}
                     role="option"
-                    aria-selected={String(option.value) === String(value)}
+                    aria-selected={sameValue(option.value, value)}
                   >
                     {option.label}
                   </button>
@@ -576,14 +588,14 @@ const FormField = ({
                   <button
                     key={option.key}
                     type="button"
-                    className={`select-option${String(option.value) === String(value) ? ' selected' : ''}`}
-                    onClick={() => {
+                    className={`select-option${sameValue(option.value, value) ? ' selected' : ''}`}
+                        onClick={() => {
                       onChange(name, option.value);
                       triggerFieldValidation(option.value);
                       setIsDropdownOpen(false);
                     }}
                     role="option"
-                    aria-selected={String(option.value) === String(value)}
+                        aria-selected={sameValue(option.value, value)}
                   >
                     {option.label}
                   </button>
@@ -612,12 +624,12 @@ const FormField = ({
       ) : type === 'radio' ? (
         <div className="radio-option-group" role="radiogroup" aria-label={cleanedLabel}>
           {normalizedSelectOptions.map((option) => (
-            <label key={option.key} className={`radio-option${String(option.value) === String(value) ? ' selected' : ''}`}>
+            <label key={option.key} className={`radio-option${sameValue(option.value, value) ? ' selected' : ''}`}>
               <input
                 type="radio"
                 name={name}
                 value={option.value}
-                checked={String(option.value) === String(value)}
+                checked={sameValue(option.value, value)}
                 onChange={() => {
                   onChange(name, option.value);
                   triggerFieldValidation(option.value);
