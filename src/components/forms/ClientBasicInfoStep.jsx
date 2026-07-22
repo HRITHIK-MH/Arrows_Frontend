@@ -53,6 +53,7 @@ const ClientBasicInfoStep = ({
           multiple={field.multiple}
           prefix={field.prefix}
           formData={formData}
+          disabled={field.disabled}
         />
       </div>
     );
