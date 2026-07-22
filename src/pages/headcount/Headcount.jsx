@@ -84,6 +84,9 @@ const getEmployeeRowKey = (employee, index) => {
 
 const getConsultantName = (employee) => employee?.consultant_name || employee?.consultantName || "";
 
+const getEmployeeEmail = (employee) =>
+  employee?.email || employee?.emailAddress || employee?.email_address || employee?.contactEmail || employee?.contact_email || "";
+
 const createEmployeeId = () => `emp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
 const withHeadcountFieldAliases = (employee = {}) => ({
@@ -324,6 +327,11 @@ export default function Headcount() {
   const [searchParams, setSearchParams] = useSearchParams();
   const formAction = searchParams.get("action");
   const initialEditEmployee = location.state?.editEmployee || null;
+  const employeeEmailsRef = useRef(new Map(
+    initialEditEmployee && getEmployeeId(initialEditEmployee) && getEmployeeEmail(initialEditEmployee)
+      ? [[String(getEmployeeId(initialEditEmployee)), getEmployeeEmail(initialEditEmployee)]]
+      : []
+  ));
   const [employees, setEmployees] = useState([]);
   const [isAddingEmployee, setIsAddingEmployee] = useState(
     () => Boolean(initialEditEmployee) || formAction === "add" || formAction === "edit"
@@ -406,6 +414,23 @@ export default function Headcount() {
   const endEntry = totalRecords === 0 ? 0 : Math.min(startEntry + displayedEmployees.length - 1, totalRecords);
   const currentTabCache = tabDataCache[activeTab];
   const hasCurrentTabCache = Boolean(currentTabCache?.employees);
+
+  const preserveEmployeeEmails = useCallback((employeeList) =>
+    employeeList.map((employee) => {
+      const employeeId = getEmployeeId(employee);
+      if (!employeeId) return employee;
+
+      const emailKey = String(employeeId);
+      const responseEmail = getEmployeeEmail(employee);
+      const preservedEmail = employeeEmailsRef.current.get(emailKey) || "";
+      const email = responseEmail || preservedEmail;
+
+      if (email) {
+        employeeEmailsRef.current.set(emailKey, email);
+      }
+
+      return email === employee.email ? employee : { ...employee, email };
+    }), []);
 
   useEffect(() => {
     const editEmployee = location.state?.editEmployee;
@@ -550,7 +575,9 @@ export default function Headcount() {
             ? await fetchActiveEmployees(apiParams)
             : await fetchExitedEmployees(apiParams);
 
-        const loadedEmployees = extractEmployeeList(payload).map(withHeadcountFieldAliases);
+        const loadedEmployees = preserveEmployeeEmails(
+          extractEmployeeList(payload).map(withHeadcountFieldAliases)
+        );
         const nextTotalRecords = extractTotalRecords(payload, loadedEmployees.length);
 
         setEmployees(loadedEmployees);
@@ -580,7 +607,7 @@ export default function Headcount() {
     };
 
     loadEmployees();
-  }, [activeTab, currentFilters.billingType, currentFilters.entity, currentFilters.customer, currentPage, rowsPerPage, listReloadKey, hasCurrentTabCache]);
+  }, [activeTab, currentFilters.billingType, currentFilters.entity, currentFilters.customer, currentPage, rowsPerPage, listReloadKey, hasCurrentTabCache, preserveEmployeeEmails]);
 
   useEffect(() => {
     const otherTab = activeTab === "active" ? "exited" : "active";
@@ -599,7 +626,9 @@ export default function Headcount() {
 
         if (!isMounted) return;
 
-        const loadedEmployees = extractEmployeeList(payload).map(withHeadcountFieldAliases);
+        const loadedEmployees = preserveEmployeeEmails(
+          extractEmployeeList(payload).map(withHeadcountFieldAliases)
+        );
         const nextTotalRecords = extractTotalRecords(payload, loadedEmployees.length);
 
         setTabDataCache((current) => {
@@ -625,7 +654,7 @@ export default function Headcount() {
     return () => {
       isMounted = false;
     };
-  }, [activeTab, rowsPerPage, tabDataCache, currentTabCache]);
+  }, [activeTab, rowsPerPage, tabDataCache, currentTabCache, preserveEmployeeEmails]);
 
   useEffect(() => {
     const loadDropdownOptions = async () => {
@@ -678,6 +707,10 @@ export default function Headcount() {
         employee_id: editingEmployeeId || employeeData.employee_id || employeeData.employeeId || createEmployeeId(),
         consultant_name: String(employeeData.consultant_name || employeeData.consultantName || "").trim(),
       });
+
+      if (editingEmployeeId !== null && getEmployeeEmail(normalizedEmployee)) {
+        employeeEmailsRef.current.set(String(editingEmployeeId), getEmployeeEmail(normalizedEmployee));
+      }
 
       const missingFields = validateHeadcountRequiredFields(normalizedEmployee);
       if (missingFields.length > 0) {

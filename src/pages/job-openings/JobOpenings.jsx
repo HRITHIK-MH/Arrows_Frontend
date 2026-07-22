@@ -40,23 +40,26 @@ import {
 } from "../../api/jobClientService";
 import { saveTeamMembers as saveTeamMembersApi, fetchJobTeamMembers } from "../../api/teamService";
 import { getClientOptions, loadClientRows } from "../../utils/clientStore";
+import { getDisplayName } from "../../utils/userDisplay";
+import { normalizeRoleValue } from "../../utils/userRoleUtils";
 import styles from "./JobOpenings.module.scss";
 
 const DEFAULT_TEAM_MEMBERS = [];
 
 const resolveUserName = () => {
-  const email = localStorage.getItem("userEmail");
-  if (email) {
-    const namePart = email.split("@")[0];
-    if (namePart) {
-      return namePart
-        .split(".")
-        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(" ");
-    }
-  }
-  return localStorage.getItem("userName") || "";
+  return getDisplayName(
+    localStorage.getItem("userName"),
+    localStorage.getItem("userEmail"),
+  );
 };
+
+const isCurrentUserAccountManager = () =>
+  normalizeRoleValue(localStorage.getItem("userRole")) === "accountmanager";
+
+const getCurrentAccountManager = () => ({
+  id: String(localStorage.getItem("userId") || localStorage.getItem("employeeId") || "").trim(),
+  name: resolveUserName(),
+});
 
 const JOB_OPENING_DRAFT_STORAGE_KEY = "job-openings:add-draft:v1";
 const JOB_OPENING_TABLE_STORAGE_KEY = "job-openings:table:v1";
@@ -269,7 +272,7 @@ const buildClientRequirementRequest = (safeData = {}, normalized = {}) => {
   const openingJobId = String(normalized.openingJobId || normalized.jobPositionId || "").trim();
   const contactPersonName = String(safeData.contactPersonName || "").trim();
   const contactPersonEmail = String(safeData.contactPersonEmail || "").trim();
-  const hiringManager = String(safeData.accountManager || safeData.hiringManager || "").trim();
+  const accountManager = resolveAccountManagerSelection({ ...safeData, ...normalized });
   const interviewStages = Array.isArray(safeData.interviewStages) ? safeData.interviewStages : [];
   const clientInterviewStages = Array.isArray(safeData.clientInterviewStages) ? safeData.clientInterviewStages : [];
   const combinedInterviewStages = [...interviewStages, ...clientInterviewStages].filter(Boolean);
@@ -293,7 +296,9 @@ const buildClientRequirementRequest = (safeData = {}, normalized = {}) => {
     },
     targetDate: String(safeData.targetDate || "").trim(),
     jobOpeningStatus: String(normalized.jobOpeningStatus || safeData.jobOpeningStatus || safeData.jobStatus || "Active").trim(),
-    hiringManager: hiringManager || undefined,
+    hiringManager: accountManager.name || undefined,
+    accountManagerId: accountManager.id || undefined,
+    accountManagerName: accountManager.name || undefined,
     interviewProcess: {
       interviewStages: combinedInterviewStages,
       finalStages,
@@ -371,6 +376,7 @@ const getMetaOptionsForField = (metaOptionMap, fieldName) => {
     softskills: ["softskills"],
     priority: ["priority"],
     clientname: ["clientname", "clients"],
+    accountmanager: ["accountmanager", "accountmanagers", "hiringmanager", "hiringmanagers"],
   };
 
   const candidates = aliases[key] || [key];
@@ -381,6 +387,85 @@ const getMetaOptionsForField = (metaOptionMap, fieldName) => {
   }
 
   return [];
+};
+
+const resolveAccountManagerSelection = (formData = {}, options = []) => {
+  const explicitId = String(formData.accountManagerId || formData.accountManagerID || "").trim();
+  const explicitName = String(
+    formData.accountManagerName ||
+    (typeof formData.accountManager === "string" ? formData.accountManager : "") ||
+    formData.hiringManagerName ||
+    (typeof formData.hiringManager === "string" ? formData.hiringManager : "") ||
+    ""
+  ).trim();
+  const selected = (options || []).find((option) =>
+    [option?.value, option?.id, option?.accountManagerId, option?.label, option?.accountManagerName]
+      .some((value) => [explicitId, explicitName].filter(Boolean).includes(String(value || "").trim()))
+  );
+  return {
+    id: String(selected?.accountManagerId || selected?.id || explicitId || "").trim(),
+    name: String(selected?.accountManagerName || selected?.label || explicitName || "").trim(),
+  };
+};
+
+const getAccountManagerOptions = (metaPayload) => {
+  const options = [];
+
+  const addOption = (user, hintedKey = "") => {
+    if (!user || typeof user !== "object" || Array.isArray(user)) return;
+
+    const roleValues = [
+      user.role,
+      user.roleName,
+      user.userRole,
+      user.persona,
+      ...(Array.isArray(user.roles) ? user.roles : []),
+      ...(Array.isArray(user.authorities) ? user.authorities : []),
+    ].map((role) => typeof role === "object"
+      ? role?.role || role?.roleName || role?.name || role?.authority || ""
+      : role);
+    const isAccountManager = roleValues.some(
+      (role) => normalizeRoleValue(role).replace(/^role/, "") === "accountmanager",
+    );
+    const normalizedHint = normalizeOptionKey(hintedKey);
+    const isAccountManagerCollection =
+      normalizedHint.includes("accountmanager") || normalizedHint.includes("hiringmanager");
+    if (!isAccountManager && !isAccountManagerCollection) return;
+
+    const email = String(user.email || user.userEmail || "").trim();
+    const name = getDisplayName(
+      user.displayName || user.fullName || user.userName || user.name,
+      email,
+    );
+    const id = String(
+      user.accountManagerId || user.userId || user.employeeId || user.id || user.value || ""
+    ).trim();
+    if (!name || options.some((option) =>
+      (id && option.accountManagerId === id) || (!id && option.accountManagerName === name)
+    )) return;
+    options.push({
+      value: id || name,
+      label: name,
+      id: id || undefined,
+      accountManagerId: id || undefined,
+      accountManagerName: name,
+    });
+  };
+
+  const visit = (node, hintedKey = "") => {
+    if (Array.isArray(node)) {
+      node.forEach((item) => {
+        addOption(item, hintedKey);
+        visit(item, hintedKey);
+      });
+      return;
+    }
+    if (!node || typeof node !== "object") return;
+    Object.entries(node).forEach(([key, value]) => visit(value, key));
+  };
+
+  visit(metaPayload);
+  return options;
 };
 
 const getNextJobOpeningId = (rows = []) => {
@@ -635,6 +720,7 @@ export default function JobOpenings({ createMode = false }) {
   const [workTypeOptions, setWorkTypeOptions] = React.useState([]);
   const [employmentTypeOptions, setEmploymentTypeOptions] = React.useState([]);
   const [locationOptions, setLocationOptions] = React.useState([]);
+  const [accountManagerOptions, setAccountManagerOptions] = React.useState([]);
   const [metaDropdownOptions, setMetaDropdownOptions] = React.useState({});
   const addJobOpeningMenuRef = React.useRef(null);
   const createModeInitializedRef = React.useRef(false);
@@ -690,7 +776,7 @@ export default function JobOpenings({ createMode = false }) {
       try {
         // Keep the client selector available even if an unrelated job metadata
         // endpoint is unavailable. The dropdown needs the complete client list.
-        const clients = await fetchClients({ page: 1, limit: 100 });
+        const clients = await fetchClients({ page: 0, limit: 100 });
 
         if (!isMounted) return;
 
@@ -802,6 +888,36 @@ export default function JobOpenings({ createMode = false }) {
         const mappedMetaOptions = buildMetaOptionMap(jobInfoMeta, clientRequirementMeta);
         if (Object.keys(mappedMetaOptions).length > 0) {
           setMetaDropdownOptions(mappedMetaOptions);
+        }
+
+        const roleBasedAccountManagers = getAccountManagerOptions([
+          jobInfoMeta,
+          clientRequirementMeta,
+        ]);
+        const metadataAccountManagers = getMetaOptionsForField(mappedMetaOptions, "accountManager")
+          .map((option) => {
+            const name = String(option?.label || option?.value || "").trim();
+            const id = String(
+              option?.accountManagerId ||
+              option?.id ||
+              (String(option?.value || "") !== name ? option?.value : "") ||
+              ""
+            ).trim();
+            return name ? {
+              ...option,
+              value: id || option?.value || name,
+              label: name,
+              accountManagerId: id || undefined,
+              accountManagerName: name,
+            } : null;
+          })
+          .filter(Boolean);
+        const mappedAccountManagers = mergeOptionsByKey(
+          roleBasedAccountManagers,
+          metadataAccountManagers,
+        );
+        if (mappedAccountManagers.length > 0) {
+          setAccountManagerOptions(mappedAccountManagers);
         }
       } catch (error) {
         console.warn("Job form metadata sync failed. Job openings table will not use cached local data:", error);
@@ -981,7 +1097,10 @@ export default function JobOpenings({ createMode = false }) {
       city: item.city ?? item.location ?? "",
       priority: item.priority ?? "Medium",
       hiringManager: item.hiringManager ?? "",
-      accountManager: item.accountManager || item.hiringManager || resolveUserName(),
+      accountManager: item.accountManagerName || item.accountManager || item.hiringManager || "",
+      accountManagerName: item.accountManagerName || item.accountManager || item.hiringManager || "",
+      accountManagerId: item.accountManagerId || item.hiringManagerId || "",
+      reportingManager: item.reportingManager ?? item.reporting_manager ?? "",
     }))
   ), [submittedData]);
 
@@ -1141,7 +1260,12 @@ export default function JobOpenings({ createMode = false }) {
     if (!showJobOpeningForm) return;
     if (editingIndex !== null) return; // don't touch when editing existing job
     setEditingData((prev) => {
-      if (!prev) return { jobPositionId: nextJobPositionId };
+      if (!prev) {
+        return {
+          jobPositionId: nextJobPositionId,
+          ...(isCurrentUserAccountManager() ? { accountManager: resolveUserName() } : {}),
+        };
+      }
       const currentId = String(prev.jobPositionId || "").trim();
       // Only auto-update if the field is empty or still has the placeholder/default
       if (!currentId || currentId === "JOP-001") {
@@ -1180,6 +1304,7 @@ export default function JobOpenings({ createMode = false }) {
           return {
             jobPositionId: nextJobPositionId,
             jobActivationDate: getTodayIsoDate(),
+            ...(isCurrentUserAccountManager() ? { accountManager: resolveUserName() } : {}),
           };
         }
         return prev;
@@ -1200,24 +1325,13 @@ export default function JobOpenings({ createMode = false }) {
         : -1;
 
     const loadEditJob = async () => {
-      if (routeJob) {
-        setEditingIndex(routeEditingIndex >= 0 ? routeEditingIndex : null);
-        setEditingData({ ...routeJob });
-        setShowJobOpeningForm(true);
-        setShowDataTable(false);
-        setEditLocked(false);
-        setActiveDraftId(null);
-        return;
-      }
-
-      // Defensive fallback: try to fetch job by id if state.job is missing
       const candidateIdFromState =
         location.state?.openingJobId || location.state?.jobPositionId || location.state?.jobId || location.state?.id || null;
 
-      let fetchId = candidateIdFromState;
+      let fetchId = getPersistedJobOpeningId(routeJob) || candidateIdFromState;
       if (!fetchId && routeEditingIndex >= 0) {
         const row = submittedData[routeEditingIndex];
-        fetchId = (row && (row.openingJobId || row.jobPositionId || row.jobId)) || null;
+        fetchId = getPersistedJobOpeningId(row) || (row && (row.openingJobId || row.jobPositionId || row.jobId)) || null;
       }
 
       if (!fetchId) {
@@ -1235,8 +1349,9 @@ export default function JobOpenings({ createMode = false }) {
           return;
         }
 
+        const latestJob = normalizeApiJob({ ...(routeJob || {}), ...jobDetail }, routeEditingIndex >= 0 ? routeEditingIndex : 0);
         setEditingIndex(routeEditingIndex >= 0 ? routeEditingIndex : null);
-        setEditingData({ ...jobDetail });
+        setEditingData(latestJob);
         setShowJobOpeningForm(true);
         setShowDataTable(false);
         setEditLocked(false);
@@ -1272,7 +1387,9 @@ export default function JobOpenings({ createMode = false }) {
       jobActivationDate: String(draftData?.jobActivationDate || "") < getTodayIsoDate()
         ? getTodayIsoDate()
         : draftData?.jobActivationDate || getTodayIsoDate(),
-      accountManager: draftData?.accountManager || resolveUserName(),
+      accountManager:
+        draftData?.accountManager ||
+        (isCurrentUserAccountManager() ? resolveUserName() : ""),
     });
     setEditLocked(false);
     setActiveDraftId(draftId);
@@ -1325,13 +1442,14 @@ export default function JobOpenings({ createMode = false }) {
 
   const handleViewJobOpening = React.useCallback(async (row, index) => {
     console.log('View job opening:', row);
-    const id = row.openingJobId || row.jobPositionId || String(index);
+    const id = getPersistedJobOpeningId(row) || row.openingJobId || row.jobPositionId || String(index);
     try {
-      const jobDetail = await fetchJobById(id).catch(() => null);
-      const teamMembers = await fetchJobTeamMembers(id).catch(() => []);
+      const jobDetailResponse = await fetchJobById(id);
+      const jobDetail = normalizeApiJob({ ...row, ...jobDetailResponse }, index);
+      const teamMembers = await fetchJobTeamMembers(jobDetail.openingJobId || id).catch(() => []);
 
       const normalized = {
-        ...(jobDetail || row),
+        ...jobDetail,
         openingJobId: jobDetail?.openingJobId || jobDetail?.jobPositionId || id,
         postingTitle: jobDetail?.postingTitle || row.postingTitle || row.positionName || "-",
         clientName: jobDetail?.clientName || row.clientName || "-",
@@ -1354,6 +1472,11 @@ export default function JobOpenings({ createMode = false }) {
         targetDate: jobDetail?.targetDate || row.targetDate || "",
         jobType: jobDetail?.jobType || row.jobType || "",
         candidates: jobDetail?.candidates || row.candidates || [],
+        accountManager: jobDetail?.accountManagerName || jobDetail?.accountManager || row.accountManager || "",
+        accountManagerName: jobDetail?.accountManagerName || jobDetail?.accountManager || row.accountManagerName || row.accountManager || "",
+        accountManagerId: jobDetail?.accountManagerId || row.accountManagerId || "",
+        reportingManager: jobDetail?.reportingManager ?? row.reportingManager ?? "",
+        teamMembers,
       };
 
       setSelectedJobOpening(normalized);
@@ -1393,9 +1516,7 @@ export default function JobOpenings({ createMode = false }) {
   const handleEditJobOpening = React.useCallback((row, index) => {
     console.log('Edit job opening:', row);
     setEditingIndex(index);
-    setEditingData({
-      ...row,
-    });
+    setEditingData(null);
     setShowJobOpeningForm(true);
     setShowDataTable(false);
     setEditLocked(false);
@@ -1410,17 +1531,21 @@ export default function JobOpenings({ createMode = false }) {
   const handleDeleteJobOpening = React.useCallback(async (row, index) => {
     console.log('Delete job opening:', row);
     if (window.confirm('Are you sure you want to delete this job opening?')) {
-      const backendJobId = String(row?.jobId || "").trim();
-      if (isUuid(backendJobId)) {
-        try {
-          await deleteJobApi(backendJobId);
-        } catch (error) {
-          console.warn("Job delete API failed, applying local delete:", error);
-        }
+      const backendJobId = getPersistedJobOpeningId(row);
+      if (!backendJobId) {
+        showTransientMessage("Unable to determine the job opening ID.");
+        return;
       }
-      setSubmittedData(prev => prev.filter((_, i) => i !== index));
+      try {
+        await deleteJobApi(backendJobId);
+        setSubmittedData(prev => prev.filter((_, i) => i !== index));
+        showTransientMessage("Job opening deleted successfully");
+      } catch (error) {
+        console.error("Job delete API failed:", error);
+        showTransientMessage(error?.response?.data?.message || error?.message || "Unable to delete job opening.");
+      }
     }
-  }, []);
+  }, [showTransientMessage]);
 
   const jobOpeningFormInitialData = React.useMemo(() => {
     if (!editingData) {
@@ -1429,10 +1554,43 @@ export default function JobOpenings({ createMode = false }) {
 
     return {
       ...editingData,
+      accountManager:
+        editingData.accountManagerName ||
+        editingData.accountManager ||
+        editingData.hiringManager ||
+        (isCurrentUserAccountManager() ? resolveUserName() : ""),
+      accountManagerName:
+        editingData.accountManagerName || editingData.accountManager || editingData.hiringManager || "",
+      accountManagerId: editingData.accountManagerId || editingData.hiringManagerId || "",
       extraTechnicalSkills:
         editingData.extraTechnicalSkills ?? editingData.addTechnicalSkills ?? []
     };
   }, [editingData]);
+
+  const availableAccountManagerOptions = React.useMemo(() => {
+    const currentName = String(
+      editingData?.accountManagerName || editingData?.accountManager || editingData?.hiringManager || "",
+    ).trim();
+    const currentId = String(editingData?.accountManagerId || editingData?.hiringManagerId || "").trim();
+    const loggedInManager = isCurrentUserAccountManager() ? getCurrentAccountManager() : { id: "", name: "" };
+    return mergeOptionsByKey(
+      accountManagerOptions,
+      [
+        currentName ? {
+          value: currentId || currentName,
+          label: currentName,
+          accountManagerId: currentId || undefined,
+          accountManagerName: currentName,
+        } : null,
+        loggedInManager.name ? {
+          value: loggedInManager.id || loggedInManager.name,
+          label: loggedInManager.name,
+          accountManagerId: loggedInManager.id || undefined,
+          accountManagerName: loggedInManager.name,
+        } : null,
+      ].filter(Boolean),
+    );
+  }, [accountManagerOptions, editingData?.accountManager, editingData?.accountManagerId, editingData?.accountManagerName, editingData?.hiringManager, editingData?.hiringManagerId]);
 
   const handleJobOpeningSubmit = React.useCallback(async (data = {}) => {
     const safeData = data && typeof data === "object" ? data : {};
@@ -1467,6 +1625,10 @@ export default function JobOpenings({ createMode = false }) {
         ? clientOptions
         : getClientOptions(loadClientRows());
     const resolvedClient = resolveClientSelection(safeData, effectiveClientOptions);
+    let resolvedAccountManager = resolveAccountManagerSelection(safeData, availableAccountManagerOptions);
+    if (!resolvedAccountManager.name && isCurrentUserAccountManager()) {
+      resolvedAccountManager = getCurrentAccountManager();
+    }
     let normalized = {
       ...safeData,
       jobId: safeData.jobId || null,
@@ -1483,7 +1645,9 @@ export default function JobOpenings({ createMode = false }) {
       jobOpeningStatus: safeData.jobOpeningStatus || safeData.jobStatus || 'Active',
       city: safeData.city || resolvedLocation,
       priority: safeData.priority || "Medium",
-      accountManager: safeData.accountManager || safeData.hiringManager || resolveUserName(),
+      accountManager: resolvedAccountManager.name,
+      accountManagerName: resolvedAccountManager.name,
+      accountManagerId: resolvedAccountManager.id,
       assignedRecruiters: resolvedAssignedRecruiters,
       candidates: Array.isArray(safeData.candidates) ? safeData.candidates : [],
     };
@@ -1500,7 +1664,7 @@ export default function JobOpenings({ createMode = false }) {
               .filter((option, index, list) => list.findIndex((it) => it.value === option.value) === index);
             if (mappedLocations.length > 0) setLocationOptions(mappedLocations);
           }
-        } catch (err) {
+        } catch (_err) {
           // ignore; mapping will be best-effort
         }
       }
@@ -1522,9 +1686,9 @@ export default function JobOpenings({ createMode = false }) {
         normalized.locations = normalized.locations.map((v) => labelByValue2.get(String(v)) || String(v)).filter(Boolean);
       }
       const isEditMode = editingIndex !== null;
-      const existingJobId = String(
-        submittedData?.[editingIndex]?.jobId || normalized.jobId || ""
-      ).trim();
+      const existingJobId =
+        getPersistedJobOpeningId(submittedData?.[editingIndex]) ||
+        getPersistedJobOpeningId(normalized);
       // The backend accepts both a database UUID and a client code (for example, C1292938).
       const hasValidClientId = Boolean(String(normalized.clientId || "").trim());
       const hasValidTitle = Boolean(String(normalized.postingTitle || "").trim());
@@ -1537,12 +1701,19 @@ export default function JobOpenings({ createMode = false }) {
         throw new Error("Please select a client before creating the JD.");
       }
 
-      if (isEditMode && isUuid(existingJobId) && hasValidClientId && hasValidTitle) {
+      if (isEditMode) {
+        if (!existingJobId) {
+          throw new Error("Unable to determine the existing job ID. Reload the job opening and try again.");
+        }
+
         const response = await updateJobApi(existingJobId, normalized);
-        const savedJob = normalizeApiJob(unwrapApiData(response) || {}, editingIndex || 0);
+        const savedPayload = unwrapApiData(response);
+        const savedJob = savedPayload && typeof savedPayload === "object"
+          ? normalizeApiJob(savedPayload, editingIndex || 0)
+          : {};
         const persistedJobOpeningId = getPersistedJobOpeningId(savedJob) || existingJobId;
         normalized = { ...normalized, ...savedJob, jobId: persistedJobOpeningId };
-      } else if (!isEditMode && hasValidClientId && hasValidTitle) {
+      } else {
         const response = await createJobApi(normalized);
         const savedJob = normalizeApiJob(unwrapApiData(response) || {}, submittedData.length);
         const persistedJobOpeningId = getPersistedJobOpeningId(savedJob);
@@ -1550,8 +1721,6 @@ export default function JobOpenings({ createMode = false }) {
           throw new Error("JD was created but backend did not return a valid job id for team assignment.");
         }
         normalized = { ...normalized, ...savedJob, jobId: persistedJobOpeningId };
-      } else {
-        throw new Error("Unable to save JD in DB. Please try again.");
       }
 
       if (!isEditMode && hasValidClientId && hasValidTitle) {
@@ -1649,7 +1818,7 @@ export default function JobOpenings({ createMode = false }) {
     setIsAddJobOpeningMenuOpen(false);
     navigate("/job-openings");
     // Here you would typically send the data to your backend API
-  }, [activeDraftId, clientOptions, editingIndex, navigate, nextJobPositionId, persistJobOpeningDrafts, showTransientMessage, isJobIdUsed, submittedData]);
+  }, [activeDraftId, availableAccountManagerOptions, clientOptions, editingIndex, navigate, nextJobPositionId, persistJobOpeningDrafts, showTransientMessage, isJobIdUsed, submittedData]);
 
   const formatInrAmount = React.useCallback((value) => {
     const numericValue = Number(value);
@@ -1760,6 +1929,13 @@ export default function JobOpenings({ createMode = false }) {
             };
           }
 
+          if (fieldName === "accountManager") {
+            return {
+              ...field,
+              options: availableAccountManagerOptions,
+            };
+          }
+
           const metaOptions = getMetaOptionsForField(metaDropdownOptions, field.name);
           if (metaOptions.length > 0) {
             return {
@@ -1786,6 +1962,7 @@ export default function JobOpenings({ createMode = false }) {
     }),
     [
       clientOptions,
+      availableAccountManagerOptions,
       editingIndex,
       employmentTypeOptions,
       handleCancelJobOpeningForm,

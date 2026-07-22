@@ -129,19 +129,8 @@ const assertJobCreatePersisted = (response) => {
   return response;
 };
 
-const assertJobUpdatePersisted = (response) => {
-  const envelope = assertApiSucceeded(response, 'Failed to update job opening in DB.');
-  const data = envelope?.data;
-
-  if (!data || typeof data !== 'object') {
-    throw toApiError('Job opening update did not return persisted data.', envelope);
-  }
-
-  const openingJobId = String(data.openingJobId || data.jobPositionId || data.jobOpeningId || data.jobId || data.id || '').trim();
-  if (!openingJobId) {
-    throw toApiError('Job opening update was not confirmed by DB.', envelope);
-  }
-
+const assertJobUpdateSucceeded = (response) => {
+  assertApiSucceeded(response, 'Failed to update job opening in DB.');
   return response;
 };
 
@@ -371,6 +360,19 @@ export const toJobRequest = (row = {}) => {
     clientId: clientId || null,
   };
 
+  const accountManagerId = firstNonEmpty(
+    row.accountManagerId,
+    row.accountManagerID,
+    typeof row.accountManager === 'object' ? row.accountManager?.id || row.accountManager?.userId : '',
+  );
+  const accountManagerName = firstNonEmpty(
+    row.accountManagerName,
+    typeof row.accountManager === 'string' ? row.accountManager : '',
+    row.hiringManagerName,
+    typeof row.hiringManager === 'string' ? row.hiringManager : '',
+    typeof row.accountManager === 'object' ? row.accountManager?.displayName || row.accountManager?.name : '',
+  );
+
   if (jobPositionId) payload.jobPositionId = jobPositionId;
   if (positionName) payload.positionName = positionName;
   if (positionLevel) payload.positionLevel = positionLevel;
@@ -400,6 +402,11 @@ export const toJobRequest = (row = {}) => {
     payload.haveJdTemplate = hasJdTemplate ? "Yes" : "No";
     payload.hasJdTemplate = hasJdTemplate;
   }
+  if (accountManagerId) payload.accountManagerId = accountManagerId;
+  if (accountManagerName) {
+    payload.accountManagerName = accountManagerName;
+    payload.accountManager = accountManagerName;
+  }
 
   return payload;
 };
@@ -408,10 +415,13 @@ export const createJob = async (row) =>
   assertJobCreatePersisted(await clientJobApi.post('/jobs/job-information', toJobRequest(row)));
 
 export const updateJob = async (jobId, row) =>
-  assertJobUpdatePersisted(await clientJobApi.patch(`/job-openings/${encodeURIComponent(jobId)}/status`, toJobRequest(row)));
+  assertJobUpdateSucceeded(await clientJobApi.put(`/jobs/${encodeURIComponent(jobId)}`, toJobRequest(row)));
 
-export const deleteJob = async (jobId) =>
-  clientJobApi.delete(`/job-openings/${encodeURIComponent(jobId)}`);
+export const deleteJob = async (jobId) => {
+  const response = await clientJobApi.delete(`/job-openings/${encodeURIComponent(jobId)}`);
+  assertApiSucceeded(response, 'Failed to delete job opening.');
+  return response;
+};
 
 const CLIENTS_ENDPOINT = '/clients';
 const CLIENTS_CREATE_META_ENDPOINT = '/clients/create/meta';
@@ -512,7 +522,7 @@ export const toSkillOption = (row) => {
 export const toClientRequest = (row = {}) => {
   const clientId = String(row.clientId || row.displayClientId || '').trim() || null;
   const clientName = String(row.clientName || row.name || '').trim();
-  const clientType = String(row.clientType || row.secondaryContactPerson || '').trim() || null;
+  const clientType = String(row.clientType || '').trim() || null;
   const industry = String(row.industry || row.accountManager || '').trim() || null;
   const status = String(row.clientStatus || row.status || 'Active').trim();
   const contactPersonName = String(
@@ -573,6 +583,14 @@ export const normalizeClientRecord = (row, index = 0) => {
     clientId: displayClientId,
     displayClientId,
     clientName: normalizeText(row?.clientName || row?.name || row?.companyName),
+    clientType: normalizeText(
+      row?.clientType ||
+      row?.client_type ||
+      row?.type ||
+      row?.clientCategory ||
+      row?.client_category,
+      ''
+    ),
 
     contactEmail: normalizeText(
       row?.contactPersonEmail ||
@@ -633,7 +651,35 @@ export const toClientOption = (row) => {
   };
 };
 
-export const normalizeJobRecord = (row, index = 0) => ({
+const getAccountManagerDetails = (row = {}) => {
+  const manager = row?.accountManager && typeof row.accountManager === 'object'
+    ? row.accountManager
+    : row?.hiringManager && typeof row.hiringManager === 'object'
+      ? row.hiringManager
+      : {};
+  const id = firstNonEmpty(
+    row?.accountManagerId,
+    row?.accountManagerID,
+    row?.hiringManagerId,
+    manager?.userId,
+    manager?.accountManagerId,
+    manager?.id,
+  );
+  const name = firstNonEmpty(
+    row?.accountManagerName,
+    row?.hiringManagerName,
+    typeof row?.accountManager === 'string' ? row.accountManager : '',
+    typeof row?.hiringManager === 'string' ? row.hiringManager : '',
+    manager?.displayName,
+    manager?.fullName,
+    manager?.name,
+  );
+  return { id, name };
+};
+
+export const normalizeJobRecord = (row, index = 0) => {
+  const accountManager = getAccountManagerDetails(row);
+  return ({
   jobId: row?.jobId || row?.id || null,
   jobPositionId: row?.jobPositionId || row?.openingJobId || row?.jobId || `JOP-${String(index + 1).padStart(3, '0')}`,
   openingJobId: row?.openingJobId || row?.jobPositionId || row?.jobId || '',
@@ -648,7 +694,12 @@ export const normalizeJobRecord = (row, index = 0) => ({
   contactPersonName: row?.contactPersonName || '-',
   contactPersonEmail: row?.contactPersonEmail || row?.contactEmail || '-',
   assignedRecruiters: row?.assignedRecruiters || '-',
-  hiringManager: row?.hiringManager || '-',
   candidates: Array.isArray(row?.candidates) ? row.candidates : [],
   ...row,
-});
+  hiringManager: accountManager.name || '-',
+  accountManager: accountManager.name || '',
+  accountManagerName: accountManager.name,
+  accountManagerId: accountManager.id,
+  reportingManager: row?.reportingManager ?? row?.reporting_manager ?? '',
+  });
+};

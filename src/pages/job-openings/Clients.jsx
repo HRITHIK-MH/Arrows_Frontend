@@ -15,6 +15,18 @@ import { loadClientRows, saveClientRows } from "../../utils/clientStore";
 import styles from "./Clients.module.scss";
 
 const CLIENT_DRAFT_STORAGE_KEY = "clients:add-draft:v1";
+
+const normalizeClientTypeForForm = (value) => {
+  const rawValue = String(value || "").trim();
+  if (!rawValue) return "";
+  const clientTypeField = clientConfig.steps
+    .flatMap((step) => step.fields || [])
+    .find((field) => field.name === "clientType");
+  const matched = (clientTypeField?.options || []).find((option) =>
+    String(option?.value || option?.label || "").trim().toLowerCase() === rawValue.toLowerCase()
+  );
+  return matched?.value || rawValue;
+};
 const createClientDraftId = () => `draft-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 const readClientDrafts = () => {
   try {
@@ -138,7 +150,7 @@ export default function Clients() {
       contactEmail,
       contactNumber,
       primaryContactPerson: data.primaryContactPerson || "",
-      clientType: data.clientType || data.secondaryContactPerson || "",
+      clientType: data.clientType || "",
       industry: data.industry || data.accountManager || "",
       address: data.address || data.comments || "",
       comments: data.comments || "",
@@ -154,7 +166,7 @@ export default function Clients() {
     contactEmail: row.contactEmail || "",
     contactNumber: String(row.contactNumber || "").replace(/^\+91\s?/, "").trim(),
     primaryContactPerson: row.primaryContactPerson || "",
-    clientType: row.clientType || row.secondaryContactPerson || "",
+    clientType: normalizeClientTypeForForm(row.clientType),
     industry: row.industry || row.accountManager || "",
     address: row.address || row.comments || "",
     comments: row.comments || "",
@@ -176,7 +188,7 @@ export default function Clients() {
   }, []);
 
   const refreshClientListFromApi = React.useCallback(async (page = currentPage, limit = entriesPerPage) => {
-    const clients = await fetchClients({ page, limit });
+    const clients = await fetchClients({ page: page - 1, limit });
     const normalized = Array.isArray(clients)
       ? clients.map((row, index) => normalizeApiClient(row, index))
       : [];
@@ -203,7 +215,7 @@ export default function Clients() {
 
     const loadClientsFromApi = async () => {
       try {
-        const clients = await fetchClients({ page: currentPage, limit: entriesPerPage });
+        const clients = await fetchClients({ page: currentPage - 1, limit: entriesPerPage });
         if (!isMounted || !Array.isArray(clients)) return;
         const normalized = clients.map((row, index) => normalizeApiClient(row, index));
         const responsePagination = clients?.pagination || {};

@@ -104,6 +104,13 @@ const PermissionStep = ({ formData, onChange, onSetStepFields, fields = [], vali
     required: false,
     options: []
   };
+  const accountManagerConfig = fieldMap.accountManager || {
+    name: "accountManager",
+    label: "Account Manager",
+    type: "select",
+    required: false,
+    options: []
+  };
   const hiringTypeConfig = fieldMap.hiringType;
 
   React.useEffect(() => {
@@ -242,6 +249,28 @@ const PermissionStep = ({ formData, onChange, onSetStepFields, fields = [], vali
     onChange("clientUuid", getClientUuidForValue(value));
   };
 
+  const findAccountManagerOption = React.useCallback((value) => {
+    const token = String(value || "").trim();
+    return (accountManagerConfig.options || []).find((option) =>
+      [option?.value, option?.accountManagerId, option?.id, option?.accountManagerName, option?.label]
+        .some((candidate) => String(candidate || "").trim() === token)
+    );
+  }, [accountManagerConfig.options]);
+
+  const handleAccountManagerChange = (fieldName, value) => {
+    const selected = findAccountManagerOption(value);
+    const managerName = String(selected?.accountManagerName || selected?.label || selected?.name || "").trim();
+    const managerId = String(
+      selected?.accountManagerId ||
+      selected?.id ||
+      (String(selected?.value || "").trim() !== managerName ? selected?.value : "") ||
+      ""
+    ).trim();
+    onChange(fieldName, managerName || value);
+    onChange("accountManagerId", managerId);
+    onChange("accountManagerName", managerName);
+  };
+
   useEffect(() => {
     if (!formData[clientNameConfig.name]) return;
 
@@ -271,6 +300,7 @@ const PermissionStep = ({ formData, onChange, onSetStepFields, fields = [], vali
         contactPersonNameConfig,
         contactPersonEmailConfig,
         priorityConfig,
+        accountManagerConfig,
         hiringTypeConfig,
       ].filter(Boolean).map((field) => ({
         name: field.name,
@@ -299,6 +329,7 @@ const PermissionStep = ({ formData, onChange, onSetStepFields, fields = [], vali
     contactPersonNameConfig,
     contactPersonEmailConfig,
     priorityConfig,
+    accountManagerConfig,
     hiringTypeConfig,
     onSetStepFields,
   ]);
@@ -472,6 +503,21 @@ const PermissionStep = ({ formData, onChange, onSetStepFields, fields = [], vali
               error={validationErrors[priorityConfig.name]}
               formData={formData}
               disabled={disabled || Boolean(priorityConfig.disabled)}
+            />
+          </div>
+          <div className="grid-cell grid-col-3 grid-row-2">
+            <FormField
+              label={accountManagerConfig.label}
+              type={accountManagerConfig.type || "select"}
+              name={accountManagerConfig.name}
+              value={formData.accountManagerId || formData[accountManagerConfig.name] || ""}
+              onChange={handleAccountManagerChange}
+              required={Boolean(accountManagerConfig.required)}
+              options={accountManagerConfig.options || []}
+              placeholder={accountManagerConfig.placeholder || "Select Account Manager"}
+              error={validationErrors[accountManagerConfig.name]}
+              formData={formData}
+              disabled={disabled || Boolean(accountManagerConfig.disabled)}
             />
           </div>
           {hiringTypeConfig ? (

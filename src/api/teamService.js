@@ -27,6 +27,7 @@ const normalizeRecruiterItem = (item, index) => {
       .replace(/_/g, ' ')
       .toLowerCase()
       .replace(/\b\w/g, (ch) => ch.toUpperCase()),
+    reportingManager: item?.reportingManager ?? item?.reporting_manager ?? '',
     sortIndex: Number.isFinite(Number(item?.sortIndex)) ? Number(item?.sortIndex) : index,
   };
 };

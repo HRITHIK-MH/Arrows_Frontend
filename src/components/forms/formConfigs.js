@@ -442,15 +442,6 @@ export const jobOpeningConfig = {
             { value: "cultural-awareness", label: "Cultural Awareness" }
           ]
         },
-        {
-          name: "accountManager",
-          label: "Account Manager",
-          type: "text",
-          required: false,
-          cssClass: "grid-col-2 grid-row-6",
-          placeholder: "Account Manager",
-          disabled: true
-        }
       ]
     },
     {
@@ -505,6 +496,15 @@ export const jobOpeningConfig = {
             { value: "medium", label: "Medium" },
             { value: "low", label: "Low" }
           ]
+        },
+        {
+          name: "accountManager",
+          label: "Account Manager",
+          type: "select",
+          required: false,
+          cssClass: "grid-col-3 grid-row-2",
+          placeholder: "Select Account Manager",
+          options: []
         },
         {
           name: "permissionVisibility",
