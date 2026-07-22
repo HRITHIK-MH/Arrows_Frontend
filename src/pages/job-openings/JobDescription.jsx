@@ -5,6 +5,7 @@ import { createCandidate } from "../../api/candidateService";
 import { parseResume } from "../../api/resumeParserService";
 import { calculateAtsScore } from "../../utils/atsScoreCalculator";
 import styles from "./JobDescription.module.scss";
+import { getDisplayJobOpeningId } from "../../utils/jobOpeningId";
 
 const fallbackJob = {
   openingJobId: "",
@@ -720,7 +721,7 @@ const JobDescription = () => {
           <div className={styles.detailHeader}>
             <div className={styles.avatar}>Z</div>
             <div className={styles.jobMeta}>
-              <div className={styles.jobId}>{job.openingJobId || jobId}</div>
+              <div className={styles.jobId}>{getDisplayJobOpeningId(job) || jobId}</div>
               <div className={styles.jobSub}>
                 <span>{job.postingTitle}</span>
                 <span>•</span>

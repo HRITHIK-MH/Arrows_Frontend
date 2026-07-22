@@ -42,6 +42,7 @@ import { saveTeamMembers as saveTeamMembersApi, fetchJobTeamMembers } from "../.
 import { getClientOptions, loadClientRows } from "../../utils/clientStore";
 import { getDisplayName } from "../../utils/userDisplay";
 import { normalizeRoleValue } from "../../utils/userRoleUtils";
+import { getDisplayJobOpeningId } from "../../utils/jobOpeningId";
 import styles from "./JobOpenings.module.scss";
 
 const DEFAULT_TEAM_MEMBERS = [];
@@ -2206,7 +2207,7 @@ export default function JobOpenings({ createMode = false }) {
                             >
                               {isExpanded ? '▾' : '▸'}
                             </button>
-                            {row.openingJobId}
+                            {getDisplayJobOpeningId(row)}
                           </td>
                           <td>{row.postingTitle}</td>
                           <td>{row.clientName}</td>
