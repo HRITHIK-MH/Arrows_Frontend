@@ -26,7 +26,44 @@ const MultiStepForm = ({
 
   React.useEffect(() => {
     setCurrentStep(0);
-    setFormData(initialData || {});
+    // Normalize select-like field values from initialData to match option values case-insensitively
+    const normalizeValue = (a, b) => {
+      if (a === b) return true;
+      if (a === null || a === undefined || b === null || b === undefined) return false;
+      try {
+        return String(a).trim().toLowerCase() === String(b).trim().toLowerCase();
+      } catch (e) {
+        return String(a) === String(b);
+      }
+    };
+
+    const normalizedInitial = (() => {
+      const src = initialData || {};
+      if (!src || !Array.isArray(steps)) return src || {};
+      const copy = { ...src };
+      steps.forEach((step) => {
+        const fields = step?.fields || [];
+        fields.forEach((field) => {
+          const name = field?.name;
+          if (!name) return;
+          const raw = copy[name];
+          if (raw === undefined || raw === null || raw === '') return;
+          const opts = field?.options || [];
+          if (!Array.isArray(opts) || opts.length === 0) return;
+          const matched = opts.find((opt) => {
+            const optValue = opt && typeof opt === 'object' ? opt.value : opt;
+            const optLabel = opt && typeof opt === 'object' ? (opt.label || opt.value) : opt;
+            return normalizeValue(optValue, raw) || normalizeValue(optLabel, raw);
+          });
+          if (matched) {
+            copy[name] = (matched && (matched.value ?? matched)) || copy[name];
+          }
+        });
+      });
+      return copy;
+    })();
+
+    setFormData(normalizedInitial || {});
     setStepFields({});
   }, [initialData]);
 
