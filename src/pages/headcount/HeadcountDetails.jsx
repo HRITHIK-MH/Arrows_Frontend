@@ -11,6 +11,9 @@ const getEmployeeId = (employee) => employee?.employee_id || employee?.employeeI
 
 const getConsultantName = (employee) => employee?.consultant_name || employee?.consultantName || "";
 
+const getEmployeeEmail = (employee) =>
+  employee?.email || employee?.emailAddress || employee?.email_address || employee?.contactEmail || employee?.contact_email || "";
+
 const isExitedEmployee = (employee) =>
   Boolean(employee?.isExited || employee?.status === "exited" || employee?.exitDetails);
 
@@ -90,7 +93,14 @@ export default function HeadcountDetails() {
         const details = await fetchEmployeeById(employeeId);
         if (!isMounted) return;
         if (details) {
-          setEmployee((current) => ({ ...(current || stateEmployee || {}), ...details }));
+          setEmployee((current) => {
+            const existingEmployee = current || stateEmployee || {};
+            return {
+              ...existingEmployee,
+              ...details,
+              email: getEmployeeEmail(details) || getEmployeeEmail(existingEmployee),
+            };
+          });
           return;
         }
 

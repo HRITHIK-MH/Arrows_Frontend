@@ -11,7 +11,7 @@ const EMPTY_EMPLOYEES_RESPONSE = {
 
 const firstValue = (...values) => values.find((value) => value !== undefined && value !== null && value !== '');
 
-const FAILURE_STATUS_VALUES = new Set(['failed', 'failure', 'error', 'not_found', 'not found']);
+const FAILURE_STATUS_VALUES = new Set(['failed', 'failure', 'error', 'not_found', 'not found', 'invalid']);
 const READ_TIMEOUT_MS = 90000;
 const MUTATION_TIMEOUT_MS = 90000;
 const READ_RETRY_DELAYS_MS = [1500];
@@ -48,8 +48,10 @@ const extractBackendErrorMessage = (payload, fallback) =>
   firstValue(
     payload?.message,
     payload?.error,
+    typeof payload?.detail === 'string' ? payload.detail : undefined,
     payload?.data?.message,
     payload?.data?.error,
+    typeof payload?.data?.detail === 'string' ? payload.data.detail : undefined,
     fallback
   );
 
@@ -90,13 +92,30 @@ const assertSuccessfulMutation = (payload, fallbackMessage) => {
     return;
   }
 
-  if (payload.status === false) {
+  const validationDetails = firstValue(
+    payload.validation_errors,
+    payload.validationErrors,
+    payload.errors,
+    payload.detail,
+    payload.data?.validation_errors,
+    payload.data?.validationErrors,
+    payload.data?.errors,
+    payload.data?.detail
+  );
+  const responseMessage = String(extractBackendErrorMessage(payload, '') || '').trim();
+  const hasValidationFailure =
+    (Array.isArray(validationDetails) && validationDetails.length > 0) ||
+    (validationDetails && typeof validationDetails === 'object' && Object.keys(validationDetails).length > 0) ||
+    (typeof validationDetails === 'string' && /(?:validation|invalid|required|error)/i.test(validationDetails)) ||
+    /\b(validation\s+(?:failed|failure|error)|invalid\s+(?:request|input|payload)|required\s+field)\b/i.test(responseMessage);
+
+  if (payload.status === false || payload.success === false || payload.valid === false || hasValidationFailure) {
     throw new Error(extractBackendErrorMessage(payload, fallbackMessage));
   }
 
   if (typeof payload.status === 'string') {
     const normalizedStatus = payload.status.trim().toLowerCase();
-    if (FAILURE_STATUS_VALUES.has(normalizedStatus)) {
+    if (FAILURE_STATUS_VALUES.has(normalizedStatus) || /(?:fail|error|invalid|validation)/.test(normalizedStatus)) {
       throw new Error(extractBackendErrorMessage(payload, fallbackMessage));
     }
   }
@@ -181,30 +200,64 @@ const omitEmptyValues = (payload) =>
     Object.entries(payload).filter(([, value]) => value !== undefined && value !== null && value !== '')
   );
 
+const toNumericCost = (value) => {
+  if (value === undefined || value === null || value === '') return undefined;
+  const parsed = Number(String(value).replace(/,/g, '').trim());
+  if (!Number.isFinite(parsed)) {
+    throw new Error('Cost must be a valid number.');
+  }
+  return parsed;
+};
+
+const toIsoDate = (value) => {
+  const text = String(value || '').trim();
+  const isoDate = text.match(/^(\d{4})-(\d{2})-(\d{2})(?:[T\s].*)?$/);
+  const dayFirstDate = text.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (!isoDate && !dayFirstDate) {
+    throw new Error('Joining Date must use DD/MM/YYYY or YYYY-MM-DD format.');
+  }
+
+  const year = isoDate?.[1] || dayFirstDate[3];
+  const month = isoDate?.[2] || dayFirstDate[2];
+  const day = isoDate?.[3] || dayFirstDate[1];
+  const normalized = `${year}-${month}-${day}`;
+  const parsed = new Date(`${normalized}T00:00:00`);
+  if (
+    Number.isNaN(parsed.getTime()) ||
+    parsed.getFullYear() !== Number(year) ||
+    parsed.getMonth() + 1 !== Number(month) ||
+    parsed.getDate() !== Number(day)
+  ) {
+    throw new Error('Joining Date must be a valid date in DD/MM/YYYY or YYYY-MM-DD format.');
+  }
+
+  return normalized;
+};
+
 const toAddHeadcountRequest = (employeeData = {}) =>
   omitEmptyValues({
     consultant_name: firstValue(employeeData.consultant_name, employeeData.consultantName),
     email: firstValue(employeeData.email),
-    joining_date: firstValue(employeeData.joiningDate, employeeData.joining_date),
+    joining_date: toIsoDate(firstValue(employeeData.joining_date, employeeData.joiningDate)),
     entity: firstValue(employeeData.entity),
-    work_location: firstValue(employeeData.workLocation, employeeData.work_location),
+    work_location: firstValue(employeeData.work_location, employeeData.workLocation),
     mode: firstValue(employeeData.mode),
-    cost: firstValue(employeeData.cost),
+    cost: toNumericCost(firstValue(employeeData.cost)),
     customer: firstValue(employeeData.customer),
-    billing_type: formatBillingTypeForPost(normalizeBillTypeFilter(firstValue(employeeData.billingType, employeeData.billing_type))),
+    billing_type: formatBillingTypeForPost(normalizeBillTypeFilter(firstValue(employeeData.billing_type, employeeData.billingType))),
     created_by: firstValue(employeeData.createdBy, employeeData.created_by, 'Demo Admin'),
   });
 
 const toUpdateHeadcountRequest = (employeeData = {}) =>
   omitEmptyValues({
     consultant_name: firstValue(employeeData.consultant_name, employeeData.consultantName),
-    joining_date: firstValue(employeeData.joiningDate, employeeData.joining_date),
+    joining_date: toIsoDate(firstValue(employeeData.joining_date, employeeData.joiningDate)),
     entity: firstValue(employeeData.entity),
-    work_location: firstValue(employeeData.workLocation, employeeData.work_location),
+    work_location: firstValue(employeeData.work_location, employeeData.workLocation),
     mode: firstValue(employeeData.mode),
-    cost: firstValue(employeeData.cost),
+    cost: toNumericCost(firstValue(employeeData.cost)),
     customer: firstValue(employeeData.customer),
-    billing_type: normalizeBillTypeFilter(firstValue(employeeData.billingType, employeeData.billing_type)),
+    billing_type: normalizeBillTypeFilter(firstValue(employeeData.billing_type, employeeData.billingType)),
     updated_by: firstValue(employeeData.updatedBy, employeeData.updated_by, 'Demo Admin'),
   });
 

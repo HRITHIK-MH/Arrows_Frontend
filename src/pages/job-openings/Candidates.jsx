@@ -222,6 +222,14 @@ const createSkillDraft = () => ({
   lastUsed: "",
 });
 
+const normalizeCandidateDetail = (candidate = {}) => {
+  return {
+    ...candidate,
+    currentCtc: candidate.currentCTC ?? candidate.current_ctc ?? candidate.currentCtc ?? "",
+    expectedCtc: candidate.expectedCTC ?? candidate.expected_ctc ?? candidate.expectedCtc ?? "",
+  };
+};
+
 const formatFileSize = (bytes) => {
   if (typeof bytes !== "number" || Number.isNaN(bytes)) return "";
   const units = ["B", "KB", "MB", "GB"];
@@ -1303,11 +1311,11 @@ export default function Candidates() {
     try {
       setCandidateActionLoading(true);
       const candidateDetail = await fetchCandidateDetail(row.candidateId);
-      const candidate = {
+      const candidate = normalizeCandidateDetail({
         ...row,
         ...candidateDetail,
         primaryEmail: candidateDetail?.candidateEmail || row.primaryEmail || row.candidateEmail || "",
-      };
+      });
       const profile = buildCandidateProfile(candidate);
       setSelectedCandidate(profile);
       setActiveProfileTab("Basic Info");
@@ -1330,11 +1338,11 @@ export default function Candidates() {
     try {
       setCandidateActionLoading(true);
       const candidateDetail = await fetchCandidateDetail(row.candidateId);
-      const candidate = {
+      const candidate = normalizeCandidateDetail({
         ...row,
         ...candidateDetail,
         primaryEmail: candidateDetail?.primaryEmail || candidateDetail?.candidateEmail || row.primaryEmail || row.candidateEmail || "",
-      };
+      });
       const [firstName = "", lastName = ""] = String(candidate.candidateName || "").split(" ");
       setEditingIndex(index);
       setEditingData({
