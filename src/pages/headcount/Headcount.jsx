@@ -242,18 +242,33 @@ const monthYearFormatter = new Intl.DateTimeFormat("en-US", {
   year: "numeric",
 });
 
-const formatMonthYear = (value) => {
-  if (!value) return "-";
-
-  const dateText = String(value);
+const parseDateValue = (value) => {
+  const dateText = String(value || "");
   const isoDateMatch = dateText.match(/^(\d{4})-(\d{2})-(\d{2})$/);
   const parsedDate = isoDateMatch
     ? new Date(Number(isoDateMatch[1]), Number(isoDateMatch[2]) - 1, Number(isoDateMatch[3]))
     : new Date(dateText);
 
-  if (Number.isNaN(parsedDate.getTime())) return dateText;
+  return Number.isNaN(parsedDate.getTime()) ? null : parsedDate;
+};
+
+const formatMonthYear = (value) => {
+  if (!value) return "-";
+
+  const parsedDate = parseDateValue(value);
+  if (!parsedDate) return String(value);
 
   return monthYearFormatter.format(parsedDate);
+};
+
+const formatDayMonthYear = (value) => {
+  if (!value) return "-";
+  const parsedDate = parseDateValue(value);
+  if (!parsedDate) return String(value);
+  const day = String(parsedDate.getDate()).padStart(2, '0');
+  const month = new Intl.DateTimeFormat("en-US", { month: "short" }).format(parsedDate);
+  const year = parsedDate.getFullYear();
+  return `${day} ${month} ${year}`;
 };
 
 const extractEmployeeList = (data) => {
@@ -609,52 +624,10 @@ export default function Headcount() {
     loadEmployees();
   }, [activeTab, currentFilters.billingType, currentFilters.entity, currentFilters.customer, currentPage, rowsPerPage, listReloadKey, hasCurrentTabCache, preserveEmployeeEmails]);
 
-  useEffect(() => {
-    const otherTab = activeTab === "active" ? "exited" : "active";
-    if (tabDataCache[otherTab]) {
-      return undefined;
-    }
-
-    let isMounted = true;
-
-    const preloadOtherTab = async () => {
-      try {
-        const payload =
-          otherTab === "active"
-            ? await fetchActiveEmployees({ page: 1, limit: rowsPerPage })
-            : await fetchExitedEmployees({ page: 1, limit: rowsPerPage });
-
-        if (!isMounted) return;
-
-        const loadedEmployees = preserveEmployeeEmails(
-          extractEmployeeList(payload).map(withHeadcountFieldAliases)
-        );
-        const nextTotalRecords = extractTotalRecords(payload, loadedEmployees.length);
-
-        setTabDataCache((current) => {
-          if (current[otherTab]) {
-            return current;
-          }
-
-          return {
-            ...current,
-            [otherTab]: {
-              employees: loadedEmployees,
-              totalRecords: nextTotalRecords,
-            },
-          };
-        });
-      } catch (err) {
-        console.warn(`Failed to prefetch ${otherTab} headcount data:`, err);
-      }
-    };
-
-    preloadOtherTab();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [activeTab, rowsPerPage, tabDataCache, currentTabCache, preserveEmployeeEmails]);
+  // NOTE: removed automatic prefetch of the other tab to avoid unnecessary
+  // API calls. The component will now only fetch the active tab (based on
+  // `activeTab`) and will refetch when the user explicitly switches tabs or
+  // when navigation returns to this page with a specific `headcountTab` state.
 
   useEffect(() => {
     const loadDropdownOptions = async () => {
@@ -945,13 +918,13 @@ export default function Headcount() {
                       <td>{startEntry + index}</td>
                       <td>{getConsultantName(employee)}</td>
                       <td>{employee.email || "-"}</td>
-                      <td>{formatMonthYear(employee.joiningDate)}</td>
+                      <td>{formatDayMonthYear(employee.joiningDate)}</td>
                       <td>{employee.billingType}</td>
                       <td>{employee.entity}</td>
                       <td>{employee.customer}</td>
                       {activeTab === "exited" ? (
                         <>
-                          <td>{formatMonthYear(employee.exitDetails?.exitDate)}</td>
+                          <td>{formatDayMonthYear(employee.exitDetails?.exitDate)}</td>
                           <td>{employee.exitDetails?.exitReason || "-"}</td>
                         </>
                       ) : null}
