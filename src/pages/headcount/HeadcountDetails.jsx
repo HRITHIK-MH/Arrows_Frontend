@@ -15,7 +15,14 @@ const getEmployeeEmail = (employee) =>
   employee?.email || employee?.emailAddress || employee?.email_address || employee?.contactEmail || employee?.contact_email || "";
 
 const isExitedEmployee = (employee) =>
-  Boolean(employee?.isExited || employee?.status === "exited" || employee?.exitDetails);
+  Boolean(
+    employee?.isExited ||
+    String(employee?.status || "").toLowerCase() === "exited" ||
+    employee?.exit_date ||
+    employee?.exit_reason ||
+    employee?.exitDetails?.exitDate ||
+    employee?.exitDetails?.exitReason
+  );
 
 const parseDateValue = (value) => {
   const dateText = String(value);
@@ -135,7 +142,12 @@ export default function HeadcountDetails() {
 
   const handleEdit = () => {
     if (!employee) return;
-    navigate("/headcount", { state: { editEmployee: employee } });
+    navigate("/headcount", {
+      state: {
+        editEmployee: employee,
+        headcountTab: isExited ? "exited" : "active",
+      },
+    });
   };
 
   const handleExit = () => {
@@ -267,17 +279,17 @@ export default function HeadcountDetails() {
                 </div>
               </div>
 
-              {!isExited ? (
-                <div className={styles.displayActionBar}>
-                  <button
-                    type="button"
-                    className={styles.primaryButton}
-                    onClick={handleEdit}
-                    disabled={!employee}
-                  >
-                    <FiEdit2 aria-hidden="true" />
-                    Edit
-                  </button>
+              <div className={styles.displayActionBar}>
+                <button
+                  type="button"
+                  className={styles.primaryButton}
+                  onClick={handleEdit}
+                  disabled={!employee}
+                >
+                  <FiEdit2 aria-hidden="true" />
+                  Edit
+                </button>
+                {!isExited ? (
                   <button
                     type="button"
                     className={styles.secondaryButton}
@@ -287,8 +299,8 @@ export default function HeadcountDetails() {
                     <FiX aria-hidden="true" />
                     Exit
                   </button>
-                </div>
-              ) : null}
+                ) : null}
+              </div>
             </div>
 
             <div className={styles.viewFormGrid}>

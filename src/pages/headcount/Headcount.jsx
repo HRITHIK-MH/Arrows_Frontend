@@ -10,9 +10,70 @@ import {
   FiSearch,
 } from "react-icons/fi";
 import ReusableForm from "../../components/forms/ReusableForm";
+import FormField from "../../components/forms/FormField";
 import { employeeConfig } from "../../components/forms/formConfigs";
-import { addEmployee, fetchActiveEmployees, fetchExitedEmployees, updateEmployee } from "../../api/headcountService";
+import {
+  addEmployee,
+  fetchActiveEmployees,
+  fetchExitedEmployees,
+  updateEmployee,
+  updateExitedEmployee,
+} from "../../api/headcountService";
 import { fetchHeadcountDropdownOptions } from "../../api/masterDataService";
+
+const ExitedEmployeeEditStep = ({
+  formData,
+  onChange,
+  fields = [],
+  validationErrors = {},
+}) => (
+  <div className="employee-step">
+    <div className="employee-grid">
+      {fields.map((field) => (
+        <div key={field.name} className="employee-cell">
+          <FormField
+            label={field.label}
+            type={field.type}
+            name={field.name}
+            value={formData[field.name] || ""}
+            onChange={onChange}
+            required={field.required}
+            error={validationErrors[field.name]}
+            placeholder={field.placeholder}
+            formData={formData}
+          />
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
+const exitedEmployeeConfig = {
+  ...employeeConfig,
+  title: "Edit Exited Employee",
+  submitLabel: "Save",
+  steps: [
+    {
+      title: "Exit Information",
+      component: ExitedEmployeeEditStep,
+      fields: [
+        {
+          name: "exit_date",
+          label: "Exit Date *",
+          type: "date",
+          required: true,
+        },
+        {
+          name: "exit_reason",
+          label: "Exit Reason *",
+          type: "textarea",
+          required: true,
+          placeholder: "Enter exit reason",
+        },
+      ],
+    },
+  ],
+};
 
 const getInitialForm = () => {
   const initial = {};
@@ -87,6 +148,16 @@ const getConsultantName = (employee) => employee?.consultant_name || employee?.c
 const getEmployeeEmail = (employee) =>
   employee?.email || employee?.emailAddress || employee?.email_address || employee?.contactEmail || employee?.contact_email || "";
 
+const isExitedEmployee = (employee) =>
+  Boolean(
+    employee?.isExited ||
+    String(employee?.status || "").toLowerCase() === "exited" ||
+    employee?.exit_date ||
+    employee?.exit_reason ||
+    employee?.exitDetails?.exitDate ||
+    employee?.exitDetails?.exitReason
+  );
+
 const createEmployeeId = () => `emp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
 const withHeadcountFieldAliases = (employee = {}) => ({
@@ -141,6 +212,16 @@ const withHeadcountFieldAliases = (employee = {}) => ({
     employee.billing_type ??
     employee.bill_type ??
     employee.billType ??
+    "",
+  exit_date:
+    employee.exit_date ??
+    employee.exitDate ??
+    employee.exitDetails?.exitDate ??
+    "",
+  exit_reason:
+    employee.exit_reason ??
+    employee.exitReason ??
+    employee.exitDetails?.exitReason ??
     "",
 });
 
@@ -357,6 +438,9 @@ export default function Headcount() {
   const [editingEmployeeId, setEditingEmployeeId] = useState(
     () => (initialEditEmployee ? getEmployeeId(initialEditEmployee) ?? null : null)
   );
+  const [isEditingExitedEmployee, setIsEditingExitedEmployee] = useState(
+    () => Boolean(initialEditEmployee && isExitedEmployee(initialEditEmployee))
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState(
@@ -459,6 +543,7 @@ export default function Headcount() {
       await Promise.resolve();
       if (!isMounted) return;
       setEditingEmployeeId(editId ?? null);
+      setIsEditingExitedEmployee(isExitedEmployee(editEmployee));
       setFormData(withHeadcountFieldAliases(editEmployee));
       setIsAddingEmployee(true);
     };
@@ -480,6 +565,7 @@ export default function Headcount() {
   const openForm = () => {
     setFormData(getInitialForm());
     setEditingEmployeeId(null);
+    setIsEditingExitedEmployee(false);
     setActiveTab("active");
     setIsAddingEmployee(true);
     setSearchParams({ action: "add" });
@@ -488,6 +574,7 @@ export default function Headcount() {
   const closeForm = useCallback(() => {
     setIsAddingEmployee(false);
     setEditingEmployeeId(null);
+    setIsEditingExitedEmployee(false);
     setSearchParams({});
   }, [setSearchParams]);
 
@@ -675,6 +762,22 @@ export default function Headcount() {
       const employeeData = { ...data };
       delete employeeData.serialNumber;
 
+      if (editingEmployeeId !== null && isEditingExitedEmployee) {
+        const saveResult = await updateExitedEmployee(editingEmployeeId, {
+          exitDate: employeeData.exit_date,
+          exitReason: String(employeeData.exit_reason || "").trim(),
+        });
+        const backendSuccess = String(saveResult?.message || saveResult?.raw?.message || "").trim();
+
+        setSuccessMessage(backendSuccess || "Exited employee updated successfully.");
+        setIsAddingEmployee(false);
+        setEditingEmployeeId(null);
+        setIsEditingExitedEmployee(false);
+        setSearchParams({});
+        setListReloadKey((current) => current + 1);
+        return;
+      }
+
       const normalizedEmployee = withHeadcountFieldAliases({
         ...employeeData,
         employee_id: editingEmployeeId || employeeData.employee_id || employeeData.employeeId || createEmployeeId(),
@@ -728,15 +831,17 @@ export default function Headcount() {
 
   const employeeFormConfig = useMemo(
     () => ({
-      ...withEditFallbackOptions(
-        applyDropdownOptions(employeeConfig, dropdownOptions),
-        formInitialData
-      ),
+      ...(isEditingExitedEmployee
+        ? exitedEmployeeConfig
+        : withEditFallbackOptions(
+            applyDropdownOptions(employeeConfig, dropdownOptions),
+            formInitialData
+          )),
       showCancelAction: true,
       cancelLabel: "Cancel",
       onCancel: closeForm,
     }),
-    [closeForm, dropdownOptions, formInitialData]
+    [closeForm, dropdownOptions, formInitialData, isEditingExitedEmployee]
   );
 
   if (isAddingEmployee) {
@@ -746,10 +851,18 @@ export default function Headcount() {
           <div className={styles.infoRow}>
             <div className={styles.infoContent}>
               <p className={styles.description}>
-                <strong>{editingEmployeeId !== null ? "Edit Employee" : "Add Employee"}</strong>
+                <strong>
+                  {isEditingExitedEmployee
+                    ? "Edit Exited Employee"
+                    : editingEmployeeId !== null
+                      ? "Edit Employee"
+                      : "Add Employee"}
+                </strong>
               </p>
               <p className={styles.summaryText}>
-                Maintain employee headcount records and keep billing details aligned.
+                {isEditingExitedEmployee
+                  ? "Update the employee's exit date and exit reason."
+                  : "Maintain employee headcount records and keep billing details aligned."}
               </p>
             </div>
           </div>
