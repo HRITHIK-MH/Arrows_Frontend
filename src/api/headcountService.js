@@ -200,15 +200,6 @@ const omitEmptyValues = (payload) =>
     Object.entries(payload).filter(([, value]) => value !== undefined && value !== null && value !== '')
   );
 
-const toNumericCost = (value) => {
-  if (value === undefined || value === null || value === '') return undefined;
-  const parsed = Number(String(value).replace(/,/g, '').trim());
-  if (!Number.isFinite(parsed)) {
-    throw new Error('Cost must be a valid number.');
-  }
-  return parsed;
-};
-
 const toIsoDate = (value) => {
   const text = String(value || '').trim();
   const isoDate = text.match(/^(\d{4})-(\d{2})-(\d{2})(?:[T\s].*)?$/);
@@ -242,7 +233,7 @@ const toAddHeadcountRequest = (employeeData = {}) =>
     entity: firstValue(employeeData.entity),
     work_location: firstValue(employeeData.work_location, employeeData.workLocation),
     mode: firstValue(employeeData.mode),
-    cost: toNumericCost(firstValue(employeeData.cost)),
+    cost: firstValue(employeeData.cost),
     customer: firstValue(employeeData.customer),
     billing_type: formatBillingTypeForPost(normalizeBillTypeFilter(firstValue(employeeData.billing_type, employeeData.billingType))),
     created_by: firstValue(employeeData.createdBy, employeeData.created_by, 'Demo Admin'),
@@ -255,7 +246,7 @@ const toUpdateHeadcountRequest = (employeeData = {}) =>
     entity: firstValue(employeeData.entity),
     work_location: firstValue(employeeData.work_location, employeeData.workLocation),
     mode: firstValue(employeeData.mode),
-    cost: toNumericCost(firstValue(employeeData.cost)),
+    cost: firstValue(employeeData.cost),
     customer: firstValue(employeeData.customer),
     billing_type: normalizeBillTypeFilter(firstValue(employeeData.billing_type, employeeData.billingType)),
     updated_by: firstValue(employeeData.updatedBy, employeeData.updated_by, 'Demo Admin'),
