@@ -1,5 +1,5 @@
 import { FiTrash2 } from 'react-icons/fi';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import { validateMandatoryField } from '../../utils/formValidation';
 import './FormField.css';
 
@@ -36,7 +36,7 @@ const FormField = ({
   const [localError, setLocalError] = useState('');
   const dropdownRef = useRef(null);
   const fileInputRef = useRef(null);
-  const safeOptions = Array.isArray(options) ? options : [];
+  const safeOptions = useMemo(() => (Array.isArray(options) ? options : []), [options]);
   const safeLabel = typeof label === 'string' ? label : '';
   const cleanedLabel = safeLabel.replace('*', '').trim();
   const normalizedSelectOptions = safeOptions
@@ -78,17 +78,21 @@ const FormField = ({
       const sa = String(a).trim();
       const sb = String(b).trim();
       return sa.toLowerCase() === sb.toLowerCase();
-    } catch (e) {
+    } catch (_e) {
       return String(a) === String(b);
     }
   };
 
   useEffect(() => {
-    if (error) {
-      setLocalError(error);
-    } else {
-      setLocalError('');
-    }
+    // Sync external `error` prop into local state asynchronously to avoid
+    // synchronous state updates in the render/effect cycle.
+    window.setTimeout(() => {
+      if (error) {
+        setLocalError(error);
+      } else {
+        setLocalError('');
+      }
+    }, 0);
   }, [error, name]);
 
   const handleValidationResult = (result) => {
@@ -139,21 +143,9 @@ const FormField = ({
       : e.target.value;
 
     if (type === 'file') {
-      const selectedFiles = Array.isArray(newValue) ? newValue : [newValue].filter(Boolean);
-      selectedFiles.forEach((file) => {
-        console.log("FILE TYPE:", file.type);
-        console.log("FILE NAME:", file.name);
-        console.log("FILE SIZE:", file.size);
-        console.debug("[UploadDebug] File input selected:", {
-          fieldName: name,
-          accept,
-          multiple,
-          type: file.type,
-          name: file.name,
-          size: file.size,
-          lastModified: file.lastModified,
-        });
-      });
+      // When files are selected we only need to update the value and validation;
+      // avoid noisy debug logging in production.
+      // noop: files are passed through in `newValue` and forwarded via onChange
     }
 
     if (type === 'number' && typeof newValue === 'string') {
@@ -296,7 +288,8 @@ const FormField = ({
 
   useEffect(() => {
     if (!isDropdownOpen) {
-      setSearchTerm('');
+      // Clear search asynchronously to avoid synchronous state updates inside effects
+      window.setTimeout(() => setSearchTerm(''), 0);
       return;
     }
 
@@ -339,7 +332,10 @@ const FormField = ({
       }));
 
     if (customValuesToAdd.length > 0) {
-      setCustomOptions((prev) => [...prev, ...customValuesToAdd]);
+      // Add any missing custom values asynchronously to avoid cascading renders
+      window.setTimeout(() => {
+        setCustomOptions((prev) => [...prev, ...customValuesToAdd]);
+      }, 0);
     }
   }, [customOptions, safeOptions, type, value]);
 
