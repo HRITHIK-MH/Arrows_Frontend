@@ -1,6 +1,8 @@
 import * as React from "react";
 import {
   FiChevronDown,
+  FiChevronLeft,
+  FiChevronRight,
   FiEdit2,
   FiEye,
   FiFileText,
@@ -1014,21 +1016,12 @@ export default function JobOpenings({ createMode = false }) {
     return filteredData.slice(startIndex, startIndex + entriesPerPage);
   }, [filteredData, currentPage, entriesPerPage]);
 
-  const pageNumbers = React.useMemo(
-    () => Array.from({ length: totalPages }, (_, index) => index + 1),
-    [totalPages]
-  );
-
   const startEntry = totalRecords === 0 ? 0 : (currentPage - 1) * entriesPerPage + 1;
   const endEntry = Math.min(currentPage * entriesPerPage, totalRecords);
 
   const handleEntriesPerPageChange = React.useCallback((event) => {
     setEntriesPerPage(Number(event.target.value));
     setCurrentPage(1);
-  }, []);
-
-  const handlePageChange = React.useCallback((page) => {
-    setCurrentPage(page);
   }, []);
 
   const handlePreviousPage = React.useCallback(() => {
@@ -1940,73 +1933,51 @@ export default function JobOpenings({ createMode = false }) {
             </div>
 
             <div className={styles.tableFooter}>
-              <div className={styles.footerLeft}>
-                <span>Show</span>
+              <div className={styles.footerSummary}>
+                <span>Showing</span>
+                <strong>{startEntry}-{endEntry}</strong>
+                <span>of</span>
+                <strong>{totalRecords}</strong>
+                <span>entries</span>
+              </div>
+              <div className={styles.footerControls}>
+                <label className={styles.rowsControl}>
+                  <span>Rows per page</span>
                 <select
-                  className={styles.entriesSelect}
+                  className={styles.rowsSelect}
                   value={entriesPerPage}
                   onChange={handleEntriesPerPageChange}
+                  aria-label="Rows per page"
                 >
                   <option value="10">10</option>
                   <option value="25">25</option>
                   <option value="50">50</option>
                 </select>
-                <span>entries</span>
-                <span>
-                  ({startEntry}-{endEntry} of {totalRecords})
-                </span>
-              </div>
-              <>
-                <div className={styles.pagination}>
+                </label>
+                <div className={styles.pageIndicator} aria-live="polite">
+                  Page {currentPage} of {totalPages}
+                </div>
+                <div className={styles.paginationControls}>
                   <button
                     type="button"
-                    className={styles.pageBtn}
+                    className={styles.pageButton}
                     aria-label="Previous page"
                     onClick={handlePreviousPage}
                     disabled={currentPage === 1}
                   >
-                    {"<"}
+                    <FiChevronLeft aria-hidden="true" />
                   </button>
-                  {pageNumbers.map((pageNumber) => (
-                    <button
-                      key={pageNumber}
-                      type="button"
-                      className={`${styles.pageBtn}${currentPage === pageNumber ? ` ${styles.pageBtnActive}` : ""}`}
-                      onClick={() => handlePageChange(pageNumber)}
-                      aria-label={`Page ${pageNumber}`}
-                      aria-current={currentPage === pageNumber ? "page" : undefined}
-                    >
-                      {pageNumber}
-                    </button>
-                  ))}
                   <button
                     type="button"
-                    className={styles.pageBtn}
+                    className={styles.pageButton}
                     aria-label="Next page"
                     onClick={handleNextPage}
                     disabled={currentPage === totalPages}
                   >
-                    {">"}
+                    <FiChevronRight aria-hidden="true" />
                   </button>
                 </div>
-                <div className={styles.pagination} style={{ display: "none" }}>
-                  <button type="button" className={styles.pageBtn} aria-label="Previous page">
-                    ‹
-                  </button>
-                  <button type="button" className={`${styles.pageBtn} ${styles.pageBtnActive}`}>
-                    1
-                  </button>
-                  <button type="button" className={styles.pageBtn}>
-                    2
-                  </button>
-                  <button type="button" className={styles.pageBtn}>
-                    3
-                  </button>
-                  <button type="button" className={styles.pageBtn} aria-label="Next page">
-                    ›
-                  </button>
-                </div>
-              </>
+              </div>
             </div>
           </div>
         )}
