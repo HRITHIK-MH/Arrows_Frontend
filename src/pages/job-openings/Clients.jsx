@@ -187,6 +187,104 @@ export default function Clients() {
     });
   }, []);
 
+  const normalizeEmail = React.useCallback((value) => String(value || "").trim().toLowerCase(), []);
+  const normalizePhone = React.useCallback((value) => String(value || "").replace(/\D/g, ""), []);
+
+  const hasDuplicateEmail = React.useCallback(
+    (email, currentClientId) => {
+      if (!email) return false;
+      return submittedData.some((item, index) => {
+        const itemEmail = normalizeEmail(item.contactEmail);
+        if (!itemEmail || itemEmail !== email) return false;
+
+        const itemClientId = getBackendClientId(item);
+        if (currentClientId && itemClientId === currentClientId) return false;
+        if (editingIndex !== null && index === editingIndex) return false;
+
+        return true;
+      });
+    },
+    [editingIndex, normalizeEmail, submittedData]
+  );
+
+  const hasDuplicatePhone = React.useCallback(
+    (phone, currentClientId) => {
+      if (!phone) return false;
+      return submittedData.some((item, index) => {
+        const itemPhone = normalizePhone(item.contactNumber);
+        if (!itemPhone || itemPhone !== phone) return false;
+
+        const itemClientId = getBackendClientId(item);
+        if (currentClientId && itemClientId === currentClientId) return false;
+        if (editingIndex !== null && index === editingIndex) return false;
+
+        return true;
+      });
+    },
+    [editingIndex, normalizePhone, submittedData]
+  );
+
+  const clientConfigWithDuplicateValidation = React.useMemo(() => {
+    const emailValidator = async (value, fieldName, formData) => {
+      const baseResult = await clientConfig.validationRules.emailRequired(value, fieldName, formData);
+      if (!baseResult.isValid) {
+        return baseResult;
+      }
+
+      const emailValue = normalizeEmail(value);
+      const currentClientId = getBackendClientId(formData) || getBackendClientId(editingData);
+      if (hasDuplicateEmail(emailValue, currentClientId)) {
+        return { isValid: false, message: "Contact Email Address already exists" };
+      }
+
+      return { isValid: true };
+    };
+
+    const phoneValidator = async (value, fieldName, formData) => {
+      const baseResult = await clientConfig.validationRules.phoneRequired(value, fieldName, formData);
+      if (!baseResult.isValid) {
+        return baseResult;
+      }
+
+      const phoneValue = normalizePhone(value);
+      const currentClientId = getBackendClientId(formData) || getBackendClientId(editingData);
+      if (hasDuplicatePhone(phoneValue, currentClientId)) {
+        return { isValid: false, message: "Contact Number already exists" };
+      }
+
+      return { isValid: true };
+    };
+
+    return {
+      ...clientConfig,
+      validationRules: {
+        ...clientConfig.validationRules,
+        contactEmailDuplicate: emailValidator,
+        contactNumberDuplicate: phoneValidator,
+      },
+      steps: clientConfig.steps.map((step) => ({
+        ...step,
+        fields: (step.fields || []).map((field) => {
+          if (field.name === "contactEmail") {
+            return {
+              ...field,
+              validationRule: "contactEmailDuplicate",
+            };
+          }
+
+          if (field.name === "contactNumber") {
+            return {
+              ...field,
+              validationRule: "contactNumberDuplicate",
+            };
+          }
+
+          return field;
+        }),
+      })),
+    };
+  }, [editingData, hasDuplicateEmail, hasDuplicatePhone, normalizeEmail, normalizePhone]);
+
   const refreshClientListFromApi = React.useCallback(async (page = currentPage, limit = entriesPerPage) => {
     const clients = await fetchClients({ page: page - 1, limit });
     const normalized = Array.isArray(clients)
@@ -619,6 +717,22 @@ export default function Clients() {
           backendClientId: getBackendClientId(data) || getBackendClientId(editingData),
           clientId: String(data?.clientId || "").trim() || generateNextClientId(),
         });
+
+        const currentClientId = getBackendClientId(normalized) || getBackendClientId(editingData);
+        const normalizedEmail = normalizeEmail(normalized.contactEmail);
+        const normalizedPhone = normalizePhone(normalized.contactNumber);
+
+        if (hasDuplicateEmail(normalizedEmail, currentClientId) || hasDuplicatePhone(normalizedPhone, currentClientId)) {
+          const duplicateParts = [];
+          if (hasDuplicateEmail(normalizedEmail, currentClientId)) {
+            duplicateParts.push("Contact Email Address already exists");
+          }
+          if (hasDuplicatePhone(normalizedPhone, currentClientId)) {
+            duplicateParts.push("Contact Number already exists");
+          }
+          throw new Error(duplicateParts.join(" and "));
+        }
+
         const isEditMode = editingIndex !== null;
         const localUpdate = (savedRow) => {
           setSubmittedData((prev) => {
@@ -688,7 +802,7 @@ export default function Clients() {
         setIsSavingClient(false);
       }
     },
-    [currentPage, editingData, editingIndex, entriesPerPage, generateNextClientId, normalizeClientRecord, normalizeSavedClient, refreshClientListFromApi, showTransientMessage]
+    [currentPage, editingData, editingIndex, entriesPerPage, generateNextClientId, normalizeClientRecord, normalizeSavedClient, refreshClientListFromApi, showTransientMessage, hasDuplicateEmail, hasDuplicatePhone, normalizeEmail, normalizePhone]
   );
 
   const closeViewDrawer = React.useCallback(() => {
@@ -697,14 +811,14 @@ export default function Clients() {
 
   const clientFormConfig = React.useMemo(
     () => ({
-      ...clientConfig,
+      ...clientConfigWithDuplicateValidation,
       showDraftAction: editingIndex === null,
       showCancelAction: true,
       cancelLabel: "Cancel",
       onCancel: handleCancelClientForm,
       onSaveDraft: saveClientDraft,
     }),
-    [editingIndex, handleCancelClientForm, saveClientDraft]
+    [clientConfigWithDuplicateValidation, editingIndex, handleCancelClientForm, saveClientDraft]
   );
 
   return (
