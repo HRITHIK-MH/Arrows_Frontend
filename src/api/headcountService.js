@@ -447,6 +447,47 @@ export const updateEmployee = async (employeeId, employeeData) => {
 };
 
 /**
+ * Update an exited employee's exit details
+ * @param {string} employeeId - Employee ID to update
+ * @param {Object} exitData - Updated exit details
+ * @returns {Promise<Object>} Status response
+ */
+export const updateExitedEmployee = async (employeeId, exitData) => {
+  try {
+    const exitRequest = {
+      employee_id: employeeId,
+      exit_date: firstValue(exitData.exitDate, exitData.exit_date),
+      exit_reason: firstValue(exitData.exitReason, exitData.exit_reason),
+      updated_by: firstValue(exitData.updatedBy, exitData.updated_by, 'Demo Admin'),
+    };
+    const response = await headcountApi.put(`/headcount/updateExitedEmployee/${employeeId}`, exitRequest, {
+      skipAuthRedirect: true,
+      timeout: MUTATION_TIMEOUT_MS,
+    });
+    assertSuccessfulMutation(response?.data, 'Failed to update exited employee.');
+    return {
+      message: String(
+        extractBackendSuccessMessage(response?.data, 'Exited employee updated successfully.') ||
+        'Exited employee updated successfully.'
+      ).trim(),
+      raw: response?.data || null,
+    };
+  } catch (error) {
+    const backendMessage = extractBackendErrorMessage(error?.response?.data);
+    if (backendMessage) {
+      throw new Error(String(backendMessage).trim());
+    }
+
+    if (error?.code === 'ECONNABORTED') {
+      throw new Error('Update request timed out before backend responded. Please try again.');
+    }
+
+    console.error('Error updating exited employee:', error);
+    throw error;
+  }
+};
+
+/**
  * Exit an employee (mark as exited)
  * Backend expects: { employee_id, exit_date, exit_reason, updated_by } in POST body
  * @param {string} employeeId - Employee ID
