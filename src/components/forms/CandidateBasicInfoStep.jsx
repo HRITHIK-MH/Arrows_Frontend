@@ -46,38 +46,11 @@ const readDocxText = async (file) => {
 };
 
 const readPdfText = async (file) => {
-  console.log("FILE TYPE:", file.type);
-  console.log("FILE NAME:", file.name);
-  console.log("FILE SIZE:", file.size);
   if (pdfjsLib.GlobalWorkerOptions.workerSrc !== pdfjsWorkerSrc) {
     pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorkerSrc;
   }
-  console.debug("[ResumeDebug] Candidate basic PDF.js worker configured:", {
-    workerSrc: pdfjsLib.GlobalWorkerOptions.workerSrc,
-    importedWorkerSrc: pdfjsWorkerSrc,
-    pdfjsVersion: pdfjsLib.version,
-  });
-
-  try {
-    const workerProbe = await fetch(pdfjsLib.GlobalWorkerOptions.workerSrc, { method: "GET" });
-    console.debug("[ResumeDebug] Candidate basic PDF.js worker fetch probe:", {
-      url: pdfjsLib.GlobalWorkerOptions.workerSrc,
-      status: workerProbe.status,
-      ok: workerProbe.ok,
-      contentType: workerProbe.headers.get("content-type"),
-      contentLength: workerProbe.headers.get("content-length"),
-    });
-  } catch (workerError) {
-    console.error("[ResumeDebug] Candidate basic PDF.js worker fetch probe failed:", {
-      url: pdfjsLib.GlobalWorkerOptions.workerSrc,
-      message: workerError?.message,
-    });
-  }
 
   const arrayBuffer = await file.arrayBuffer();
-  console.debug("[ResumeDebug] Candidate basic PDF arrayBuffer loaded:", {
-    byteLength: arrayBuffer.byteLength,
-  });
   const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
   const pdfDocument = await loadingTask.promise;
   const pages = [];
@@ -529,6 +502,39 @@ const createSkillRow = (primarySkill, defaults = {}) => ({
   secondarySkillRating: "",
 });
 
+const createSkillRowsFromSkillValues = (skillValues = [], defaults = {}) => {
+  const values = skillValues.map((value) => normalizeText(value)).filter(Boolean);
+  if (values.length === 0) return [createSkillRow("", defaults)];
+
+  const [primarySkill, ...secondarySkills] = values;
+  const firstSecondarySkill = secondarySkills[0] || "";
+  const rows = [
+    {
+      ...createSkillRow(primarySkill, {
+        ...defaults,
+        enableSecondarySkill: Boolean(firstSecondarySkill),
+      }),
+      secondarySkill: firstSecondarySkill,
+      secondarySkillExperienceLevel: firstSecondarySkill ? defaults.skillExperienceLevel || "" : "",
+      secondarySkillExperienceYears: firstSecondarySkill ? defaults.skillExperienceYears || "" : "",
+      secondarySkillRating: firstSecondarySkill ? defaults.skillRating || "" : "",
+    },
+  ];
+
+  secondarySkills.slice(1).forEach((secondarySkill) => {
+    rows.push({
+      ...createSkillRow("", { enableSecondarySkill: true }),
+      isSecondaryOnly: true,
+      secondarySkill,
+      secondarySkillExperienceLevel: defaults.skillExperienceLevel || "",
+      secondarySkillExperienceYears: defaults.skillExperienceYears || "",
+      secondarySkillRating: defaults.skillRating || "",
+    });
+  });
+
+  return rows;
+};
+
 const extractCompanyAndRole = (text) => {
   const lines = getResumeLines(text);
   if (lines.length === 0) return { company: "", role: "" };
@@ -977,7 +983,7 @@ const CandidateBasicInfoStep = ({
                 skillExperienceYears: mappedData.skillExperienceYears || undefined,
                 skillRating: mappedData.skillRating || undefined,
               };
-              updates.skills = skillValuesForRows.map((skillValue) => createSkillRow(skillValue, skillDefaults));
+              updates.skills = createSkillRowsFromSkillValues(skillValuesForRows, skillDefaults);
             } else if (
               skillValuesForRows.length === 0 &&
               existingSkillRows.length > 1 &&
@@ -985,6 +991,30 @@ const CandidateBasicInfoStep = ({
             ) {
               updates.skills = [createSkillRow("")];
             }
+          }
+
+          const extractedCompanyAndRole = extractCompanyAndRole(extractedText);
+          const extractedCompany = cleanCompanyValue(extractedCompanyAndRole.company);
+          const extractedRole = cleanDesignationValue(extractedCompanyAndRole.role);
+          const isExtractedInternshipCandidate = hasInternshipSignal(extractedRole);
+          if (
+            !isExtractedInternshipCandidate &&
+            !normalizeText(updates.currentCompanyName) &&
+            (!normalizeText(formData.currentCompanyName) || !isValidCurrentCompany(formData.currentCompanyName)) &&
+            isValidCurrentCompany(extractedCompany)
+          ) {
+            updates.currentCompanyName = extractedCompany;
+          }
+          if (
+            !isExtractedInternshipCandidate &&
+            !normalizeText(updates.jobTitleRole) &&
+            (!normalizeText(formData.jobTitleRole) || !isValidCurrentDesignation(formData.jobTitleRole)) &&
+            isValidCurrentDesignation(extractedRole)
+          ) {
+            updates.jobTitleRole = extractedRole;
+          }
+          if (!isExtractedInternshipCandidate && !normalizeText(updates.candidateType) && !normalizeText(formData.candidateType) && (extractedCompany || extractedRole)) {
+            updates.candidateType = "experienced";
           }
 
           const formPopulationStartedAt =
@@ -1116,7 +1146,7 @@ const CandidateBasicInfoStep = ({
           const hasExistingPrimarySkill = existingSkillRows.some((row) => normalizeText(row?.primarySkill));
 
           if (!hasExistingPrimarySkill) {
-            updates.skills = matchedSkills.map((skillValue) => createSkillRow(skillValue, skillDefaults));
+            updates.skills = createSkillRowsFromSkillValues(matchedSkills, skillDefaults);
           }
         }
 

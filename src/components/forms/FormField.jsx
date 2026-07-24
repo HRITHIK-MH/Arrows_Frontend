@@ -142,12 +142,6 @@ const FormField = ({
       ? (e.target.multiple ? Array.from(e.target.files) : e.target.files[0])
       : e.target.value;
 
-    if (type === 'file') {
-      // When files are selected we only need to update the value and validation;
-      // avoid noisy debug logging in production.
-      // noop: files are passed through in `newValue` and forwarded via onChange
-    }
-
     if (type === 'number' && typeof newValue === 'string') {
       const sanitized = allowDecimal
         ? newValue

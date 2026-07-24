@@ -37,38 +37,11 @@ const readDocxText = async (file) => {
 };
 
 const readPdfText = async (file) => {
-  console.log("FILE TYPE:", file.type);
-  console.log("FILE NAME:", file.name);
-  console.log("FILE SIZE:", file.size);
   if (pdfjsLib.GlobalWorkerOptions.workerSrc !== pdfjsWorkerSrc) {
     pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorkerSrc;
   }
-  console.debug("[ResumeDebug] Candidate documents PDF.js worker configured:", {
-    workerSrc: pdfjsLib.GlobalWorkerOptions.workerSrc,
-    importedWorkerSrc: pdfjsWorkerSrc,
-    pdfjsVersion: pdfjsLib.version,
-  });
-
-  try {
-    const workerProbe = await fetch(pdfjsLib.GlobalWorkerOptions.workerSrc, { method: "GET" });
-    console.debug("[ResumeDebug] Candidate documents PDF.js worker fetch probe:", {
-      url: pdfjsLib.GlobalWorkerOptions.workerSrc,
-      status: workerProbe.status,
-      ok: workerProbe.ok,
-      contentType: workerProbe.headers.get("content-type"),
-      contentLength: workerProbe.headers.get("content-length"),
-    });
-  } catch (workerError) {
-    console.error("[ResumeDebug] Candidate documents PDF.js worker fetch probe failed:", {
-      url: pdfjsLib.GlobalWorkerOptions.workerSrc,
-      message: workerError?.message,
-    });
-  }
 
   const arrayBuffer = await file.arrayBuffer();
-  console.debug("[ResumeDebug] Candidate documents PDF arrayBuffer loaded:", {
-    byteLength: arrayBuffer.byteLength,
-  });
   const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
   const pdfDocument = await loadingTask.promise;
   const pages = [];
@@ -492,6 +465,38 @@ const createSkillRow = (primarySkill, defaults = {}) => ({
   secondarySkillComments: "",
 });
 
+const createSkillRowsFromSkillValues = (skillValues = [], defaults = {}) => {
+  const values = skillValues.map((value) => normalizeText(value)).filter(Boolean);
+  if (values.length === 0) return [createSkillRow("", defaults)];
+
+  const [primarySkill, ...secondarySkills] = values;
+  const firstSecondarySkill = secondarySkills[0] || "";
+  const rows = [
+    {
+      ...createSkillRow(primarySkill, defaults),
+      enableSecondarySkill: Boolean(firstSecondarySkill),
+      secondarySkill: firstSecondarySkill,
+      secondarySkillExperienceLevel: firstSecondarySkill ? defaults.skillExperienceLevel || "" : "",
+      secondarySkillExperienceYears: firstSecondarySkill ? defaults.skillExperienceYears || "" : "",
+      secondarySkillRating: firstSecondarySkill ? defaults.skillRating || "" : "",
+    },
+  ];
+
+  secondarySkills.slice(1).forEach((secondarySkill) => {
+    rows.push({
+      ...createSkillRow("", {}),
+      enableSecondarySkill: true,
+      isSecondaryOnly: true,
+      secondarySkill,
+      secondarySkillExperienceLevel: defaults.skillExperienceLevel || "",
+      secondarySkillExperienceYears: defaults.skillExperienceYears || "",
+      secondarySkillRating: defaults.skillRating || "",
+    });
+  });
+
+  return rows;
+};
+
 const extractCompanyAndRole = (text) => {
   const lines = getResumeLines(text);
   if (lines.length === 0) return { company: "", role: "" };
@@ -504,10 +509,10 @@ const extractCompanyAndRole = (text) => {
     };
   }
 
-  const companyLine = lines.find((line) => /^(?:current\s+company|company|organization|employer)\s*[:\-]/i.test(line));
+  const companyLine = lines.find((line) => /^(?:current\s+company|client|company|organization|organisation|employer)\s*[:\-]/i.test(line));
   const roleLine = lines.find((line) => /^(?:current\s+(?:designation|role)|designation|job\s*title|title|role)\s*[:\-]/i.test(line));
 
-  let company = cleanRoleOrCompanyValue(companyLine?.replace(/^(?:current\s+company|company|organization|employer)\s*[:\-]\s*/i, "") || "");
+  let company = cleanRoleOrCompanyValue(companyLine?.replace(/^(?:current\s+company|client|company|organization|organisation|employer)\s*[:\-]\s*/i, "") || "");
   let role = cleanRoleOrCompanyValue(roleLine?.replace(/^(?:current\s+(?:designation|role)|designation|job\s*title|title|role)\s*[:\-]\s*/i, "") || "");
 
   if (!company || !role) {
@@ -916,6 +921,33 @@ const CandidateDocumentsStep = ({ formData, onChange, onSetStepFields }) => {
         fieldNames.add("expectedCtc");
       }
 
+      const extractedCompanyAndRole = extractCompanyAndRole(text);
+      const extractedCompany = cleanRoleOrCompanyValue(extractedCompanyAndRole.company);
+      const extractedRole = cleanRoleOrCompanyValue(extractedCompanyAndRole.role);
+      const isExtractedInternshipCandidate = hasInternshipSignal(extractedRole);
+      if (
+        !isExtractedInternshipCandidate &&
+        !normalizeText(updates.currentCompanyName) &&
+        (!normalizeText(formData.currentCompanyName) || !isValidCurrentCompany(formData.currentCompanyName)) &&
+        isValidCurrentCompany(extractedCompany)
+      ) {
+        updates.currentCompanyName = extractedCompany;
+        fieldNames.add("currentCompanyName");
+      }
+      if (
+        !isExtractedInternshipCandidate &&
+        !normalizeText(updates.jobTitleRole) &&
+        (!normalizeText(formData.jobTitleRole) || !isValidCurrentDesignation(formData.jobTitleRole)) &&
+        isValidCurrentDesignation(extractedRole)
+      ) {
+        updates.jobTitleRole = extractedRole;
+        fieldNames.add("jobTitleRole");
+      }
+      if (!isExtractedInternshipCandidate && !normalizeText(updates.candidateType) && !normalizeText(formData.candidateType) && (extractedCompany || extractedRole)) {
+        updates.candidateType = "experienced";
+        fieldNames.add("candidateType");
+      }
+
       const parsedSkills = normalizeSkillInput(parsed.skills);
       if (!normalizeText(formData.primarySkill) && parsedSkills.length > 0) {
         const configSkillOptions = [
@@ -966,7 +998,7 @@ const CandidateDocumentsStep = ({ formData, onChange, onSetStepFields }) => {
           };
 
           if (!hasExistingPrimarySkill) {
-            updates.skills = matchedSkills.map((skillValue) => createSkillRow(skillValue, skillDefaults));
+            updates.skills = createSkillRowsFromSkillValues(matchedSkills, skillDefaults);
             fieldNames.add("skills");
           }
         } else if (
@@ -1099,7 +1131,7 @@ const CandidateDocumentsStep = ({ formData, onChange, onSetStepFields }) => {
           const skillDefaults = getSkillDefaultsFromExperience(effectiveYearsBucket, yearsNumber);
 
           if (!hasExistingPrimarySkill) {
-            updates.skills = matchedSkills.map((skillValue) => createSkillRow(skillValue, skillDefaults));
+            updates.skills = createSkillRowsFromSkillValues(matchedSkills, skillDefaults);
             fieldNames.add("skills");
           }
         }

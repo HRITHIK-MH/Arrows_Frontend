@@ -132,9 +132,6 @@ const FormField = ({
     if (type === 'file') {
       const selectedFiles = Array.isArray(newValue) ? newValue : [newValue].filter(Boolean);
       selectedFiles.forEach((file) => {
-        console.log("FILE TYPE:", file.type);
-        console.log("FILE NAME:", file.name);
-        console.log("FILE SIZE:", file.size);
         console.debug("[UploadDebug] File input selected:", {
           fieldName: name,
           accept,
